@@ -1,0 +1,87 @@
+
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Custom dashed route animation */
+@keyframes dash {
+  to {
+    stroke-dashoffset: -40;
+  }
+}
+
+@layer components {
+  .road-card {
+    @apply rounded-[22px] border border-slate-200/80 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.07)] dark:border-white/10 dark:bg-[#1C1C1E];
+  }
+
+  .road-surface {
+    @apply rounded-[20px] border border-slate-200/80 bg-[#F5F5F7] dark:border-white/10 dark:bg-white/[0.06];
+  }
+
+  .road-action {
+    @apply min-h-12 rounded-[16px] px-4 py-3 text-sm font-extrabold tracking-wide transition-all flex items-center justify-center gap-2;
+  }
+
+  .road-action-lg {
+    @apply min-h-14 rounded-[18px] px-5 py-4 text-base font-extrabold tracking-wide transition-all flex items-center justify-center gap-2.5;
+  }
+
+  .road-icon-button {
+    @apply min-h-12 min-w-12 rounded-[16px] border flex items-center justify-center transition-all;
+  }
+
+  .road-pill {
+    @apply inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-extrabold tracking-wide;
+  }
+
+  .road-label {
+    @apply text-[11px] font-extrabold uppercase tracking-wide text-slate-500 dark:text-slate-400;
+  }
+
+  .road-value {
+    @apply text-4xl font-black leading-none tracking-tight text-slate-950 dark:text-white;
+  }
+
+  .road-input {
+    @apply min-h-12 rounded-[16px] border border-slate-200 bg-[#F5F5F7] px-4 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-white/10 dark:bg-white/[0.06] dark:text-white;
+  }
+
+  .road-slider {
+    @apply h-3 w-full cursor-pointer appearance-none rounded-full bg-slate-200 accent-blue-500 dark:bg-white/10;
+  }
+}
+
+
+
+
+
+/* Readability floor for driver-facing UI: no tiny production text. */
+.text-\[9px\], .text-\[10px\] {
+  font-size: 0.75rem !important;
+  line-height: 1rem !important;
+}
+
+.text-xs {
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
+}
+
+.text-sm {
+  font-size: 1rem !important;
+  line-height: 1.4rem !important;
+}

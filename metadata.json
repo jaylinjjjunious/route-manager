@@ -1,0 +1,6 @@
+{
+  "name": "Route Optimizer",
+  "description": "A premium route optimizer and outlier detector for e-bike gig workers to manage retail audits, merchandising jobs, and mystery shops while tracking battery usage, distance, travel time, and hourly earnings.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
