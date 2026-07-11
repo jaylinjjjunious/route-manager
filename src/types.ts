@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type JobType = 'retail_audit' | 'merchandising' | 'mystery_shop' | 'field_task';
+export type JobType = 'retail_audit' | 'merchandising' | 'mystery_shop' | 'field_task' | 'process_serve';
 
 export type JobStatus = 'ready' | 'revisit' | 'completed' | 'pending' | 'postponed' | 'outlier';
 

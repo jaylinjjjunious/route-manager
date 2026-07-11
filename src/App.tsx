@@ -469,6 +469,25 @@ export default function App() {
     const streetMatch = trimmed.match(/\d+\s+(.+)/);
     return (streetMatch?.[1] || trimmed).replace(/,\s*Bakersfield.*$/i, '');
   };
+  const isProcessServeJob = (job: Job) => job.jobType === 'process_serve';
+  const getJobTypeLabel = (job: Job) => {
+    if (job.jobType === 'process_serve') return 'Process Serve';
+    return job.jobType.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
+  const getRouteBadgeClasses = (job: Job) => {
+    if (job.isRevisionRequired || job.status === 'revisit') {
+      return 'bg-rose-600 text-white dark:bg-rose-500 dark:text-white';
+    }
+    if (isProcessServeJob(job)) {
+      return 'bg-red-600 text-white dark:bg-red-500 dark:text-white';
+    }
+    return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300';
+  };
+  const getRouteBadgeLabel = (job: Job) => {
+    if (job.isRevisionRequired || job.status === 'revisit') return 'Revision';
+    if (isProcessServeJob(job)) return 'Serve';
+    return 'Ready';
+  };
   const completedRouteAJobs = routeAJobs.filter(isJobDone);
   const remainingRouteAJobs = routeAJobs.filter(job => !isJobDone(job));
   const nextRouteAJob = remainingRouteAJobs[0] || null;
@@ -1325,7 +1344,12 @@ export default function App() {
                         <div className="flex items-center gap-3">
                           <span className={`flex h-11 w-11 items-center justify-center rounded-[8px] text-xl font-black ${idx === 0 ? 'bg-blue-700 text-white' : 'bg-slate-950 text-white dark:bg-white dark:text-slate-950'}`}>{idx + 1}</span>
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-2xl font-black leading-tight text-slate-950 dark:text-white">{job.storeName}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="truncate text-2xl font-black leading-tight text-slate-950 dark:text-white">{job.storeName}</p>
+                              <span className={`shrink-0 rounded-[8px] px-2 py-0.5 text-xs font-black uppercase ${getRouteBadgeClasses(job)}`}>
+                                {getRouteBadgeLabel(job)}
+                              </span>
+                            </div>
                             <p className="truncate text-base font-black text-slate-600 dark:text-slate-300">{getStreetName(job.address)}</p>
                           </div>
                         </div>
@@ -1496,6 +1520,7 @@ export default function App() {
                     ) : (
                       routeListStops.map((job, idx) => {
                         const isRevision = job.isRevisionRequired || job.status === 'revisit';
+                        const isServe = isProcessServeJob(job);
                         const isCurrentStop = idx === 0;
                         const routeStopNavLink = getRouteStopNavLink(job, idx);
                         return (
@@ -1513,8 +1538,18 @@ export default function App() {
                                         Revision
                                       </span>
                                     )}
+                                    {isServe && (
+                                      <span className="shrink-0 rounded-[8px] bg-red-600 px-2 py-0.5 text-sm font-black uppercase text-white">
+                                        Process Serve
+                                      </span>
+                                    )}
                                   </div>
                                   <p className="truncate text-base font-black text-slate-600 dark:text-slate-300 lg:text-sm">{getStreetName(job.address)}</p>
+                                  {isServe && (
+                                    <p className="mt-1 text-sm font-black leading-tight text-red-700 dark:text-red-300">
+                                      Time-sensitive serve. Proof folder will be created on completion.
+                                    </p>
+                                  )}
                                   {isRevision && job.smartMergeExplanation && (
                                     <p className="mt-1 text-sm font-black leading-tight text-rose-700 dark:text-rose-300">
                                       {job.smartMergeExplanation}
@@ -1841,7 +1876,6 @@ export default function App() {
                     <div className="space-y-2 overflow-y-auto pr-1 lg:max-h-[430px]">
                       {remainingRouteAJobs.map((job, idx) => {
                         const isNext = job.id === nextRouteAJob?.id;
-                        const isRevision = job.isRevisionRequired || job.status === 'revisit';
                         const prevJob = idx === 0 ? null : remainingRouteAJobs[idx - 1];
                         const origin = idx === 0
                           ? startCoord
@@ -1876,20 +1910,18 @@ export default function App() {
                                       Next
                                     </span>
                                   )}
-                                  {isRevision && (
-                                    <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-black uppercase text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">
-                                      Revision
-                                    </span>
-                                  )}
-                                  {!isRevision && (
-                                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black uppercase text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
-                                      Ready
-                                    </span>
-                                  )}
+                                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase ${getRouteBadgeClasses(job)}`}>
+                                    {getRouteBadgeLabel(job)}
+                                  </span>
                                 </div>
                                 <p className="mt-0.5 truncate text-sm font-bold text-slate-500 dark:text-slate-400">
                                   {getStreetName(job.address)}
                                 </p>
+                                {isProcessServeJob(job) && (
+                                  <p className="mt-1 truncate text-[11px] font-black uppercase text-red-600 dark:text-red-300">
+                                    Process serve proof required
+                                  </p>
+                                )}
                               </div>
 
                               <div className="grid shrink-0 grid-cols-3 gap-1.5">
@@ -2445,7 +2477,7 @@ export default function App() {
                                   <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-white/5 mt-2">
                                     <div className="flex flex-wrap items-center gap-1.5 text-[9px] font-black uppercase text-slate-400">
                                       <span className="bg-slate-100 dark:bg-white/10 px-1.5 py-0.5 rounded-sm">
-                                        {job.jobType.replace('_', ' ')}
+                                        {getJobTypeLabel(job)}
                                       </span>
                                       <span>•</span>
                                       <span className="text-indigo-600 dark:text-indigo-400">{dist.toFixed(1)} MI (~{rideMin.toFixed(0)} MINS)</span>
@@ -2479,7 +2511,7 @@ export default function App() {
                             </div>
                             <p className="text-[10px] text-slate-400 dark:text-slate-400 truncate">{job.address}</p>
                             <span className="inline-block bg-slate-100 dark:bg-white/10 px-1.5 py-0.5 rounded-sm text-[9px] font-black uppercase text-slate-400">
-                              {job.jobType.replace('_', ' ')}
+                              {getJobTypeLabel(job)}
                             </span>
                           </div>
                         </div>

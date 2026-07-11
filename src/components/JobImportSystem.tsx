@@ -52,7 +52,7 @@ const MOCK_OCR_TEMPLATES = {
     deadline: "Deliver today before 6:00 PM",
     revisionStatus: "Approved"
   },
-  shipt: {
+    shipt: {
     storeName: "Target (Rosedale Center)",
     address: "Target 9100 Rosedale Hwy",
     pay: 19.80,
@@ -62,6 +62,17 @@ const MOCK_OCR_TEMPLATES = {
     notes: "Shipt Shopper Preferred Member. 12 items. Easy flat routing.",
     deadline: "Window: 5:00 PM - 6:00 PM",
     revisionStatus: "Needs Revision"
+  },
+  processServe: {
+    storeName: "Process Serve - Residence",
+    address: "1951 Golden State Ave",
+    pay: 35.00,
+    estimatedMinutes: 10,
+    jobType: "process_serve" as JobType,
+    dueTime: "ASAP",
+    notes: "Process server job. Case #TBD. Add party name, attempt window, and proof notes before riding.",
+    deadline: "Serve today if contact is available",
+    revisionStatus: "None"
   }
 };
 
@@ -225,7 +236,7 @@ export default function JobImportSystem({ onImportJobs, isOptimizing = false }: 
   };
 
   // Run a template simulation immediately
-  const handleUseTemplate = (provider: 'doordash' | 'instacart' | 'shipt') => {
+  const handleUseTemplate = (provider: 'doordash' | 'instacart' | 'shipt' | 'processServe') => {
     setError(null);
     setOcrResult(null);
     setLoading(true);
@@ -305,7 +316,15 @@ export default function JobImportSystem({ onImportJobs, isOptimizing = false }: 
 
         // Try mapping store to our known landmarks to fetch actual addresses
         const lowercaseLine = line.toLowerCase();
-        if (lowercaseLine.includes("vons") || lowercaseLine.includes("ming")) {
+        if (lowercaseLine.includes("process") || lowercaseLine.includes("serve") || lowercaseLine.includes("service of process") || lowercaseLine.includes("case #") || lowercaseLine.includes("court")) {
+          address = parts[1] || "Bakersfield, CA";
+          storeName = storeName.toLowerCase().includes("process") || storeName.toLowerCase().includes("serve")
+            ? storeName
+            : `Process Serve - ${storeName}`;
+          jobType = "process_serve";
+          estimatedMinutes = 10;
+          dueTime = dueTime === "18:00" ? "ASAP" : dueTime;
+        } else if (lowercaseLine.includes("vons") || lowercaseLine.includes("ming")) {
           address = "Vons 9000 Ming Ave";
           jobType = "merchandising";
         } else if (lowercaseLine.includes("target") || lowercaseLine.includes("rosedale")) {
@@ -348,11 +367,15 @@ export default function JobImportSystem({ onImportJobs, isOptimizing = false }: 
         estimatedMinutes,
         jobType,
         dueTime,
-        notes,
+        notes: jobType === "process_serve"
+          ? `${notes} | Process serve: add case number, party name, attempt result, photos/screenshots/receipts if needed.`
+          : notes,
         status: 'ready',
         routeId: 'A',
         coordinates: resolveCoordinates(address),
-        smartMergeExplanation: "Parsed using privacy-first local text scanner."
+        smartMergeExplanation: jobType === "process_serve"
+          ? "Process serve inserted into today's route with deadline-aware priority."
+          : "Parsed using privacy-first local text scanner."
       });
     }
 
@@ -673,11 +696,12 @@ export default function JobImportSystem({ onImportJobs, isOptimizing = false }: 
                     <p className="text-[10px] text-slate-400">Don't have a screenshot? Select a template below to simulate a high-fidelity screenshot extraction locally in seconds.</p>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     {[
                       { id: 'doordash', name: 'DoorDash', color: 'hover:border-rose-500/40 text-rose-500 bg-rose-500/[0.02]', logo: '🍔' },
                       { id: 'instacart', name: 'Instacart', color: 'hover:border-emerald-500/40 text-emerald-500 bg-emerald-500/[0.02]', logo: '🛒' },
-                      { id: 'shipt', name: 'Shipt', color: 'hover:border-amber-500/40 text-amber-500 bg-amber-500/[0.02]', logo: '📦' }
+                      { id: 'shipt', name: 'Shipt', color: 'hover:border-amber-500/40 text-amber-500 bg-amber-500/[0.02]', logo: '📦' },
+                      { id: 'processServe', name: 'Process Serve', color: 'hover:border-red-500/40 text-red-500 bg-red-500/[0.02]', logo: '⚖️' }
                     ].map(template => (
                       <button
                         key={template.id}
@@ -767,6 +791,7 @@ export default function JobImportSystem({ onImportJobs, isOptimizing = false }: 
                             <option value="merchandising">Merchandising</option>
                             <option value="mystery_shop">Mystery Shop</option>
                             <option value="field_task">Field Task</option>
+                            <option value="process_serve">Process Serve</option>
                           </select>
                         </div>
                         <div className="space-y-1">

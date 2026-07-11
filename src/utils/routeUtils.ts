@@ -357,6 +357,12 @@ export function generateRouteScore(
  */
 export function getPriorityBonus(job: Job): number {
   let bonus = 0;
+
+  // Process-server jobs are time-sensitive field work and should stay prominent
+  // in the route when they are mixed with retail and gig stops.
+  if (job.jobType === 'process_serve') {
+    bonus += 6.0;
+  }
   
   // Deadline Priority
   if (job.dueTime && job.dueTime.trim() !== '') {
@@ -489,10 +495,11 @@ function buildBaseRoute(
       const leg = provider.getRouteLeg(currentCoord, job.coordinates);
       const distancePenalty = leg.distanceMiles * 50;
       const deadlineBonus = hasDeadline(job) ? 100000 : 0;
+      const processServeBonus = job.jobType === 'process_serve' ? 75000 : 0;
       const payBonus = job.pay * 20;
       const batteryPenalty = (leg.distanceMiles * config.batteryPercentPerMile) * 30;
       const outlierPenalty = outlierIds.has(job.id) || job.status === 'outlier' ? 500000 : 0;
-      const score = deadlineBonus - distancePenalty + payBonus - batteryPenalty - outlierPenalty;
+      const score = deadlineBonus + processServeBonus - distancePenalty + payBonus - batteryPenalty - outlierPenalty;
 
       if (score > bestScore) {
         bestScore = score;

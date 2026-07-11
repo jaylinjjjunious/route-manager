@@ -738,7 +738,7 @@ function GoogleMapWrapper({
               
               <div className="mt-2.5 flex items-center justify-between border-t border-slate-100 pt-1.5 text-[9px]">
                 <span className="font-extrabold uppercase tracking-wide text-blue-600">
-                  {selectedJob.jobType.replace('_', ' ')}
+                  {selectedJob.jobType === 'process_serve' ? 'Process Serve' : selectedJob.jobType.replace('_', ' ')}
                 </span>
                 <span className="font-medium text-slate-600">
                   {selectedJob.estimatedMinutes} min work &bull; {selectedJob.dueTime}

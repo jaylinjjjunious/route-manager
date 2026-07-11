@@ -85,6 +85,18 @@ export default function JobModal({
     }
   };
 
+  const handleJobTypeChange = (nextType: JobType) => {
+    setJobType(nextType);
+
+    if (nextType === 'process_serve' && !editingJob) {
+      setStoreName(current => current || 'Process Serve');
+      setEstimatedMinutes(current => current === 20 ? 10 : current);
+      setDueTime(current => current === '17:00' ? 'ASAP' : current);
+      setPriority('high');
+      setNotes(current => current || 'Process server assignment. Add case number, party name, attempt window, and proof notes.');
+    }
+  };
+
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: Record<string, string> = {};
@@ -135,7 +147,7 @@ export default function JobModal({
               <Sparkles size={16} className="text-blue-500" />
               <span>{editingJob ? 'Edit Gig Job' : 'Add New Gig Job'}</span>
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Specify details for retail audits or mystery shops</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Retail, gig, and process-server stops all go into the same route.</p>
           </div>
           <button
             id="close-modal-btn"
@@ -179,7 +191,7 @@ export default function JobModal({
                 type="text"
                 value={storeName}
                 onChange={(e) => setStoreName(e.target.value)}
-                placeholder="e.g. Family Dollar"
+                placeholder="e.g. Family Dollar or Process Serve"
                 className={`w-full rounded-xl border px-3.5 py-2 text-sm bg-white dark:bg-[#050505] dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${
                   errors.storeName ? 'border-rose-500' : 'border-slate-200 dark:border-white/10'
                 }`}
@@ -196,13 +208,14 @@ export default function JobModal({
               <select
                 id="job-type-select"
                 value={jobType}
-                onChange={(e) => setJobType(e.target.value as JobType)}
+                onChange={(e) => handleJobTypeChange(e.target.value as JobType)}
                 className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm dark:border-white/10 dark:bg-[#050505] dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               >
                 <option value="retail_audit">Retail Audit</option>
                 <option value="merchandising">Merchandising</option>
                 <option value="mystery_shop">Mystery Shop</option>
                 <option value="field_task">Field Task</option>
+                <option value="process_serve">Process Serve</option>
               </select>
             </div>
           </div>
@@ -504,14 +517,14 @@ export default function JobModal({
           {/* Notes */}
           <div>
             <label htmlFor="notes-textarea" className="block text-xs font-bold text-slate-600 uppercase tracking-wide dark:text-slate-400 mb-1">
-              Job Notes / Audit Codes
+              Job Notes / Proof Details
             </label>
             <textarea
               id="notes-textarea"
               rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Store codes, gate codes, or audit instructions..."
+              placeholder="Store codes, case number, party name, attempt window, gate codes, or proof instructions..."
               className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm dark:border-white/10 dark:bg-[#050505] dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
             />
           </div>
