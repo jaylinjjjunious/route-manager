@@ -1095,6 +1095,30 @@ export default function App() {
     const avgSpeed = trackerRideTime > 0 ? parseFloat((distance / (trackerRideTime / 3600)).toFixed(1)) : 0;
     const routeScore = Math.max(0, Math.min(100, Math.round(100 - (activeMetrics.totalDistance * 1.4) - Math.max(0, batteryUsed - 35))));
     const efficiencyScore = Math.max(0, Math.min(100, Math.round((earned / Math.max(activeMetrics.totalPay, 1)) * 55 + routeProgressPct * 0.45)));
+    const endedAt = new Date().toISOString();
+    const sessionLog = {
+      id: `ride-${Date.now()}`,
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      startedAt: rideStartedAt,
+      endedAt,
+      rideTime: trackerRideTime,
+      storeTime: trackerStoreTime,
+      totalDayTime: trackerTotalDayTime,
+      startBattery: trackerStartBattery,
+      endBattery: Math.max(0, Math.round(trackerStartBattery - batteryUsed)),
+      batteryUsed,
+      jobsCompletedCount: completedRouteAJobs.length,
+      completedJobNames: completedRouteAJobs.map(job => job.storeName),
+      distance,
+      estimatedEarnings: earned,
+      earningsPerHour: parseFloat((earned / elapsedHours).toFixed(2)),
+      avgRideSpeed: avgSpeed,
+      routeScore,
+      efficiencyScore,
+      timeSaved: Math.max(0, lastOptimizationLog?.minutesSaved || 0),
+      jobsMovedToTomorrow: jobsMovedToTomorrowIds.length,
+      learnedRange: batteryUsed > 0 ? parseFloat(((distance / batteryUsed) * 100).toFixed(1)) : null
+    };
 
     setRideSummary({
       totalRideTime: formatDuration(trackerRideTime),
@@ -1111,8 +1135,11 @@ export default function App() {
       avgRideSpeed: avgSpeed,
       stopsCompleted: completedRouteAJobs.length,
       startedAt: rideStartedAt,
-      endedAt: new Date().toISOString()
+      endedAt
     });
+    const updatedSessions = [sessionLog, ...trackerSessions];
+    setTrackerSessions(updatedSessions);
+    localStorage.setItem('ride_tracker_sessions', JSON.stringify(updatedSessions));
 
     setRideModeActive(false);
     setTrackerStatus('idle');
@@ -1496,6 +1523,77 @@ export default function App() {
                   </section>
                 )}
               </div>
+
+              <section className="mb-4 rounded-[8px] border-2 border-slate-300 bg-white p-4 dark:border-white/20 dark:bg-[#17181b]">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Ride Logs</p>
+                    <h3 className="text-3xl font-black text-slate-950 dark:text-white">All Ride Summaries</h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-[8px] bg-slate-950 px-3 py-2 text-sm font-black uppercase text-white dark:bg-white dark:text-slate-950">
+                      {trackerSessions.length} logs
+                    </span>
+                    {trackerSessions.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm('Delete all ride logs?')) {
+                            setTrackerSessions([]);
+                            localStorage.removeItem('ride_tracker_sessions');
+                          }
+                        }}
+                        className="rounded-[8px] bg-rose-600 px-3 py-2 text-sm font-black uppercase text-white hover:bg-rose-500"
+                      >
+                        Clear Logs
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {trackerSessions.length === 0 ? (
+                  <div className="mt-3 rounded-[8px] border-2 border-dashed border-slate-300 p-4 text-center text-base font-black text-slate-500 dark:border-white/10 dark:text-slate-400">
+                    End a ride to save the first log here.
+                  </div>
+                ) : (
+                  <div className="mt-3 grid max-h-72 gap-3 overflow-y-auto pr-1 lg:grid-cols-2">
+                    {trackerSessions.map((session) => (
+                      <article key={session.id} className="rounded-[8px] border-2 border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/[0.04]">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-lg font-black text-slate-950 dark:text-white">{session.date || 'Ride Log'}</p>
+                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                              {session.startedAt ? new Date(session.startedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'Start --'}
+                              {' - '}
+                              {session.endedAt ? new Date(session.endedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'End --'}
+                            </p>
+                          </div>
+                          <span className="rounded-[8px] bg-emerald-600 px-2 py-1 text-sm font-black text-white">
+                            ${(session.estimatedEarnings || 0).toFixed(2)}
+                          </span>
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-black text-slate-700 dark:text-slate-200 sm:grid-cols-4">
+                          <span>Ride {formatDuration(session.rideTime || 0)}</span>
+                          <span>Store {formatDuration(session.storeTime || 0)}</span>
+                          <span>{session.distance || 0} mi</span>
+                          <span>{session.batteryUsed || 0}% battery</span>
+                          <span>{session.jobsCompletedCount || 0} jobs</span>
+                          <span>${(session.earningsPerHour || 0).toFixed(2)}/h</span>
+                          <span>Route {session.routeScore ?? '--'}</span>
+                          <span>Eff {session.efficiencyScore ?? '--'}</span>
+                        </div>
+
+                        {Array.isArray(session.completedJobNames) && session.completedJobNames.length > 0 && (
+                          <p className="mt-3 truncate text-xs font-bold text-slate-500 dark:text-slate-400">
+                            Completed: {session.completedJobNames.join(', ')}
+                          </p>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
 
               <div className="grid grid-cols-2 gap-4 lg:grid-cols-6 lg:auto-rows-[minmax(128px,auto)]">
                 <section className={`col-span-2 lg:col-span-4 lg:row-span-2 rounded-[8px] border-4 border-slate-950 bg-white p-5 shadow-[0_18px_42px_rgba(15,23,42,0.16)] transition-all duration-500 dark:border-white dark:bg-[#17181b] lg:p-3 ${nextRouteAJob && completingJobIds.includes(nextRouteAJob.id) ? 'scale-[0.99] border-emerald-500 bg-emerald-50 opacity-80 dark:bg-emerald-500/10' : ''}`}>
@@ -3507,6 +3605,8 @@ export default function App() {
                           const newSession = {
                             id: `session-${Date.now()}`,
                             date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                            startedAt: rideStartedAt,
+                            endedAt: new Date().toISOString(),
                             rideTime: trackerRideTime,
                             storeTime: trackerStoreTime,
                             totalDayTime: trackerTotalDayTime,
@@ -3514,7 +3614,15 @@ export default function App() {
                             endBattery: endBattery,
                             batteryUsed: batteryUsed,
                             jobsCompletedCount: trackerJobsCompleted.length,
+                            completedJobNames: routeAJobs
+                              .filter(job => trackerJobsCompleted.includes(job.id) || job.status === 'completed' || job.isCompleted)
+                              .map(job => job.storeName),
                             distance: distance,
+                            estimatedEarnings: completedRouteAJobs.reduce((sum, job) => sum + job.pay, 0),
+                            earningsPerHour: trackerTotalDayTime > 0
+                              ? parseFloat((completedRouteAJobs.reduce((sum, job) => sum + job.pay, 0) / (trackerTotalDayTime / 3600)).toFixed(2))
+                              : 0,
+                            avgRideSpeed: trackerRideTime > 0 ? parseFloat((distance / (trackerRideTime / 3600)).toFixed(1)) : 0,
                             learnedRange: estimatedFullRange
                           };
 
