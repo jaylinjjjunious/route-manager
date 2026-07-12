@@ -14,6 +14,7 @@ interface JobModalProps {
   onSave: (jobData: Omit<Job, 'id'> & { id?: string }) => void;
   editingJob?: Job | null;
   defaultRouteId: 'A' | 'B';
+  defaultJobType?: JobType;
 }
 
 const PRESET_LOCATIONS = Object.keys(BAKERSFIELD_COORDINATES);
@@ -23,7 +24,8 @@ export default function JobModal({
   onClose,
   onSave,
   editingJob,
-  defaultRouteId
+  defaultRouteId,
+  defaultJobType = 'retail_audit'
 }: JobModalProps) {
   const [storeName, setStoreName] = useState('');
   const [address, setAddress] = useState('');
@@ -58,19 +60,20 @@ export default function JobModal({
     } else {
       setStoreName('');
       setAddress('');
-      setPay(15);
-      setEstimatedMinutes(20);
-      setJobType('retail_audit');
-      setDueTime('17:00');
-      setNotes('');
+      const isProcessServeDefault = defaultJobType === 'process_serve';
+      setPay(isProcessServeDefault ? 35 : 15);
+      setEstimatedMinutes(isProcessServeDefault ? 10 : 20);
+      setJobType(defaultJobType);
+      setDueTime(isProcessServeDefault ? 'ASAP' : '17:00');
+      setNotes(isProcessServeDefault ? 'Process server assignment. Add case number, party name, attempt window, and proof notes.' : '');
       setRouteId(defaultRouteId);
       setStatus('ready');
-      setPriority('medium');
+      setPriority(isProcessServeDefault ? 'high' : 'medium');
       setIsCompleted(false);
       setIsRevisionRequired(false);
     }
     setErrors({});
-  }, [editingJob, isOpen, defaultRouteId]);
+  }, [editingJob, isOpen, defaultRouteId, defaultJobType]);
 
   if (!isOpen) return null;
 

@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Job, Coordinates, RouteMetrics, EbikeConfig, JobStatus, DispatcherAction } from './types';
+import { Job, Coordinates, RouteMetrics, EbikeConfig, JobStatus, DispatcherAction, JobType } from './types';
 import {
   BAKERSFIELD_COORDINATES,
   DEFAULT_EBIKE_CONFIG,
@@ -277,6 +277,7 @@ export default function App() {
   // Modal configurations
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
+  const [defaultJobType, setDefaultJobType] = useState<JobType>('retail_audit');
   const [isConfigExpanded, setIsConfigExpanded] = useState(false);
   const [googleMetrics, setGoogleMetrics] = useState<{ distance: number; duration: number } | null>(null);
 
@@ -977,11 +978,19 @@ export default function App() {
 
   const handleOpenAddModal = () => {
     setEditingJob(null);
+    setDefaultJobType('retail_audit');
+    setIsModalOpen(true);
+  };
+
+  const handleOpenProcessServeModal = () => {
+    setEditingJob(null);
+    setDefaultJobType('process_serve');
     setIsModalOpen(true);
   };
 
   const handleOpenEditModal = (job: Job) => {
     setEditingJob(job);
+    setDefaultJobType(job.jobType);
     setIsModalOpen(true);
   };
 
@@ -1410,13 +1419,30 @@ export default function App() {
                 </span>
               </div>
 
-              <div className="mb-4 grid gap-3 lg:grid-cols-[1fr_2fr]">
+              <div className="mb-4 grid gap-3 lg:grid-cols-[1fr_1fr_1fr_2fr]">
                 <button
                   type="button"
                   onClick={handleStartRideMode}
                   className="min-h-24 rounded-[8px] bg-slate-950 px-6 text-4xl font-black uppercase text-white shadow-lg transition hover:bg-slate-800 dark:bg-white dark:text-slate-950"
                 >
                   🚴 I&apos;m Riding
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenAddModal}
+                  className="min-h-24 rounded-[8px] bg-blue-700 px-5 text-3xl font-black uppercase text-white shadow-lg transition hover:bg-blue-600"
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    <Plus size={28} />
+                    Add Job
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenProcessServeModal}
+                  className="min-h-24 rounded-[8px] bg-red-600 px-5 text-2xl font-black uppercase text-white shadow-lg transition hover:bg-red-500"
+                >
+                  Add Process Serve
                 </button>
 
                 {rideSummary && (
@@ -3948,6 +3974,7 @@ export default function App() {
           onSave={handleSaveJobModal}
           editingJob={editingJob}
           defaultRouteId={activeTab === 'all' ? 'A' : activeTab}
+          defaultJobType={defaultJobType}
         />
 
         {/* Portable Footer */}
