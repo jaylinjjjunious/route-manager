@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Job, JobType, Coordinates, JobStatus } from '../types';
+import { Job, JobType, JobStatus, ProcessServeDetails } from '../types';
 import { resolveCoordinates, BAKERSFIELD_COORDINATES } from '../utils/routeUtils';
 import { X, Sparkles, MapPin, DollarSign, Clock, HelpCircle } from 'lucide-react';
 
@@ -39,8 +39,39 @@ export default function JobModal({
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [isCompleted, setIsCompleted] = useState(false);
   const [isRevisionRequired, setIsRevisionRequired] = useState(false);
+  const [processServe, setProcessServe] = useState<ProcessServeDetails>({
+    company: 'ABC Legal',
+    attemptStatus: 'not_attempted',
+    addressStatus: 'unknown',
+    photoRequired: true,
+    gpsRequired: true,
+    printedDocs: false,
+    proofReady: false
+  });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const isProcessServe = jobType === 'process_serve';
+
+  const updateProcessServe = (updates: Partial<ProcessServeDetails>) => {
+    setProcessServe(prev => ({ ...prev, ...updates }));
+  };
+
+  const getDefaultProcessServe = (): ProcessServeDetails => ({
+    company: 'ABC Legal',
+    attemptStatus: 'not_attempted',
+    addressStatus: 'unknown',
+    attemptWindow: 'ASAP / best available window',
+    courtDiligence: 'Follow app diligence requirements before closing out.',
+    specialHandling: '',
+    proofOfResidence: '',
+    recipientDescription: '',
+    attemptNotes: '',
+    photoRequired: true,
+    gpsRequired: true,
+    printedDocs: false,
+    needsNotary: false,
+    proofReady: false
+  });
 
   // Sync state with editing job
   useEffect(() => {
@@ -57,6 +88,10 @@ export default function JobModal({
       setPriority(editingJob.priority || 'medium');
       setIsCompleted(editingJob.isCompleted || editingJob.status === 'completed');
       setIsRevisionRequired(editingJob.isRevisionRequired || editingJob.status === 'revisit');
+      setProcessServe({
+        ...getDefaultProcessServe(),
+        ...(editingJob.processServe || {})
+      });
     } else {
       setStoreName('');
       setAddress('');
@@ -65,12 +100,13 @@ export default function JobModal({
       setEstimatedMinutes(isProcessServeDefault ? 10 : 20);
       setJobType(defaultJobType);
       setDueTime(isProcessServeDefault ? 'ASAP' : '17:00');
-      setNotes(isProcessServeDefault ? 'Process server assignment. Add case number, party name, attempt window, and proof notes.' : '');
+      setNotes(isProcessServeDefault ? 'Use ABC Legal app as source of truth. Record attempt result, GPS/photo proof, residence evidence, and any safety/access issues.' : '');
       setRouteId(defaultRouteId);
       setStatus('ready');
       setPriority(isProcessServeDefault ? 'high' : 'medium');
       setIsCompleted(false);
       setIsRevisionRequired(false);
+      setProcessServe(getDefaultProcessServe());
     }
     setErrors({});
   }, [editingJob, isOpen, defaultRouteId, defaultJobType]);
@@ -96,7 +132,8 @@ export default function JobModal({
       setEstimatedMinutes(current => current === 20 ? 10 : current);
       setDueTime(current => current === '17:00' ? 'ASAP' : current);
       setPriority('high');
-      setNotes(current => current || 'Process server assignment. Add case number, party name, attempt window, and proof notes.');
+      setNotes(current => current || 'Use ABC Legal app as source of truth. Record attempt result, GPS/photo proof, residence evidence, and any safety/access issues.');
+      setProcessServe(getDefaultProcessServe());
     }
   };
 
@@ -104,10 +141,11 @@ export default function JobModal({
     e.preventDefault();
     const newErrors: Record<string, string> = {};
 
-    if (!storeName.trim()) newErrors.storeName = 'Store/Job name is required';
+    if (!storeName.trim()) newErrors.storeName = isProcessServe ? 'Serve label is required' : 'Store/Job name is required';
     if (!address.trim()) newErrors.address = 'Address is required';
     if (pay <= 0) newErrors.pay = 'Pay must be greater than 0';
     if (estimatedMinutes <= 0) newErrors.estimatedMinutes = 'Duration must be positive';
+    if (isProcessServe && !processServe.partyName?.trim()) newErrors.partyName = 'Party being served is required';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -131,7 +169,8 @@ export default function JobModal({
       coordinates,
       priority,
       isCompleted,
-      isRevisionRequired
+      isRevisionRequired,
+      processServe: isProcessServe ? processServe : undefined
     });
 
     onClose();
@@ -148,9 +187,13 @@ export default function JobModal({
           <div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <Sparkles size={16} className="text-blue-500" />
-              <span>{editingJob ? 'Edit Gig Job' : 'Add New Gig Job'}</span>
+              <span>{editingJob ? 'Edit Job' : isProcessServe ? 'Add Process Serve' : 'Add New Gig Job'}</span>
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Retail, gig, and process-server stops all go into the same route.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {isProcessServe
+                ? 'Capture routing, diligence, attempt, and proof details like an ABC Legal field workflow.'
+                : 'Retail, gig, and process-server stops all go into the same route.'}
+            </p>
           </div>
           <button
             id="close-modal-btn"
@@ -187,14 +230,14 @@ export default function JobModal({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="store-name-input" className="block text-xs font-bold text-slate-600 uppercase tracking-wide dark:text-slate-400 mb-1">
-                Store / Job Name
+                {isProcessServe ? 'Serve Label' : 'Store / Job Name'}
               </label>
               <input
                 id="store-name-input"
                 type="text"
                 value={storeName}
                 onChange={(e) => setStoreName(e.target.value)}
-                placeholder="e.g. Family Dollar or Process Serve"
+                placeholder={isProcessServe ? 'e.g. ABC Legal - Smith Serve' : 'e.g. Family Dollar or Process Serve'}
                 className={`w-full rounded-xl border px-3.5 py-2 text-sm bg-white dark:bg-[#050505] dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${
                   errors.storeName ? 'border-rose-500' : 'border-slate-200 dark:border-white/10'
                 }`}
@@ -226,7 +269,7 @@ export default function JobModal({
           {/* Address */}
           <div>
             <label htmlFor="address-input" className="block text-xs font-bold text-slate-600 uppercase tracking-wide dark:text-slate-400 mb-1">
-              Address
+              {isProcessServe ? 'Service Address' : 'Address'}
             </label>
             <div className="relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
@@ -237,7 +280,7 @@ export default function JobModal({
                 type="text"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                placeholder="e.g. 2151 S Chester Ave, Bakersfield, CA"
+                placeholder={isProcessServe ? 'Address shown in ABC Legal app' : 'e.g. 2151 S Chester Ave, Bakersfield, CA'}
                 className={`w-full rounded-xl border pl-9 pr-3.5 py-2 text-sm bg-white dark:bg-[#050505] dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${
                   errors.address ? 'border-rose-500' : 'border-slate-200 dark:border-white/10'
                 }`}
@@ -278,7 +321,7 @@ export default function JobModal({
 
             <div>
               <label htmlFor="duration-input" className="block text-xs font-bold text-slate-600 uppercase tracking-wide dark:text-slate-400 mb-1">
-                Inside Store (Minutes)
+                {isProcessServe ? 'Attempt Time (Minutes)' : 'Inside Store (Minutes)'}
               </label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
@@ -350,6 +393,241 @@ export default function JobModal({
               </div>
             </div>
           </div>
+
+          {isProcessServe && (
+            <div className="space-y-4 rounded-xl border-2 border-red-200 bg-red-50/60 p-4 dark:border-red-500/20 dark:bg-red-500/10">
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest text-red-700 dark:text-red-300">
+                  Process Serve Details
+                </p>
+                <p className="mt-1 text-xs font-bold leading-relaxed text-slate-600 dark:text-slate-300">
+                  Built for ABC Legal-style work: party info, diligence requirements, attempt result,
+                  proof of residence, photos, GPS, and notes for proof of service.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-400">
+                    Company / Platform
+                  </label>
+                  <select
+                    value={processServe.company || 'ABC Legal'}
+                    onChange={(e) => updateProcessServe({ company: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold dark:border-white/10 dark:bg-[#050505] dark:text-white"
+                  >
+                    <option value="ABC Legal">ABC Legal</option>
+                    <option value="Proof">Proof</option>
+                    <option value="Local Attorney / Firm">Local Attorney / Firm</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-400">
+                    Case / Order Number
+                  </label>
+                  <input
+                    value={processServe.caseNumber || ''}
+                    onChange={(e) => updateProcessServe({ caseNumber: e.target.value })}
+                    placeholder="ABC order, court case, or internal ID"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-[#050505] dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-400">
+                    Party Being Served
+                  </label>
+                  <input
+                    value={processServe.partyName || ''}
+                    onChange={(e) => {
+                      updateProcessServe({ partyName: e.target.value });
+                      if (!editingJob && (!storeName || storeName === 'Process Serve')) {
+                        setStoreName(e.target.value ? `Process Serve - ${e.target.value}` : 'Process Serve');
+                      }
+                    }}
+                    placeholder="Defendant / respondent / party name"
+                    className={`w-full rounded-xl border bg-white px-3 py-2 text-sm dark:bg-[#050505] dark:text-white ${
+                      errors.partyName ? 'border-rose-500' : 'border-slate-200 dark:border-white/10'
+                    }`}
+                  />
+                  {errors.partyName && <p className="mt-1 text-xs text-rose-500">{errors.partyName}</p>}
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-400">
+                    Documents
+                  </label>
+                  <input
+                    value={processServe.documentType || ''}
+                    onChange={(e) => updateProcessServe({ documentType: e.target.value })}
+                    placeholder="Summons, complaint, subpoena, notice..."
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-[#050505] dark:text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-400">
+                    Attempt Status
+                  </label>
+                  <select
+                    value={processServe.attemptStatus || 'not_attempted'}
+                    onChange={(e) => updateProcessServe({ attemptStatus: e.target.value as ProcessServeDetails['attemptStatus'] })}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold dark:border-white/10 dark:bg-[#050505] dark:text-white"
+                  >
+                    <option value="not_attempted">Not Attempted</option>
+                    <option value="served">Served</option>
+                    <option value="not_home">Not Home</option>
+                    <option value="no_answer">No Answer</option>
+                    <option value="refused">Refused</option>
+                    <option value="moved">Moved / Does Not Reside</option>
+                    <option value="unable_to_access">Unable To Access</option>
+                    <option value="unsafe">Unsafe / Do Not Attempt</option>
+                    <option value="needs_more_info">Needs More Info</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-400">
+                    Address Status
+                  </label>
+                  <select
+                    value={processServe.addressStatus || 'unknown'}
+                    onChange={(e) => updateProcessServe({ addressStatus: e.target.value as ProcessServeDetails['addressStatus'] })}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold dark:border-white/10 dark:bg-[#050505] dark:text-white"
+                  >
+                    <option value="unknown">Unknown</option>
+                    <option value="confirmed">Confirmed Address</option>
+                    <option value="residential">Residential</option>
+                    <option value="business">Business</option>
+                    <option value="gated">Gated / Access Controlled</option>
+                    <option value="vacant">Vacant</option>
+                    <option value="bad_address">Bad Address</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-400">
+                    Attempt Window
+                  </label>
+                  <input
+                    value={processServe.attemptWindow || ''}
+                    onChange={(e) => updateProcessServe({ attemptWindow: e.target.value })}
+                    placeholder="Morning, evening, before 8 PM..."
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-[#050505] dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-400">
+                    Proof Of Residence / Address
+                  </label>
+                  <input
+                    value={processServe.proofOfResidence || ''}
+                    onChange={(e) => updateProcessServe({ proofOfResidence: e.target.value })}
+                    placeholder="Name on mailbox, neighbor confirmed, vehicle, business sign..."
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-[#050505] dark:text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-400">
+                    Served Person / Recipient
+                  </label>
+                  <input
+                    value={processServe.servedPersonName || ''}
+                    onChange={(e) => updateProcessServe({ servedPersonName: e.target.value })}
+                    placeholder="Name if served, or leave blank"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-[#050505] dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-400">
+                    Relationship To Party
+                  </label>
+                  <input
+                    value={processServe.relationshipToParty || ''}
+                    onChange={(e) => updateProcessServe({ relationshipToParty: e.target.value })}
+                    placeholder="Self, spouse, co-resident, manager..."
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-[#050505] dark:text-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-400">
+                  Physical Description / Context
+                </label>
+                <input
+                  value={processServe.recipientDescription || ''}
+                  onChange={(e) => updateProcessServe({ recipientDescription: e.target.value })}
+                  placeholder="Approx age, height, hair, gender presentation, clothing, doorbell camera, etc."
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-[#050505] dark:text-white"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {[
+                  ['photoRequired', 'Photo Required'],
+                  ['gpsRequired', 'GPS Required'],
+                  ['printedDocs', 'Docs Printed'],
+                  ['proofReady', 'Proof Ready']
+                ].map(([key, label]) => (
+                  <label key={key} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-2 text-xs font-bold text-slate-700 dark:border-white/10 dark:bg-black/20 dark:text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(processServe[key as keyof ProcessServeDetails])}
+                      onChange={(e) => updateProcessServe({ [key]: e.target.checked } as Partial<ProcessServeDetails>)}
+                      className="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500"
+                    />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-400">
+                    Diligence / Court Requirements
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={processServe.courtDiligence || ''}
+                    onChange={(e) => updateProcessServe({ courtDiligence: e.target.value })}
+                    placeholder="Required number of attempts, time spread, substitute service rules, e-sign/notary notes..."
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-[#050505] dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-400">
+                    Special Handling / Safety
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={processServe.specialHandling || ''}
+                    onChange={(e) => updateProcessServe({ specialHandling: e.target.value })}
+                    placeholder="Do not serve minors, no trespass notes, gate code, aggressive animal, workplace instructions..."
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-[#050505] dark:text-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-400">
+                  Attempt Notes For Proof
+                </label>
+                <textarea
+                  rows={3}
+                  value={processServe.attemptNotes || ''}
+                  onChange={(e) => updateProcessServe({ attemptNotes: e.target.value })}
+                  placeholder="What happened at the door, who answered, what was said, why service was or was not completed..."
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-[#050505] dark:text-white"
+                />
+              </div>
+            </div>
+          )}
 
           {/* Field Status Selector */}
           <div>

@@ -238,6 +238,23 @@ export default function JobCard({
       </div>
 
       {/* Notes block */}
+      {job.jobType === 'process_serve' && job.processServe && (
+        <div className="mt-3 rounded-xl border border-red-200 bg-red-50/70 p-3 text-xs font-bold leading-relaxed text-red-900 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-100">
+          <div className="flex flex-wrap gap-2">
+            <span>{job.processServe.company || 'Process Serve'}</span>
+            {job.processServe.caseNumber && <span>Case: {job.processServe.caseNumber}</span>}
+            {job.processServe.partyName && <span>Party: {job.processServe.partyName}</span>}
+          </div>
+          <div className="mt-1 flex flex-wrap gap-2 text-[11px] uppercase tracking-wide text-red-700 dark:text-red-200">
+            <span>{(job.processServe.attemptStatus || 'not_attempted').replaceAll('_', ' ')}</span>
+            <span>{(job.processServe.addressStatus || 'unknown').replaceAll('_', ' ')}</span>
+            {job.processServe.photoRequired && <span>Photo</span>}
+            {job.processServe.gpsRequired && <span>GPS</span>}
+          </div>
+        </div>
+      )}
+
+      {/* Notes block */}
       {job.notes && (
         <p className="mt-3 text-sm font-semibold text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed bg-slate-50/50 dark:bg-white/2 p-3 rounded-xl border border-slate-100/50 dark:border-transparent">
           &ldquo;{job.notes}&rdquo;

@@ -72,7 +72,25 @@ const MOCK_OCR_TEMPLATES = {
     dueTime: "ASAP",
     notes: "Process server job. Case #TBD. Add party name, attempt window, and proof notes before riding.",
     deadline: "Serve today if contact is available",
-    revisionStatus: "None"
+    revisionStatus: "None",
+    processServe: {
+      company: "ABC Legal",
+      caseNumber: "ABC-TBD",
+      partyName: "Person To Be Served",
+      documentType: "Summons / Complaint",
+      attemptWindow: "ASAP / best available window",
+      courtDiligence: "Follow app diligence requirements before closing out.",
+      specialHandling: "Check ABC Legal instructions before contact.",
+      addressStatus: "unknown" as const,
+      attemptStatus: "not_attempted" as const,
+      proofOfResidence: "",
+      recipientDescription: "",
+      attemptNotes: "",
+      photoRequired: true,
+      gpsRequired: true,
+      printedDocs: false,
+      proofReady: false
+    }
   }
 };
 
@@ -375,7 +393,27 @@ export default function JobImportSystem({ onImportJobs, isOptimizing = false }: 
         coordinates: resolveCoordinates(address),
         smartMergeExplanation: jobType === "process_serve"
           ? "Process serve inserted into today's route with deadline-aware priority."
-          : "Parsed using privacy-first local text scanner."
+          : "Parsed using privacy-first local text scanner.",
+        processServe: jobType === "process_serve"
+          ? {
+              company: "ABC Legal",
+              caseNumber: "",
+              partyName: storeName.replace(/^Process Serve\s*-\s*/i, ''),
+              documentType: "",
+              attemptWindow: dueTime,
+              courtDiligence: "Follow app diligence requirements before closing out.",
+              specialHandling: "",
+              addressStatus: "unknown",
+              attemptStatus: "not_attempted",
+              proofOfResidence: "",
+              recipientDescription: "",
+              attemptNotes: notes,
+              photoRequired: true,
+              gpsRequired: true,
+              printedDocs: false,
+              proofReady: false
+            }
+          : undefined
       });
     }
 

@@ -766,6 +766,26 @@ export default function App() {
     const now = new Date();
     const completionTime = now.toISOString();
     const arrivalTime = new Date(now.getTime() - (job.estimatedMinutes * 60 * 1000)).toISOString();
+    const processServeProofNotes = job.jobType === 'process_serve' && job.processServe
+      ? [
+          job.notes,
+          `Company: ${job.processServe.company || 'Process Serve'}`,
+          job.processServe.caseNumber ? `Case/Order: ${job.processServe.caseNumber}` : '',
+          job.processServe.partyName ? `Party: ${job.processServe.partyName}` : '',
+          job.processServe.documentType ? `Documents: ${job.processServe.documentType}` : '',
+          `Attempt Status: ${(job.processServe.attemptStatus || 'not_attempted').replaceAll('_', ' ')}`,
+          `Address Status: ${(job.processServe.addressStatus || 'unknown').replaceAll('_', ' ')}`,
+          job.processServe.proofOfResidence ? `Proof of residence/address: ${job.processServe.proofOfResidence}` : '',
+          job.processServe.recipientDescription ? `Recipient description: ${job.processServe.recipientDescription}` : '',
+          job.processServe.attemptNotes ? `Attempt notes: ${job.processServe.attemptNotes}` : '',
+          `Evidence required: ${[
+            job.processServe.photoRequired ? 'photo' : '',
+            job.processServe.gpsRequired ? 'GPS' : '',
+            job.processServe.printedDocs ? 'printed docs' : '',
+            job.processServe.proofReady ? 'proof ready' : ''
+          ].filter(Boolean).join(', ') || 'none marked'}`
+        ].filter(Boolean).join('\n')
+      : job.notes || '';
 
     setProofVault(prev => {
       const existing = prev[job.id];
@@ -779,7 +799,7 @@ export default function App() {
         photos: [],
         screenshots: [],
         receipts: [],
-        notes: job.notes || '',
+        notes: processServeProofNotes,
         createdAt: completionTime,
         updatedAt: completionTime
       };

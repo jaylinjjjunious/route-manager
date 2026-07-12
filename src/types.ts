@@ -12,6 +12,29 @@ export interface Coordinates {
   lng: number;
 }
 
+export interface ProcessServeDetails {
+  company?: string;
+  caseNumber?: string;
+  partyName?: string;
+  documentType?: string;
+  clientMatter?: string;
+  attemptWindow?: string;
+  courtDiligence?: string;
+  specialHandling?: string;
+  addressStatus?: 'unknown' | 'confirmed' | 'bad_address' | 'vacant' | 'gated' | 'business' | 'residential';
+  attemptStatus?: 'not_attempted' | 'served' | 'not_home' | 'no_answer' | 'refused' | 'moved' | 'unable_to_access' | 'unsafe' | 'needs_more_info';
+  proofOfResidence?: string;
+  servedPersonName?: string;
+  relationshipToParty?: string;
+  recipientDescription?: string;
+  attemptNotes?: string;
+  photoRequired?: boolean;
+  gpsRequired?: boolean;
+  printedDocs?: boolean;
+  needsNotary?: boolean;
+  proofReady?: boolean;
+}
+
 export interface Job {
   id: string;
   storeName: string;
@@ -31,6 +54,7 @@ export interface Job {
   isCompleted?: boolean;
   deadline?: string;
   revisionStatus?: string; // e.g. "Draft", "Approved", "Needs Revision", "Under Review"
+  processServe?: ProcessServeDetails;
 }
 
 export interface RouteMetrics {
