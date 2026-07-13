@@ -1,5 +1,25 @@
 # Route Manager Current State
 
+## Phase 1 Summary
+
+Phase 1 implemented the approved Dashboard and Route Visibility plan without starting Phase 2 data-model cleanup.
+
+Changed in Phase 1:
+
+- Mission Control now renders only the active dispatch-center content: Next Stop, Navigate, Complete Job, Today's Route, Battery Status, Jobs Left, Estimated Earnings Today, AI Dispatcher message, and Revision Alerts.
+- Ride logs, ride summary, Proof Vault, and full Battery Tracker content were removed from the rendered dashboard so the first screen stays field-focused.
+- Today's Route now shows the full remaining active route in compact order instead of only the first four stops.
+- Completed jobs remain hidden from the dashboard route because the route list is sourced from remaining Route A jobs.
+- The bottom navigation is available on the dashboard so Route, Jobs, Tracker, and Settings remain reachable from Planning Mode.
+- Add Stop Details and Add Process Serve are available from the Jobs tab.
+- Manual Ride Mode entry remains available through the "I'm Riding" button.
+
+Checks run during Phase 1:
+
+- `npm run lint`: passed.
+- `npm run build`: passed.
+- Browser smoke test on `http://localhost:3000/`: passed for dashboard required cards, removed dashboard panels, and Jobs tab add controls.
+
 ## Phase 0 Summary
 
 This audit found a working single-page Route Manager app with many of the requested field-work features already present. The code is concentrated in `src/App.tsx`, with supporting components for dispatcher, job import, job modal, map preview, route summaries, outliers, and scoring.
@@ -71,21 +91,19 @@ This currently works for rapid development and same-browser use. It is not yet e
 - Charging locations, saved home/base locations, and full daily calendar planning are not yet formalized.
 - Phase 0 did not change UI or feature behavior by design.
 
-## Phase 1 Recommended Plan
+## Phase 2 Recommended Plan
 
-Phase 1 should focus on dashboard and route visibility, because the dashboard is the user's first screen and field-work command center.
+Phase 2 should focus on job data model cleanup, because the current app has multiple job state fields that work but need clearer consistency before adding more automation.
 
 Recommended scope:
 
-1. Compare the current dashboard against the required-only Mission Control list.
-2. Keep Next Stop as the largest card and make Navigate/Complete impossible to miss.
-3. Keep Today's Route compact and pinned near the top on mobile.
-4. Ensure completed jobs never appear in the active dashboard route.
-5. Relocate or collapse anything that reads like settings, analytics, or long-form content.
-6. Preserve Add Job and Add Process Serve access in Planning Mode.
-7. Keep Ride Mode free of the full Battery Tracker panel and AI Dispatcher panel.
-8. Run TypeScript/build checks and Playwright visual checks on desktop and mobile.
+1. Normalize active, revision, completed, postponed, outlier, and process server job states.
+2. Decide how `status`, `isCompleted`, and `isRevisionRequired` should relate.
+3. Add safe localStorage migration handling for existing user data.
+4. Keep process server jobs inside the shared route model.
+5. Preserve all current completion, proof vault, dispatcher, and route behavior.
+6. Run TypeScript/build checks and browser smoke tests.
 
 ## Approval Needed
 
-Per the attached instruction, implementation should stop here until the user approves moving into Phase 1.
+Per the current instruction, implementation should stop here before Phase 2.

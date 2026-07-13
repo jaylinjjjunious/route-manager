@@ -1298,7 +1298,7 @@ export default function App() {
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(startAddress)}`;
   const revisionAlertJobs = remainingRouteAJobs.filter(job => job.isRevisionRequired || job.status === 'revisit');
   const routeProgressPct = routeAJobs.length > 0 ? Math.round((completedRouteAJobs.length / routeAJobs.length) * 100) : 100;
-  const routeListStops = remainingRouteAJobs.slice(0, 4);
+  const routeListStops = remainingRouteAJobs;
   const proofRecords = (Object.values(proofVault) as ProofRecord[]).sort((a, b) => new Date(b.completionTime).getTime() - new Date(a.completionTime).getTime());
   const selectedProofRecord = selectedProofJobId ? proofVault[selectedProofJobId] : null;
   const getRouteStopNavLink = (job: Job, idx: number) => {
@@ -1340,7 +1340,7 @@ export default function App() {
         {currentTab !== 'dashboard' && <Header theme={theme} onToggleTheme={handleToggleTheme} />}
 
         {/* Main Content Body */}
-        <main className={`mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-6 ${currentTab === 'dashboard' ? 'py-4 pb-4' : 'py-5 pb-36'}`}>
+        <main className="mx-auto max-w-7xl px-4 py-5 pb-36 sm:px-6 lg:px-8 space-y-6">
 
           {/* Ride Mode V2: Distraction-free execution surface */}
           {currentTab === 'dashboard' && rideModeActive && (
@@ -1461,139 +1461,19 @@ export default function App() {
                     {nextRouteAJob ? 'Go to the next stop.' : 'Route complete.'}
                   </h2>
                 </div>
-                <span className={`hidden rounded-full px-4 py-2 text-base font-black uppercase sm:inline-flex ${reserveColorClass}`}>
-                  {reserveLabel}
-                </span>
-              </div>
-
-              <div className="mb-4 grid gap-3 lg:grid-cols-[1fr_1fr_1fr_2fr]">
-                <button
-                  type="button"
-                  onClick={handleStartRideMode}
-                  className="min-h-24 rounded-[8px] bg-slate-950 px-6 text-4xl font-black uppercase text-white shadow-lg transition hover:bg-slate-800 dark:bg-white dark:text-slate-950"
-                >
-                  🚴 I&apos;m Riding
-                </button>
-                <button
-                  type="button"
-                  onClick={handleOpenAddModal}
-                  className="min-h-24 rounded-[8px] bg-blue-700 px-5 text-3xl font-black uppercase text-white shadow-lg transition hover:bg-blue-600"
-                >
-                  <span className="flex items-center justify-center gap-2">
-                    <Plus size={28} />
-                    Add Job
+                <div className="flex shrink-0 flex-col items-end gap-2">
+                  <span className={`hidden rounded-full px-4 py-2 text-base font-black uppercase sm:inline-flex ${reserveColorClass}`}>
+                    {reserveLabel}
                   </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleOpenProcessServeModal}
-                  className="min-h-24 rounded-[8px] bg-red-600 px-5 text-2xl font-black uppercase text-white shadow-lg transition hover:bg-red-500"
-                >
-                  Add Process Serve
-                </button>
-
-                {rideSummary && (
-                  <section className="rounded-[8px] border-2 border-emerald-300 bg-emerald-50 p-4 text-emerald-950 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-black uppercase tracking-widest">Ride Summary</p>
-                        <h3 className="text-3xl font-black">Planning Mode Restored</h3>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setRideSummary(null)}
-                        className="rounded-[8px] bg-emerald-700 px-3 py-2 text-sm font-black uppercase text-white"
-                      >
-                        Clear
-                      </button>
-                    </div>
-                    <div className="mt-3 grid grid-cols-2 gap-2 text-sm font-black sm:grid-cols-5">
-                      <span>Ride {rideSummary.totalRideTime}</span>
-                      <span>Store {rideSummary.totalStoreTime}</span>
-                      <span>Jobs {rideSummary.totalJobsCompleted}</span>
-                      <span>{rideSummary.totalDistance} mi</span>
-                      <span>{rideSummary.estimatedBatteryUsed}% battery</span>
-                      <span>${rideSummary.estimatedEarnings.toFixed(2)} earned</span>
-                      <span>${rideSummary.earningsPerHour}/h</span>
-                      <span>Route {rideSummary.routeScore}</span>
-                      <span>Efficiency {rideSummary.efficiencyScore}</span>
-                      <span>Saved {rideSummary.timeSaved} min</span>
-                      <span>Tomorrow {rideSummary.jobsMovedToTomorrow}</span>
-                    </div>
-                  </section>
-                )}
-              </div>
-
-              <section className="mb-4 rounded-[8px] border-2 border-slate-300 bg-white p-4 dark:border-white/20 dark:bg-[#17181b]">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Ride Logs</p>
-                    <h3 className="text-3xl font-black text-slate-950 dark:text-white">All Ride Summaries</h3>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="rounded-[8px] bg-slate-950 px-3 py-2 text-sm font-black uppercase text-white dark:bg-white dark:text-slate-950">
-                      {trackerSessions.length} logs
-                    </span>
-                    {trackerSessions.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (window.confirm('Delete all ride logs?')) {
-                            setTrackerSessions([]);
-                            localStorage.removeItem('ride_tracker_sessions');
-                          }
-                        }}
-                        className="rounded-[8px] bg-rose-600 px-3 py-2 text-sm font-black uppercase text-white hover:bg-rose-500"
-                      >
-                        Clear Logs
-                      </button>
-                    )}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={handleStartRideMode}
+                    className="min-h-14 rounded-[8px] bg-slate-950 px-5 text-xl font-black uppercase text-white shadow-lg transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 sm:min-h-16 sm:text-2xl"
+                  >
+                    🚴 I&apos;m Riding
+                  </button>
                 </div>
-
-                {trackerSessions.length === 0 ? (
-                  <div className="mt-3 rounded-[8px] border-2 border-dashed border-slate-300 p-4 text-center text-base font-black text-slate-500 dark:border-white/10 dark:text-slate-400">
-                    End a ride to save the first log here.
-                  </div>
-                ) : (
-                  <div className="mt-3 grid max-h-72 gap-3 overflow-y-auto pr-1 lg:grid-cols-2">
-                    {trackerSessions.map((session) => (
-                      <article key={session.id} className="rounded-[8px] border-2 border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/[0.04]">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-lg font-black text-slate-950 dark:text-white">{session.date || 'Ride Log'}</p>
-                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                              {session.startedAt ? new Date(session.startedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'Start --'}
-                              {' - '}
-                              {session.endedAt ? new Date(session.endedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'End --'}
-                            </p>
-                          </div>
-                          <span className="rounded-[8px] bg-emerald-600 px-2 py-1 text-sm font-black text-white">
-                            ${(session.estimatedEarnings || 0).toFixed(2)}
-                          </span>
-                        </div>
-
-                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-black text-slate-700 dark:text-slate-200 sm:grid-cols-4">
-                          <span>Ride {formatDuration(session.rideTime || 0)}</span>
-                          <span>Store {formatDuration(session.storeTime || 0)}</span>
-                          <span>{session.distance || 0} mi</span>
-                          <span>{session.batteryUsed || 0}% battery</span>
-                          <span>{session.jobsCompletedCount || 0} jobs</span>
-                          <span>${(session.earningsPerHour || 0).toFixed(2)}/h</span>
-                          <span>Route {session.routeScore ?? '--'}</span>
-                          <span>Eff {session.efficiencyScore ?? '--'}</span>
-                        </div>
-
-                        {Array.isArray(session.completedJobNames) && session.completedJobNames.length > 0 && (
-                          <p className="mt-3 truncate text-xs font-bold text-slate-500 dark:text-slate-400">
-                            Completed: {session.completedJobNames.join(', ')}
-                          </p>
-                        )}
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </section>
+              </div>
 
               <div className="grid grid-cols-2 gap-4 lg:grid-cols-6 lg:auto-rows-[minmax(128px,auto)]">
                 <section className={`col-span-2 lg:col-span-4 lg:row-span-2 rounded-[8px] border-4 border-slate-950 bg-white p-5 shadow-[0_18px_42px_rgba(15,23,42,0.16)] transition-all duration-500 dark:border-white dark:bg-[#17181b] lg:p-3 ${nextRouteAJob && completingJobIds.includes(nextRouteAJob.id) ? 'scale-[0.99] border-emerald-500 bg-emerald-50 opacity-80 dark:bg-emerald-500/10' : ''}`}>
@@ -1656,7 +1536,7 @@ export default function App() {
                     <h3 className="text-2xl font-black text-slate-950 dark:text-white">Today&apos;s Route</h3>
                     <span className="rounded-[8px] bg-blue-700 px-3 py-1 text-lg font-black text-white">{remainingRouteAJobs.length}</span>
                   </div>
-                  <div className="mt-3 space-y-1.5">
+                  <div className="mt-3 max-h-[620px] space-y-1.5 overflow-y-auto pr-1">
                     {routeListStops.length === 0 ? (
                       <div className="rounded-[8px] bg-emerald-100 p-4 text-xl font-black text-emerald-900 dark:bg-emerald-500/15 dark:text-emerald-100">
                         Route clear
@@ -1754,7 +1634,7 @@ export default function App() {
 
                 <section className={`col-span-1 rounded-[8px] border-2 p-4 lg:p-3 ${batteryToneClass}`}>
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-black uppercase">Battery Tracker V1</p>
+                    <p className="text-sm font-black uppercase">Battery Status</p>
                     <Battery size={24} />
                   </div>
                   <p className="mt-3 text-5xl font-black leading-none lg:text-4xl">{batteryTrackerCurrent}%</p>
@@ -1763,7 +1643,6 @@ export default function App() {
                     <p>Risk: {batteryRisk}</p>
                     <p>Finish: {canFinishRoute ? 'Yes' : 'No'}</p>
                     <p>Recharge: {rechargeRecommended ? 'Yes' : 'No'}</p>
-                    <p>Assist: PAS {assistLevel}</p>
                   </div>
                 </section>
 
@@ -1817,52 +1696,6 @@ export default function App() {
                 </section>
               </div>
 
-              <section className="mt-4 rounded-[8px] border-2 border-slate-300 bg-white p-4 dark:border-white/20 dark:bg-[#17181b]">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-[8px] bg-slate-950 p-3 text-white dark:bg-white dark:text-slate-950">
-                      <FolderOpen size={26} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Proof Vault</p>
-                      <h3 className="text-3xl font-black text-slate-950 dark:text-white">Completed Job Evidence</h3>
-                    </div>
-                  </div>
-                  <span className="rounded-[8px] bg-blue-700 px-3 py-2 text-base font-black uppercase text-white">
-                    {proofRecords.length} folders
-                  </span>
-                </div>
-
-                {proofRecords.length === 0 ? (
-                  <div className="mt-4 rounded-[8px] border-2 border-dashed border-slate-300 p-5 text-center text-lg font-black text-slate-500 dark:border-white/10 dark:text-slate-300">
-                    Complete a job to automatically create its proof folder.
-                  </div>
-                ) : (
-                  <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    {proofRecords.slice(0, 6).map(record => (
-                      <button
-                        key={record.jobId}
-                        type="button"
-                        onClick={() => setSelectedProofJobId(record.jobId)}
-                        className="rounded-[8px] border-2 border-slate-200 bg-slate-50 p-4 text-left transition hover:border-blue-700 hover:bg-blue-50 dark:border-white/10 dark:bg-white/[0.04] dark:hover:bg-blue-500/10"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="truncate text-xl font-black text-slate-950 dark:text-white">{record.storeName}</p>
-                            <p className="truncate text-sm font-black text-slate-600 dark:text-slate-300">{getStreetName(record.address)}</p>
-                          </div>
-                          <FolderOpen size={22} className="shrink-0 text-blue-700 dark:text-blue-300" />
-                        </div>
-                        <div className="mt-3 grid grid-cols-3 gap-2 text-center text-sm font-black uppercase">
-                          <span className="rounded-[8px] bg-white p-2 dark:bg-black/20">{record.photos.length} photos</span>
-                          <span className="rounded-[8px] bg-white p-2 dark:bg-black/20">{record.screenshots.length} shots</span>
-                          <span className="rounded-[8px] bg-white p-2 dark:bg-black/20">{record.receipts.length} receipts</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </section>
             </div>
           )}
 
@@ -2850,6 +2683,14 @@ export default function App() {
                         >
                           <Plus size={13} />
                           <span>Add Stop Details</span>
+                        </button>
+                        <button
+                          id="add-process-serve-btn"
+                          onClick={handleOpenProcessServeModal}
+                          className="road-action bg-red-600 text-white shadow-md hover:bg-red-500"
+                        >
+                          <Briefcase size={13} />
+                          <span>Add Process Serve</span>
                         </button>
                       </div>
                     </div>
@@ -3953,7 +3794,7 @@ export default function App() {
         </main>
 
         {/* Floating Bottom Navigation Bar for Extremely Simple Mobile-First Navigation */}
-        {currentTab !== 'dashboard' && (
+        {!rideModeActive && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[96%] max-w-2xl">
           <div 
             className="flex items-center justify-start md:justify-around bg-white/95 dark:bg-[#0D0D0D]/95 backdrop-blur-md rounded-[24px] border border-slate-200/80 dark:border-white/10 shadow-[0_18px_50px_rgba(15,23,42,0.12)] px-3 py-3 overflow-x-auto whitespace-nowrap gap-2 w-full"
