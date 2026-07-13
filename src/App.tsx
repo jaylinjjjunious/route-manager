@@ -63,6 +63,15 @@ interface ProofRecord {
   updatedAt: string;
 }
 
+interface HabitLog {
+  id: string;
+  taskName: string;
+  minutes: number;
+  date: string;
+  note: string;
+  createdAt: string;
+}
+
 const SEED_JOBS: Job[] = [
   {
     id: 'seed-1',
@@ -186,7 +195,7 @@ export default function App() {
   });
 
   const [activeTab, setActiveTab] = useState<'A' | 'B' | 'all'>('A');
-  const [currentTab, setCurrentTab] = useState<'dashboard' | 'route' | 'jobs' | 'battery' | 'tracker' | 'settings'>('dashboard');
+  const [currentTab, setCurrentTab] = useState<'dashboard' | 'route' | 'jobs' | 'battery' | 'tracker' | 'habits' | 'settings'>('dashboard');
   
   // Ride Tracker States
   const [trackerStatus, setTrackerStatus] = useState<'idle' | 'riding' | 'at_store' | 'completed'>(() => {
@@ -232,6 +241,18 @@ export default function App() {
     }
   });
   const trackerTimerRef = useRef<number | null>(null);
+  const [habitTaskName, setHabitTaskName] = useState<string>(() => localStorage.getItem('habit_tracker_task_name') || 'Daily Focus Task');
+  const [habitTargetMinutes, setHabitTargetMinutes] = useState<number>(() => Number(localStorage.getItem('habit_tracker_target_minutes') || '30'));
+  const [habitLogMinutes, setHabitLogMinutes] = useState<number>(() => Number(localStorage.getItem('habit_tracker_last_minutes') || '30'));
+  const [habitLogNote, setHabitLogNote] = useState('');
+  const [habitLogs, setHabitLogs] = useState<HabitLog[]>(() => {
+    try {
+      const saved = localStorage.getItem('habit_tracker_logs');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [selectedEngine, setSelectedEngine] = useState<'mock' | 'google' | 'apple' | 'osrm' | 'mapbox'>('mock');
   const [engineNotification, setEngineNotification] = useState<string | null>(null);
   const [jobsSubTab, setJobsSubTab] = useState<'list' | 'import'>('list');
@@ -387,6 +408,13 @@ export default function App() {
     localStorage.setItem('ride_tracker_start_battery', trackerStartBattery.toString());
     localStorage.setItem('ride_tracker_jobs_completed', JSON.stringify(trackerJobsCompleted));
   }, [trackerStatus, trackerRideTime, trackerStoreTime, trackerTotalDayTime, trackerStartBattery, trackerJobsCompleted]);
+
+  useEffect(() => {
+    localStorage.setItem('habit_tracker_task_name', habitTaskName);
+    localStorage.setItem('habit_tracker_target_minutes', habitTargetMinutes.toString());
+    localStorage.setItem('habit_tracker_last_minutes', habitLogMinutes.toString());
+    localStorage.setItem('habit_tracker_logs', JSON.stringify(habitLogs));
+  }, [habitTaskName, habitTargetMinutes, habitLogMinutes, habitLogs]);
 
   // Ride Tracker timer interval
   useEffect(() => {
@@ -1090,6 +1118,76 @@ export default function App() {
     const m = Math.floor((seconds % 3600) / 60);
     const s = seconds % 60;
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const getDateKey = (date: Date) => {
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 10);
+  };
+
+  const todayKey = getDateKey(new Date());
+  const currentHabitLogs = habitLogs.filter(log => log.taskName === habitTaskName);
+  const todayHabitMinutes = currentHabitLogs
+    .filter(log => log.date === todayKey)
+    .reduce((sum, log) => sum + log.minutes, 0);
+  const habitGoalComplete = todayHabitMinutes >= habitTargetMinutes;
+  const habitTotalMinutes = currentHabitLogs.reduce((sum, log) => sum + log.minutes, 0);
+  const habitTotalSessions = currentHabitLogs.length;
+  const habitLast7Days = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (6 - index));
+    const key = getDateKey(date);
+    const minutes = currentHabitLogs
+      .filter(log => log.date === key)
+      .reduce((sum, log) => sum + log.minutes, 0);
+    return {
+      key,
+      label: date.toLocaleDateString([], { weekday: 'short' }),
+      minutes,
+      complete: minutes >= habitTargetMinutes
+    };
+  });
+  const habitDaysComplete = habitLast7Days.filter(day => day.complete).length;
+  const habitConsistencyPct = Math.round((habitDaysComplete / habitLast7Days.length) * 100);
+  const habitStreakDays = (() => {
+    let streak = 0;
+    for (let offset = 0; offset < 365; offset++) {
+      const date = new Date();
+      date.setDate(date.getDate() - offset);
+      const key = getDateKey(date);
+      const minutes = currentHabitLogs
+        .filter(log => log.date === key)
+        .reduce((sum, log) => sum + log.minutes, 0);
+      if (minutes >= habitTargetMinutes) {
+        streak += 1;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  })();
+  const habitRecentLogs = [...currentHabitLogs].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 12);
+
+  const handleLogHabitSession = () => {
+    const minutes = Math.max(1, Math.round(habitLogMinutes || habitTargetMinutes || 30));
+    const taskName = habitTaskName.trim() || 'Daily Focus Task';
+    setHabitTaskName(taskName);
+    setHabitLogs(prev => [
+      {
+        id: `habit-${Date.now()}`,
+        taskName,
+        minutes,
+        date: todayKey,
+        note: habitLogNote.trim(),
+        createdAt: new Date().toISOString()
+      },
+      ...prev
+    ]);
+    setHabitLogNote('');
+  };
+
+  const handleDeleteHabitLog = (id: string) => {
+    setHabitLogs(prev => prev.filter(log => log.id !== id));
   };
 
   const getRideDistance = () => parseFloat(((trackerRideTime / 3600) * ebikeConfig.avgSpeedMph).toFixed(1));
@@ -3728,6 +3826,190 @@ export default function App() {
             </div>
           )}
 
+          {currentTab === 'habits' && (
+            <div className="space-y-6 animate-fade-in" id="tab-view-habits">
+              <div className="rounded-[8px] border-4 border-slate-950 bg-white p-5 shadow-lg dark:border-white dark:bg-[#17181b]">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                  <div>
+                    <p className="text-sm font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Consistency Tracker</p>
+                    <h2 className="mt-1 text-4xl font-black leading-none text-slate-950 dark:text-white sm:text-5xl">
+                      Daily time goals
+                    </h2>
+                    <p className="mt-2 max-w-2xl text-sm font-bold text-slate-500 dark:text-slate-300">
+                      Track a repeat task, log the minutes you completed, and see how consistent you have been.
+                    </p>
+                  </div>
+                  <div className={`rounded-[8px] px-4 py-3 text-right ${habitGoalComplete ? 'bg-emerald-600 text-white' : 'bg-amber-400 text-slate-950'}`}>
+                    <p className="text-xs font-black uppercase">Today</p>
+                    <p className="text-3xl font-black">{todayHabitMinutes} / {habitTargetMinutes} min</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+                <section className="rounded-[8px] border-2 border-slate-300 bg-white p-5 dark:border-white/20 dark:bg-[#17181b]">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="habit-task-name" className="block text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                        Task
+                      </label>
+                      <input
+                        id="habit-task-name"
+                        value={habitTaskName}
+                        onChange={(event) => setHabitTaskName(event.target.value)}
+                        className="mt-2 min-h-14 w-full rounded-[8px] border-2 border-slate-300 bg-white px-4 text-lg font-black text-slate-950 outline-none focus:border-blue-700 dark:border-white/10 dark:bg-black/20 dark:text-white"
+                        placeholder="Example: Study, workout, paperwork"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="habit-target-minutes" className="block text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                        Daily Target Minutes
+                      </label>
+                      <input
+                        id="habit-target-minutes"
+                        type="number"
+                        min="1"
+                        value={habitTargetMinutes}
+                        onChange={(event) => setHabitTargetMinutes(Math.max(1, Number(event.target.value) || 1))}
+                        className="mt-2 min-h-14 w-full rounded-[8px] border-2 border-slate-300 bg-white px-4 text-lg font-black text-slate-950 outline-none focus:border-blue-700 dark:border-white/10 dark:bg-black/20 dark:text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-5 rounded-[8px] bg-slate-100 p-4 dark:bg-black/20">
+                    <div className="grid gap-3 sm:grid-cols-[180px_1fr]">
+                      <div>
+                        <label htmlFor="habit-log-minutes" className="block text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                          Minutes Done
+                        </label>
+                        <input
+                          id="habit-log-minutes"
+                          type="number"
+                          min="1"
+                          value={habitLogMinutes}
+                          onChange={(event) => setHabitLogMinutes(Math.max(1, Number(event.target.value) || 1))}
+                          className="mt-2 min-h-16 w-full rounded-[8px] border-2 border-slate-300 bg-white px-4 text-3xl font-black text-slate-950 outline-none focus:border-blue-700 dark:border-white/10 dark:bg-[#17181b] dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="habit-log-note" className="block text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                          Note
+                        </label>
+                        <input
+                          id="habit-log-note"
+                          value={habitLogNote}
+                          onChange={(event) => setHabitLogNote(event.target.value)}
+                          className="mt-2 min-h-16 w-full rounded-[8px] border-2 border-slate-300 bg-white px-4 text-lg font-bold text-slate-950 outline-none focus:border-blue-700 dark:border-white/10 dark:bg-[#17181b] dark:text-white"
+                          placeholder="Optional note"
+                        />
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleLogHabitSession}
+                      className="mt-4 flex min-h-20 w-full items-center justify-center gap-3 rounded-[8px] bg-blue-700 px-5 text-3xl font-black uppercase text-white shadow-lg transition hover:bg-blue-600"
+                    >
+                      <CheckCircle2 size={32} />
+                      <span>Log Time</span>
+                    </button>
+                  </div>
+                </section>
+
+                <section className="grid grid-cols-2 gap-3">
+                  <div className="rounded-[8px] bg-slate-950 p-4 text-white">
+                    <p className="text-sm font-black uppercase">Streak</p>
+                    <p className="mt-3 text-5xl font-black leading-none">{habitStreakDays}</p>
+                    <p className="mt-1 text-base font-black">days</p>
+                  </div>
+                  <div className="rounded-[8px] bg-emerald-600 p-4 text-white">
+                    <p className="text-sm font-black uppercase">7-Day Hit Rate</p>
+                    <p className="mt-3 text-5xl font-black leading-none">{habitConsistencyPct}%</p>
+                    <p className="mt-1 text-base font-black">{habitDaysComplete} of 7 days</p>
+                  </div>
+                  <div className="rounded-[8px] bg-blue-700 p-4 text-white">
+                    <p className="text-sm font-black uppercase">Total Time</p>
+                    <p className="mt-3 text-5xl font-black leading-none">{Math.floor(habitTotalMinutes / 60)}h</p>
+                    <p className="mt-1 text-base font-black">{habitTotalMinutes % 60} min</p>
+                  </div>
+                  <div className="rounded-[8px] bg-amber-400 p-4 text-slate-950">
+                    <p className="text-sm font-black uppercase">Sessions</p>
+                    <p className="mt-3 text-5xl font-black leading-none">{habitTotalSessions}</p>
+                    <p className="mt-1 text-base font-black">logged</p>
+                  </div>
+                </section>
+              </div>
+
+              <section className="rounded-[8px] border-2 border-slate-300 bg-white p-5 dark:border-white/20 dark:bg-[#17181b]">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Last 7 Days</p>
+                    <h3 className="text-3xl font-black text-slate-950 dark:text-white">Consistency View</h3>
+                  </div>
+                  <span className="rounded-[8px] bg-slate-950 px-3 py-2 text-sm font-black uppercase text-white dark:bg-white dark:text-slate-950">
+                    Target {habitTargetMinutes} min
+                  </span>
+                </div>
+                <div className="mt-5 grid grid-cols-7 gap-2">
+                  {habitLast7Days.map(day => {
+                    const pct = Math.min(100, Math.round((day.minutes / habitTargetMinutes) * 100));
+                    return (
+                      <div key={day.key} className="rounded-[8px] bg-slate-100 p-2 text-center dark:bg-black/20">
+                        <div className="flex h-32 items-end justify-center rounded-[8px] bg-white p-1 dark:bg-white/10">
+                          <div
+                            className={`w-full rounded-[6px] ${day.complete ? 'bg-emerald-600' : 'bg-blue-700'}`}
+                            style={{ height: `${Math.max(6, pct)}%` }}
+                          />
+                        </div>
+                        <p className="mt-2 text-xs font-black uppercase text-slate-500 dark:text-slate-300">{day.label}</p>
+                        <p className="text-sm font-black text-slate-950 dark:text-white">{day.minutes}m</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <section className="rounded-[8px] border-2 border-slate-300 bg-white p-5 dark:border-white/20 dark:bg-[#17181b]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Log History</p>
+                    <h3 className="text-3xl font-black text-slate-950 dark:text-white">Recent Sessions</h3>
+                  </div>
+                </div>
+
+                {habitRecentLogs.length === 0 ? (
+                  <div className="mt-4 rounded-[8px] border-2 border-dashed border-slate-300 p-6 text-center text-lg font-black text-slate-500 dark:border-white/10 dark:text-slate-300">
+                    No sessions logged yet.
+                  </div>
+                ) : (
+                  <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    {habitRecentLogs.map(log => (
+                      <article key={log.id} className="rounded-[8px] border-2 border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-xl font-black text-slate-950 dark:text-white">{log.minutes} minutes</p>
+                            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                              {new Date(`${log.date}T12:00:00`).toLocaleDateString([], { month: 'short', day: 'numeric', weekday: 'short' })}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteHabitLog(log.id)}
+                            className="rounded-[8px] bg-slate-200 px-2 py-1 text-xs font-black uppercase text-slate-600 hover:bg-rose-600 hover:text-white dark:bg-white/10 dark:text-slate-300"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                        {log.note && (
+                          <p className="mt-3 text-sm font-bold text-slate-600 dark:text-slate-300">{log.note}</p>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
+          )}
+
           {/* Tab 6: Settings and Instructions */}
           {currentTab === 'settings' && (
             <div className="space-y-6 animate-fade-in" id="tab-view-settings">
@@ -3824,7 +4106,7 @@ export default function App() {
 
         {/* Floating Bottom Navigation Bar for Extremely Simple Mobile-First Navigation */}
         {!rideModeActive && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[96%] max-w-2xl">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[96%] max-w-3xl">
           <div 
             className="flex items-center justify-start md:justify-around bg-white/95 dark:bg-[#0D0D0D]/95 backdrop-blur-md rounded-[24px] border border-slate-200/80 dark:border-white/10 shadow-[0_18px_50px_rgba(15,23,42,0.12)] px-3 py-3 overflow-x-auto whitespace-nowrap gap-2 w-full"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
@@ -3834,6 +4116,7 @@ export default function App() {
               { id: 'route', label: 'Route', icon: Map, color: 'text-indigo-500' },
               { id: 'jobs', label: 'Jobs', icon: Briefcase, color: 'text-emerald-500' },
               { id: 'tracker', label: 'Tracker', icon: Timer, color: 'text-indigo-500' },
+              { id: 'habits', label: 'Habits', icon: Award, color: 'text-amber-500' },
               { id: 'settings', label: 'Settings', icon: Settings, color: 'text-slate-500' },
             ].map((tab) => {
               const IconComponent = tab.icon;
