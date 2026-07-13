@@ -1543,13 +1543,13 @@ export default function App() {
 
   return (
     <div className={theme === 'dark' ? 'dark' : ''}>
-      <div className="min-h-screen bg-[#F5F5F7] text-slate-950 transition-colors duration-300 dark:bg-[#111113] dark:text-slate-100 font-sans">
+      <div className="app-shell min-h-screen bg-[#F5F5F7] text-slate-950 transition-colors duration-300 dark:bg-[#111113] dark:text-slate-100 font-sans">
         
         {/* Header */}
         {currentTab !== 'dashboard' && <Header theme={theme} onToggleTheme={handleToggleTheme} />}
 
         {/* Main Content Body */}
-        <main className="mx-auto max-w-7xl px-4 py-5 pb-36 sm:px-6 lg:px-8 space-y-6">
+        <main className="app-main mx-auto max-w-7xl px-3 py-4 pb-40 sm:px-6 sm:py-5 lg:px-8 space-y-6">
 
           {/* Ride Mode V2: Distraction-free execution surface */}
           {currentTab === 'dashboard' && rideModeActive && (
@@ -4194,10 +4194,10 @@ export default function App() {
 
         {/* Floating Bottom Navigation Bar for Extremely Simple Mobile-First Navigation */}
         {!rideModeActive && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[96%] max-w-3xl">
+        <div className="mobile-bottom-nav-shell fixed inset-x-0 bottom-0 z-50 mx-auto w-full px-2 pb-2 sm:left-1/2 sm:bottom-4 sm:w-[96%] sm:max-w-3xl sm:-translate-x-1/2 sm:px-0 sm:pb-0">
           <div 
-            className="flex items-center justify-start md:justify-around bg-white/95 dark:bg-[#0D0D0D]/95 backdrop-blur-md rounded-[24px] border border-slate-200/80 dark:border-white/10 shadow-[0_18px_50px_rgba(15,23,42,0.12)] px-3 py-3 overflow-x-auto whitespace-nowrap gap-2 w-full"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            className="mobile-bottom-nav flex w-full snap-x items-center justify-start gap-2 overflow-x-auto whitespace-nowrap rounded-[20px] border border-slate-200/80 bg-white/95 px-2 py-2 shadow-[0_18px_50px_rgba(15,23,42,0.18)] backdrop-blur-md dark:border-white/10 dark:bg-[#0D0D0D]/95 sm:rounded-[24px] sm:px-3 sm:py-3 md:justify-around"
+            aria-label="Primary app navigation"
           >
             {[
               { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, color: 'text-blue-500' },
@@ -4214,7 +4214,7 @@ export default function App() {
                   key={tab.id}
                   id={`nav-tab-${tab.id}`}
                   onClick={() => setCurrentTab(tab.id as any)}
-                  className={`flex flex-col items-center justify-center gap-1.5 py-2.5 px-3 rounded-2xl transition-all duration-300 flex-shrink-0 min-w-[82px] min-h-[64px] ${
+                  className={`flex min-h-[64px] min-w-[84px] snap-start flex-shrink-0 flex-col items-center justify-center gap-1.5 rounded-2xl px-3 py-2.5 transition-all duration-300 sm:min-w-[82px] ${
                     isActive
                       ? 'bg-slate-100 dark:bg-white/10 text-slate-950 dark:text-white scale-105 font-bold'
                       : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'

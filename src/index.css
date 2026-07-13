@@ -2,6 +2,74 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
+html {
+  width: 100%;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+body,
+#root {
+  min-width: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+button,
+a,
+input,
+textarea,
+select {
+  touch-action: manipulation;
+}
+
+.app-shell {
+  width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+.app-main {
+  width: 100%;
+  min-width: 0;
+}
+
+.mobile-bottom-nav-shell {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+
+.mobile-bottom-nav {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-color: #2563eb rgba(148, 163, 184, 0.28);
+  scrollbar-width: thin;
+}
+
+.mobile-bottom-nav::-webkit-scrollbar {
+  height: 0.55rem;
+}
+
+.mobile-bottom-nav::-webkit-scrollbar-track {
+  margin-inline: 1rem;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.24);
+}
+
+.mobile-bottom-nav::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #2563eb;
+}
+
+@media (min-width: 768px) {
+  .mobile-bottom-nav {
+    scrollbar-width: none;
+  }
+
+  .mobile-bottom-nav::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @theme {
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
