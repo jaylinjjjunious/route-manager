@@ -4,8 +4,9 @@
  */
 
 import React from 'react';
-import { Job, JobType, JobStatus } from '../types';
+import { Job, JobType } from '../types';
 import { Clock, MapPin, CheckSquare, Square, Edit2, Trash2, Copy, ArrowRightLeft, ShieldAlert, Calendar, AlertCircle, Sparkles } from 'lucide-react';
+import { isJobCompleted, isRevisionJob } from '../utils/jobState';
 
 interface JobCardProps {
   key?: string;
@@ -52,7 +53,10 @@ export default function JobCard({
 
   // Determine color coding category
   let category: 'ready' | 'revisit' | 'outlier' | 'completed' | 'postponed' = 'ready';
-  if (job.status === 'completed' || job.isCompleted) {
+  const isDone = isJobCompleted(job);
+  const needsRevision = isRevisionJob(job);
+
+  if (isDone) {
     category = 'completed';
   } else if (job.status === 'postponed') {
     category = 'postponed';
@@ -60,7 +64,7 @@ export default function JobCard({
     category = 'postponed';
   } else if (isOutlier || job.status === 'outlier') {
     category = 'outlier';
-  } else if (job.status === 'revisit' || job.isRevisionRequired) {
+  } else if (needsRevision) {
     category = 'revisit';
   } else {
     category = 'ready';
@@ -166,11 +170,11 @@ export default function JobCard({
           {/* Complete Status Indicator Indicator */}
           <button
             id={`toggle-complete-${job.id}`}
-            onClick={() => handleQuickStatusChange(job.status === 'completed' ? 'ready' : 'completed')}
+            onClick={() => handleQuickStatusChange(isDone ? 'ready' : 'completed')}
             className="road-icon-button mt-0.5 border-slate-200 bg-white text-slate-400 hover:text-emerald-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-500 dark:hover:text-emerald-400 focus:outline-none"
             title="Toggle completed"
           >
-            {job.status === 'completed' || job.isCompleted ? (
+            {isDone ? (
               <CheckSquare size={24} className="text-blue-500 fill-blue-100 dark:fill-blue-950/30" />
             ) : (
               <Square size={24} />
@@ -180,7 +184,7 @@ export default function JobCard({
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
               <h4 className={`font-black text-slate-900 dark:text-white transition-all text-lg sm:text-xl leading-tight ${
-                job.status === 'completed' || job.isCompleted ? 'line-through text-slate-400 dark:text-slate-500' : ''
+                isDone ? 'line-through text-slate-400 dark:text-slate-500' : ''
               }`}>
                 {job.storeName}
               </h4>
@@ -275,28 +279,28 @@ export default function JobCard({
         <div className="grid grid-cols-2 gap-2">
           {/* Quick Complete / Reactivate */}
           <button
-            onClick={() => handleQuickStatusChange(job.status === 'completed' ? 'ready' : 'completed')}
+            onClick={() => handleQuickStatusChange(isDone ? 'ready' : 'completed')}
             className={`road-action ${
-              job.status === 'completed' || job.isCompleted
+              isDone
                 ? 'bg-blue-600 border-blue-600 text-white shadow-xs'
                 : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 dark:bg-white/5 dark:border-white/10 dark:text-slate-300'
             }`}
           >
             <CheckSquare size={16} />
-            <span>{job.status === 'completed' || job.isCompleted ? 'Done' : 'Complete'}</span>
+            <span>{isDone ? 'Done' : 'Complete'}</span>
           </button>
 
           {/* Quick Revision Required */}
           <button
-            onClick={() => handleQuickStatusChange(job.status === 'revisit' ? 'ready' : 'revisit')}
+            onClick={() => handleQuickStatusChange(needsRevision ? 'ready' : 'revisit')}
             className={`road-action ${
-              job.status === 'revisit' || job.isRevisionRequired
+              needsRevision
                 ? 'bg-rose-600 border-rose-600 text-white shadow-xs'
                 : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 dark:bg-white/5 dark:border-white/10 dark:text-slate-300'
             }`}
           >
             <AlertCircle size={16} />
-            <span>{job.status === 'revisit' || job.isRevisionRequired ? 'Needs Fix' : 'Revision'}</span>
+            <span>{needsRevision ? 'Needs Fix' : 'Revision'}</span>
           </button>
 
           {/* Quick Postpone / Moved to Tomorrow */}

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Job, RouteMetrics, EbikeConfig, DispatcherAction, ChatMessage } from '../types';
 import { BAKERSFIELD_COORDINATES, getDistanceInMiles } from '../utils/routeUtils';
+import { isJobCompleted } from '../utils/jobState';
 
 interface AIDispatcherProps {
   jobs: Job[];
@@ -87,8 +88,7 @@ export default function AIDispatcher({
     ];
   });
 
-  const isJobDone = (job: Job) => job.status === 'completed' || job.isCompleted;
-  const remainingJobs = useMemo(() => routeAJobs.filter(job => !isJobDone(job)), [routeAJobs]);
+  const remainingJobs = useMemo(() => routeAJobs.filter(job => !isJobCompleted(job)), [routeAJobs]);
   const currentStop = remainingJobs[0] || null;
   const projectedBatteryAfterRoute = Math.max(0, Math.round(currentBattery - activeMetrics.estimatedBatteryUsage));
   const batteryEstimate =

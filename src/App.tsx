@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Job, Coordinates, RouteMetrics, EbikeConfig, JobStatus, DispatcherAction, JobType } from './types';
+import { Job, Coordinates, RouteMetrics, EbikeConfig, DispatcherAction, JobType } from './types';
 import {
   BAKERSFIELD_COORDINATES,
   DEFAULT_EBIKE_CONFIG,
@@ -15,6 +15,13 @@ import {
   calculateRouteMetrics,
   detectOutliers
 } from './utils/routeUtils';
+import {
+  JOB_STATE_SCHEMA_VERSION,
+  isJobCompleted,
+  isRevisionJob,
+  normalizeJobState,
+  normalizeJobsForStorage
+} from './utils/jobState';
 import Header from './components/Header';
 import OutlierDetector from './components/OutlierDetector';
 import BakersfieldMapPreview from './components/BakersfieldMapPreview';
@@ -302,15 +309,26 @@ export default function App() {
     if (savedWeather) setWeatherWind(savedWeather);
     if (savedTerrain) setTerrain(savedTerrain);
 
-    if (savedJobs && savedJobs.includes('seed-8')) {
+    if (savedJobs) {
       try {
-        setJobs(JSON.parse(savedJobs));
+        const parsedJobs = JSON.parse(savedJobs);
+        const migratedJobs = Array.isArray(parsedJobs) && parsedJobs.length > 0
+          ? normalizeJobsForStorage(parsedJobs)
+          : normalizeJobsForStorage(SEED_JOBS);
+        setJobs(migratedJobs);
+        localStorage.setItem('route_optimizer_jobs', JSON.stringify(migratedJobs));
+        localStorage.setItem('route_optimizer_jobs_schema_version', JOB_STATE_SCHEMA_VERSION);
       } catch (e) {
-        setJobs(SEED_JOBS);
+        const seededJobs = normalizeJobsForStorage(SEED_JOBS);
+        setJobs(seededJobs);
+        localStorage.setItem('route_optimizer_jobs', JSON.stringify(seededJobs));
+        localStorage.setItem('route_optimizer_jobs_schema_version', JOB_STATE_SCHEMA_VERSION);
       }
     } else {
-      setJobs(SEED_JOBS);
-      localStorage.setItem('route_optimizer_jobs', JSON.stringify(SEED_JOBS));
+      const seededJobs = normalizeJobsForStorage(SEED_JOBS);
+      setJobs(seededJobs);
+      localStorage.setItem('route_optimizer_jobs', JSON.stringify(seededJobs));
+      localStorage.setItem('route_optimizer_jobs_schema_version', JOB_STATE_SCHEMA_VERSION);
     }
 
     if (savedStart) {
@@ -401,7 +419,7 @@ export default function App() {
 
   useEffect(() => {
     jobs
-      .filter(job => job.status === 'completed' || job.isCompleted)
+      .filter(isJobCompleted)
       .forEach(job => {
         if (!proofVault[job.id]) createProofFolder(job);
       });
@@ -464,7 +482,7 @@ export default function App() {
       ? 'bg-amber-400 text-slate-950'
       : 'bg-rose-600 text-white ';
   const eb5SpecLine = 'Jasion EB5 Standard | 350W | 36V 10Ah | 20 mph cap | PAS 1-5';
-  const isJobDone = (job: Job) => job.status === 'completed' || job.isCompleted;
+  const isJobDone = isJobCompleted;
   const getStreetName = (address: string) => {
     const trimmed = address.trim();
     const streetMatch = trimmed.match(/\d+\s+(.+)/);
@@ -476,7 +494,7 @@ export default function App() {
     return job.jobType.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
   const getRouteBadgeClasses = (job: Job) => {
-    if (job.isRevisionRequired || job.status === 'revisit') {
+    if (isRevisionJob(job)) {
       return 'bg-rose-600 text-white dark:bg-rose-500 dark:text-white';
     }
     if (isProcessServeJob(job)) {
@@ -485,7 +503,7 @@ export default function App() {
     return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300';
   };
   const getRouteBadgeLabel = (job: Job) => {
-    if (job.isRevisionRequired || job.status === 'revisit') return 'Revision';
+    if (isRevisionJob(job)) return 'Revision';
     if (isProcessServeJob(job)) return 'Serve';
     return 'Ready';
   };
@@ -507,15 +525,17 @@ export default function App() {
 
   // Save changes to local storage
   const saveJobsToStorage = (updatedJobs: Job[]) => {
-    const routeAJobs = updatedJobs.filter(j => j.routeId === 'A');
-    const restJobs = updatedJobs.filter(j => j.routeId !== 'A');
+    const normalizedJobs = normalizeJobsForStorage(updatedJobs);
+    const routeAJobs = normalizedJobs.filter(j => j.routeId === 'A');
+    const restJobs = normalizedJobs.filter(j => j.routeId !== 'A');
     
     // Automatically apply Smart Revision Merge & Continuous Route Optimization
     const optimizedRouteA = optimizeRouteWithSmartMerge(startCoord, routeAJobs, ebikeConfig);
-    const finalized = [...optimizedRouteA, ...restJobs];
+    const finalized = normalizeJobsForStorage([...optimizedRouteA, ...restJobs]);
 
     setJobs(finalized);
     localStorage.setItem('route_optimizer_jobs', JSON.stringify(finalized));
+    localStorage.setItem('route_optimizer_jobs_schema_version', JOB_STATE_SCHEMA_VERSION);
   };
 
   // Continuous Route Optimization & Explanations Monitor
@@ -545,10 +565,10 @@ export default function App() {
     let why = "Continuous Route Optimization executed.";
     const addedJob = currRouteA.find(j => !prevRouteA.some(p => p.id === j.id));
     const removedJob = prevRouteA.find(p => !currRouteA.some(j => j.id === p.id));
-    const completedJob = currRouteA.find(j => j.status === 'completed' && prevRouteA.some(p => p.id === j.id && p.status !== 'completed'));
-    const uncompletedJob = currRouteA.find(j => j.status !== 'completed' && prevRouteA.some(p => p.id === j.id && p.status === 'completed'));
+    const completedJob = currRouteA.find(j => isJobCompleted(j) && prevRouteA.some(p => p.id === j.id && !isJobCompleted(p)));
+    const uncompletedJob = currRouteA.find(j => !isJobCompleted(j) && prevRouteA.some(p => p.id === j.id && isJobCompleted(p)));
     const movedRevision = currRouteA.find(j => {
-      const isRevision = j.isRevisionRequired || j.status === 'revisit';
+      const isRevision = isRevisionJob(j);
       if (!isRevision) return false;
       const prevIndex = prevRouteA.findIndex(p => p.id === j.id);
       const currIndex = currRouteA.findIndex(c => c.id === j.id);
@@ -556,7 +576,7 @@ export default function App() {
     });
 
     if (addedJob) {
-      if (addedJob.status === 'revisit') {
+      if (isRevisionJob(addedJob)) {
         why = addedJob.smartMergeExplanation || `Required revision at '${addedJob.storeName}' was added. Smart Revision Merge automatically slotted it into the optimal position.`;
       } else {
         why = `New stop '${addedJob.storeName}' registered. Sequenced into the most efficient slot.`;
@@ -564,7 +584,7 @@ export default function App() {
     } else if (removedJob) {
       why = `Stop '${removedJob.storeName}' removed from Route A. Sequence recalculated to eliminate empty miles.`;
     } else if (completedJob) {
-      if (completedJob.status === 'revisit') {
+      if (isRevisionJob(completedJob)) {
         why = `Revision stop at '${completedJob.storeName}' marked completed. Sequence condensed.`;
       } else {
         why = `Stop '${completedJob.storeName}' marked completed. Active route updated.`;
@@ -868,11 +888,12 @@ export default function App() {
   const handleUpdateJobStatus = (id: string, updates: Partial<Job>) => {
     const targetJob = jobs.find(job => job.id === id);
     const updated = jobs.map(job =>
-      job.id === id ? { ...job, ...updates } : job
+      job.id === id ? normalizeJobState({ ...job, ...updates }) : job
     );
-    if (targetJob && (updates.status === 'completed' || updates.isCompleted === true)) {
-      createProofFolder(targetJob);
-      setDispatcherMessage(buildCompletionReadback(targetJob, updated));
+    const updatedTarget = updated.find(job => job.id === id);
+    if (targetJob && updatedTarget && isJobCompleted(updatedTarget) && !isJobCompleted(targetJob)) {
+      createProofFolder(updatedTarget);
+      setDispatcherMessage(buildCompletionReadback(updatedTarget, updated));
     }
     saveJobsToStorage(updated);
   };
@@ -880,7 +901,7 @@ export default function App() {
   const buildCompletionReadback = (completedJob: Job, updatedJobs: Job[]) => {
     const updatedRouteA = updatedJobs.filter(job => job.routeId === 'A');
     const optimizedRoute = optimizeRouteWithSmartMerge(startCoord, updatedRouteA, ebikeConfig);
-    const pendingRoute = optimizedRoute.filter(job => !(job.status === 'completed' || job.isCompleted));
+    const pendingRoute = optimizedRoute.filter(job => !isJobCompleted(job));
     const nextStop = pendingRoute[0] || null;
 
     if (!nextStop) {
@@ -911,10 +932,16 @@ export default function App() {
     if (!targetJob) return;
 
     const updated = jobs.map(job =>
-      job.id === id ? { ...job, status: job.status === 'completed' ? 'pending' : 'completed' as const, isCompleted: job.status !== 'completed' } : job
+      job.id === id
+        ? normalizeJobState({
+            ...job,
+            status: isJobCompleted(job) ? 'ready' : 'completed',
+            isCompleted: !isJobCompleted(job)
+          })
+        : job
     );
 
-    if (targetJob.status !== 'completed' && !targetJob.isCompleted) {
+    if (!isJobCompleted(targetJob)) {
       setCompletingJobIds(prev => prev.includes(id) ? prev : [...prev, id]);
       createProofFolder(targetJob);
       setDispatcherMessage(buildCompletionReadback(targetJob, updated));
@@ -976,7 +1003,9 @@ export default function App() {
       ...job,
       id: `job-${Date.now()}`,
       storeName: `${job.storeName} (Copy)`,
-      status: 'pending'
+      status: 'ready',
+      isCompleted: false,
+      isRevisionRequired: false
     };
     saveJobsToStorage([...jobs, duplicate]);
   };
@@ -1030,14 +1059,14 @@ export default function App() {
   };
 
   const handleMoveUnfinishedToTomorrow = () => {
-    const unfinishedRouteAJobs = jobs.filter(j => j.routeId === 'A' && j.status !== 'completed');
+    const unfinishedRouteAJobs = jobs.filter(j => j.routeId === 'A' && !isJobCompleted(j));
     const unfinishedIds = unfinishedRouteAJobs.map(j => j.id);
     
     setJobsMovedToTomorrowIds(unfinishedIds);
     localStorage.setItem('jobs_moved_to_tomorrow', JSON.stringify(unfinishedIds));
     
     const updatedJobs = jobs.map(j => {
-      if (j.routeId === 'A' && j.status === 'completed') {
+      if (j.routeId === 'A' && isJobCompleted(j)) {
         return { ...j, routeId: 'B' as const };
       }
       return j;
@@ -1169,7 +1198,7 @@ export default function App() {
           j.address.toLowerCase().includes(target)
         );
         if (matchedJob) {
-          if (matchedJob.status === 'completed' || matchedJob.isCompleted) {
+          if (isJobCompleted(matchedJob)) {
             handleUpdateJobStatus(matchedJob.id, { status: 'completed', isCompleted: true });
           } else {
             handleToggleComplete(matchedJob.id);
@@ -1296,7 +1325,7 @@ export default function App() {
   const nextStopNavLink = nextRouteAJob
     ? `https://www.google.com/maps/dir/?api=1&origin=${nextStopOrigin.lat},${nextStopOrigin.lng}&destination=${nextRouteAJob.coordinates.lat},${nextRouteAJob.coordinates.lng}&travelmode=bicycling`
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(startAddress)}`;
-  const revisionAlertJobs = remainingRouteAJobs.filter(job => job.isRevisionRequired || job.status === 'revisit');
+  const revisionAlertJobs = remainingRouteAJobs.filter(isRevisionJob);
   const routeProgressPct = routeAJobs.length > 0 ? Math.round((completedRouteAJobs.length / routeAJobs.length) * 100) : 100;
   const routeListStops = remainingRouteAJobs;
   const proofRecords = (Object.values(proofVault) as ProofRecord[]).sort((a, b) => new Date(b.completionTime).getTime() - new Date(a.completionTime).getTime());
@@ -1543,7 +1572,7 @@ export default function App() {
                       </div>
                     ) : (
                       routeListStops.map((job, idx) => {
-                        const isRevision = job.isRevisionRequired || job.status === 'revisit';
+                        const isRevision = isRevisionJob(job);
                         const isServe = isProcessServeJob(job);
                         const isCurrentStop = idx === 0;
                         const routeStopNavLink = getRouteStopNavLink(job, idx);
@@ -1714,15 +1743,15 @@ export default function App() {
                         <Navigation size={12} className="text-indigo-500 " />
                         <span>Next Stop Navigation</span>
                       </span>
-                      {routeAJobs.find(j => j.status !== 'completed') && (
+                      {routeAJobs.find(j => !isJobDone(j)) && (
                         <span className="text-xs font-bold text-slate-400 dark:text-slate-500 font-mono">
-                          Stop #{routeAJobs.indexOf(routeAJobs.find(j => j.status !== 'completed')!) + 1} of {routeAJobs.length}
+                          Stop #{routeAJobs.indexOf(routeAJobs.find(j => !isJobDone(j))!) + 1} of {routeAJobs.length}
                         </span>
                       )}
                     </div>
 
                     {(() => {
-                      const nextStop = routeAJobs.find(j => j.status !== 'completed');
+                      const nextStop = routeAJobs.find(j => !isJobDone(j));
                       if (!nextStop) {
                         return (
                           <div className="py-8 text-center space-y-3">
@@ -1784,7 +1813,7 @@ export default function App() {
                           </div>
 
                           <div className="flex flex-wrap gap-1.5">
-                            {nextStop.isRevisionRequired && (
+                            {isRevisionJob(nextStop) && (
                               <span className="bg-rose-50 border border-rose-200/60 text-rose-600 dark:bg-rose-950/20 dark:border-rose-500/20 dark:text-rose-400 text-[9px] font-black uppercase px-2.5 py-1 rounded-md">
                                 Revision Required
                               </span>
@@ -1958,7 +1987,7 @@ export default function App() {
                   </div>
                   <div className="mt-2">
                     <span className="block text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
-                      {routeAJobs.filter(j => j.status !== 'completed').length}
+                      {routeAJobs.filter(j => !isJobDone(j)).length}
                     </span>
                     <span className="block text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-wider">
                       of {routeAJobs.length} Remaining
@@ -1966,7 +1995,7 @@ export default function App() {
                   </div>
                   <div className="border-t border-slate-100 dark:border-white/5 pt-2 mt-2">
                     {(() => {
-                      const completed = routeAJobs.filter(j => j.status === 'completed').length;
+                      const completed = routeAJobs.filter(isJobDone).length;
                       const total = routeAJobs.length || 1;
                       const pct = (completed / total) * 100;
                       return (
@@ -2036,7 +2065,7 @@ export default function App() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
                       {(() => {
-                        const revisionJobs = routeAJobs.filter(j => j.isRevisionRequired || j.status === 'revisit');
+                        const revisionJobs = routeAJobs.filter(isRevisionJob);
                         return (
                           <>
                             <div className={`p-3 rounded-2xl flex-shrink-0 ${
@@ -2057,7 +2086,7 @@ export default function App() {
 
                     <div className="space-y-2">
                       {(() => {
-                        const revisionJobs = routeAJobs.filter(j => j.isRevisionRequired || j.status === 'revisit');
+                        const revisionJobs = routeAJobs.filter(isRevisionJob);
                         if (revisionJobs.length === 0) {
                           return (
                             <div className="p-3 rounded-xl bg-emerald-500/[0.02] border border-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center gap-2">
@@ -2171,15 +2200,15 @@ export default function App() {
                         <Navigation size={10} className="" />
                         <span>Next Target stop</span>
                       </span>
-                      {routeAJobs.find(j => j.status !== 'completed') && (
+                      {routeAJobs.find(j => !isJobDone(j)) && (
                         <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">
-                          Stop #{routeAJobs.indexOf(routeAJobs.find(j => j.status !== 'completed')!) + 1} of {routeAJobs.length}
+                          Stop #{routeAJobs.indexOf(routeAJobs.find(j => !isJobDone(j))!) + 1} of {routeAJobs.length}
                         </span>
                       )}
                     </div>
 
                     {(() => {
-                      const nextStop = routeAJobs.find(j => j.status !== 'completed');
+                      const nextStop = routeAJobs.find(j => !isJobDone(j));
                       if (!nextStop) {
                         return (
                           <div className="py-6 text-center space-y-2">
@@ -2236,7 +2265,7 @@ export default function App() {
                           </div>
 
                           <div className="flex flex-wrap gap-1.5 pt-1">
-                            {nextStop.isRevisionRequired && (
+                            {isRevisionJob(nextStop) && (
                               <span className="bg-rose-50 border border-rose-200/60 text-rose-600 dark:bg-rose-950/20 dark:border-rose-500/20 dark:text-rose-400 text-[9px] font-black uppercase px-2 py-0.5 rounded-md">
                                 Revision Required
                               </span>
@@ -2418,28 +2447,28 @@ export default function App() {
                               {idx + 1}
                             </div>
                             <div className={`flex-1 min-w-0 border p-3.5 rounded-xl space-y-1.5 hover:border-slate-300 dark:hover:border-white/10 transition-all ${
-                              job.status === 'completed'
+                              isJobDone(job)
                                 ? 'bg-slate-50/70 border-slate-200 dark:bg-white/[0.02] dark:border-white/5 opacity-70'
-                                : job.isRevisionRequired || job.status === 'revisit'
+                                : isRevisionJob(job)
                                 ? 'bg-rose-500/[0.02] border-rose-200/60 dark:border-rose-500/15'
                                 : 'bg-slate-500/[0.01] border-slate-200 dark:border-white/5'
                             }`}>
                               <div className="flex items-start gap-2.5">
                                 <input
                                   type="checkbox"
-                                  checked={job.status === 'completed'}
+                                  checked={isJobDone(job)}
                                   onChange={() => handleToggleComplete(job.id)}
                                   className="mt-0.5 h-4 w-4 rounded-md border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-white/10 cursor-pointer"
                                 />
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center justify-between gap-1">
-                                    <h4 className={`font-extrabold text-xs truncate ${job.status === 'completed' ? 'line-through text-slate-400' : 'text-slate-900 dark:text-white'}`}>{job.storeName}</h4>
+                                    <h4 className={`font-extrabold text-xs truncate ${isJobDone(job) ? 'line-through text-slate-400' : 'text-slate-900 dark:text-white'}`}>{job.storeName}</h4>
                                     <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">${job.pay.toFixed(2)}</span>
                                   </div>
                                   <p className="text-[10px] text-slate-400 dark:text-slate-400 truncate mt-0.5">{job.address}</p>
                                   
                                   <div className="flex flex-wrap gap-1 mt-1.5">
-                                    {job.isRevisionRequired && (
+                                    {isRevisionJob(job) && (
                                       <span className="bg-rose-50 text-rose-600 border border-rose-100 dark:bg-rose-950/20 dark:border-rose-500/20 dark:text-rose-400 text-[8px] font-black uppercase px-1.5 py-0.2 rounded">
                                         Revision Required
                                       </span>
@@ -3317,9 +3346,9 @@ export default function App() {
             <div className="space-y-6 animate-fade-in" id="tab-view-tracker">
               {trackerStatus === 'completed' ? (
                 <EndOfDaySummary
-                  completedJobs={jobs.filter(j => j.routeId === 'A' && j.status === 'completed')}
-                  remainingJobs={jobs.filter(j => j.routeId === 'A' && j.status !== 'completed')}
-                  totalMoneyEarned={jobs.filter(j => j.routeId === 'A' && j.status === 'completed').reduce((sum, j) => sum + j.pay, 0)}
+                  completedJobs={jobs.filter(j => j.routeId === 'A' && isJobDone(j))}
+                  remainingJobs={jobs.filter(j => j.routeId === 'A' && !isJobDone(j))}
+                  totalMoneyEarned={jobs.filter(j => j.routeId === 'A' && isJobDone(j)).reduce((sum, j) => sum + j.pay, 0)}
                   rideTime={trackerRideTime}
                   storeTime={trackerStoreTime}
                   batteryUsed={Math.max(0, trackerStartBattery - currentBattery)}
@@ -3456,7 +3485,7 @@ export default function App() {
                             batteryUsed: batteryUsed,
                             jobsCompletedCount: trackerJobsCompleted.length,
                             completedJobNames: routeAJobs
-                              .filter(job => trackerJobsCompleted.includes(job.id) || job.status === 'completed' || job.isCompleted)
+                              .filter(job => trackerJobsCompleted.includes(job.id) || isJobDone(job))
                               .map(job => job.storeName),
                             distance: distance,
                             estimatedEarnings: completedRouteAJobs.reduce((sum, job) => sum + job.pay, 0),
@@ -3593,7 +3622,7 @@ export default function App() {
                       {routeAJobs.length > 0 ? (
                         <div className="space-y-2.5">
                           {routeAJobs.map((job) => {
-                            const isDone = job.status === 'completed';
+                            const isDone = isJobDone(job);
                             return (
                               <div
                                 key={job.id}

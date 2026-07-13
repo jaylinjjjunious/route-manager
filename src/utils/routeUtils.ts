@@ -4,6 +4,7 @@
  */
 
 import { Job, Coordinates, RouteMetrics, OutlierReport, RouteScoreReport, EbikeConfig, OutlierStatus } from '../types';
+import { isJobCompleted, isRevisionJob } from './jobState';
 
 // Real latitude & longitude mapping for Bakersfield landmarks to provide accurate distance calculations
 export const BAKERSFIELD_COORDINATES: Record<string, Coordinates> = {
@@ -116,7 +117,7 @@ export function calculateRouteMetrics(
   config: EbikeConfig = DEFAULT_EBIKE_CONFIG
 ): RouteMetrics {
   const totalJobsCount = orderedJobs.length;
-  const completedJobsCount = orderedJobs.filter(j => j.status === 'completed').length;
+  const completedJobsCount = orderedJobs.filter(isJobCompleted).length;
   
   let totalPay = 0;
   let totalWorkTime = 0;
@@ -414,14 +415,6 @@ export const MockRoutingProvider: RoutingProvider = {
   }
 };
 
-function isCompletedJob(job: Job): boolean {
-  return job.status === 'completed' || job.isCompleted === true;
-}
-
-function isRevisionJob(job: Job): boolean {
-  return job.isRevisionRequired === true || job.status === 'revisit';
-}
-
 function hasDeadline(job: Job): boolean {
   return !!(job.dueTime && job.dueTime.trim() !== '' && !/flex/i.test(job.dueTime));
 }
@@ -598,8 +591,8 @@ export function optimizeRouteWithSmartMerge(
   if (jobs.length === 0) return [];
 
   // Extract completed jobs (kept at the beginning to maintain timeline) and pending jobs.
-  const completedJobs = jobs.filter(isCompletedJob);
-  const pendingJobs = jobs.filter(j => !isCompletedJob(j));
+  const completedJobs = jobs.filter(isJobCompleted);
+  const pendingJobs = jobs.filter(j => !isJobCompleted(j));
 
   if (pendingJobs.length === 0) {
     return completedJobs;

@@ -1,5 +1,34 @@
 # Route Manager Current State
 
+## Phase 2 Summary
+
+Phase 2 implemented job data model cleanup without starting Phase 3 proof vault work.
+
+Changed in Phase 2:
+
+- Added `src/utils/jobState.ts` as the shared job-state contract.
+- Made `status` the canonical state field while keeping `isCompleted` and `isRevisionRequired` synced as compatibility flags for existing UI components.
+- Normalized legacy `pending` jobs to `ready`.
+- Added a `route_optimizer_jobs_schema_version` localStorage marker for the state cleanup.
+- Migrated saved jobs when the app loads instead of requiring old seed-job markers to accept localStorage data.
+- Normalized jobs before saving, optimizing, and persisting route state.
+- Updated route metrics, smart merge logic, AI Dispatcher, JobCard, and main app filters to use the shared completion/revision helpers.
+- Kept process server fields inside the existing shared `Job` model.
+- Preserved completion, proof folder creation, dispatcher actions, smart route merge, and Ride Mode behavior.
+
+Job state contract after Phase 2:
+
+- `completed`: `status = "completed"`, `isCompleted = true`, `isRevisionRequired = false`.
+- `revision`: `status = "revisit"`, `isCompleted = false`, `isRevisionRequired = true`.
+- `ready`, `postponed`, and `outlier`: `isCompleted = false`, `isRevisionRequired = false`.
+- Legacy `pending` becomes `ready` during normalization.
+
+Checks run during Phase 2:
+
+- `npm run lint`: passed.
+- `npm run build`: passed.
+- Browser smoke test on `http://localhost:3000/`: passed for dashboard render, completion recalculation, dispatcher update, and Jobs tab add controls.
+
 ## Phase 1 Summary
 
 Phase 1 implemented the approved Dashboard and Route Visibility plan without starting Phase 2 data-model cleanup.
@@ -87,23 +116,23 @@ This currently works for rapid development and same-browser use. It is not yet e
 - Screenshot OCR calls a provider-style endpoint, but the audited files do not confirm a complete production OCR backend.
 - Premium voice providers call a future `/api/dispatcher/tts` endpoint and currently rely on browser voice fallback.
 - AI Dispatcher is deterministic/local, not a live LLM-backed operations agent.
-- Job status and flags exist in multiple forms (`status`, `isCompleted`, `isRevisionRequired`) and should be normalized carefully.
+- Job status and compatibility flags are normalized through `src/utils/jobState.ts`, but the UI still carries both canonical and compatibility fields until a deeper persistence upgrade.
 - Charging locations, saved home/base locations, and full daily calendar planning are not yet formalized.
 - Phase 0 did not change UI or feature behavior by design.
 
-## Phase 2 Recommended Plan
+## Phase 3 Recommended Plan
 
-Phase 2 should focus on job data model cleanup, because the current app has multiple job state fields that work but need clearer consistency before adding more automation.
+Phase 3 should focus on proof vault hardening, because completion proof is already created locally but needs stronger structure before production reliance.
 
 Recommended scope:
 
-1. Normalize active, revision, completed, postponed, outlier, and process server job states.
-2. Decide how `status`, `isCompleted`, and `isRevisionRequired` should relate.
-3. Add safe localStorage migration handling for existing user data.
-4. Keep process server jobs inside the shared route model.
-5. Preserve all current completion, proof vault, dispatcher, and route behavior.
+1. Improve proof folder creation and late-proof editing.
+2. Add proof completeness indicators.
+3. Add process server-specific proof checklist fields.
+4. Prepare storage boundaries for a future database or file bucket.
+5. Preserve current completion and route behavior.
 6. Run TypeScript/build checks and browser smoke tests.
 
 ## Approval Needed
 
-Per the current instruction, implementation should stop here before Phase 2.
+Per the current instruction, implementation should stop here before Phase 3.
