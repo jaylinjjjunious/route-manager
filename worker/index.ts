@@ -45,10 +45,15 @@ const ensureHabitSchema = async (db: D1Database) => {
       task_name TEXT NOT NULL,
       target_minutes INTEGER NOT NULL,
       last_minutes INTEGER NOT NULL,
+      active_task_id TEXT,
+      tasks_json TEXT,
       logs_json TEXT NOT NULL,
       updated_at TEXT NOT NULL
     )`),
   ]);
+
+  await db.prepare("ALTER TABLE habit_state ADD COLUMN active_task_id TEXT").run().catch(() => undefined);
+  await db.prepare("ALTER TABLE habit_state ADD COLUMN tasks_json TEXT").run().catch(() => undefined);
 };
 
 const handleHabitsApi = async (request: Request, env: Env): Promise<Response> => {
@@ -60,12 +65,14 @@ const handleHabitsApi = async (request: Request, env: Env): Promise<Response> =>
 
   if (request.method === "GET") {
     const row = await env.DB
-      .prepare("SELECT task_name, target_minutes, last_minutes, logs_json, updated_at FROM habit_state WHERE id = ?")
+      .prepare("SELECT task_name, target_minutes, last_minutes, active_task_id, tasks_json, logs_json, updated_at FROM habit_state WHERE id = ?")
       .bind("default")
       .first<{
         task_name: string;
         target_minutes: number;
         last_minutes: number;
+        active_task_id: string | null;
+        tasks_json: string | null;
         logs_json: string;
         updated_at: string;
       }>();
@@ -75,6 +82,14 @@ const handleHabitsApi = async (request: Request, env: Env): Promise<Response> =>
         taskName: "Daily Focus Task",
         targetMinutes: 30,
         lastMinutes: 30,
+        activeTaskId: "habit-task-default",
+        tasks: [{
+          id: "habit-task-default",
+          name: "Daily Focus Task",
+          targetMinutes: 30,
+          lastMinutes: 30,
+          createdAt: new Date().toISOString(),
+        }],
         logs: [],
         updatedAt: null,
       });
@@ -84,6 +99,8 @@ const handleHabitsApi = async (request: Request, env: Env): Promise<Response> =>
       taskName: row.task_name,
       targetMinutes: row.target_minutes,
       lastMinutes: row.last_minutes,
+      activeTaskId: row.active_task_id || "habit-task-default",
+      tasks: JSON.parse(row.tasks_json || "[]"),
       logs: JSON.parse(row.logs_json || "[]"),
       updatedAt: row.updated_at,
     });
@@ -94,6 +111,8 @@ const handleHabitsApi = async (request: Request, env: Env): Promise<Response> =>
       taskName?: string;
       targetMinutes?: number;
       lastMinutes?: number;
+      activeTaskId?: string;
+      tasks?: unknown[];
       logs?: unknown[];
     };
 
@@ -104,19 +123,43 @@ const handleHabitsApi = async (request: Request, env: Env): Promise<Response> =>
     const taskName = (payload.taskName || "Daily Focus Task").toString().trim().slice(0, 120) || "Daily Focus Task";
     const targetMinutes = Math.max(1, Math.min(1440, Math.round(Number(payload.targetMinutes) || 30)));
     const lastMinutes = Math.max(1, Math.min(1440, Math.round(Number(payload.lastMinutes) || targetMinutes)));
-    const logs = Array.isArray(payload.logs) ? payload.logs.slice(0, 1000) : [];
+    const activeTaskId = (payload.activeTaskId || "habit-task-default").toString().trim().slice(0, 80) || "habit-task-default";
     const updatedAt = new Date().toISOString();
+    const tasks = Array.isArray(payload.tasks)
+      ? payload.tasks.slice(0, 100).map((task) => {
+        const record = task && typeof task === "object" ? task as Record<string, unknown> : {};
+        const id = (record.id || `habit-task-${Date.now()}`).toString().trim().slice(0, 80);
+        const name = (record.name || taskName).toString().trim().slice(0, 120) || taskName;
+        const taskTargetMinutes = Math.max(1, Math.min(1440, Math.round(Number(record.targetMinutes) || targetMinutes)));
+        return {
+          id,
+          name,
+          targetMinutes: taskTargetMinutes,
+          lastMinutes: Math.max(1, Math.min(1440, Math.round(Number(record.lastMinutes) || taskTargetMinutes))),
+          createdAt: (record.createdAt || updatedAt).toString(),
+        };
+      })
+      : [{
+        id: activeTaskId,
+        name: taskName,
+        targetMinutes,
+        lastMinutes,
+        createdAt: updatedAt,
+      }];
+    const logs = Array.isArray(payload.logs) ? payload.logs.slice(0, 1000) : [];
 
     await env.DB
-      .prepare(`INSERT INTO habit_state (id, task_name, target_minutes, last_minutes, logs_json, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?)
+      .prepare(`INSERT INTO habit_state (id, task_name, target_minutes, last_minutes, active_task_id, tasks_json, logs_json, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           task_name = excluded.task_name,
           target_minutes = excluded.target_minutes,
           last_minutes = excluded.last_minutes,
+          active_task_id = excluded.active_task_id,
+          tasks_json = excluded.tasks_json,
           logs_json = excluded.logs_json,
           updated_at = excluded.updated_at`)
-      .bind("default", taskName, targetMinutes, lastMinutes, JSON.stringify(logs), updatedAt)
+      .bind("default", taskName, targetMinutes, lastMinutes, activeTaskId, JSON.stringify(tasks), JSON.stringify(logs), updatedAt)
       .run();
 
     return jsonResponse({ ok: true, updatedAt });

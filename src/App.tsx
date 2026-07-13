@@ -65,12 +65,29 @@ interface ProofRecord {
 
 interface HabitLog {
   id: string;
+  taskId?: string;
   taskName: string;
   minutes: number;
   date: string;
   note: string;
   createdAt: string;
 }
+
+interface HabitTask {
+  id: string;
+  name: string;
+  targetMinutes: number;
+  lastMinutes: number;
+  createdAt: string;
+}
+
+const createDefaultHabitTask = (): HabitTask => ({
+  id: 'habit-task-default',
+  name: 'Daily Focus Task',
+  targetMinutes: 30,
+  lastMinutes: 30,
+  createdAt: new Date().toISOString()
+});
 
 const SEED_JOBS: Job[] = [
   {
@@ -241,9 +258,28 @@ export default function App() {
     }
   });
   const trackerTimerRef = useRef<number | null>(null);
-  const [habitTaskName, setHabitTaskName] = useState<string>(() => localStorage.getItem('habit_tracker_task_name') || 'Daily Focus Task');
-  const [habitTargetMinutes, setHabitTargetMinutes] = useState<number>(() => Number(localStorage.getItem('habit_tracker_target_minutes') || '30'));
-  const [habitLogMinutes, setHabitLogMinutes] = useState<number>(() => Number(localStorage.getItem('habit_tracker_last_minutes') || '30'));
+  const [habitTasks, setHabitTasks] = useState<HabitTask[]>(() => {
+    try {
+      const savedTasks = localStorage.getItem('habit_tracker_tasks');
+      if (savedTasks) {
+        const parsedTasks = JSON.parse(savedTasks);
+        if (Array.isArray(parsedTasks) && parsedTasks.length > 0) {
+          return parsedTasks;
+        }
+      }
+    } catch {
+      // Fall through to legacy single-task migration.
+    }
+
+    return [{
+      id: 'habit-task-default',
+      name: localStorage.getItem('habit_tracker_task_name') || 'Daily Focus Task',
+      targetMinutes: Number(localStorage.getItem('habit_tracker_target_minutes') || '30'),
+      lastMinutes: Number(localStorage.getItem('habit_tracker_last_minutes') || '30'),
+      createdAt: new Date().toISOString()
+    }];
+  });
+  const [activeHabitTaskId, setActiveHabitTaskId] = useState<string>(() => localStorage.getItem('habit_tracker_active_task_id') || 'habit-task-default');
   const [habitLogNote, setHabitLogNote] = useState('');
   const [habitLogs, setHabitLogs] = useState<HabitLog[]>(() => {
     try {
@@ -255,6 +291,10 @@ export default function App() {
   });
   const [habitSyncStatus, setHabitSyncStatus] = useState<'loading' | 'synced' | 'offline' | 'saving'>('loading');
   const habitBackendLoadedRef = useRef(false);
+  const activeHabitTask = habitTasks.find(task => task.id === activeHabitTaskId) || habitTasks[0] || createDefaultHabitTask();
+  const habitTaskName = activeHabitTask.name;
+  const habitTargetMinutes = Math.max(1, Number(activeHabitTask.targetMinutes) || 30);
+  const habitLogMinutes = Math.max(1, Number(activeHabitTask.lastMinutes) || habitTargetMinutes);
   const [selectedEngine, setSelectedEngine] = useState<'mock' | 'google' | 'apple' | 'osrm' | 'mapbox'>('mock');
   const [engineNotification, setEngineNotification] = useState<string | null>(null);
   const [jobsSubTab, setJobsSubTab] = useState<'list' | 'import'>('list');
@@ -412,11 +452,13 @@ export default function App() {
   }, [trackerStatus, trackerRideTime, trackerStoreTime, trackerTotalDayTime, trackerStartBattery, trackerJobsCompleted]);
 
   useEffect(() => {
+    localStorage.setItem('habit_tracker_tasks', JSON.stringify(habitTasks));
+    localStorage.setItem('habit_tracker_active_task_id', activeHabitTask.id);
     localStorage.setItem('habit_tracker_task_name', habitTaskName);
     localStorage.setItem('habit_tracker_target_minutes', habitTargetMinutes.toString());
     localStorage.setItem('habit_tracker_last_minutes', habitLogMinutes.toString());
     localStorage.setItem('habit_tracker_logs', JSON.stringify(habitLogs));
-  }, [habitTaskName, habitTargetMinutes, habitLogMinutes, habitLogs]);
+  }, [habitTasks, activeHabitTask.id, habitTaskName, habitTargetMinutes, habitLogMinutes, habitLogs]);
 
   useEffect(() => {
     let isMounted = true;
@@ -428,20 +470,42 @@ export default function App() {
         const backend = await response.json();
         if (!isMounted) return;
 
+        const legacyBackendTask: HabitTask = {
+          id: 'habit-task-default',
+          name: backend.taskName || 'Daily Focus Task',
+          targetMinutes: Number(backend.targetMinutes || 30),
+          lastMinutes: Number(backend.lastMinutes || backend.targetMinutes || 30),
+          createdAt: backend.updatedAt || new Date().toISOString()
+        };
+        const backendTasks = Array.isArray(backend.tasks) && backend.tasks.length > 0
+          ? backend.tasks as HabitTask[]
+          : [legacyBackendTask];
+        const mergedTasks = [...backendTasks, ...habitTasks].reduce<HabitTask[]>((acc, task) => {
+          if (!task?.id || acc.some(item => item.id === task.id)) return acc;
+          acc.push({
+            id: task.id,
+            name: (task.name || 'Daily Focus Task').toString().trim().slice(0, 120) || 'Daily Focus Task',
+            targetMinutes: Math.max(1, Math.round(Number(task.targetMinutes) || 30)),
+            lastMinutes: Math.max(1, Math.round(Number(task.lastMinutes) || Number(task.targetMinutes) || 30)),
+            createdAt: task.createdAt || new Date().toISOString()
+          });
+          return acc;
+        }, []);
+        const activeId = backend.activeTaskId || activeHabitTaskId || mergedTasks[0]?.id || 'habit-task-default';
         const backendLogs = Array.isArray(backend.logs) ? backend.logs as HabitLog[] : [];
         const mergedLogs = [...backendLogs, ...habitLogs].reduce<HabitLog[]>((acc, log) => {
           if (!log?.id || acc.some(item => item.id === log.id)) return acc;
-          acc.push(log);
+          const matchingTask = mergedTasks.find(task => task.id === log.taskId) || mergedTasks.find(task => task.name === log.taskName);
+          acc.push({
+            ...log,
+            taskId: log.taskId || matchingTask?.id || activeId,
+            taskName: log.taskName || matchingTask?.name || 'Daily Focus Task'
+          });
           return acc;
         }, []);
 
-        const mergedTaskName = backend.taskName || habitTaskName;
-        const mergedTargetMinutes = Number(backend.targetMinutes || habitTargetMinutes || 30);
-        const mergedLastMinutes = Number(backend.lastMinutes || habitLogMinutes || mergedTargetMinutes);
-
-        setHabitTaskName(mergedTaskName);
-        setHabitTargetMinutes(mergedTargetMinutes);
-        setHabitLogMinutes(mergedLastMinutes);
+        setHabitTasks(mergedTasks);
+        setActiveHabitTaskId(mergedTasks.some(task => task.id === activeId) ? activeId : mergedTasks[0]?.id || 'habit-task-default');
         setHabitLogs(mergedLogs);
         habitBackendLoadedRef.current = true;
         setHabitSyncStatus('synced');
@@ -450,9 +514,11 @@ export default function App() {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            taskName: mergedTaskName,
-            targetMinutes: mergedTargetMinutes,
-            lastMinutes: mergedLastMinutes,
+            taskName: mergedTasks.find(task => task.id === activeId)?.name || mergedTasks[0]?.name || 'Daily Focus Task',
+            targetMinutes: mergedTasks.find(task => task.id === activeId)?.targetMinutes || mergedTasks[0]?.targetMinutes || 30,
+            lastMinutes: mergedTasks.find(task => task.id === activeId)?.lastMinutes || mergedTasks[0]?.lastMinutes || 30,
+            activeTaskId: activeId,
+            tasks: mergedTasks,
             logs: mergedLogs
           })
         });
@@ -484,6 +550,8 @@ export default function App() {
             taskName: habitTaskName,
             targetMinutes: habitTargetMinutes,
             lastMinutes: habitLogMinutes,
+            activeTaskId: activeHabitTask.id,
+            tasks: habitTasks,
             logs: habitLogs
           })
         });
@@ -496,7 +564,7 @@ export default function App() {
     }, 450);
 
     return () => window.clearTimeout(saveTimer);
-  }, [habitTaskName, habitTargetMinutes, habitLogMinutes, habitLogs]);
+  }, [habitTaskName, habitTargetMinutes, habitLogMinutes, activeHabitTask.id, habitTasks, habitLogs]);
 
   // Ride Tracker timer interval
   useEffect(() => {
@@ -1208,7 +1276,7 @@ export default function App() {
   };
 
   const todayKey = getDateKey(new Date());
-  const currentHabitLogs = habitLogs.filter(log => log.taskName === habitTaskName);
+  const currentHabitLogs = habitLogs.filter(log => log.taskId === activeHabitTask.id || (!log.taskId && log.taskName === habitTaskName));
   const todayHabitMinutes = currentHabitLogs
     .filter(log => log.date === todayKey)
     .reduce((sum, log) => sum + log.minutes, 0);
@@ -1249,14 +1317,46 @@ export default function App() {
     return streak;
   })();
   const habitRecentLogs = [...currentHabitLogs].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 12);
+  const allHabitMinutesToday = habitLogs
+    .filter(log => log.date === todayKey)
+    .reduce((sum, log) => sum + log.minutes, 0);
+  const habitTasksHitToday = habitTasks.filter(task => {
+    const minutes = habitLogs
+      .filter(log => log.date === todayKey && (log.taskId === task.id || (!log.taskId && log.taskName === task.name)))
+      .reduce((sum, log) => sum + log.minutes, 0);
+    return minutes >= task.targetMinutes;
+  }).length;
+
+  const updateActiveHabitTask = (updates: Partial<Pick<HabitTask, 'name' | 'targetMinutes' | 'lastMinutes'>>) => {
+    setHabitTasks(prev => prev.map(task => task.id === activeHabitTask.id ? {
+      ...task,
+      ...updates,
+      name: updates.name !== undefined ? updates.name : task.name,
+      targetMinutes: updates.targetMinutes !== undefined ? Math.max(1, updates.targetMinutes) : task.targetMinutes,
+      lastMinutes: updates.lastMinutes !== undefined ? Math.max(1, updates.lastMinutes) : task.lastMinutes
+    } : task));
+  };
+
+  const handleAddHabitTask = () => {
+    const newTask: HabitTask = {
+      id: `habit-task-${Date.now()}`,
+      name: `Task ${habitTasks.length + 1}`,
+      targetMinutes: 30,
+      lastMinutes: 30,
+      createdAt: new Date().toISOString()
+    };
+    setHabitTasks(prev => [...prev, newTask]);
+    setActiveHabitTaskId(newTask.id);
+  };
 
   const handleLogHabitSession = () => {
     const minutes = Math.max(1, Math.round(habitLogMinutes || habitTargetMinutes || 30));
     const taskName = habitTaskName.trim() || 'Daily Focus Task';
-    setHabitTaskName(taskName);
+    updateActiveHabitTask({ name: taskName, lastMinutes: minutes });
     setHabitLogs(prev => [
       {
         id: `habit-${Date.now()}`,
+        taskId: activeHabitTask.id,
         taskName,
         minutes,
         date: todayKey,
@@ -3915,10 +4015,10 @@ export default function App() {
                   <div>
                     <p className="text-sm font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Consistency Tracker</p>
                     <h2 className="mt-1 text-4xl font-black leading-none text-slate-950 dark:text-white sm:text-5xl">
-                      Daily time goals
+                      Task time goals
                     </h2>
                     <p className="mt-2 max-w-2xl text-sm font-bold text-slate-500 dark:text-slate-300">
-                      Track a repeat task, log the minutes you completed, and see how consistent you have been.
+                      Add multiple repeat tasks, log street work or focus time, and track each task separately.
                     </p>
                   </div>
                   <div className={`rounded-[8px] px-4 py-3 text-right ${habitGoalComplete ? 'bg-emerald-600 text-white' : 'bg-amber-400 text-slate-950'}`}>
@@ -3934,6 +4034,67 @@ export default function App() {
                 </div>
               </div>
 
+              <section className="rounded-[8px] border-2 border-slate-300 bg-white p-4 dark:border-white/20 dark:bg-[#17181b]">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Task Board</p>
+                    <h3 className="text-3xl font-black text-slate-950 dark:text-white">Tracked Tasks</h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddHabitTask}
+                    className="flex min-h-14 items-center justify-center gap-2 rounded-[8px] bg-slate-950 px-5 text-lg font-black uppercase text-white shadow-lg transition hover:bg-slate-800 dark:bg-white dark:text-slate-950"
+                  >
+                    <Plus size={22} />
+                    <span>Add Task</span>
+                  </button>
+                </div>
+
+                <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
+                  {habitTasks.map(task => {
+                    const taskLogs = habitLogs.filter(log => log.taskId === task.id || (!log.taskId && log.taskName === task.name));
+                    const taskTodayMinutes = taskLogs
+                      .filter(log => log.date === todayKey)
+                      .reduce((sum, log) => sum + log.minutes, 0);
+                    const taskComplete = taskTodayMinutes >= task.targetMinutes;
+                    const isActive = activeHabitTask.id === task.id;
+                    return (
+                      <button
+                        key={task.id}
+                        type="button"
+                        onClick={() => setActiveHabitTaskId(task.id)}
+                        className={`min-w-[220px] rounded-[8px] border-2 p-4 text-left transition ${isActive ? 'border-blue-700 bg-blue-50 dark:bg-blue-500/10' : 'border-slate-200 bg-slate-50 hover:border-blue-300 dark:border-white/10 dark:bg-white/[0.04]'}`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="truncate text-xl font-black text-slate-950 dark:text-white">{task.name}</p>
+                          <span className={`shrink-0 rounded-[8px] px-2 py-1 text-xs font-black uppercase ${taskComplete ? 'bg-emerald-600 text-white' : 'bg-amber-400 text-slate-950'}`}>
+                            {taskComplete ? 'Done' : 'Open'}
+                          </span>
+                        </div>
+                        <p className="mt-3 text-4xl font-black leading-none text-slate-950 dark:text-white">{taskTodayMinutes}</p>
+                        <p className="text-base font-black uppercase text-slate-500 dark:text-slate-300">of {task.targetMinutes} min today</p>
+                        <p className="mt-2 text-sm font-black uppercase text-blue-700 dark:text-blue-300">{taskLogs.length} sessions</p>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-[8px] bg-slate-950 p-4 text-white">
+                    <p className="text-sm font-black uppercase">Tasks Tracked</p>
+                    <p className="mt-2 text-4xl font-black leading-none">{habitTasks.length}</p>
+                  </div>
+                  <div className="rounded-[8px] bg-emerald-600 p-4 text-white">
+                    <p className="text-sm font-black uppercase">Hit Today</p>
+                    <p className="mt-2 text-4xl font-black leading-none">{habitTasksHitToday}</p>
+                  </div>
+                  <div className="rounded-[8px] bg-blue-700 p-4 text-white">
+                    <p className="text-sm font-black uppercase">Time Today</p>
+                    <p className="mt-2 text-4xl font-black leading-none">{allHabitMinutesToday}m</p>
+                  </div>
+                </div>
+              </section>
+
               <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
                 <section className="rounded-[8px] border-2 border-slate-300 bg-white p-5 dark:border-white/20 dark:bg-[#17181b]">
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -3944,9 +4105,9 @@ export default function App() {
                       <input
                         id="habit-task-name"
                         value={habitTaskName}
-                        onChange={(event) => setHabitTaskName(event.target.value)}
+                        onChange={(event) => updateActiveHabitTask({ name: event.target.value })}
                         className="mt-2 min-h-14 w-full rounded-[8px] border-2 border-slate-300 bg-white px-4 text-lg font-black text-slate-950 outline-none focus:border-blue-700 dark:border-white/10 dark:bg-black/20 dark:text-white"
-                        placeholder="Example: Study, workout, paperwork"
+                        placeholder="Example: Street outreach, paperwork, study"
                       />
                     </div>
                     <div>
@@ -3958,7 +4119,7 @@ export default function App() {
                         type="number"
                         min="1"
                         value={habitTargetMinutes}
-                        onChange={(event) => setHabitTargetMinutes(Math.max(1, Number(event.target.value) || 1))}
+                        onChange={(event) => updateActiveHabitTask({ targetMinutes: Math.max(1, Number(event.target.value) || 1) })}
                         className="mt-2 min-h-14 w-full rounded-[8px] border-2 border-slate-300 bg-white px-4 text-lg font-black text-slate-950 outline-none focus:border-blue-700 dark:border-white/10 dark:bg-black/20 dark:text-white"
                       />
                     </div>
@@ -3975,7 +4136,7 @@ export default function App() {
                           type="number"
                           min="1"
                           value={habitLogMinutes}
-                          onChange={(event) => setHabitLogMinutes(Math.max(1, Number(event.target.value) || 1))}
+                          onChange={(event) => updateActiveHabitTask({ lastMinutes: Math.max(1, Number(event.target.value) || 1) })}
                           className="mt-2 min-h-16 w-full rounded-[8px] border-2 border-slate-300 bg-white px-4 text-3xl font-black text-slate-950 outline-none focus:border-blue-700 dark:border-white/10 dark:bg-[#17181b] dark:text-white"
                         />
                       </div>

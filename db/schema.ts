@@ -4,8 +4,9 @@ CREATE TABLE IF NOT EXISTS habit_state (
   task_name TEXT NOT NULL,
   target_minutes INTEGER NOT NULL,
   last_minutes INTEGER NOT NULL,
+  active_task_id TEXT,
+  tasks_json TEXT,
   logs_json TEXT NOT NULL,
   updated_at TEXT NOT NULL
 )
 `;
-
