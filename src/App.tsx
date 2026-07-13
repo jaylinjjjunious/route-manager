@@ -253,6 +253,8 @@ export default function App() {
       return [];
     }
   });
+  const [habitSyncStatus, setHabitSyncStatus] = useState<'loading' | 'synced' | 'offline' | 'saving'>('loading');
+  const habitBackendLoadedRef = useRef(false);
   const [selectedEngine, setSelectedEngine] = useState<'mock' | 'google' | 'apple' | 'osrm' | 'mapbox'>('mock');
   const [engineNotification, setEngineNotification] = useState<string | null>(null);
   const [jobsSubTab, setJobsSubTab] = useState<'list' | 'import'>('list');
@@ -414,6 +416,86 @@ export default function App() {
     localStorage.setItem('habit_tracker_target_minutes', habitTargetMinutes.toString());
     localStorage.setItem('habit_tracker_last_minutes', habitLogMinutes.toString());
     localStorage.setItem('habit_tracker_logs', JSON.stringify(habitLogs));
+  }, [habitTaskName, habitTargetMinutes, habitLogMinutes, habitLogs]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadBackendHabits = async () => {
+      try {
+        const response = await fetch('/api/habits');
+        if (!response.ok) throw new Error('Habit backend unavailable');
+        const backend = await response.json();
+        if (!isMounted) return;
+
+        const backendLogs = Array.isArray(backend.logs) ? backend.logs as HabitLog[] : [];
+        const mergedLogs = [...backendLogs, ...habitLogs].reduce<HabitLog[]>((acc, log) => {
+          if (!log?.id || acc.some(item => item.id === log.id)) return acc;
+          acc.push(log);
+          return acc;
+        }, []);
+
+        const mergedTaskName = backend.taskName || habitTaskName;
+        const mergedTargetMinutes = Number(backend.targetMinutes || habitTargetMinutes || 30);
+        const mergedLastMinutes = Number(backend.lastMinutes || habitLogMinutes || mergedTargetMinutes);
+
+        setHabitTaskName(mergedTaskName);
+        setHabitTargetMinutes(mergedTargetMinutes);
+        setHabitLogMinutes(mergedLastMinutes);
+        setHabitLogs(mergedLogs);
+        habitBackendLoadedRef.current = true;
+        setHabitSyncStatus('synced');
+
+        await fetch('/api/habits', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            taskName: mergedTaskName,
+            targetMinutes: mergedTargetMinutes,
+            lastMinutes: mergedLastMinutes,
+            logs: mergedLogs
+          })
+        });
+      } catch (error) {
+        console.warn('Habit backend sync unavailable. Using local fallback.', error);
+        if (!isMounted) return;
+        habitBackendLoadedRef.current = true;
+        setHabitSyncStatus('offline');
+      }
+    };
+
+    loadBackendHabits();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!habitBackendLoadedRef.current) return;
+
+    const saveTimer = window.setTimeout(async () => {
+      try {
+        setHabitSyncStatus('saving');
+        const response = await fetch('/api/habits', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            taskName: habitTaskName,
+            targetMinutes: habitTargetMinutes,
+            lastMinutes: habitLogMinutes,
+            logs: habitLogs
+          })
+        });
+        if (!response.ok) throw new Error('Habit backend save failed');
+        setHabitSyncStatus('synced');
+      } catch (error) {
+        console.warn('Habit backend save failed. Local copy is still saved.', error);
+        setHabitSyncStatus('offline');
+      }
+    }, 450);
+
+    return () => window.clearTimeout(saveTimer);
   }, [habitTaskName, habitTargetMinutes, habitLogMinutes, habitLogs]);
 
   // Ride Tracker timer interval
@@ -3842,6 +3924,12 @@ export default function App() {
                   <div className={`rounded-[8px] px-4 py-3 text-right ${habitGoalComplete ? 'bg-emerald-600 text-white' : 'bg-amber-400 text-slate-950'}`}>
                     <p className="text-xs font-black uppercase">Today</p>
                     <p className="text-3xl font-black">{todayHabitMinutes} / {habitTargetMinutes} min</p>
+                    <p className="mt-1 text-xs font-black uppercase">
+                      {habitSyncStatus === 'synced' && 'Backend saved'}
+                      {habitSyncStatus === 'saving' && 'Saving'}
+                      {habitSyncStatus === 'loading' && 'Loading'}
+                      {habitSyncStatus === 'offline' && 'Local fallback'}
+                    </p>
                   </div>
                 </div>
               </div>
