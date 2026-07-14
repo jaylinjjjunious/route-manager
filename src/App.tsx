@@ -480,7 +480,7 @@ export default function App() {
         const backendTasks = Array.isArray(backend.tasks) && backend.tasks.length > 0
           ? backend.tasks as HabitTask[]
           : [legacyBackendTask];
-        const mergedTasks = [...backendTasks, ...habitTasks].reduce<HabitTask[]>((acc, task) => {
+        const normalizedBackendTasks = backendTasks.reduce<HabitTask[]>((acc, task) => {
           if (!task?.id || acc.some(item => item.id === task.id)) return acc;
           acc.push({
             id: task.id,
@@ -491,11 +491,11 @@ export default function App() {
           });
           return acc;
         }, []);
-        const activeId = backend.activeTaskId || activeHabitTaskId || mergedTasks[0]?.id || 'habit-task-default';
+        const activeId = backend.activeTaskId || normalizedBackendTasks[0]?.id || 'habit-task-default';
         const backendLogs = Array.isArray(backend.logs) ? backend.logs as HabitLog[] : [];
-        const mergedLogs = [...backendLogs, ...habitLogs].reduce<HabitLog[]>((acc, log) => {
+        const normalizedBackendLogs = backendLogs.reduce<HabitLog[]>((acc, log) => {
           if (!log?.id || acc.some(item => item.id === log.id)) return acc;
-          const matchingTask = mergedTasks.find(task => task.id === log.taskId) || mergedTasks.find(task => task.name === log.taskName);
+          const matchingTask = normalizedBackendTasks.find(task => task.id === log.taskId) || normalizedBackendTasks.find(task => task.name === log.taskName);
           acc.push({
             ...log,
             taskId: log.taskId || matchingTask?.id || activeId,
@@ -503,25 +503,13 @@ export default function App() {
           });
           return acc;
         }, []);
+        const nextTasks = normalizedBackendTasks.length > 0 ? normalizedBackendTasks : [legacyBackendTask];
 
-        setHabitTasks(mergedTasks);
-        setActiveHabitTaskId(mergedTasks.some(task => task.id === activeId) ? activeId : mergedTasks[0]?.id || 'habit-task-default');
-        setHabitLogs(mergedLogs);
+        setHabitTasks(nextTasks);
+        setActiveHabitTaskId(nextTasks.some(task => task.id === activeId) ? activeId : nextTasks[0]?.id || 'habit-task-default');
+        setHabitLogs(normalizedBackendLogs);
         habitBackendLoadedRef.current = true;
         setHabitSyncStatus('synced');
-
-        await fetch('/api/habits', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            taskName: mergedTasks.find(task => task.id === activeId)?.name || mergedTasks[0]?.name || 'Daily Focus Task',
-            targetMinutes: mergedTasks.find(task => task.id === activeId)?.targetMinutes || mergedTasks[0]?.targetMinutes || 30,
-            lastMinutes: mergedTasks.find(task => task.id === activeId)?.lastMinutes || mergedTasks[0]?.lastMinutes || 30,
-            activeTaskId: activeId,
-            tasks: mergedTasks,
-            logs: mergedLogs
-          })
-        });
       } catch (error) {
         console.warn('Habit backend sync unavailable. Using local fallback.', error);
         if (!isMounted) return;
