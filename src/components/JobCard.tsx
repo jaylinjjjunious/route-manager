@@ -18,6 +18,7 @@ interface JobCardProps {
   onDuplicate: (job: Job) => void;
   onToggleRoute: (id: string) => void;
   onUpdateStatus?: (id: string, updates: Partial<Job>) => void;
+  jobAccessLocked?: boolean;
 }
 
 export default function JobCard({
@@ -28,7 +29,8 @@ export default function JobCard({
   onDelete,
   onDuplicate,
   onToggleRoute,
-  onUpdateStatus
+  onUpdateStatus,
+  jobAccessLocked = false
 }: JobCardProps) {
   
   const getJobTypeStyle = (type: JobType) => {
@@ -112,6 +114,9 @@ export default function JobCard({
   };
 
   const handleQuickStatusChange = (statusType: 'completed' | 'revisit' | 'under_review' | 'postponed' | 'ready') => {
+    if (jobAccessLocked && (statusType === 'completed' || statusType === 'under_review' || statusType === 'revisit')) {
+      return;
+    }
     if (onUpdateStatus) {
       switch (statusType) {
         case 'completed':
@@ -186,8 +191,9 @@ export default function JobCard({
           <button
             id={`toggle-complete-${job.id}`}
             onClick={() => handleQuickStatusChange(isDone ? 'ready' : job.status === 'under_review' ? 'completed' : 'under_review')}
-            className="road-icon-button mt-0.5 border-slate-200 bg-white text-slate-400 hover:text-emerald-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-500 dark:hover:text-emerald-400 focus:outline-none"
-            title={isDone ? 'Reactivate' : job.status === 'under_review' ? 'Complete after review' : 'Mark under review'}
+            disabled={jobAccessLocked && !isDone}
+            className="road-icon-button mt-0.5 border-slate-200 bg-white text-slate-400 hover:text-emerald-600 disabled:cursor-not-allowed disabled:opacity-45 dark:border-white/10 dark:bg-white/5 dark:text-slate-500 dark:hover:text-emerald-400 focus:outline-none"
+            title={jobAccessLocked ? 'Shower proof required first' : isDone ? 'Reactivate' : job.status === 'under_review' ? 'Complete after review' : 'Mark under review'}
           >
             {isDone ? (
               <CheckSquare size={24} className="text-blue-500 fill-blue-100 dark:fill-blue-950/30" />
@@ -297,13 +303,14 @@ export default function JobCard({
           {/* Quick Complete / Reactivate */}
           <button
             onClick={() => handleQuickStatusChange(isDone ? 'ready' : job.status === 'under_review' ? 'completed' : 'under_review')}
+            disabled={jobAccessLocked && !isDone}
             className={`road-action ${
               isDone
                 ? 'bg-blue-600 border-blue-600 text-white shadow-xs'
                 : job.status === 'under_review'
                 ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs'
                 : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 dark:bg-white/5 dark:border-white/10 dark:text-slate-300'
-            }`}
+            } disabled:cursor-not-allowed disabled:opacity-45`}
           >
             {isDone || job.status === 'under_review' ? <CheckSquare size={16} /> : <Hourglass size={16} />}
             <span>{isDone ? 'Done' : job.status === 'under_review' ? 'Complete' : 'Under Review'}</span>
@@ -312,11 +319,12 @@ export default function JobCard({
           {/* Quick Revision Required */}
           <button
             onClick={() => handleQuickStatusChange(needsRevision ? 'ready' : 'revisit')}
+            disabled={jobAccessLocked && !needsRevision}
             className={`road-action ${
               needsRevision
                 ? 'bg-rose-600 border-rose-600 text-white shadow-xs'
                 : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 dark:bg-white/5 dark:border-white/10 dark:text-slate-300'
-            }`}
+            } disabled:cursor-not-allowed disabled:opacity-45`}
           >
             <AlertCircle size={16} />
             <span>{needsRevision ? 'Needs Fix' : 'Revision'}</span>
@@ -324,11 +332,12 @@ export default function JobCard({
 
           <button
             onClick={() => handleQuickStatusChange(job.status === 'under_review' ? 'ready' : 'under_review')}
+            disabled={jobAccessLocked && job.status !== 'under_review'}
             className={`road-action ${
               job.status === 'under_review'
                 ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs'
                 : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 dark:bg-white/5 dark:border-white/10 dark:text-slate-300'
-            }`}
+            } disabled:cursor-not-allowed disabled:opacity-45`}
           >
             <Hourglass size={16} />
             <span>{job.status === 'under_review' ? 'Reviewing' : 'Under Review'}</span>

@@ -81,6 +81,30 @@ interface HabitTask {
   createdAt: string;
 }
 
+interface ShowerProof {
+  cycleKey: string;
+  proofName: string;
+  proofDataUrl: string;
+  confirmedAt: string;
+}
+
+const SHOWER_HABIT_TASK_ID = 'habit-task-mandatory-shower';
+const SHOWER_HABIT_NAME = 'Mandatory Shower';
+const SHOWER_GATE_STORAGE_KEY = 'daily_shower_gate_proofs';
+
+const getLocalDateKey = (date: Date) => {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10);
+};
+
+const getShowerCycleKey = (date: Date) => {
+  const cycleDate = new Date(date);
+  if (cycleDate.getHours() < 6) {
+    cycleDate.setDate(cycleDate.getDate() - 1);
+  }
+  return getLocalDateKey(cycleDate);
+};
+
 const createDefaultHabitTask = (): HabitTask => ({
   id: 'habit-task-default',
   name: 'Daily Focus Task',
@@ -292,6 +316,18 @@ export default function App() {
       return [];
     }
   });
+  const [showerProofs, setShowerProofs] = useState<ShowerProof[]>(() => {
+    try {
+      const saved = localStorage.getItem(SHOWER_GATE_STORAGE_KEY);
+      const parsed = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
+  const [showerProofDraft, setShowerProofDraft] = useState<{ name: string; dataUrl: string } | null>(null);
+  const [showerProofInputKey, setShowerProofInputKey] = useState(0);
+  const [nowTick, setNowTick] = useState(() => Date.now());
   const [habitSyncStatus, setHabitSyncStatus] = useState<'loading' | 'synced' | 'offline' | 'saving'>('loading');
   const habitBackendLoadedRef = useRef(false);
   const activeHabitTask = habitTasks.find(task => task.id === activeHabitTaskId) || habitTasks[0] || createDefaultHabitTask();
@@ -418,6 +454,15 @@ export default function App() {
     document.body.classList.toggle('dark', theme === 'dark');
   }, [theme]);
 
+  useEffect(() => {
+    const timer = window.setInterval(() => setNowTick(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(SHOWER_GATE_STORAGE_KEY, JSON.stringify(showerProofs.slice(-14)));
+  }, [showerProofs]);
+
   // Synchronize Operations dashboard message with the latest assistant message
   useEffect(() => {
     try {
@@ -467,6 +512,38 @@ export default function App() {
     localStorage.setItem('habit_tracker_last_minutes', habitLogMinutes.toString());
     localStorage.setItem('habit_tracker_logs', JSON.stringify(habitLogs));
   }, [habitTasks, activeHabitTask.id, habitTaskName, habitTargetMinutes, habitLogMinutes, habitLogs]);
+
+  useEffect(() => {
+    if (!habitBackendLoadedRef.current) return;
+    setHabitTasks(prev => {
+      const showerIndex = prev.findIndex(task => task.id === SHOWER_HABIT_TASK_ID || task.name.toLowerCase() === SHOWER_HABIT_NAME.toLowerCase());
+      if (showerIndex >= 0) {
+        const showerTask = prev[showerIndex];
+        if (
+          showerTask.id === SHOWER_HABIT_TASK_ID &&
+          showerTask.name === SHOWER_HABIT_NAME &&
+          showerTask.targetMinutes === 1 &&
+          showerTask.lastMinutes === 1
+        ) {
+          return prev;
+        }
+        return prev.map((task, index) => index === showerIndex
+          ? { ...task, id: SHOWER_HABIT_TASK_ID, name: SHOWER_HABIT_NAME, targetMinutes: 1, lastMinutes: 1 }
+          : task
+        );
+      }
+      return [
+        ...prev,
+        {
+          id: SHOWER_HABIT_TASK_ID,
+          name: SHOWER_HABIT_NAME,
+          targetMinutes: 1,
+          lastMinutes: 1,
+          createdAt: new Date().toISOString()
+        }
+      ];
+    });
+  }, [habitSyncStatus]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1060,6 +1137,9 @@ export default function App() {
 
   // Job Actions
   const handleUpdateJobStatus = (id: string, updates: Partial<Job>) => {
+    if ((updates.status === 'completed' || updates.status === 'under_review' || updates.isCompleted === true) && blockJobAccess('job status changes')) {
+      return;
+    }
     const targetJob = jobs.find(job => job.id === id);
     const updated = jobs.map(job =>
       job.id === id ? normalizeJobState({ ...job, ...updates }) : job
@@ -1073,6 +1153,7 @@ export default function App() {
   };
 
   const handleMarkUnderReview = (id: string) => {
+    if (blockJobAccess('job review')) return;
     handleUpdateJobStatus(id, {
       status: 'under_review',
       isCompleted: false,
@@ -1115,6 +1196,7 @@ export default function App() {
   };
 
   const handleToggleComplete = (id: string) => {
+    if (blockJobAccess('job completion')) return;
     const targetJob = jobs.find(job => job.id === id);
     if (!targetJob) return;
 
@@ -1281,11 +1363,18 @@ export default function App() {
   };
 
   const getDateKey = (date: Date) => {
-    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-    return local.toISOString().slice(0, 10);
+    return getLocalDateKey(date);
   };
 
-  const todayKey = getDateKey(new Date());
+  const now = new Date(nowTick);
+  const todayKey = getDateKey(now);
+  const showerCycleKey = getShowerCycleKey(now);
+  const showerCycleLabel = new Date(`${showerCycleKey}T12:00:00`).toLocaleDateString([], { month: 'short', day: 'numeric', weekday: 'short' });
+  const showerProofForCycle = showerProofs.find(proof => proof.cycleKey === showerCycleKey);
+  const showerGateUnlocked = Boolean(showerProofForCycle?.proofDataUrl && showerProofForCycle?.confirmedAt);
+  const showerGateStatusText = showerGateUnlocked
+    ? `Unlocked ${new Date(showerProofForCycle!.confirmedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
+    : 'Locked until shower proof is confirmed';
   const currentHabitLogs = habitLogs.filter(log => log.taskId === activeHabitTask.id || (!log.taskId && log.taskName === habitTaskName));
   const todayHabitMinutes = currentHabitLogs
     .filter(log => log.date === todayKey)
@@ -1336,6 +1425,94 @@ export default function App() {
       .reduce((sum, log) => sum + log.minutes, 0);
     return minutes >= task.targetMinutes;
   }).length;
+  const showerHabitLogs = habitLogs.filter(log => log.taskId === SHOWER_HABIT_TASK_ID || log.taskName === SHOWER_HABIT_NAME);
+  const showerHabitLoggedForCycle = showerHabitLogs.some(log => log.date === showerCycleKey);
+
+  const blockJobAccess = (action: string) => {
+    if (showerGateUnlocked) return false;
+    setCurrentTab('habits');
+    setActiveHabitTaskId(SHOWER_HABIT_TASK_ID);
+    setDispatcherMessage(`Shower proof required before ${action}. Confirm today's shower in Habits to unlock jobs.`);
+    return true;
+  };
+
+  const handleShowerProofFile = (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setShowerProofDraft({
+        name: file.name,
+        dataUrl: String(reader.result || '')
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleConfirmDailyShower = () => {
+    if (!showerProofDraft?.dataUrl) {
+      setDispatcherMessage('Add shower proof first. Jobs stay locked until proof is attached and confirmed.');
+      return;
+    }
+
+    const confirmedAt = new Date().toISOString();
+    const proof: ShowerProof = {
+      cycleKey: showerCycleKey,
+      proofName: showerProofDraft.name,
+      proofDataUrl: showerProofDraft.dataUrl,
+      confirmedAt
+    };
+
+    setShowerProofs(prev => [
+      ...prev.filter(item => item.cycleKey !== showerCycleKey),
+      proof
+    ]);
+
+    setHabitTasks(prev => {
+      if (prev.some(task => task.id === SHOWER_HABIT_TASK_ID)) return prev;
+      return [
+        ...prev,
+        {
+          id: SHOWER_HABIT_TASK_ID,
+          name: SHOWER_HABIT_NAME,
+          targetMinutes: 1,
+          lastMinutes: 1,
+          createdAt: confirmedAt
+        }
+      ];
+    });
+
+    setHabitLogs(prev => {
+      if (prev.some(log => log.date === showerCycleKey && (log.taskId === SHOWER_HABIT_TASK_ID || log.taskName === SHOWER_HABIT_NAME))) {
+        return prev;
+      }
+      return [
+        {
+          id: `habit-shower-${showerCycleKey}-${Date.now()}`,
+          taskId: SHOWER_HABIT_TASK_ID,
+          taskName: SHOWER_HABIT_NAME,
+          minutes: 1,
+          date: showerCycleKey,
+          note: `Proof confirmed: ${showerProofDraft.name}`,
+          createdAt: confirmedAt
+        },
+        ...prev
+      ];
+    });
+
+    setShowerProofDraft(null);
+    setShowerProofInputKey(prev => prev + 1);
+    setActiveHabitTaskId(SHOWER_HABIT_TASK_ID);
+    setDispatcherMessage('Shower confirmed. Jobs are unlocked for this daily cycle.');
+  };
+
+  useEffect(() => {
+    if (!showerGateUnlocked && rideModeActive) {
+      setRideModeActive(false);
+      setTrackerStatus('idle');
+      setDispatcherMessage('Daily shower gate reset at 6:00 AM. Confirm shower proof before continuing jobs.');
+    }
+  }, [showerGateUnlocked, rideModeActive]);
 
   const updateActiveHabitTask = (updates: Partial<Pick<HabitTask, 'name' | 'targetMinutes' | 'lastMinutes'>>) => {
     setHabitTasks(prev => prev.map(task => task.id === activeHabitTask.id ? {
@@ -1418,6 +1595,7 @@ export default function App() {
   const getEstimatedBatteryUsed = () => parseFloat((getRideDistance() * learnedBatteryPercentPerMile * batteryFactor).toFixed(1));
 
   const handleStartRideMode = () => {
+    if (blockJobAccess('ride mode')) return;
     setRideSummary(null);
     setRideModeActive(true);
     setRideStartedAt(new Date().toISOString());
@@ -1693,6 +1871,55 @@ export default function App() {
 
         {/* Main Content Body */}
         <main className="app-main mx-auto max-w-7xl px-3 py-4 pb-40 sm:px-6 sm:py-6 lg:px-8 space-y-6">
+          <section
+            id="daily-shower-gate"
+            className={`rounded-[8px] border-2 p-4 shadow-lg ${
+              showerGateUnlocked
+                ? 'border-emerald-300 bg-emerald-50 text-emerald-950 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100'
+                : 'border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100'
+            }`}
+          >
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-start gap-3">
+                <div className={`rounded-[8px] p-3 ${showerGateUnlocked ? 'bg-emerald-600 text-white' : 'bg-amber-400 text-slate-950'}`}>
+                  <ShieldCheck size={26} />
+                </div>
+                <div>
+                  <p className="text-sm font-black uppercase tracking-widest">Daily Shower Gate - 6:00 AM Reset</p>
+                  <h2 className="mt-1 text-3xl font-black leading-none">
+                    {showerGateUnlocked ? 'Jobs unlocked for today.' : 'Shower proof required before jobs.'}
+                  </h2>
+                  <p className="mt-2 text-sm font-bold opacity-80">
+                    Cycle: {showerCycleLabel}. {showerGateStatusText}. This requirement renews every day at 6:00 AM.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-[1fr_auto] lg:min-w-[420px]">
+                <label className="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-[8px] border-2 border-current/20 bg-white/70 px-4 text-sm font-black uppercase text-slate-800 shadow-sm dark:bg-black/20 dark:text-white">
+                  <Camera size={18} />
+                  <span>{showerProofDraft?.name || showerProofForCycle?.proofName || 'Attach Proof'}</span>
+                  <input
+                    key={`shower-proof-main-${showerProofInputKey}`}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={(event) => handleShowerProofFile(event.target.files)}
+                    className="sr-only"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={handleConfirmDailyShower}
+                  disabled={showerGateUnlocked || !showerProofDraft}
+                  className="flex min-h-12 items-center justify-center gap-2 rounded-[8px] bg-slate-950 px-4 text-sm font-black uppercase text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:bg-white dark:text-slate-950 dark:disabled:bg-white/10 dark:disabled:text-slate-500"
+                >
+                  <CheckCircle2 size={18} />
+                  <span>{showerGateUnlocked ? 'Confirmed' : 'Confirm Shower'}</span>
+                </button>
+              </div>
+            </div>
+          </section>
 
           {/* Ride Mode V2: Distraction-free execution surface */}
           {currentTab === 'dashboard' && rideModeActive && (
@@ -1824,7 +2051,9 @@ export default function App() {
                   <button
                     type="button"
                     onClick={handleStartRideMode}
-                    className="min-h-14 rounded-[8px] bg-slate-950 px-5 text-xl font-black uppercase text-white shadow-lg transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 sm:min-h-16 sm:text-2xl"
+                    disabled={!showerGateUnlocked}
+                    title={showerGateUnlocked ? 'Start ride mode' : 'Shower proof required first'}
+                    className="min-h-14 rounded-[8px] bg-slate-950 px-5 text-xl font-black uppercase text-white shadow-lg transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:bg-white dark:text-slate-950 dark:disabled:bg-white/10 dark:disabled:text-slate-500 sm:min-h-16 sm:text-2xl"
                   >
                     🚴 I&apos;m Riding
                   </button>
@@ -1865,19 +2094,30 @@ export default function App() {
                   </div>
 
                   <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <a
-                      href={nextStopNavLink}
-                      target="_blank"
-                      referrerPolicy="no-referrer"
-                      className="flex min-h-20 items-center justify-center gap-3 rounded-[8px] bg-emerald-600 px-5 text-2xl font-black uppercase text-white shadow-lg transition hover:bg-emerald-500 lg:min-h-14 lg:text-xl"
-                    >
-                      <Navigation size={30} />
-                      <span>Navigate</span>
-                      <ExternalLink size={20} />
-                    </a>
+                    {showerGateUnlocked ? (
+                      <a
+                        href={nextStopNavLink}
+                        target="_blank"
+                        referrerPolicy="no-referrer"
+                        className="flex min-h-20 items-center justify-center gap-3 rounded-[8px] bg-emerald-600 px-5 text-2xl font-black uppercase text-white shadow-lg transition hover:bg-emerald-500 lg:min-h-14 lg:text-xl"
+                      >
+                        <Navigation size={30} />
+                        <span>Navigate</span>
+                        <ExternalLink size={20} />
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => blockJobAccess('navigation')}
+                        className="flex min-h-20 items-center justify-center gap-3 rounded-[8px] bg-slate-300 px-5 text-2xl font-black uppercase text-slate-600 shadow-lg transition dark:bg-white/10 dark:text-slate-400 lg:min-h-14 lg:text-xl"
+                      >
+                        <ShieldCheck size={30} />
+                        <span>Shower Locked</span>
+                      </button>
+                    )}
                     <button
                       type="button"
-                      disabled={!nextRouteAJob || Boolean(nextRouteAJob && completingJobIds.includes(nextRouteAJob.id))}
+                      disabled={!showerGateUnlocked || !nextRouteAJob || Boolean(nextRouteAJob && completingJobIds.includes(nextRouteAJob.id))}
                       onClick={() => nextRouteAJob && (nextRouteAJob.status === 'under_review' ? handleToggleComplete(nextRouteAJob.id) : handleMarkUnderReview(nextRouteAJob.id))}
                       className={`flex min-h-20 items-center justify-center gap-3 rounded-[8px] px-5 text-2xl font-black uppercase text-white shadow-lg transition disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 lg:min-h-14 lg:text-xl ${
                         nextRouteAJob?.status === 'under_review'
@@ -1946,22 +2186,35 @@ export default function App() {
                               </div>
 
                               <div className="mt-2 grid grid-cols-3 gap-1.5">
-                                <a
-                                  href={routeStopNavLink}
-                                  target="_blank"
-                                  referrerPolicy="no-referrer"
-                                  className="flex min-h-11 items-center justify-center gap-1 rounded-[8px] bg-emerald-600 px-2 text-sm font-black uppercase text-white transition hover:bg-emerald-500"
-                                  title={`Navigate to ${job.storeName}`}
-                                  aria-label={`Navigate to ${job.storeName}`}
-                                >
-                                  <Navigation size={16} />
-                                  <span>Navigate</span>
-                                </a>
+                                {showerGateUnlocked ? (
+                                  <a
+                                    href={routeStopNavLink}
+                                    target="_blank"
+                                    referrerPolicy="no-referrer"
+                                    className="flex min-h-11 items-center justify-center gap-1 rounded-[8px] bg-emerald-600 px-2 text-sm font-black uppercase text-white transition hover:bg-emerald-500"
+                                    title={`Navigate to ${job.storeName}`}
+                                    aria-label={`Navigate to ${job.storeName}`}
+                                  >
+                                    <Navigation size={16} />
+                                    <span>Navigate</span>
+                                  </a>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => blockJobAccess('navigation')}
+                                    className="flex min-h-11 items-center justify-center gap-1 rounded-[8px] bg-slate-300 px-2 text-sm font-black uppercase text-slate-600 transition dark:bg-white/10 dark:text-slate-400"
+                                    title="Shower proof required first"
+                                    aria-label="Shower proof required before navigation"
+                                  >
+                                    <ShieldCheck size={16} />
+                                    <span>Locked</span>
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => job.status === 'under_review' ? handleToggleComplete(job.id) : handleMarkUnderReview(job.id)}
-                                  disabled={completingJobIds.includes(job.id)}
-                                  className={`flex min-h-11 items-center justify-center gap-1 rounded-[8px] px-2 text-sm font-black uppercase text-white transition disabled:bg-emerald-600 ${
+                                  disabled={!showerGateUnlocked || completingJobIds.includes(job.id)}
+                                  className={`flex min-h-11 items-center justify-center gap-1 rounded-[8px] px-2 text-sm font-black uppercase text-white transition disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:disabled:bg-white/10 dark:disabled:text-slate-500 ${
                                     job.status === 'under_review'
                                       ? 'bg-blue-700 hover:bg-blue-600'
                                       : 'bg-indigo-700 hover:bg-indigo-600'
@@ -3125,6 +3378,7 @@ export default function App() {
                               onDuplicate={handleDuplicateJob}
                               onToggleRoute={handleToggleRoute}
                               onUpdateStatus={handleUpdateJobStatus}
+                              jobAccessLocked={!showerGateUnlocked}
                             />
                           ))}
                         </div>
@@ -4096,6 +4350,62 @@ export default function App() {
                   </div>
                 </div>
               </div>
+
+              <section
+                id="mandatory-shower-habit"
+                className={`rounded-[8px] border-2 p-5 ${
+                  showerGateUnlocked
+                    ? 'border-emerald-300 bg-emerald-50 text-emerald-950 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100'
+                    : 'border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100'
+                }`}
+              >
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="max-w-2xl">
+                    <p className="text-sm font-black uppercase tracking-widest">Mandatory Habit</p>
+                    <h3 className="mt-1 text-4xl font-black leading-none">Shower before jobs</h3>
+                    <p className="mt-2 text-sm font-bold opacity-80">
+                      This locks job navigation, ride mode, review, and completion until proof is attached and confirmed. It resets at 6:00 AM every day.
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2 text-sm font-black uppercase">
+                      <span className="rounded-[8px] bg-white/70 px-3 py-2 text-slate-800 dark:bg-black/20 dark:text-white">
+                        Cycle {showerCycleLabel}
+                      </span>
+                      <span className="rounded-[8px] bg-white/70 px-3 py-2 text-slate-800 dark:bg-black/20 dark:text-white">
+                        {showerHabitLoggedForCycle ? 'Habit logged' : 'Habit open'}
+                      </span>
+                      {showerProofForCycle && (
+                        <span className="rounded-[8px] bg-white/70 px-3 py-2 text-slate-800 dark:bg-black/20 dark:text-white">
+                          Proof: {showerProofForCycle.proofName}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid w-full gap-2 lg:max-w-md">
+                    <label className="flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-[8px] border-2 border-current/20 bg-white/70 px-4 text-sm font-black uppercase text-slate-800 shadow-sm dark:bg-black/20 dark:text-white">
+                      <Camera size={20} />
+                      <span>{showerProofDraft?.name || showerProofForCycle?.proofName || 'Attach Shower Proof'}</span>
+                      <input
+                        key={`shower-proof-habits-${showerProofInputKey}`}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={(event) => handleShowerProofFile(event.target.files)}
+                        className="sr-only"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleConfirmDailyShower}
+                      disabled={showerGateUnlocked || !showerProofDraft}
+                      className="flex min-h-14 items-center justify-center gap-2 rounded-[8px] bg-slate-950 px-4 text-lg font-black uppercase text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:bg-white dark:text-slate-950 dark:disabled:bg-white/10 dark:disabled:text-slate-500"
+                    >
+                      <CheckCircle2 size={22} />
+                      <span>{showerGateUnlocked ? 'Jobs Unlocked' : 'Confirm Shower'}</span>
+                    </button>
+                  </div>
+                </div>
+              </section>
 
               <section className="rounded-[8px] border-2 border-slate-300 bg-white p-4 dark:border-white/20 dark:bg-[#17181b]">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
