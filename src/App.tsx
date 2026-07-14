@@ -281,6 +281,9 @@ export default function App() {
   });
   const [activeHabitTaskId, setActiveHabitTaskId] = useState<string>(() => localStorage.getItem('habit_tracker_active_task_id') || 'habit-task-default');
   const [habitLogNote, setHabitLogNote] = useState('');
+  const [todayHabitTaskName, setTodayHabitTaskName] = useState('');
+  const [todayHabitTaskMinutes, setTodayHabitTaskMinutes] = useState(20);
+  const [todayHabitTaskNote, setTodayHabitTaskNote] = useState('');
   const [habitLogs, setHabitLogs] = useState<HabitLog[]>(() => {
     try {
       const saved = localStorage.getItem('habit_tracker_logs');
@@ -1335,6 +1338,38 @@ export default function App() {
     };
     setHabitTasks(prev => [...prev, newTask]);
     setActiveHabitTaskId(newTask.id);
+  };
+
+  const handleAddTodayHabitTask = () => {
+    const minutes = Math.max(1, Math.round(Number(todayHabitTaskMinutes) || 20));
+    const taskName = todayHabitTaskName.trim() || `Task ${habitTasks.length + 1}`;
+    const createdAt = new Date().toISOString();
+    const idBase = Date.now();
+    const newTask: HabitTask = {
+      id: `habit-task-${idBase}`,
+      name: taskName,
+      targetMinutes: minutes,
+      lastMinutes: minutes,
+      createdAt
+    };
+
+    setHabitTasks(prev => [...prev, newTask]);
+    setActiveHabitTaskId(newTask.id);
+    setHabitLogs(prev => [
+      {
+        id: `habit-${idBase}`,
+        taskId: newTask.id,
+        taskName,
+        minutes,
+        date: todayKey,
+        note: todayHabitTaskNote.trim(),
+        createdAt
+      },
+      ...prev
+    ]);
+    setTodayHabitTaskName('');
+    setTodayHabitTaskNote('');
+    setTodayHabitTaskMinutes(minutes);
   };
 
   const handleLogHabitSession = () => {
@@ -4081,6 +4116,67 @@ export default function App() {
                     <p className="mt-2 text-4xl font-black leading-none">{allHabitMinutesToday}m</p>
                   </div>
                 </div>
+              </section>
+
+              <section className="rounded-[8px] border-2 border-slate-300 bg-white p-5 dark:border-white/20 dark:bg-[#17181b]">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Today&apos;s Task Entry</p>
+                    <h3 className="text-3xl font-black text-slate-950 dark:text-white">Add Same-Day Task</h3>
+                  </div>
+                  <span className="rounded-[8px] bg-blue-700 px-3 py-2 text-sm font-black uppercase text-white">
+                    {new Date(`${todayKey}T12:00:00`).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                  </span>
+                </div>
+
+                <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_140px_1fr]">
+                  <div>
+                    <label htmlFor="today-habit-task-name" className="block text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                      Task
+                    </label>
+                    <input
+                      id="today-habit-task-name"
+                      value={todayHabitTaskName}
+                      onChange={(event) => setTodayHabitTaskName(event.target.value)}
+                      className="mt-2 min-h-14 w-full rounded-[8px] border-2 border-slate-300 bg-white px-4 text-lg font-black text-slate-950 outline-none focus:border-blue-700 dark:border-white/10 dark:bg-black/20 dark:text-white"
+                      placeholder="Task name"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="today-habit-task-minutes" className="block text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                      Minutes
+                    </label>
+                    <input
+                      id="today-habit-task-minutes"
+                      type="number"
+                      min="1"
+                      value={todayHabitTaskMinutes}
+                      onChange={(event) => setTodayHabitTaskMinutes(Math.max(1, Number(event.target.value) || 1))}
+                      className="mt-2 min-h-14 w-full rounded-[8px] border-2 border-slate-300 bg-white px-4 text-lg font-black text-slate-950 outline-none focus:border-blue-700 dark:border-white/10 dark:bg-black/20 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="today-habit-task-note" className="block text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                      Note
+                    </label>
+                    <input
+                      id="today-habit-task-note"
+                      value={todayHabitTaskNote}
+                      onChange={(event) => setTodayHabitTaskNote(event.target.value)}
+                      className="mt-2 min-h-14 w-full rounded-[8px] border-2 border-slate-300 bg-white px-4 text-lg font-bold text-slate-950 outline-none focus:border-blue-700 dark:border-white/10 dark:bg-black/20 dark:text-white"
+                      placeholder="Optional note"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAddTodayHabitTask}
+                  className="mt-4 flex min-h-16 w-full items-center justify-center gap-3 rounded-[8px] bg-slate-950 px-5 text-2xl font-black uppercase text-white shadow-lg transition hover:bg-slate-800 dark:bg-white dark:text-slate-950"
+                >
+                  <Plus size={28} />
+                  <span>Add To Today</span>
+                </button>
               </section>
 
               <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
