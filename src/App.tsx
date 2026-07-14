@@ -85,12 +85,34 @@ interface ShowerProof {
   cycleKey: string;
   proofName: string;
   proofDataUrl: string;
+  barcodeValue: string;
   confirmedAt: string;
 }
 
 const SHOWER_HABIT_TASK_ID = 'habit-task-mandatory-shower';
 const SHOWER_HABIT_NAME = 'Mandatory Shower';
 const SHOWER_GATE_STORAGE_KEY = 'daily_shower_gate_proofs';
+const REQUIRED_SHOWER_BARCODE = '075371003233';
+
+type BarcodePermissionStatus = 'idle' | 'requesting' | 'granted' | 'denied' | 'unsupported' | 'error';
+
+interface BarcodeDetectorResult {
+  rawValue?: string;
+  format?: string;
+}
+
+interface BarcodeDetectorConstructor {
+  new (options?: { formats?: string[] }): {
+    detect: (source: CanvasImageSource) => Promise<BarcodeDetectorResult[]>;
+  };
+  getSupportedFormats?: () => Promise<string[]>;
+}
+
+declare global {
+  interface Window {
+    BarcodeDetector?: BarcodeDetectorConstructor;
+  }
+}
 
 const getLocalDateKey = (date: Date) => {
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
@@ -327,6 +349,13 @@ export default function App() {
   });
   const [showerProofDraft, setShowerProofDraft] = useState<{ name: string; dataUrl: string } | null>(null);
   const [showerProofInputKey, setShowerProofInputKey] = useState(0);
+  const [barcodeScannerActive, setBarcodeScannerActive] = useState(false);
+  const [barcodePermissionStatus, setBarcodePermissionStatus] = useState<BarcodePermissionStatus>('idle');
+  const [barcodeScanMessage, setBarcodeScanMessage] = useState('Scan UPC-A barcode 075371003233 to unlock shower confirmation.');
+  const [barcodeScanSuccess, setBarcodeScanSuccess] = useState(false);
+  const [scannedBarcodeValue, setScannedBarcodeValue] = useState('');
+  const [barcodeTorchAvailable, setBarcodeTorchAvailable] = useState(false);
+  const [barcodeTorchOn, setBarcodeTorchOn] = useState(false);
   const [nowTick, setNowTick] = useState(() => Date.now());
   const [habitSyncStatus, setHabitSyncStatus] = useState<'loading' | 'synced' | 'offline' | 'saving'>('loading');
   const habitBackendLoadedRef = useRef(false);
@@ -368,6 +397,9 @@ export default function App() {
   const [simulationStatus, setSimulationStatus] = useState<string>('');
   const [simulatedJobsCompleted, setSimulatedJobsCompleted] = useState<string[]>([]);
   const simTimerRef = useRef<number | null>(null);
+  const barcodeVideoRef = useRef<HTMLVideoElement | null>(null);
+  const barcodeStreamRef = useRef<MediaStream | null>(null);
+  const barcodeScanLoopRef = useRef<number | null>(null);
 
   // Real-time Optimization Alerts & explains
   const [lastOptimizationLog, setLastOptimizationLog] = useState<{
@@ -1371,7 +1403,11 @@ export default function App() {
   const showerCycleKey = getShowerCycleKey(now);
   const showerCycleLabel = new Date(`${showerCycleKey}T12:00:00`).toLocaleDateString([], { month: 'short', day: 'numeric', weekday: 'short' });
   const showerProofForCycle = showerProofs.find(proof => proof.cycleKey === showerCycleKey);
-  const showerGateUnlocked = Boolean(showerProofForCycle?.proofDataUrl && showerProofForCycle?.confirmedAt);
+  const showerGateUnlocked = Boolean(
+    showerProofForCycle?.proofDataUrl &&
+    showerProofForCycle?.confirmedAt &&
+    showerProofForCycle.barcodeValue === REQUIRED_SHOWER_BARCODE
+  );
   const showerGateStatusText = showerGateUnlocked
     ? `Unlocked ${new Date(showerProofForCycle!.confirmedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
     : 'Locked until shower proof is confirmed';
@@ -1436,6 +1472,144 @@ export default function App() {
     return true;
   };
 
+  const stopBarcodeScanner = () => {
+    if (barcodeScanLoopRef.current !== null) {
+      window.cancelAnimationFrame(barcodeScanLoopRef.current);
+      barcodeScanLoopRef.current = null;
+    }
+    barcodeStreamRef.current?.getTracks().forEach(track => track.stop());
+    barcodeStreamRef.current = null;
+    setBarcodeScannerActive(false);
+    setBarcodeTorchAvailable(false);
+    setBarcodeTorchOn(false);
+  };
+
+  const rejectScannedBarcode = () => {
+    setBarcodeScanSuccess(false);
+    setScannedBarcodeValue('');
+    setBarcodeScanMessage('Incorrect product barcode.');
+  };
+
+  const startBarcodeScanner = async () => {
+    stopBarcodeScanner();
+    setBarcodePermissionStatus('requesting');
+    setBarcodeScanSuccess(false);
+    setScannedBarcodeValue('');
+    setBarcodeScanMessage(`Point the camera at UPC-A barcode ${REQUIRED_SHOWER_BARCODE}.`);
+
+    if (!('mediaDevices' in navigator) || !navigator.mediaDevices?.getUserMedia) {
+      setBarcodePermissionStatus('unsupported');
+      setBarcodeScanMessage('Camera scanning is not supported in this browser.');
+      return;
+    }
+
+    if (!window.BarcodeDetector) {
+      setBarcodePermissionStatus('unsupported');
+      setBarcodeScanMessage('Barcode scanning is not supported in this browser.');
+      return;
+    }
+
+    const supportedFormats = typeof window.BarcodeDetector.getSupportedFormats === 'function'
+      ? await window.BarcodeDetector.getSupportedFormats()
+      : ['upc_a'];
+
+    if (!supportedFormats.includes('upc_a')) {
+      setBarcodePermissionStatus('unsupported');
+      setBarcodeScanMessage('UPC-A barcode scanning is not supported in this browser.');
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      });
+      const video = barcodeVideoRef.current;
+      if (!video) {
+        stream.getTracks().forEach(track => track.stop());
+        setBarcodePermissionStatus('error');
+        setBarcodeScanMessage('Camera preview is not ready. Try again.');
+        return;
+      }
+
+      barcodeStreamRef.current = stream;
+      video.srcObject = stream;
+      await video.play();
+
+      const track = stream.getVideoTracks()[0];
+      const capabilities = typeof track.getCapabilities === 'function' ? track.getCapabilities() as MediaTrackCapabilities & { torch?: boolean } : undefined;
+      setBarcodeTorchAvailable(Boolean(capabilities?.torch));
+      setBarcodePermissionStatus('granted');
+      setBarcodeScannerActive(true);
+
+      const detector = new window.BarcodeDetector({ formats: ['upc_a'] });
+      const scanFrame = async () => {
+        const activeStream = barcodeStreamRef.current;
+        const activeVideo = barcodeVideoRef.current;
+        if (!activeStream || !activeVideo || activeVideo.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+          barcodeScanLoopRef.current = window.requestAnimationFrame(scanFrame);
+          return;
+        }
+
+        try {
+          const codes = await detector.detect(activeVideo);
+          if (codes.length > 0) {
+            const upcCode = codes.find(code => code.format === 'upc_a' || code.format === 'upc-a');
+            if (!upcCode) {
+              rejectScannedBarcode();
+            } else {
+              const value = String(upcCode.rawValue ?? '');
+              if (value === REQUIRED_SHOWER_BARCODE) {
+                setScannedBarcodeValue(value);
+                setBarcodeScanSuccess(true);
+                setBarcodeScanMessage('Correct product barcode scanned. Shower confirmation unlocked.');
+                stopBarcodeScanner();
+                return;
+              }
+              rejectScannedBarcode();
+            }
+          }
+        } catch (error) {
+          setBarcodePermissionStatus('error');
+          setBarcodeScanMessage('Barcode scan failed. Try again.');
+        }
+
+        barcodeScanLoopRef.current = window.requestAnimationFrame(scanFrame);
+      };
+
+      barcodeScanLoopRef.current = window.requestAnimationFrame(scanFrame);
+    } catch (error) {
+      const name = error instanceof DOMException ? error.name : '';
+      setBarcodePermissionStatus(name === 'NotAllowedError' || name === 'PermissionDeniedError' ? 'denied' : 'error');
+      setBarcodeScanMessage(name === 'NotAllowedError' || name === 'PermissionDeniedError'
+        ? 'Camera permission denied. Allow camera access to scan the required barcode.'
+        : 'Could not start the camera. Try again.'
+      );
+    }
+  };
+
+  const toggleBarcodeTorch = async () => {
+    const track = barcodeStreamRef.current?.getVideoTracks()[0];
+    if (!track || !barcodeTorchAvailable) return;
+    const nextTorch = !barcodeTorchOn;
+    try {
+      await track.applyConstraints({ advanced: [{ torch: nextTorch } as MediaTrackConstraintSet] });
+      setBarcodeTorchOn(nextTorch);
+    } catch {
+      setBarcodeScanMessage('Flashlight is not available on this camera.');
+      setBarcodeTorchAvailable(false);
+      setBarcodeTorchOn(false);
+    }
+  };
+
+  useEffect(() => {
+    return () => stopBarcodeScanner();
+  }, []);
+
   const handleShowerProofFile = (files: FileList | null) => {
     const file = files?.[0];
     if (!file) return;
@@ -1454,12 +1628,18 @@ export default function App() {
       setDispatcherMessage('Add shower proof first. Jobs stay locked until proof is attached and confirmed.');
       return;
     }
+    if (!barcodeScanSuccess || scannedBarcodeValue !== REQUIRED_SHOWER_BARCODE) {
+      rejectScannedBarcode();
+      setDispatcherMessage('Correct product barcode required before shower confirmation.');
+      return;
+    }
 
     const confirmedAt = new Date().toISOString();
     const proof: ShowerProof = {
       cycleKey: showerCycleKey,
       proofName: showerProofDraft.name,
       proofDataUrl: showerProofDraft.dataUrl,
+      barcodeValue: scannedBarcodeValue,
       confirmedAt
     };
 
@@ -1493,7 +1673,7 @@ export default function App() {
           taskName: SHOWER_HABIT_NAME,
           minutes: 1,
           date: showerCycleKey,
-          note: `Proof confirmed: ${showerProofDraft.name}`,
+          note: `Proof confirmed: ${showerProofDraft.name}. Barcode ${scannedBarcodeValue}.`,
           createdAt: confirmedAt
         },
         ...prev
@@ -1502,6 +1682,9 @@ export default function App() {
 
     setShowerProofDraft(null);
     setShowerProofInputKey(prev => prev + 1);
+    setBarcodeScanSuccess(false);
+    setScannedBarcodeValue('');
+    setBarcodeScanMessage(`Scan UPC-A barcode ${REQUIRED_SHOWER_BARCODE} to unlock shower confirmation.`);
     setActiveHabitTaskId(SHOWER_HABIT_TASK_ID);
     setDispatcherMessage('Shower confirmed. Jobs are unlocked for this daily cycle.');
   };
@@ -1911,12 +2094,58 @@ export default function App() {
                 <button
                   type="button"
                   onClick={handleConfirmDailyShower}
-                  disabled={showerGateUnlocked || !showerProofDraft}
+                  disabled={showerGateUnlocked || !showerProofDraft || !barcodeScanSuccess || scannedBarcodeValue !== REQUIRED_SHOWER_BARCODE}
                   className="flex min-h-12 items-center justify-center gap-2 rounded-[8px] bg-slate-950 px-4 text-sm font-black uppercase text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:bg-white dark:text-slate-950 dark:disabled:bg-white/10 dark:disabled:text-slate-500"
                 >
                   <CheckCircle2 size={18} />
                   <span>{showerGateUnlocked ? 'Confirmed' : 'Confirm Shower'}</span>
                 </button>
+
+                <div className="sm:col-span-2 rounded-[8px] border-2 border-current/20 bg-white/70 p-3 dark:bg-black/20">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-widest">UPC-A Product Check</p>
+                      <p className={`mt-1 text-sm font-black ${barcodeScanSuccess ? 'text-emerald-700 dark:text-emerald-200' : barcodeScanMessage === 'Incorrect product barcode.' ? 'text-rose-700 dark:text-rose-200' : ''}`}>
+                        {barcodeScanMessage}
+                      </p>
+                      {scannedBarcodeValue && (
+                        <p className="mt-1 font-mono text-xs font-black">Scanned: {scannedBarcodeValue}</p>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={barcodeScannerActive ? stopBarcodeScanner : startBarcodeScanner}
+                        disabled={showerGateUnlocked || barcodePermissionStatus === 'requesting'}
+                        className="flex min-h-10 items-center justify-center gap-2 rounded-[8px] bg-blue-700 px-3 text-xs font-black uppercase text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600"
+                      >
+                        <Camera size={16} />
+                        <span>{barcodeScannerActive ? 'Stop Scan' : barcodePermissionStatus === 'requesting' ? 'Requesting' : 'Scan Barcode'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={toggleBarcodeTorch}
+                        disabled={!barcodeScannerActive || !barcodeTorchAvailable}
+                        className="flex min-h-10 items-center justify-center gap-2 rounded-[8px] bg-slate-950 px-3 text-xs font-black uppercase text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:bg-white dark:text-slate-950 dark:disabled:bg-white/10 dark:disabled:text-slate-500"
+                      >
+                        <Zap size={16} />
+                        <span>{barcodeTorchOn ? 'Flash Off' : 'Flash'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <video
+                    ref={barcodeVideoRef}
+                    className={`mt-3 aspect-video w-full rounded-[8px] border border-current/20 bg-slate-950 object-cover ${barcodeScannerActive ? 'block' : 'hidden'}`}
+                    playsInline
+                    muted
+                  />
+                  {(barcodePermissionStatus === 'denied' || barcodePermissionStatus === 'unsupported' || barcodePermissionStatus === 'error') && (
+                    <p className="mt-2 text-xs font-bold opacity-80">
+                      Camera status: {barcodePermissionStatus}. You can retry scanning after camera access is available.
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </section>
@@ -4378,6 +4607,9 @@ export default function App() {
                           Proof: {showerProofForCycle.proofName}
                         </span>
                       )}
+                      <span className="rounded-[8px] bg-white/70 px-3 py-2 text-slate-800 dark:bg-black/20 dark:text-white">
+                        Barcode {showerProofForCycle?.barcodeValue || (barcodeScanSuccess ? scannedBarcodeValue : 'required')}
+                      </span>
                     </div>
                   </div>
 
@@ -4397,12 +4629,24 @@ export default function App() {
                     <button
                       type="button"
                       onClick={handleConfirmDailyShower}
-                      disabled={showerGateUnlocked || !showerProofDraft}
+                      disabled={showerGateUnlocked || !showerProofDraft || !barcodeScanSuccess || scannedBarcodeValue !== REQUIRED_SHOWER_BARCODE}
                       className="flex min-h-14 items-center justify-center gap-2 rounded-[8px] bg-slate-950 px-4 text-lg font-black uppercase text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:bg-white dark:text-slate-950 dark:disabled:bg-white/10 dark:disabled:text-slate-500"
                     >
                       <CheckCircle2 size={22} />
                       <span>{showerGateUnlocked ? 'Jobs Unlocked' : 'Confirm Shower'}</span>
                     </button>
+                    <button
+                      type="button"
+                      onClick={barcodeScannerActive ? stopBarcodeScanner : startBarcodeScanner}
+                      disabled={showerGateUnlocked || barcodePermissionStatus === 'requesting'}
+                      className="flex min-h-12 items-center justify-center gap-2 rounded-[8px] bg-blue-700 px-4 text-sm font-black uppercase text-white shadow-sm transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600"
+                    >
+                      <Camera size={18} />
+                      <span>{barcodeScannerActive ? 'Stop Barcode Scan' : 'Scan Required Barcode'}</span>
+                    </button>
+                    <p className={`text-sm font-black ${barcodeScanSuccess ? 'text-emerald-700 dark:text-emerald-200' : barcodeScanMessage === 'Incorrect product barcode.' ? 'text-rose-700 dark:text-rose-200' : ''}`}>
+                      {barcodeScanMessage}
+                    </p>
                   </div>
                 </div>
               </section>
