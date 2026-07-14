@@ -4,8 +4,6 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { BarcodeFormat, BrowserMultiFormatOneDReader } from '@zxing/browser';
-import { DecodeHintType } from '@zxing/library';
 import { Job, Coordinates, RouteMetrics, EbikeConfig, DispatcherAction, JobType } from './types';
 import {
   BAKERSFIELD_COORDINATES,
@@ -95,9 +93,6 @@ const SHOWER_HABIT_TASK_ID = 'habit-task-mandatory-shower';
 const SHOWER_HABIT_NAME = 'Mandatory Shower';
 const SHOWER_GATE_STORAGE_KEY = 'daily_shower_gate_proofs';
 const REQUIRED_SHOWER_BARCODE = '075371003233';
-const barcodeReaderHints = new globalThis.Map<DecodeHintType, BarcodeFormat[]>([
-  [DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.UPC_A]]
-]);
 
 type BarcodePermissionStatus = 'idle' | 'requesting' | 'granted' | 'denied' | 'unsupported' | 'error';
 
@@ -1538,6 +1533,13 @@ export default function App() {
       const canUseNativeBarcodeDetector = Boolean(window.BarcodeDetector && supportedFormats.includes('upc_a'));
 
       if (!canUseNativeBarcodeDetector) {
+        const [{ BarcodeFormat, BrowserMultiFormatOneDReader }, { DecodeHintType }] = await Promise.all([
+          import('@zxing/browser'),
+          import('@zxing/library')
+        ]);
+        const barcodeReaderHints = new globalThis.Map([
+          [DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.UPC_A]]
+        ]);
         const fallbackReader = new BrowserMultiFormatOneDReader(barcodeReaderHints);
         const controls = await fallbackReader.decodeFromConstraints(
           {
