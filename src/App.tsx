@@ -408,10 +408,15 @@ export default function App() {
       } catch (e) {}
     }
 
-    if (savedTheme === 'light') {
-      setTheme('light');
+    if (savedTheme === 'dark' || savedTheme === 'light') {
+      setTheme(savedTheme);
     }
   }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    document.body.classList.toggle('dark', theme === 'dark');
+  }, [theme]);
 
   // Synchronize Operations dashboard message with the latest assistant message
   useEffect(() => {
