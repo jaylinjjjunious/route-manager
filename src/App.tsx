@@ -1680,13 +1680,14 @@ export default function App() {
 
   return (
     <div className={theme === 'dark' ? 'dark' : ''}>
-      <div className="app-shell min-h-screen bg-[#F5F5F7] text-slate-950 transition-colors duration-300 dark:bg-[#111113] dark:text-slate-100 font-sans">
+      <div className="ios-app app-shell min-h-screen bg-transparent text-slate-950 transition-colors duration-300 dark:text-slate-100 font-sans">
+        <div className="ios-page-glow" aria-hidden="true" />
         
         {/* Header */}
         {currentTab !== 'dashboard' && <Header theme={theme} onToggleTheme={handleToggleTheme} />}
 
         {/* Main Content Body */}
-        <main className="app-main mx-auto max-w-7xl px-3 py-4 pb-40 sm:px-6 sm:py-5 lg:px-8 space-y-6">
+        <main className="app-main mx-auto max-w-7xl px-3 py-4 pb-40 sm:px-6 sm:py-6 lg:px-8 space-y-6">
 
           {/* Ride Mode V2: Distraction-free execution surface */}
           {currentTab === 'dashboard' && rideModeActive && (
@@ -4485,9 +4486,9 @@ export default function App() {
 
         {/* Floating Bottom Navigation Bar for Extremely Simple Mobile-First Navigation */}
         {!rideModeActive && (
-        <div className="mobile-bottom-nav-shell fixed inset-x-0 bottom-0 z-50 mx-auto w-full px-2 pb-2 sm:left-1/2 sm:bottom-4 sm:w-[96%] sm:max-w-3xl sm:-translate-x-1/2 sm:px-0 sm:pb-0">
+        <div className="mobile-bottom-nav-shell fixed inset-x-0 bottom-0 z-50 mx-auto w-full px-3 pb-3 sm:left-1/2 sm:bottom-5 sm:w-[96%] sm:max-w-3xl sm:-translate-x-1/2 sm:px-0 sm:pb-0">
           <div 
-            className="mobile-bottom-nav flex w-full snap-x items-center justify-start gap-2 overflow-x-auto whitespace-nowrap rounded-[20px] border border-slate-200/80 bg-white/95 px-2 py-2 shadow-[0_18px_50px_rgba(15,23,42,0.18)] backdrop-blur-md dark:border-white/10 dark:bg-[#0D0D0D]/95 sm:rounded-[24px] sm:px-3 sm:py-3 md:justify-around"
+            className="mobile-bottom-nav flex w-full snap-x items-center justify-start gap-2 overflow-x-auto whitespace-nowrap rounded-[28px] border border-white/75 bg-white/72 px-2 py-2 shadow-[0_22px_70px_rgba(15,23,42,0.22)] backdrop-blur-2xl dark:border-white/10 dark:bg-[#1C1C1E]/78 sm:rounded-[32px] sm:px-3 sm:py-3 md:justify-around"
             aria-label="Primary app navigation"
           >
             {[
@@ -4505,9 +4506,9 @@ export default function App() {
                   key={tab.id}
                   id={`nav-tab-${tab.id}`}
                   onClick={() => setCurrentTab(tab.id as any)}
-                  className={`flex min-h-[64px] min-w-[84px] snap-start flex-shrink-0 flex-col items-center justify-center gap-1.5 rounded-2xl px-3 py-2.5 transition-all duration-300 sm:min-w-[82px] ${
+                  className={`flex min-h-[62px] min-w-[84px] snap-start flex-shrink-0 flex-col items-center justify-center gap-1.5 rounded-[22px] px-3 py-2.5 transition-all duration-300 sm:min-w-[82px] ${
                     isActive
-                      ? 'bg-slate-100 dark:bg-white/10 text-slate-950 dark:text-white scale-105 font-bold'
+                      ? 'bg-white text-slate-950 shadow-[0_10px_30px_rgba(15,23,42,0.12)] dark:bg-white/14 dark:text-white scale-[1.03] font-bold'
                       : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'
                   }`}
                 >
