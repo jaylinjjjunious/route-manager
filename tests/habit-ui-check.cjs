@@ -14,6 +14,8 @@ const { chromium } = require('playwright');
 
   const result = await page.locator('#tab-view-habits').evaluate((panel) => {
     const text = panel.innerText;
+    const textLines = text.split('\n').map((line) => line.trim()).filter(Boolean);
+    const streakIndex = textLines.indexOf('STREAK');
     return {
       hasAllLoggedSessions: text.includes('All Logged Sessions'),
       hasNoStreetTraining: !text.includes('Street Training'),
@@ -22,7 +24,9 @@ const { chromium } = require('playwright');
       hasDailyFocus: text.includes('Daily Focus Task'),
       hasTwentyMinuteLog: text.includes('20 minutes'),
       hasTwentyToday: text.includes('20 / 30 min'),
-      textLines: text.split('\n').map((line) => line.trim()).filter(Boolean),
+      hasOneDayStreak: streakIndex >= 0 && textLines[streakIndex + 1] === '1' && textLines[streakIndex + 2] === 'days',
+      hasOneOfSevenDays: text.includes('1 of 7 days'),
+      textLines,
     };
   });
 

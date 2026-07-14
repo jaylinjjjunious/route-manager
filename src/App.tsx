@@ -1282,7 +1282,7 @@ export default function App() {
       key,
       label: date.toLocaleDateString([], { weekday: 'short' }),
       minutes,
-      complete: minutes >= habitTargetMinutes
+      complete: minutes > 0
     };
   });
   const habitDaysComplete = habitLast7Days.filter(day => day.complete).length;
@@ -1296,7 +1296,7 @@ export default function App() {
       const minutes = currentHabitLogs
         .filter(log => log.date === key)
         .reduce((sum, log) => sum + log.minutes, 0);
-      if (minutes >= habitTargetMinutes) {
+      if (minutes > 0) {
         streak += 1;
       } else {
         break;
