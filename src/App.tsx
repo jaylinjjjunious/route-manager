@@ -4221,7 +4221,7 @@ export default function App() {
 
                 {habitRecentLogs.length === 0 ? (
                   <div className="mt-4 rounded-[8px] border-2 border-dashed border-slate-300 p-6 text-center text-lg font-black text-slate-500 dark:border-white/10 dark:text-slate-300">
-                    No sessions logged yet.
+                    No habit sessions saved yet. Log any task and it will show up here.
                   </div>
                 ) : (
                   <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
