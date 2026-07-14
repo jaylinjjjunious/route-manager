@@ -1304,7 +1304,7 @@ export default function App() {
     }
     return streak;
   })();
-  const habitRecentLogs = [...currentHabitLogs].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 12);
+  const habitRecentLogs = [...habitLogs].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const allHabitMinutesToday = habitLogs
     .filter(log => log.date === todayKey)
     .reduce((sum, log) => sum + log.minutes, 0);
@@ -4209,8 +4209,14 @@ export default function App() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Log History</p>
-                    <h3 className="text-3xl font-black text-slate-950 dark:text-white">Recent Sessions</h3>
+                    <h3 className="text-3xl font-black text-slate-950 dark:text-white">All Logged Sessions</h3>
+                    <p className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-300">
+                      Every habit entry is listed here, no matter which task is selected above.
+                    </p>
                   </div>
+                  <span className="rounded-[8px] bg-slate-950 px-3 py-2 text-sm font-black uppercase text-white dark:bg-white dark:text-slate-950">
+                    {habitLogs.length} total
+                  </span>
                 </div>
 
                 {habitRecentLogs.length === 0 ? (
@@ -4224,8 +4230,11 @@ export default function App() {
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <p className="text-xl font-black text-slate-950 dark:text-white">{log.minutes} minutes</p>
+                            <p className="text-sm font-black uppercase text-blue-700 dark:text-blue-300">{log.taskName || 'Daily Focus Task'}</p>
                             <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
                               {new Date(`${log.date}T12:00:00`).toLocaleDateString([], { month: 'short', day: 'numeric', weekday: 'short' })}
+                              {' '}
+                              {log.createdAt ? `- ${new Date(log.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : ''}
                             </p>
                           </div>
                           <button
