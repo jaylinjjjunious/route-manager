@@ -2,7 +2,7 @@ import { Job, JobStatus } from '../types';
 
 export const JOB_STATE_SCHEMA_VERSION = '2';
 
-const VALID_JOB_STATUSES: JobStatus[] = ['ready', 'revisit', 'completed', 'pending', 'postponed', 'outlier'];
+const VALID_JOB_STATUSES: JobStatus[] = ['ready', 'revisit', 'under_review', 'completed', 'pending', 'postponed', 'outlier'];
 
 export function normalizeJobStatus(status: unknown): JobStatus {
   if (status === 'pending') return 'ready';

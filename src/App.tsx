@@ -36,7 +36,7 @@ import {
   LayoutDashboard, Map, Briefcase, Battery, Settings, Info, AlertTriangle, ArrowRightLeft,
   TrendingUp, HelpCircle, ShieldAlert, Sparkles, Compass, ExternalLink, Navigation, CheckCircle2,
   Pause, Square, Timer, Clock, ChevronDown, ChevronUp, DollarSign, Zap, Award, Volume2, VolumeX,
-  FolderOpen, Camera, FileImage, ReceiptText, StickyNote, X
+  FolderOpen, Camera, FileImage, ReceiptText, StickyNote, X, Hourglass
 } from 'lucide-react';
 
 type ProofAssetKind = 'photos' | 'screenshots' | 'receipts';
@@ -1067,6 +1067,19 @@ export default function App() {
     saveJobsToStorage(updated);
   };
 
+  const handleMarkUnderReview = (id: string) => {
+    handleUpdateJobStatus(id, {
+      status: 'under_review',
+      isCompleted: false,
+      isRevisionRequired: false,
+      revisionStatus: 'Under Review'
+    });
+    const targetJob = jobs.find(job => job.id === id);
+    if (targetJob) {
+      setDispatcherMessage(`${targetJob.storeName} marked under review. Press Complete once the review clears and the check is confirmed.`);
+    }
+  };
+
   const buildCompletionReadback = (completedJob: Job, updatedJobs: Job[]) => {
     const updatedRouteA = updatedJobs.filter(job => job.routeId === 'A');
     const optimizedRoute = optimizeRouteWithSmartMerge(startCoord, updatedRouteA, ebikeConfig);
@@ -1105,7 +1118,8 @@ export default function App() {
         ? normalizeJobState({
             ...job,
             status: isJobCompleted(job) ? 'ready' : 'completed',
-            isCompleted: !isJobCompleted(job)
+            isCompleted: !isJobCompleted(job),
+            revisionStatus: isJobCompleted(job) ? undefined : 'Approved'
           })
         : job
     );
@@ -1713,11 +1727,15 @@ export default function App() {
                     <button
                       type="button"
                       disabled={!nextRouteAJob || Boolean(nextRouteAJob && completingJobIds.includes(nextRouteAJob.id))}
-                      onClick={() => nextRouteAJob && handleToggleComplete(nextRouteAJob.id)}
-                      className="flex min-h-24 items-center justify-center gap-3 rounded-[8px] bg-blue-700 px-4 text-3xl font-black uppercase text-white shadow-lg transition hover:bg-blue-600 disabled:bg-emerald-600"
+                      onClick={() => nextRouteAJob && (nextRouteAJob.status === 'under_review' ? handleToggleComplete(nextRouteAJob.id) : handleMarkUnderReview(nextRouteAJob.id))}
+                      className={`flex min-h-24 items-center justify-center gap-3 rounded-[8px] px-4 text-3xl font-black uppercase text-white shadow-lg transition disabled:bg-emerald-600 ${
+                        nextRouteAJob?.status === 'under_review'
+                          ? 'bg-blue-700 hover:bg-blue-600'
+                          : 'bg-indigo-700 hover:bg-indigo-600'
+                      }`}
                     >
-                      {nextRouteAJob && completingJobIds.includes(nextRouteAJob.id) ? <CheckCircle2 size={34} /> : <CheckSquare size={34} />}
-                      <span>{nextRouteAJob && completingJobIds.includes(nextRouteAJob.id) ? 'Done' : 'Complete Job'}</span>
+                      {nextRouteAJob && completingJobIds.includes(nextRouteAJob.id) ? <CheckCircle2 size={34} /> : nextRouteAJob?.status === 'under_review' ? <CheckSquare size={34} /> : <Hourglass size={34} />}
+                      <span>{nextRouteAJob && completingJobIds.includes(nextRouteAJob.id) ? 'Done' : nextRouteAJob?.status === 'under_review' ? 'Complete Job' : 'Under Review'}</span>
                     </button>
                   </div>
                 </section>
@@ -1854,11 +1872,15 @@ export default function App() {
                     <button
                       type="button"
                       disabled={!nextRouteAJob || Boolean(nextRouteAJob && completingJobIds.includes(nextRouteAJob.id))}
-                      onClick={() => nextRouteAJob && handleToggleComplete(nextRouteAJob.id)}
-                      className="flex min-h-20 items-center justify-center gap-3 rounded-[8px] bg-blue-700 px-5 text-2xl font-black uppercase text-white shadow-lg transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 lg:min-h-14 lg:text-xl"
+                      onClick={() => nextRouteAJob && (nextRouteAJob.status === 'under_review' ? handleToggleComplete(nextRouteAJob.id) : handleMarkUnderReview(nextRouteAJob.id))}
+                      className={`flex min-h-20 items-center justify-center gap-3 rounded-[8px] px-5 text-2xl font-black uppercase text-white shadow-lg transition disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 lg:min-h-14 lg:text-xl ${
+                        nextRouteAJob?.status === 'under_review'
+                          ? 'bg-blue-700 hover:bg-blue-600'
+                          : 'bg-indigo-700 hover:bg-indigo-600'
+                      }`}
                     >
-                      {nextRouteAJob && completingJobIds.includes(nextRouteAJob.id) ? <CheckCircle2 size={30} /> : <CheckSquare size={30} />}
-                      <span>{nextRouteAJob && completingJobIds.includes(nextRouteAJob.id) ? 'Completed' : 'Complete Job'}</span>
+                      {nextRouteAJob && completingJobIds.includes(nextRouteAJob.id) ? <CheckCircle2 size={30} /> : nextRouteAJob?.status === 'under_review' ? <CheckSquare size={30} /> : <Hourglass size={30} />}
+                      <span>{nextRouteAJob && completingJobIds.includes(nextRouteAJob.id) ? 'Completed' : nextRouteAJob?.status === 'under_review' ? 'Complete Job' : 'Under Review'}</span>
                     </button>
                   </div>
                 </section>
@@ -1931,14 +1953,18 @@ export default function App() {
                                 </a>
                                 <button
                                   type="button"
-                                  onClick={() => handleToggleComplete(job.id)}
+                                  onClick={() => job.status === 'under_review' ? handleToggleComplete(job.id) : handleMarkUnderReview(job.id)}
                                   disabled={completingJobIds.includes(job.id)}
-                                  className="flex min-h-11 items-center justify-center gap-1 rounded-[8px] bg-blue-700 px-2 text-sm font-black uppercase text-white transition hover:bg-blue-600 disabled:bg-emerald-600"
-                                  title={`Complete ${job.storeName}`}
-                                  aria-label={`Complete ${job.storeName}`}
+                                  className={`flex min-h-11 items-center justify-center gap-1 rounded-[8px] px-2 text-sm font-black uppercase text-white transition disabled:bg-emerald-600 ${
+                                    job.status === 'under_review'
+                                      ? 'bg-blue-700 hover:bg-blue-600'
+                                      : 'bg-indigo-700 hover:bg-indigo-600'
+                                  }`}
+                                  title={job.status === 'under_review' ? `Complete ${job.storeName}` : `Mark ${job.storeName} under review`}
+                                  aria-label={job.status === 'under_review' ? `Complete ${job.storeName}` : `Mark ${job.storeName} under review`}
                                 >
-                                  <CheckSquare size={16} />
-                                  <span>Complete</span>
+                                  {job.status === 'under_review' ? <CheckSquare size={16} /> : <Hourglass size={16} />}
+                                  <span>{job.status === 'under_review' ? 'Complete' : 'Review'}</span>
                                 </button>
                                 <button
                                   type="button"
@@ -2146,11 +2172,15 @@ export default function App() {
                             </a>
 
                             <button
-                              onClick={() => handleToggleComplete(nextStop.id)}
-                              className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center gap-2 py-3.5 rounded-2xl text-xs font-black transition-all shadow-md cursor-pointer"
+                              onClick={() => nextStop.status === 'under_review' ? handleToggleComplete(nextStop.id) : handleMarkUnderReview(nextStop.id)}
+                              className={`flex-1 text-white flex items-center justify-center gap-2 py-3.5 rounded-2xl text-xs font-black transition-all shadow-md cursor-pointer ${
+                                nextStop.status === 'under_review'
+                                  ? 'bg-blue-700 hover:bg-blue-600'
+                                  : 'bg-indigo-600 hover:bg-indigo-500'
+                              }`}
                             >
-                              <CheckSquare size={14} />
-                              <span>COMPLETE JOB</span>
+                              {nextStop.status === 'under_review' ? <CheckSquare size={14} /> : <Hourglass size={14} />}
+                              <span>{nextStop.status === 'under_review' ? 'COMPLETE JOB' : 'UNDER REVIEW'}</span>
                             </button>
                           </div>
                         </div>
@@ -2236,13 +2266,17 @@ export default function App() {
                               <div className="grid shrink-0 grid-cols-3 gap-1.5">
                                 <button
                                   type="button"
-                                  onClick={() => handleToggleComplete(job.id)}
-                                  className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-950 sm:w-auto sm:px-2.5"
-                                  title={`Complete ${job.storeName}`}
-                                  aria-label={`Complete ${job.storeName}`}
+                                  onClick={() => job.status === 'under_review' ? handleToggleComplete(job.id) : handleMarkUnderReview(job.id)}
+                                  className={`flex h-10 w-10 items-center justify-center rounded-xl text-white transition sm:w-auto sm:px-2.5 ${
+                                    job.status === 'under_review'
+                                      ? 'bg-blue-700 hover:bg-blue-600'
+                                      : 'bg-indigo-700 hover:bg-indigo-600'
+                                  }`}
+                                  title={job.status === 'under_review' ? `Complete ${job.storeName}` : `Mark ${job.storeName} under review`}
+                                  aria-label={job.status === 'under_review' ? `Complete ${job.storeName}` : `Mark ${job.storeName} under review`}
                                 >
-                                  <CheckSquare size={16} />
-                                  <span className="ml-1.5 hidden text-[10px] font-black uppercase sm:inline">Done</span>
+                                  {job.status === 'under_review' ? <CheckSquare size={16} /> : <Hourglass size={16} />}
+                                  <span className="ml-1.5 hidden text-[10px] font-black uppercase sm:inline">{job.status === 'under_review' ? 'Done' : 'Review'}</span>
                                 </button>
                                 <a
                                   href={navLink}

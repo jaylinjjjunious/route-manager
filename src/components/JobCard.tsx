@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { Job, JobType } from '../types';
-import { Clock, MapPin, CheckSquare, Square, Edit2, Trash2, Copy, ArrowRightLeft, ShieldAlert, Calendar, AlertCircle, Sparkles } from 'lucide-react';
+import { Clock, MapPin, CheckSquare, Edit2, Trash2, Copy, ArrowRightLeft, ShieldAlert, Calendar, AlertCircle, Sparkles, Hourglass } from 'lucide-react';
 import { isJobCompleted, isRevisionJob } from '../utils/jobState';
 
 interface JobCardProps {
@@ -52,12 +52,14 @@ export default function JobCard({
   };
 
   // Determine color coding category
-  let category: 'ready' | 'revisit' | 'outlier' | 'completed' | 'postponed' = 'ready';
+  let category: 'ready' | 'revisit' | 'under_review' | 'outlier' | 'completed' | 'postponed' = 'ready';
   const isDone = isJobCompleted(job);
   const needsRevision = isRevisionJob(job);
 
   if (isDone) {
     category = 'completed';
+  } else if (job.status === 'under_review') {
+    category = 'under_review';
   } else if (job.status === 'postponed') {
     category = 'postponed';
   } else if (job.routeId === 'B') {
@@ -73,6 +75,7 @@ export default function JobCard({
   const cardStyles = {
     ready: 'border-emerald-300/80 bg-emerald-500/[0.03] hover:bg-emerald-500/[0.06] dark:border-emerald-500/20 dark:bg-emerald-500/[0.03] hover:border-emerald-400 dark:hover:border-emerald-500/50 hover:shadow-md text-slate-900 dark:text-white',
     revisit: 'border-rose-400/80 bg-rose-500/[0.03] hover:bg-rose-500/[0.06] dark:border-rose-500/20 dark:bg-rose-500/[0.03] hover:border-rose-400 dark:hover:border-rose-500/50 hover:shadow-md text-slate-900 dark:text-white ring-1 ring-rose-100/50 dark:ring-rose-500/10',
+    under_review: 'border-indigo-300 bg-indigo-500/[0.04] hover:bg-indigo-500/[0.07] dark:border-indigo-500/20 dark:bg-indigo-500/[0.04] hover:border-indigo-400 dark:hover:border-indigo-500/50 hover:shadow-md text-slate-900 dark:text-white',
     outlier: 'border-amber-400/80 bg-amber-500/[0.03] hover:bg-amber-500/[0.06] dark:border-amber-500/20 dark:bg-amber-500/[0.03] hover:border-amber-400 dark:hover:border-amber-500/50 hover:shadow-md text-slate-900 dark:text-white',
     completed: 'border-blue-300 bg-blue-50/5 opacity-75 hover:opacity-90 dark:border-blue-500/20 dark:bg-blue-500/[0.01] text-slate-600 dark:text-slate-400',
     postponed: 'border-slate-300 bg-slate-500/[0.02] hover:bg-slate-500/[0.05] dark:border-slate-800/40 dark:bg-slate-900/[0.02] hover:border-slate-400 dark:hover:border-slate-700 text-slate-500 dark:text-slate-400'
@@ -81,6 +84,7 @@ export default function JobCard({
   const badgeStyles = {
     ready: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-500/10',
     revisit: 'bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200/50 dark:border-rose-500/10',
+    under_review: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-500/10',
     outlier: 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200/50 dark:border-amber-500/10',
     completed: 'bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-200/50 dark:border-blue-500/10',
     postponed: 'bg-slate-100 text-slate-800 dark:bg-slate-950/40 dark:text-slate-400 border border-slate-200/50 dark:border-slate-500/10'
@@ -89,6 +93,7 @@ export default function JobCard({
   const badgeLabels = {
     ready: 'READY',
     revisit: 'REVISION',
+    under_review: 'UNDER REVIEW',
     outlier: 'RISK',
     completed: 'DONE',
     postponed: 'TOMORROW'
@@ -106,14 +111,15 @@ export default function JobCard({
     }
   };
 
-  const handleQuickStatusChange = (statusType: 'completed' | 'revisit' | 'postponed' | 'ready') => {
+  const handleQuickStatusChange = (statusType: 'completed' | 'revisit' | 'under_review' | 'postponed' | 'ready') => {
     if (onUpdateStatus) {
       switch (statusType) {
         case 'completed':
           onUpdateStatus(job.id, {
             status: 'completed',
             isCompleted: true,
-            isRevisionRequired: false
+            isRevisionRequired: false,
+            revisionStatus: 'Approved'
           });
           break;
         case 'revisit':
@@ -121,6 +127,14 @@ export default function JobCard({
             status: 'revisit',
             isCompleted: false,
             isRevisionRequired: true
+          });
+          break;
+        case 'under_review':
+          onUpdateStatus(job.id, {
+            status: 'under_review',
+            isCompleted: false,
+            isRevisionRequired: false,
+            revisionStatus: 'Under Review'
           });
           break;
         case 'postponed':
@@ -134,7 +148,8 @@ export default function JobCard({
           onUpdateStatus(job.id, {
             status: 'ready',
             isCompleted: false,
-            isRevisionRequired: false
+            isRevisionRequired: false,
+            revisionStatus: job.revisionStatus === 'Under Review' ? undefined : job.revisionStatus
           });
           break;
       }
@@ -170,14 +185,16 @@ export default function JobCard({
           {/* Complete Status Indicator Indicator */}
           <button
             id={`toggle-complete-${job.id}`}
-            onClick={() => handleQuickStatusChange(isDone ? 'ready' : 'completed')}
+            onClick={() => handleQuickStatusChange(isDone ? 'ready' : job.status === 'under_review' ? 'completed' : 'under_review')}
             className="road-icon-button mt-0.5 border-slate-200 bg-white text-slate-400 hover:text-emerald-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-500 dark:hover:text-emerald-400 focus:outline-none"
-            title="Toggle completed"
+            title={isDone ? 'Reactivate' : job.status === 'under_review' ? 'Complete after review' : 'Mark under review'}
           >
             {isDone ? (
               <CheckSquare size={24} className="text-blue-500 fill-blue-100 dark:fill-blue-950/30" />
+            ) : job.status === 'under_review' ? (
+              <CheckSquare size={24} className="text-indigo-500" />
             ) : (
-              <Square size={24} />
+              <Hourglass size={24} />
             )}
           </button>
 
@@ -279,15 +296,17 @@ export default function JobCard({
         <div className="grid grid-cols-2 gap-2">
           {/* Quick Complete / Reactivate */}
           <button
-            onClick={() => handleQuickStatusChange(isDone ? 'ready' : 'completed')}
+            onClick={() => handleQuickStatusChange(isDone ? 'ready' : job.status === 'under_review' ? 'completed' : 'under_review')}
             className={`road-action ${
               isDone
                 ? 'bg-blue-600 border-blue-600 text-white shadow-xs'
+                : job.status === 'under_review'
+                ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs'
                 : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 dark:bg-white/5 dark:border-white/10 dark:text-slate-300'
             }`}
           >
-            <CheckSquare size={16} />
-            <span>{isDone ? 'Done' : 'Complete'}</span>
+            {isDone || job.status === 'under_review' ? <CheckSquare size={16} /> : <Hourglass size={16} />}
+            <span>{isDone ? 'Done' : job.status === 'under_review' ? 'Complete' : 'Under Review'}</span>
           </button>
 
           {/* Quick Revision Required */}
@@ -301,6 +320,18 @@ export default function JobCard({
           >
             <AlertCircle size={16} />
             <span>{needsRevision ? 'Needs Fix' : 'Revision'}</span>
+          </button>
+
+          <button
+            onClick={() => handleQuickStatusChange(job.status === 'under_review' ? 'ready' : 'under_review')}
+            className={`road-action ${
+              job.status === 'under_review'
+                ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs'
+                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 dark:bg-white/5 dark:border-white/10 dark:text-slate-300'
+            }`}
+          >
+            <Hourglass size={16} />
+            <span>{job.status === 'under_review' ? 'Reviewing' : 'Under Review'}</span>
           </button>
 
           {/* Quick Postpone / Moved to Tomorrow */}
