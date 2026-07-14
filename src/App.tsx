@@ -351,7 +351,7 @@ export default function App() {
   const [showerProofInputKey, setShowerProofInputKey] = useState(0);
   const [barcodeScannerActive, setBarcodeScannerActive] = useState(false);
   const [barcodePermissionStatus, setBarcodePermissionStatus] = useState<BarcodePermissionStatus>('idle');
-  const [barcodeScanMessage, setBarcodeScanMessage] = useState('Scan UPC-A barcode 075371003233 to unlock shower confirmation.');
+  const [barcodeScanMessage, setBarcodeScanMessage] = useState('Scan the product barcode to unlock shower confirmation.');
   const [barcodeScanSuccess, setBarcodeScanSuccess] = useState(false);
   const [scannedBarcodeValue, setScannedBarcodeValue] = useState('');
   const [barcodeTorchAvailable, setBarcodeTorchAvailable] = useState(false);
@@ -1495,7 +1495,7 @@ export default function App() {
     setBarcodePermissionStatus('requesting');
     setBarcodeScanSuccess(false);
     setScannedBarcodeValue('');
-    setBarcodeScanMessage(`Point the camera at UPC-A barcode ${REQUIRED_SHOWER_BARCODE}.`);
+    setBarcodeScanMessage('Point the camera at the product barcode.');
 
     if (!('mediaDevices' in navigator) || !navigator.mediaDevices?.getUserMedia) {
       setBarcodePermissionStatus('unsupported');
@@ -1515,7 +1515,7 @@ export default function App() {
 
     if (!supportedFormats.includes('upc_a')) {
       setBarcodePermissionStatus('unsupported');
-      setBarcodeScanMessage('UPC-A barcode scanning is not supported in this browser.');
+      setBarcodeScanMessage('Product barcode scanning is not supported in this browser.');
       return;
     }
 
@@ -1566,7 +1566,7 @@ export default function App() {
               if (value === REQUIRED_SHOWER_BARCODE) {
                 setScannedBarcodeValue(value);
                 setBarcodeScanSuccess(true);
-                setBarcodeScanMessage('Correct product barcode scanned. Shower confirmation unlocked.');
+                setBarcodeScanMessage('Product barcode verified. Shower confirmation unlocked.');
                 stopBarcodeScanner();
                 return;
               }
@@ -1630,7 +1630,7 @@ export default function App() {
     }
     if (!barcodeScanSuccess || scannedBarcodeValue !== REQUIRED_SHOWER_BARCODE) {
       rejectScannedBarcode();
-      setDispatcherMessage('Correct product barcode required before shower confirmation.');
+      setDispatcherMessage('Product barcode verification required before shower confirmation.');
       return;
     }
 
@@ -1673,7 +1673,7 @@ export default function App() {
           taskName: SHOWER_HABIT_NAME,
           minutes: 1,
           date: showerCycleKey,
-          note: `Proof confirmed: ${showerProofDraft.name}. Barcode ${scannedBarcodeValue}.`,
+          note: `Proof confirmed: ${showerProofDraft.name}. Product barcode verified.`,
           createdAt: confirmedAt
         },
         ...prev
@@ -1684,7 +1684,7 @@ export default function App() {
     setShowerProofInputKey(prev => prev + 1);
     setBarcodeScanSuccess(false);
     setScannedBarcodeValue('');
-    setBarcodeScanMessage(`Scan UPC-A barcode ${REQUIRED_SHOWER_BARCODE} to unlock shower confirmation.`);
+    setBarcodeScanMessage('Scan the product barcode to unlock shower confirmation.');
     setActiveHabitTaskId(SHOWER_HABIT_TASK_ID);
     setDispatcherMessage('Shower confirmed. Jobs are unlocked for this daily cycle.');
   };
@@ -2104,13 +2104,10 @@ export default function App() {
                 <div className="sm:col-span-2 rounded-[8px] border-2 border-current/20 bg-white/70 p-3 dark:bg-black/20">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <p className="text-xs font-black uppercase tracking-widest">UPC-A Product Check</p>
+                      <p className="text-xs font-black uppercase tracking-widest">Product Barcode Check</p>
                       <p className={`mt-1 text-sm font-black ${barcodeScanSuccess ? 'text-emerald-700 dark:text-emerald-200' : barcodeScanMessage === 'Incorrect product barcode.' ? 'text-rose-700 dark:text-rose-200' : ''}`}>
                         {barcodeScanMessage}
                       </p>
-                      {scannedBarcodeValue && (
-                        <p className="mt-1 font-mono text-xs font-black">Scanned: {scannedBarcodeValue}</p>
-                      )}
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <button
@@ -4608,7 +4605,7 @@ export default function App() {
                         </span>
                       )}
                       <span className="rounded-[8px] bg-white/70 px-3 py-2 text-slate-800 dark:bg-black/20 dark:text-white">
-                        Barcode {showerProofForCycle?.barcodeValue || (barcodeScanSuccess ? scannedBarcodeValue : 'required')}
+                        Product barcode {showerGateUnlocked || barcodeScanSuccess ? 'verified' : 'required'}
                       </span>
                     </div>
                   </div>
@@ -4642,7 +4639,7 @@ export default function App() {
                       className="flex min-h-12 items-center justify-center gap-2 rounded-[8px] bg-blue-700 px-4 text-sm font-black uppercase text-white shadow-sm transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600"
                     >
                       <Camera size={18} />
-                      <span>{barcodeScannerActive ? 'Stop Barcode Scan' : 'Scan Required Barcode'}</span>
+                      <span>{barcodeScannerActive ? 'Stop Barcode Scan' : 'Scan Product Barcode'}</span>
                     </button>
                     <p className={`text-sm font-black ${barcodeScanSuccess ? 'text-emerald-700 dark:text-emerald-200' : barcodeScanMessage === 'Incorrect product barcode.' ? 'text-rose-700 dark:text-rose-200' : ''}`}>
                       {barcodeScanMessage}
