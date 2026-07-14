@@ -14,10 +14,11 @@ const { chromium } = require('playwright');
       return text.includes('BACKEND SAVED') && !text.includes('LOADING');
     }, { timeout: 10000 });
 
+    await page.getByTestId('add-today-task-panel').locator('summary').click();
     await page.locator('#today-habit-task-name').fill('Same Day Test Task');
     await page.locator('#today-habit-task-minutes').fill('5');
     await page.locator('#today-habit-task-note').fill('Same day section check');
-    await page.getByRole('button', { name: 'Add To Today' }).click();
+    await page.getByTestId('add-today-task-panel').getByRole('button', { name: 'Add' }).click();
     await page.waitForFunction(() => {
       const text = document.querySelector('#tab-view-habits')?.innerText || '';
       return text.includes('Same Day Test Task') && text.includes('Same day section check') && text.includes('2 TOTAL');
@@ -33,6 +34,7 @@ const { chromium } = require('playwright');
         hasNoStreetNote: !text.includes('Tested multi task logging'),
         hasTwoTotal: text.toLowerCase().includes('2 total'),
         hasDailyFocus: text.includes('Daily Focus Task'),
+        hasCompactAddToToday: text.toLowerCase().includes('add to today'),
         hasSameDayTask: text.includes('Same Day Test Task'),
         hasSameDayNote: text.includes('Same day section check'),
         hasTwentyMinuteLog: text.includes('20 minutes'),

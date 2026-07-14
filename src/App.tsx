@@ -4118,32 +4118,35 @@ export default function App() {
                 </div>
               </section>
 
-              <section className="rounded-[8px] border-2 border-slate-300 bg-white p-5 dark:border-white/20 dark:bg-[#17181b]">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Today&apos;s Task Entry</p>
-                    <h3 className="text-3xl font-black text-slate-950 dark:text-white">Add Same-Day Task</h3>
-                  </div>
-                  <span className="rounded-[8px] bg-blue-700 px-3 py-2 text-sm font-black uppercase text-white">
+              <details
+                data-testid="add-today-task-panel"
+                className="group rounded-[8px] border-2 border-slate-200 bg-white px-4 py-3 dark:border-white/10 dark:bg-[#17181b]"
+              >
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 marker:hidden">
+                  <span className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">
+                    <Plus size={18} className="text-blue-700 dark:text-blue-300" />
+                    Add To Today
+                  </span>
+                  <span className="rounded-[8px] bg-slate-100 px-2 py-1 text-xs font-black uppercase text-slate-600 dark:bg-white/10 dark:text-slate-300">
                     {new Date(`${todayKey}T12:00:00`).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                   </span>
-                </div>
+                </summary>
 
-                <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_140px_1fr]">
+                <div className="mt-3 grid gap-2 lg:grid-cols-[1fr_110px_1fr_auto] lg:items-end">
                   <div>
-                    <label htmlFor="today-habit-task-name" className="block text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                    <label htmlFor="today-habit-task-name" className="block text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
                       Task
                     </label>
                     <input
                       id="today-habit-task-name"
                       value={todayHabitTaskName}
                       onChange={(event) => setTodayHabitTaskName(event.target.value)}
-                      className="mt-2 min-h-14 w-full rounded-[8px] border-2 border-slate-300 bg-white px-4 text-lg font-black text-slate-950 outline-none focus:border-blue-700 dark:border-white/10 dark:bg-black/20 dark:text-white"
+                      className="mt-1 min-h-11 w-full rounded-[8px] border-2 border-slate-300 bg-white px-3 text-sm font-black text-slate-950 outline-none focus:border-blue-700 dark:border-white/10 dark:bg-black/20 dark:text-white"
                       placeholder="Task name"
                     />
                   </div>
                   <div>
-                    <label htmlFor="today-habit-task-minutes" className="block text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                    <label htmlFor="today-habit-task-minutes" className="block text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
                       Minutes
                     </label>
                     <input
@@ -4152,32 +4155,32 @@ export default function App() {
                       min="1"
                       value={todayHabitTaskMinutes}
                       onChange={(event) => setTodayHabitTaskMinutes(Math.max(1, Number(event.target.value) || 1))}
-                      className="mt-2 min-h-14 w-full rounded-[8px] border-2 border-slate-300 bg-white px-4 text-lg font-black text-slate-950 outline-none focus:border-blue-700 dark:border-white/10 dark:bg-black/20 dark:text-white"
+                      className="mt-1 min-h-11 w-full rounded-[8px] border-2 border-slate-300 bg-white px-3 text-sm font-black text-slate-950 outline-none focus:border-blue-700 dark:border-white/10 dark:bg-black/20 dark:text-white"
                     />
                   </div>
                   <div>
-                    <label htmlFor="today-habit-task-note" className="block text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                    <label htmlFor="today-habit-task-note" className="block text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
                       Note
                     </label>
                     <input
                       id="today-habit-task-note"
                       value={todayHabitTaskNote}
                       onChange={(event) => setTodayHabitTaskNote(event.target.value)}
-                      className="mt-2 min-h-14 w-full rounded-[8px] border-2 border-slate-300 bg-white px-4 text-lg font-bold text-slate-950 outline-none focus:border-blue-700 dark:border-white/10 dark:bg-black/20 dark:text-white"
-                      placeholder="Optional note"
+                      className="mt-1 min-h-11 w-full rounded-[8px] border-2 border-slate-300 bg-white px-3 text-sm font-bold text-slate-950 outline-none focus:border-blue-700 dark:border-white/10 dark:bg-black/20 dark:text-white"
+                      placeholder="Optional"
                     />
                   </div>
-                </div>
 
-                <button
-                  type="button"
-                  onClick={handleAddTodayHabitTask}
-                  className="mt-4 flex min-h-16 w-full items-center justify-center gap-3 rounded-[8px] bg-slate-950 px-5 text-2xl font-black uppercase text-white shadow-lg transition hover:bg-slate-800 dark:bg-white dark:text-slate-950"
-                >
-                  <Plus size={28} />
-                  <span>Add To Today</span>
-                </button>
-              </section>
+                  <button
+                    type="button"
+                    onClick={handleAddTodayHabitTask}
+                    className="flex min-h-11 items-center justify-center gap-2 rounded-[8px] bg-slate-950 px-4 text-sm font-black uppercase text-white shadow-sm transition hover:bg-slate-800 dark:bg-white dark:text-slate-950"
+                  >
+                    <Plus size={18} />
+                    <span>Add</span>
+                  </button>
+                </div>
+              </details>
 
               <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
                 <section className="rounded-[8px] border-2 border-slate-300 bg-white p-5 dark:border-white/20 dark:bg-[#17181b]">
