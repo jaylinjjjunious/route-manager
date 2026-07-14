@@ -4,6 +4,8 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import { BarcodeFormat, BrowserMultiFormatOneDReader } from '@zxing/browser';
+import { DecodeHintType } from '@zxing/library';
 import { Job, Coordinates, RouteMetrics, EbikeConfig, DispatcherAction, JobType } from './types';
 import {
   BAKERSFIELD_COORDINATES,
@@ -93,6 +95,9 @@ const SHOWER_HABIT_TASK_ID = 'habit-task-mandatory-shower';
 const SHOWER_HABIT_NAME = 'Mandatory Shower';
 const SHOWER_GATE_STORAGE_KEY = 'daily_shower_gate_proofs';
 const REQUIRED_SHOWER_BARCODE = '075371003233';
+const barcodeReaderHints = new globalThis.Map<DecodeHintType, BarcodeFormat[]>([
+  [DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.UPC_A]]
+]);
 
 type BarcodePermissionStatus = 'idle' | 'requesting' | 'granted' | 'denied' | 'unsupported' | 'error';
 
@@ -400,6 +405,7 @@ export default function App() {
   const barcodeVideoRef = useRef<HTMLVideoElement | null>(null);
   const barcodeStreamRef = useRef<MediaStream | null>(null);
   const barcodeScanLoopRef = useRef<number | null>(null);
+  const zxingScannerControlsRef = useRef<{ stop: () => void; switchTorch?: (onOff: boolean) => Promise<void> } | null>(null);
 
   // Real-time Optimization Alerts & explains
   const [lastOptimizationLog, setLastOptimizationLog] = useState<{
@@ -1477,6 +1483,8 @@ export default function App() {
       window.cancelAnimationFrame(barcodeScanLoopRef.current);
       barcodeScanLoopRef.current = null;
     }
+    zxingScannerControlsRef.current?.stop();
+    zxingScannerControlsRef.current = null;
     barcodeStreamRef.current?.getTracks().forEach(track => track.stop());
     barcodeStreamRef.current = null;
     setBarcodeScannerActive(false);
@@ -1488,6 +1496,19 @@ export default function App() {
     setBarcodeScanSuccess(false);
     setScannedBarcodeValue('');
     setBarcodeScanMessage('Incorrect product barcode.');
+  };
+
+  const acceptScannedProductBarcode = (value: string) => {
+    if (value === REQUIRED_SHOWER_BARCODE) {
+      setScannedBarcodeValue(value);
+      setBarcodeScanSuccess(true);
+      setBarcodeScanMessage('Product barcode verified. Shower confirmation unlocked.');
+      stopBarcodeScanner();
+      return true;
+    }
+
+    rejectScannedBarcode();
+    return false;
   };
 
   const startBarcodeScanner = async () => {
@@ -1503,23 +1524,49 @@ export default function App() {
       return;
     }
 
-    if (!window.BarcodeDetector) {
-      setBarcodePermissionStatus('unsupported');
-      setBarcodeScanMessage('Barcode scanning is not supported in this browser.');
-      return;
-    }
-
-    const supportedFormats = typeof window.BarcodeDetector.getSupportedFormats === 'function'
-      ? await window.BarcodeDetector.getSupportedFormats()
-      : ['upc_a'];
-
-    if (!supportedFormats.includes('upc_a')) {
-      setBarcodePermissionStatus('unsupported');
-      setBarcodeScanMessage('Product barcode scanning is not supported in this browser.');
-      return;
-    }
-
     try {
+      const video = barcodeVideoRef.current;
+      if (!video) {
+        setBarcodePermissionStatus('error');
+        setBarcodeScanMessage('Camera preview is not ready. Try again.');
+        return;
+      }
+
+      const supportedFormats = window.BarcodeDetector && typeof window.BarcodeDetector.getSupportedFormats === 'function'
+        ? await window.BarcodeDetector.getSupportedFormats()
+        : [];
+      const canUseNativeBarcodeDetector = Boolean(window.BarcodeDetector && supportedFormats.includes('upc_a'));
+
+      if (!canUseNativeBarcodeDetector) {
+        const fallbackReader = new BrowserMultiFormatOneDReader(barcodeReaderHints);
+        const controls = await fallbackReader.decodeFromConstraints(
+          {
+            video: {
+              facingMode: { ideal: 'environment' },
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            },
+            audio: false
+          },
+          video,
+          (result) => {
+            if (!result) return;
+            const isUpcA = result.getBarcodeFormat() === BarcodeFormat.UPC_A;
+            if (!isUpcA) {
+              rejectScannedBarcode();
+              return;
+            }
+            acceptScannedProductBarcode(String(result.getText() ?? ''));
+          }
+        );
+
+        zxingScannerControlsRef.current = controls;
+        setBarcodeTorchAvailable(Boolean(controls.switchTorch));
+        setBarcodePermissionStatus('granted');
+        setBarcodeScannerActive(true);
+        return;
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: { ideal: 'environment' },
@@ -1528,14 +1575,6 @@ export default function App() {
         },
         audio: false
       });
-      const video = barcodeVideoRef.current;
-      if (!video) {
-        stream.getTracks().forEach(track => track.stop());
-        setBarcodePermissionStatus('error');
-        setBarcodeScanMessage('Camera preview is not ready. Try again.');
-        return;
-      }
-
       barcodeStreamRef.current = stream;
       video.srcObject = stream;
       await video.play();
@@ -1562,15 +1601,7 @@ export default function App() {
             if (!upcCode) {
               rejectScannedBarcode();
             } else {
-              const value = String(upcCode.rawValue ?? '');
-              if (value === REQUIRED_SHOWER_BARCODE) {
-                setScannedBarcodeValue(value);
-                setBarcodeScanSuccess(true);
-                setBarcodeScanMessage('Product barcode verified. Shower confirmation unlocked.');
-                stopBarcodeScanner();
-                return;
-              }
-              rejectScannedBarcode();
+              acceptScannedProductBarcode(String(upcCode.rawValue ?? ''));
             }
           }
         } catch (error) {
@@ -1593,6 +1624,19 @@ export default function App() {
   };
 
   const toggleBarcodeTorch = async () => {
+    if (zxingScannerControlsRef.current?.switchTorch) {
+      const nextTorch = !barcodeTorchOn;
+      try {
+        await zxingScannerControlsRef.current.switchTorch(nextTorch);
+        setBarcodeTorchOn(nextTorch);
+      } catch {
+        setBarcodeScanMessage('Flashlight is not available on this camera.');
+        setBarcodeTorchAvailable(false);
+        setBarcodeTorchOn(false);
+      }
+      return;
+    }
+
     const track = barcodeStreamRef.current?.getVideoTracks()[0];
     if (!track || !barcodeTorchAvailable) return;
     const nextTorch = !barcodeTorchOn;
