@@ -16,10 +16,12 @@ const { chromium } = require('playwright');
     const text = panel.innerText;
     return {
       hasAllLoggedSessions: text.includes('All Logged Sessions'),
-      hasStreetTraining: text.includes('Street Training'),
-      hasStreetNote: text.includes('Tested multi task logging'),
-      hasThreeTotal: text.toLowerCase().includes('3 total'),
+      hasNoStreetTraining: !text.includes('Street Training'),
+      hasNoStreetNote: !text.includes('Tested multi task logging'),
+      hasOneTotal: text.toLowerCase().includes('1 total'),
       hasDailyFocus: text.includes('Daily Focus Task'),
+      hasTwentyMinuteLog: text.includes('20 minutes'),
+      hasTwentyToday: text.includes('20 / 30 min'),
       textLines: text.split('\n').map((line) => line.trim()).filter(Boolean),
     };
   });
