@@ -2507,7 +2507,7 @@ export default function App() {
 
         {/* Main Content Body */}
         <main className="app-main mx-auto max-w-7xl px-3 py-4 pb-40 sm:px-6 sm:py-6 lg:px-8 space-y-6">
-          {!showerGateUnlocked && (
+          {!showerGateUnlocked && currentTab !== 'habits' && (
           <section
             id="daily-shower-gate"
             className={`rounded-[8px] border-2 p-4 shadow-lg ${
@@ -2534,92 +2534,27 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="grid gap-2 sm:grid-cols-[1fr_auto] lg:min-w-[420px]">
-                <label className="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-[8px] border-2 border-current/20 bg-white/70 px-4 text-sm font-black uppercase text-slate-800 shadow-sm dark:bg-black/20 dark:text-white">
-                  <Camera size={18} />
-                  <span>{showerProofAttachmentForCycle?.name || 'Attach Proof'}</span>
-                  <input
-                    key={`shower-proof-main-${showerProofInputKey}`}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={(event) => handleShowerProofFile(event.target.files)}
-                    className="sr-only"
-                  />
-                </label>
+              <div className="grid gap-2 sm:grid-cols-[1fr_auto] lg:min-w-[360px]">
                 <button
                   type="button"
-                  onClick={handleConfirmDailyShower}
-                  disabled={!barcodeVerifiedForCycle || !showerProofRequiredSatisfied}
+                  onClick={() => handleTabChange('habits')}
+                  className="flex min-h-12 items-center justify-center gap-2 rounded-[8px] bg-slate-950 px-4 text-sm font-black uppercase text-white shadow-sm transition hover:bg-slate-800 dark:bg-white dark:text-slate-950"
+                >
+                  <Award size={18} />
+                  <span>Open Shower Gate</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleTabChange('habits')}
                   className="flex min-h-12 items-center justify-center gap-2 rounded-[8px] bg-slate-950 px-4 text-sm font-black uppercase text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:bg-white dark:text-slate-950 dark:disabled:bg-white/10 dark:disabled:text-slate-500"
                 >
                   <CheckCircle2 size={18} />
-                  <span>Confirm Shower</span>
+                  <span>{barcodeVerifiedForCycle && showerProofRequiredSatisfied ? 'Ready To Confirm' : 'Locked'}</span>
                 </button>
 
-                <div className="sm:col-span-2 rounded-[8px] border-2 border-current/20 bg-white/70 p-3 dark:bg-black/20">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-xs font-black uppercase tracking-widest">Product Barcode Check</p>
-                      <p className={`mt-1 text-sm font-black ${barcodeVerifiedForCycle ? 'text-emerald-700 dark:text-emerald-200' : barcodeScanMessage === 'Incorrect product barcode.' ? 'text-rose-700 dark:text-rose-200' : ''}`}>
-                        {barcodeVerifiedForCycle ? '✓ Product verified' : barcodeScanMessage}
-                      </p>
-                      {barcodeVerifiedForCycle && (
-                        <p className="mt-1 text-xs font-bold opacity-80">
-                          Barcode ending in 3233
-                        </p>
-                      )}
-                      {!showerProofRequiredSatisfied && (
-                        <p className="mt-1 text-xs font-bold text-amber-800 dark:text-amber-200">
-                          Proof missing.
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={barcodeScannerActive ? stopBarcodeScanner : startBarcodeScanner}
-                        disabled={barcodePermissionStatus === 'requesting'}
-                        className={`flex items-center justify-center gap-2 rounded-[8px] bg-blue-700 px-3 text-xs font-black uppercase text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 ${barcodeVerifiedForCycle ? 'min-h-9 opacity-80' : 'min-h-10'}`}
-                      >
-                        <Camera size={16} />
-                        <span>{barcodeScannerActive ? 'Stop Scan' : barcodePermissionStatus === 'requesting' ? 'Requesting' : barcodeVerifiedForCycle ? 'Scan Again' : 'Scan Barcode'}</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={toggleBarcodeTorch}
-                        disabled={!barcodeScannerActive || !barcodeTorchAvailable}
-                        className="flex min-h-10 items-center justify-center gap-2 rounded-[8px] bg-slate-950 px-3 text-xs font-black uppercase text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:bg-white dark:text-slate-950 dark:disabled:bg-white/10 dark:disabled:text-slate-500"
-                      >
-                        <Zap size={16} />
-                        <span>{barcodeTorchOn ? 'Flash Off' : 'Flash'}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <video
-                    ref={barcodeVideoRef}
-                    className={`mt-3 aspect-video w-full rounded-[8px] border border-current/20 bg-slate-950 object-cover ${barcodeScannerActive ? 'block' : 'hidden'}`}
-                    playsInline
-                    muted
-                  />
-                  {(barcodePermissionStatus === 'denied' || barcodePermissionStatus === 'unsupported' || barcodePermissionStatus === 'error') && (
-                    <p className="mt-2 text-xs font-bold opacity-80">
-                      Camera status: {barcodePermissionStatus}. You can retry scanning after camera access is available.
-                    </p>
-                  )}
-                  {showerProofSyncMessage && (
-                    <p className={`mt-2 text-xs font-black ${
-                      showerProofSyncStatus === 'error'
-                        ? 'text-rose-700 dark:text-rose-200'
-                        : showerProofSyncStatus === 'saved'
-                          ? 'text-emerald-700 dark:text-emerald-200'
-                          : 'text-slate-700 dark:text-slate-200'
-                    }`}>
-                      {showerProofSyncMessage}
-                    </p>
-                  )}
-                </div>
+                <p className="sm:col-span-2 rounded-[8px] border-2 border-current/20 bg-white/70 p-3 text-xs font-black uppercase dark:bg-black/20">
+                  {barcodeVerifiedForCycle ? 'Product verified' : 'Product barcode required'} · {showerProofRequiredSatisfied ? 'Proof attached' : 'Proof missing'}
+                </p>
               </div>
             </div>
           </section>
@@ -5116,18 +5051,40 @@ export default function App() {
                       <CheckCircle2 size={22} />
                       <span>Confirm Shower</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={barcodeScannerActive ? stopBarcodeScanner : startBarcodeScanner}
-                      disabled={barcodePermissionStatus === 'requesting'}
-                      className={`flex items-center justify-center gap-2 rounded-[8px] bg-blue-700 px-4 text-sm font-black uppercase text-white shadow-sm transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 ${barcodeVerifiedForCycle ? 'min-h-10 opacity-80' : 'min-h-12'}`}
-                    >
-                      <Camera size={18} />
-                      <span>{barcodeScannerActive ? 'Stop Barcode Scan' : barcodePermissionStatus === 'requesting' ? 'Requesting' : barcodeVerifiedForCycle ? 'Scan Again' : 'Scan Barcode'}</span>
-                    </button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={barcodeScannerActive ? stopBarcodeScanner : startBarcodeScanner}
+                        disabled={barcodePermissionStatus === 'requesting'}
+                        className={`flex items-center justify-center gap-2 rounded-[8px] bg-blue-700 px-4 text-sm font-black uppercase text-white shadow-sm transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 ${barcodeVerifiedForCycle ? 'min-h-10 opacity-80' : 'min-h-12'}`}
+                      >
+                        <Camera size={18} />
+                        <span>{barcodeScannerActive ? 'Stop Scan' : barcodePermissionStatus === 'requesting' ? 'Requesting' : barcodeVerifiedForCycle ? 'Scan Again' : 'Scan Barcode'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={toggleBarcodeTorch}
+                        disabled={!barcodeScannerActive || !barcodeTorchAvailable}
+                        className="flex min-h-12 items-center justify-center gap-2 rounded-[8px] bg-slate-950 px-4 text-sm font-black uppercase text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:bg-white dark:text-slate-950 dark:disabled:bg-white/10 dark:disabled:text-slate-500"
+                      >
+                        <Zap size={18} />
+                        <span>{barcodeTorchOn ? 'Flash Off' : 'Flash'}</span>
+                      </button>
+                    </div>
+                    <video
+                      ref={barcodeVideoRef}
+                      className={`aspect-video w-full rounded-[8px] border border-current/20 bg-slate-950 object-cover ${barcodeScannerActive ? 'block' : 'hidden'}`}
+                      playsInline
+                      muted
+                    />
                     <p className={`text-sm font-black ${barcodeVerifiedForCycle ? 'text-emerald-700 dark:text-emerald-200' : barcodeScanMessage === 'Incorrect product barcode.' ? 'text-rose-700 dark:text-rose-200' : ''}`}>
                       {barcodeVerifiedForCycle ? '✓ Product verified. Barcode ending in 3233.' : barcodeScanMessage}
                     </p>
+                    {(barcodePermissionStatus === 'denied' || barcodePermissionStatus === 'unsupported' || barcodePermissionStatus === 'error') && (
+                      <p className="text-xs font-bold opacity-80">
+                        Camera status: {barcodePermissionStatus}. You can retry scanning after camera access is available.
+                      </p>
+                    )}
                     {showerProofSyncMessage && (
                       <p className={`text-xs font-black ${
                         showerProofSyncStatus === 'error'
@@ -5552,6 +5509,7 @@ export default function App() {
               { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, color: 'text-blue-500' },
               { id: 'route', label: 'Route', icon: Map, color: 'text-indigo-500' },
               { id: 'jobs', label: 'Jobs', icon: Briefcase, color: 'text-emerald-500' },
+              { id: 'battery', label: 'Battery', icon: Battery, color: 'text-lime-600' },
               { id: 'tracker', label: 'Tracker', icon: Timer, color: 'text-indigo-500' },
               { id: 'habits', label: 'Habits', icon: Award, color: 'text-amber-500' },
               { id: 'settings', label: 'Settings', icon: Settings, color: 'text-slate-500' },
@@ -5567,16 +5525,8 @@ export default function App() {
                     event.preventDefault();
                     handleTabChange(tab.id as AppTab);
                   }}
-                  onPointerUp={(event) => {
-                    event.preventDefault();
-                    handleTabChange(tab.id as AppTab);
-                  }}
-                  onTouchEnd={(event) => {
-                    event.preventDefault();
-                    handleTabChange(tab.id as AppTab);
-                  }}
                   aria-current={isActive ? 'page' : undefined}
-                  className={`flex min-h-[62px] min-w-[84px] snap-start flex-shrink-0 flex-col items-center justify-center gap-1.5 rounded-[22px] px-3 py-2.5 transition-all duration-300 sm:min-w-[82px] ${
+                  className={`flex min-h-[62px] min-w-[78px] touch-manipulation snap-start flex-shrink-0 flex-col items-center justify-center gap-1.5 rounded-[22px] px-2.5 py-2.5 transition-all duration-300 sm:min-w-[82px] ${
                     isActive
                       ? 'bg-white text-slate-950 shadow-[0_10px_30px_rgba(15,23,42,0.12)] dark:bg-white/14 dark:text-white scale-[1.03] font-bold'
                       : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'
