@@ -88,6 +88,7 @@ interface ShowerProof {
   proofDataUrl: string;
   barcodeValue: string;
   confirmedAt: string;
+  backendFolderPath?: string;
 }
 
 const SHOWER_HABIT_TASK_ID = 'habit-task-mandatory-shower';
@@ -149,6 +150,42 @@ const safeStorage = {
       // Storage can be unavailable in private or restricted browser contexts.
     }
   }
+};
+
+const resizeProofImage = (file: File): Promise<string> => {
+  if (typeof window === 'undefined' || !file.type.startsWith('image/')) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(reader.error || new Error('Could not read proof file'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const image = new Image();
+      image.onload = () => {
+        const maxSide = 1280;
+        const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext('2d');
+        if (!context) {
+          resolve(String(reader.result || ''));
+          return;
+        }
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.72));
+      };
+      image.onerror = () => resolve(String(reader.result || ''));
+      image.src = String(reader.result || '');
+    };
+    reader.onerror = () => reject(reader.error || new Error('Could not read proof file'));
+    reader.readAsDataURL(file);
+  });
 };
 
 const getLocalDateKey = (date: Date) => {
@@ -385,6 +422,9 @@ export default function App() {
     }
   });
   const [showerProofDraft, setShowerProofDraft] = useState<{ name: string; dataUrl: string } | null>(null);
+  const [showerProofBackendFolder, setShowerProofBackendFolder] = useState('');
+  const [showerProofSyncStatus, setShowerProofSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [showerProofSyncMessage, setShowerProofSyncMessage] = useState('');
   const [showerProofInputKey, setShowerProofInputKey] = useState(0);
   const [barcodeScannerActive, setBarcodeScannerActive] = useState(false);
   const [barcodePermissionStatus, setBarcodePermissionStatus] = useState<BarcodePermissionStatus>('idle');
@@ -1534,6 +1574,90 @@ export default function App() {
   const showerHabitLogs = habitLogs.filter(log => log.taskId === SHOWER_HABIT_TASK_ID || log.taskName === SHOWER_HABIT_NAME);
   const showerHabitLoggedForCycle = showerHabitLogs.some(log => log.date === showerCycleKey);
 
+  const saveShowerProofToBackend = async (payload: {
+    proofName?: string;
+    proofDataUrl?: string;
+    barcodeValue?: string;
+    confirmedAt?: string;
+    eventType: 'proof_attached' | 'barcode_scanned' | 'barcode_rejected' | 'flash_updated' | 'proof_confirmed';
+    flashAvailable?: boolean;
+    flashUsed?: boolean;
+  }) => {
+    setShowerProofSyncStatus('saving');
+    setShowerProofSyncMessage('Saving shower gate proof to backend...');
+
+    try {
+      const response = await fetch('/api/shower-proof', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cycleKey: showerCycleKey,
+          proofName: payload.proofName ?? showerProofDraft?.name ?? showerProofForCycle?.proofName,
+          proofDataUrl: payload.proofDataUrl ?? showerProofDraft?.dataUrl ?? showerProofForCycle?.proofDataUrl,
+          barcodeValue: payload.barcodeValue ?? scannedBarcodeValue,
+          confirmedAt: payload.confirmedAt,
+          eventType: payload.eventType,
+          flashAvailable: payload.flashAvailable ?? barcodeTorchAvailable,
+          flashUsed: payload.flashUsed ?? barcodeTorchOn,
+        })
+      });
+      if (!response.ok) throw new Error(`Backend save failed with ${response.status}`);
+      const data = await response.json();
+      const folderPath = data?.proof?.folderPath || '';
+      setShowerProofBackendFolder(folderPath);
+      setShowerProofSyncStatus('saved');
+      setShowerProofSyncMessage(folderPath ? `Backend saved: ${folderPath}` : 'Backend saved.');
+      return folderPath;
+    } catch (error) {
+      setShowerProofSyncStatus('error');
+      setShowerProofSyncMessage(error instanceof Error ? error.message : 'Could not save shower proof to backend.');
+      return '';
+    }
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadBackendShowerProof = async () => {
+      try {
+        const response = await fetch(`/api/shower-proof?cycleKey=${encodeURIComponent(showerCycleKey)}`);
+        if (!response.ok) return;
+        const data = await response.json();
+        const row = data?.proof;
+        if (!isMounted || !row) return;
+
+        const proofDataUrl = row.proof_data_url || row.proofDataUrl || '';
+        const proofName = row.proof_name || row.proofName || '';
+        const barcodeValue = row.barcode_value || row.barcodeValue || '';
+        const confirmedAt = row.confirmed_at || row.confirmedAt || '';
+        const folderPath = row.folder_path || row.folderPath || '';
+        setShowerProofBackendFolder(folderPath);
+        if (confirmedAt && proofDataUrl && barcodeValue === REQUIRED_SHOWER_BARCODE) {
+          setShowerProofs(prev => [
+            ...prev.filter(item => item.cycleKey !== showerCycleKey),
+            {
+              cycleKey: showerCycleKey,
+              proofName,
+              proofDataUrl,
+              barcodeValue,
+              confirmedAt,
+              backendFolderPath: folderPath,
+            }
+          ]);
+          setShowerProofSyncStatus('saved');
+          setShowerProofSyncMessage(folderPath ? `Backend loaded: ${folderPath}` : 'Backend proof loaded.');
+        }
+      } catch {
+        // Local storage fallback keeps the gate usable if the backend is offline.
+      }
+    };
+
+    loadBackendShowerProof();
+    return () => {
+      isMounted = false;
+    };
+  }, [showerCycleKey]);
+
   const blockJobAccess = (action: string) => {
     if (showerGateUnlocked) return false;
     setCurrentTab('habits');
@@ -1567,10 +1691,22 @@ export default function App() {
       setScannedBarcodeValue(value);
       setBarcodeScanSuccess(true);
       setBarcodeScanMessage('Product barcode verified. Shower confirmation unlocked.');
+      void saveShowerProofToBackend({
+        barcodeValue: value,
+        eventType: 'barcode_scanned',
+        flashAvailable: barcodeTorchAvailable,
+        flashUsed: barcodeTorchOn,
+      });
       stopBarcodeScanner();
       return true;
     }
 
+    void saveShowerProofToBackend({
+      barcodeValue: value,
+      eventType: 'barcode_rejected',
+      flashAvailable: barcodeTorchAvailable,
+      flashUsed: barcodeTorchOn,
+    });
     rejectScannedBarcode();
     return false;
   };
@@ -1700,6 +1836,7 @@ export default function App() {
       try {
         await zxingScannerControlsRef.current.switchTorch(nextTorch);
         setBarcodeTorchOn(nextTorch);
+        void saveShowerProofToBackend({ eventType: 'flash_updated', flashAvailable: true, flashUsed: nextTorch });
       } catch {
         setBarcodeScanMessage('Flashlight is not available on this camera.');
         setBarcodeTorchAvailable(false);
@@ -1714,6 +1851,7 @@ export default function App() {
     try {
       await track.applyConstraints({ advanced: [{ torch: nextTorch } as MediaTrackConstraintSet] });
       setBarcodeTorchOn(nextTorch);
+      void saveShowerProofToBackend({ eventType: 'flash_updated', flashAvailable: true, flashUsed: nextTorch });
     } catch {
       setBarcodeScanMessage('Flashlight is not available on this camera.');
       setBarcodeTorchAvailable(false);
@@ -1725,20 +1863,31 @@ export default function App() {
     return () => stopBarcodeScanner();
   }, []);
 
-  const handleShowerProofFile = (files: FileList | null) => {
+  const handleShowerProofFile = async (files: FileList | null) => {
     const file = files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
+    try {
+      setShowerProofSyncStatus('saving');
+      setShowerProofSyncMessage('Preparing shower proof image...');
+      const dataUrl = await resizeProofImage(file);
       setShowerProofDraft({
         name: file.name,
-        dataUrl: String(reader.result || '')
+        dataUrl
       });
-    };
-    reader.readAsDataURL(file);
+      void saveShowerProofToBackend({
+        proofName: file.name,
+        proofDataUrl: dataUrl,
+        eventType: 'proof_attached',
+        flashAvailable: barcodeTorchAvailable,
+        flashUsed: barcodeTorchOn,
+      });
+    } catch (error) {
+      setShowerProofSyncStatus('error');
+      setShowerProofSyncMessage(error instanceof Error ? error.message : 'Could not attach proof image.');
+    }
   };
 
-  const handleConfirmDailyShower = () => {
+  const handleConfirmDailyShower = async () => {
     if (!showerProofDraft?.dataUrl) {
       setDispatcherMessage('Add shower proof first. Jobs stay locked until proof is attached and confirmed.');
       return;
@@ -1755,8 +1904,26 @@ export default function App() {
       proofName: showerProofDraft.name,
       proofDataUrl: showerProofDraft.dataUrl,
       barcodeValue: scannedBarcodeValue,
-      confirmedAt
+      confirmedAt,
+      backendFolderPath: showerProofBackendFolder,
     };
+
+    const backendFolderPath = await saveShowerProofToBackend({
+      proofName: showerProofDraft.name,
+      proofDataUrl: showerProofDraft.dataUrl,
+      barcodeValue: scannedBarcodeValue,
+      confirmedAt,
+      eventType: 'proof_confirmed',
+      flashAvailable: barcodeTorchAvailable,
+      flashUsed: barcodeTorchOn,
+    });
+    if (!backendFolderPath) {
+      setDispatcherMessage('Backend shower proof save failed. Jobs stay locked until the proof is saved.');
+      return;
+    }
+    if (backendFolderPath) {
+      proof.backendFolderPath = backendFolderPath;
+    }
 
     setShowerProofs(prev => [
       ...prev.filter(item => item.cycleKey !== showerCycleKey),
@@ -1801,7 +1968,7 @@ export default function App() {
     setScannedBarcodeValue('');
     setBarcodeScanMessage('Scan the product barcode to unlock shower confirmation.');
     setActiveHabitTaskId(SHOWER_HABIT_TASK_ID);
-    setDispatcherMessage('Shower confirmed. Jobs are unlocked for this daily cycle.');
+    setDispatcherMessage(`Shower confirmed. Jobs are unlocked for this daily cycle.${proof.backendFolderPath ? ` Backend folder: ${proof.backendFolderPath}` : ''}`);
   };
 
   useEffect(() => {
@@ -2255,6 +2422,17 @@ export default function App() {
                   {(barcodePermissionStatus === 'denied' || barcodePermissionStatus === 'unsupported' || barcodePermissionStatus === 'error') && (
                     <p className="mt-2 text-xs font-bold opacity-80">
                       Camera status: {barcodePermissionStatus}. You can retry scanning after camera access is available.
+                    </p>
+                  )}
+                  {showerProofSyncMessage && (
+                    <p className={`mt-2 text-xs font-black ${
+                      showerProofSyncStatus === 'error'
+                        ? 'text-rose-700 dark:text-rose-200'
+                        : showerProofSyncStatus === 'saved'
+                          ? 'text-emerald-700 dark:text-emerald-200'
+                          : 'text-slate-700 dark:text-slate-200'
+                    }`}>
+                      {showerProofSyncMessage}
                     </p>
                   )}
                 </div>
@@ -4759,6 +4937,22 @@ export default function App() {
                     <p className={`text-sm font-black ${barcodeScanSuccess ? 'text-emerald-700 dark:text-emerald-200' : barcodeScanMessage === 'Incorrect product barcode.' ? 'text-rose-700 dark:text-rose-200' : ''}`}>
                       {barcodeScanMessage}
                     </p>
+                    {showerProofSyncMessage && (
+                      <p className={`text-xs font-black ${
+                        showerProofSyncStatus === 'error'
+                          ? 'text-rose-700 dark:text-rose-200'
+                          : showerProofSyncStatus === 'saved'
+                            ? 'text-emerald-700 dark:text-emerald-200'
+                            : 'text-slate-700 dark:text-slate-200'
+                      }`}>
+                        {showerProofSyncMessage}
+                      </p>
+                    )}
+                    {(showerProofBackendFolder || showerProofForCycle?.backendFolderPath) && (
+                      <p className="text-xs font-bold opacity-75">
+                        Backend folder: {showerProofBackendFolder || showerProofForCycle?.backendFolderPath}
+                      </p>
+                    )}
                   </div>
                 </div>
               </section>

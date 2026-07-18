@@ -29,6 +29,17 @@ interface SafetyNewsJob {
   address?: string;
 }
 
+interface ShowerProofPayload {
+  cycleKey?: string;
+  proofName?: string;
+  proofDataUrl?: string;
+  barcodeValue?: string;
+  confirmedAt?: string;
+  eventType?: string;
+  flashAvailable?: boolean;
+  flashUsed?: boolean;
+}
+
 interface ExecutionContext {
   waitUntil(promise: Promise<unknown>): void;
   passThroughOnException(): void;
@@ -59,6 +70,136 @@ const ensureHabitSchema = async (db: D1Database) => {
 
   await db.prepare("ALTER TABLE habit_state ADD COLUMN active_task_id TEXT").run().catch(() => undefined);
   await db.prepare("ALTER TABLE habit_state ADD COLUMN tasks_json TEXT").run().catch(() => undefined);
+};
+
+const ensureShowerProofSchema = async (db: D1Database) => {
+  await db.batch([
+    db.prepare(`CREATE TABLE IF NOT EXISTS shower_proofs (
+      cycle_key TEXT PRIMARY KEY,
+      folder_path TEXT NOT NULL,
+      proof_name TEXT,
+      proof_data_url TEXT,
+      barcode_value TEXT,
+      barcode_matched INTEGER NOT NULL DEFAULT 0,
+      flash_available INTEGER NOT NULL DEFAULT 0,
+      flash_used INTEGER NOT NULL DEFAULT 0,
+      event_type TEXT NOT NULL,
+      confirmed_at TEXT,
+      uploaded_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )`),
+  ]);
+};
+
+const normalizeCycleKey = (value: unknown) => {
+  const key = (value || "").toString().trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(key) ? key : new Date().toISOString().slice(0, 10);
+};
+
+const buildShowerFolderPath = (cycleKey: string, proofName?: string) => {
+  const safeName = (proofName || "shower-proof.jpg")
+    .replace(/[^a-z0-9_.-]+/gi, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80) || "shower-proof.jpg";
+  return `daily-shower-gate/${cycleKey}/${safeName}`;
+};
+
+const handleShowerProofApi = async (request: Request, env: Env): Promise<Response> => {
+  if (!env.DB) {
+    return jsonResponse({ error: "Backend storage is not configured." }, { status: 503 });
+  }
+
+  await ensureShowerProofSchema(env.DB);
+
+  if (request.method === "GET") {
+    const url = new URL(request.url);
+    const cycleKey = url.searchParams.get("cycleKey");
+    const row = cycleKey
+      ? await env.DB
+        .prepare("SELECT * FROM shower_proofs WHERE cycle_key = ?")
+        .bind(normalizeCycleKey(cycleKey))
+        .first<Record<string, unknown>>()
+      : await env.DB
+        .prepare("SELECT * FROM shower_proofs ORDER BY updated_at DESC LIMIT 1")
+        .first<Record<string, unknown>>();
+
+    return jsonResponse({ proof: row || null });
+  }
+
+  if (request.method !== "POST") {
+    return jsonResponse({ error: "Method not allowed." }, { status: 405 });
+  }
+
+  const payload = await request.json().catch(() => null) as ShowerProofPayload | null;
+  if (!payload) {
+    return jsonResponse({ error: "Invalid JSON payload." }, { status: 400 });
+  }
+
+  const cycleKey = normalizeCycleKey(payload.cycleKey);
+  const existing = await env.DB
+    .prepare("SELECT * FROM shower_proofs WHERE cycle_key = ?")
+    .bind(cycleKey)
+    .first<Record<string, unknown>>();
+  const proofName = (payload.proofName || existing?.proof_name || "").toString().slice(0, 160);
+  const folderPath = buildShowerFolderPath(cycleKey, proofName);
+  const proofDataUrl = payload.proofDataUrl || (existing?.proof_data_url || "").toString();
+  const barcodeValue = payload.barcodeValue || (existing?.barcode_value || "").toString();
+  const barcodeMatched = barcodeValue === "075371003233";
+  const uploadedAt = existing?.uploaded_at?.toString() || new Date().toISOString();
+  const updatedAt = new Date().toISOString();
+  const eventType = (payload.eventType || "proof_updated").toString().slice(0, 80);
+  const confirmedAt = payload.confirmedAt || (existing?.confirmed_at || null);
+  const flashAvailable = payload.flashAvailable ?? Boolean(existing?.flash_available);
+  const flashUsed = payload.flashUsed ?? Boolean(existing?.flash_used);
+
+  await env.DB
+    .prepare(`INSERT INTO shower_proofs (
+      cycle_key, folder_path, proof_name, proof_data_url, barcode_value,
+      barcode_matched, flash_available, flash_used, event_type,
+      confirmed_at, uploaded_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(cycle_key) DO UPDATE SET
+      folder_path = excluded.folder_path,
+      proof_name = excluded.proof_name,
+      proof_data_url = excluded.proof_data_url,
+      barcode_value = excluded.barcode_value,
+      barcode_matched = excluded.barcode_matched,
+      flash_available = excluded.flash_available,
+      flash_used = excluded.flash_used,
+      event_type = excluded.event_type,
+      confirmed_at = excluded.confirmed_at,
+      updated_at = excluded.updated_at`)
+    .bind(
+      cycleKey,
+      folderPath,
+      proofName,
+      proofDataUrl,
+      barcodeValue,
+      barcodeMatched ? 1 : 0,
+      flashAvailable ? 1 : 0,
+      flashUsed ? 1 : 0,
+      eventType,
+      confirmedAt,
+      uploadedAt,
+      updatedAt,
+    )
+    .run();
+
+  return jsonResponse({
+    ok: true,
+    proof: {
+      cycleKey,
+      folderPath,
+      proofName,
+      barcodeValue,
+      barcodeMatched,
+      flashAvailable,
+      flashUsed,
+      confirmedAt,
+      uploadedAt,
+      updatedAt,
+    },
+  });
 };
 
 const stripXml = (value: string) =>
@@ -322,6 +463,10 @@ const worker = {
 
     if (url.pathname === "/api/habits") {
       return handleHabitsApi(request, env);
+    }
+
+    if (url.pathname === "/api/shower-proof") {
+      return handleShowerProofApi(request, env);
     }
 
     if (url.pathname === "/api/safety-news") {
