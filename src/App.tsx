@@ -95,6 +95,9 @@ const SHOWER_HABIT_TASK_ID = 'habit-task-mandatory-shower';
 const SHOWER_HABIT_NAME = 'Mandatory Shower';
 const SHOWER_GATE_STORAGE_KEY = 'daily_shower_gate_proofs';
 const REQUIRED_SHOWER_BARCODE = '075371003233';
+const MAX_SHOWER_PROOF_SIDE = 720;
+const SHOWER_PROOF_JPEG_QUALITY = 0.58;
+const SHOWER_BACKEND_TIMEOUT_MS = 15000;
 
 type BarcodePermissionStatus = 'idle' | 'requesting' | 'granted' | 'denied' | 'unsupported' | 'error';
 type AppTab = 'dashboard' | 'route' | 'jobs' | 'battery' | 'tracker' | 'habits' | 'settings';
@@ -167,8 +170,7 @@ const resizeProofImage = (file: File): Promise<string> => {
     reader.onload = () => {
       const image = new Image();
       image.onload = () => {
-        const maxSide = 1280;
-        const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+        const scale = Math.min(1, MAX_SHOWER_PROOF_SIDE / Math.max(image.width, image.height));
         const canvas = document.createElement('canvas');
         canvas.width = Math.max(1, Math.round(image.width * scale));
         canvas.height = Math.max(1, Math.round(image.height * scale));
@@ -178,7 +180,7 @@ const resizeProofImage = (file: File): Promise<string> => {
           return;
         }
         context.drawImage(image, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', 0.72));
+        resolve(canvas.toDataURL('image/jpeg', SHOWER_PROOF_JPEG_QUALITY));
       };
       image.onerror = () => resolve(String(reader.result || ''));
       image.src = String(reader.result || '');
@@ -1585,10 +1587,13 @@ export default function App() {
   }) => {
     setShowerProofSyncStatus('saving');
     setShowerProofSyncMessage('Saving shower gate proof to backend...');
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), SHOWER_BACKEND_TIMEOUT_MS);
 
     try {
       const response = await fetch('/api/shower-proof', {
         method: 'POST',
+        signal: controller.signal,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           cycleKey: showerCycleKey,
@@ -1601,7 +1606,10 @@ export default function App() {
           flashUsed: payload.flashUsed ?? barcodeTorchOn,
         })
       });
-      if (!response.ok) throw new Error(`Backend save failed with ${response.status}`);
+      if (!response.ok) {
+        const detail = await response.text().catch(() => '');
+        throw new Error(detail ? `Backend save failed with ${response.status}: ${detail.slice(0, 120)}` : `Backend save failed with ${response.status}`);
+      }
       const data = await response.json();
       const folderPath = data?.proof?.folderPath || '';
       setShowerProofBackendFolder(folderPath);
@@ -1610,8 +1618,13 @@ export default function App() {
       return folderPath;
     } catch (error) {
       setShowerProofSyncStatus('error');
-      setShowerProofSyncMessage(error instanceof Error ? error.message : 'Could not save shower proof to backend.');
+      setShowerProofSyncMessage(error instanceof DOMException && error.name === 'AbortError'
+        ? 'Backend save timed out. Check signal and try again.'
+        : error instanceof Error ? error.message : 'Could not save shower proof to backend.'
+      );
       return '';
+    } finally {
+      window.clearTimeout(timeout);
     }
   };
 
@@ -1624,7 +1637,12 @@ export default function App() {
         if (!response.ok) return;
         const data = await response.json();
         const row = data?.proof;
-        if (!isMounted || !row) return;
+        if (!isMounted) return;
+        if (!row) {
+          setShowerProofSyncStatus('idle');
+          setShowerProofSyncMessage(`Backend ready for ${showerCycleKey}. No shower proof saved yet.`);
+          return;
+        }
 
         const proofDataUrl = row.proof_data_url || row.proofDataUrl || '';
         const proofName = row.proof_name || row.proofName || '';
