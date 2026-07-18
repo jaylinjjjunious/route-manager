@@ -153,6 +153,15 @@ const handleShowerProofApi = async (request: Request, env: Env): Promise<Respons
   const flashAvailable = payload.flashAvailable ?? Boolean(existing?.flash_available);
   const flashUsed = payload.flashUsed ?? Boolean(existing?.flash_used);
 
+  if (eventType === "proof_confirmed") {
+    if (!barcodeMatched) {
+      return jsonResponse({ error: "Required product barcode was not verified." }, { status: 400 });
+    }
+    if (!proofDataUrl) {
+      return jsonResponse({ error: "Shower proof attachment is required." }, { status: 400 });
+    }
+  }
+
   await env.DB
     .prepare(`INSERT INTO shower_proofs (
       cycle_key, folder_path, proof_name, proof_data_url, barcode_value,

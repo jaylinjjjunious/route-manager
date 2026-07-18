@@ -84,10 +84,19 @@ interface HabitTask {
 
 interface ShowerProof {
   cycleKey: string;
-  proofName: string;
-  proofDataUrl: string;
-  barcodeValue: string;
-  confirmedAt: string;
+  proofName?: string;
+  proofDataUrl?: string;
+  proofAttachment?: {
+    name: string;
+    dataUrl: string;
+  };
+  barcodeValue?: string;
+  scannedBarcode?: string;
+  barcodeVerified?: boolean;
+  barcodeVerifiedAt?: string;
+  confirmedAt?: string;
+  showerConfirmed?: boolean;
+  showerConfirmedAt?: string;
   backendFolderPath?: string;
 }
 
@@ -95,6 +104,7 @@ const SHOWER_HABIT_TASK_ID = 'habit-task-mandatory-shower';
 const SHOWER_HABIT_NAME = 'Mandatory Shower';
 const SHOWER_GATE_STORAGE_KEY = 'daily_shower_gate_proofs';
 const REQUIRED_SHOWER_BARCODE = '075371003233';
+const SHOWER_PROOF_MANDATORY = true;
 const MAX_SHOWER_PROOF_SIDE = 720;
 const SHOWER_PROOF_JPEG_QUALITY = 0.58;
 const SHOWER_BACKEND_TIMEOUT_MS = 15000;
@@ -102,7 +112,8 @@ const SHOWER_BACKEND_TIMEOUT_MS = 15000;
 type BarcodePermissionStatus = 'idle' | 'requesting' | 'granted' | 'denied' | 'unsupported' | 'error';
 type AppTab = 'dashboard' | 'route' | 'jobs' | 'battery' | 'tracker' | 'habits' | 'settings';
 
-const APP_TABS: AppTab[] = ['dashboard', 'route', 'jobs', 'tracker', 'habits', 'settings'];
+const APP_TABS: AppTab[] = ['dashboard', 'route', 'jobs', 'battery', 'tracker', 'habits', 'settings'];
+const SHOWER_PROTECTED_TABS: AppTab[] = ['route', 'jobs', 'battery', 'tracker'];
 
 const getTabFromHash = (): AppTab | null => {
   if (typeof window === 'undefined') return null;
@@ -479,6 +490,8 @@ export default function App() {
   const barcodeVideoRef = useRef<HTMLVideoElement | null>(null);
   const barcodeStreamRef = useRef<MediaStream | null>(null);
   const barcodeScanLoopRef = useRef<number | null>(null);
+  const barcodeScanHandledRef = useRef(false);
+  const showerGateUnlockedRef = useRef(false);
   const zxingScannerControlsRef = useRef<{ stop: () => void; switchTorch?: (onOff: boolean) => Promise<void> } | null>(null);
 
   // Real-time Optimization Alerts & explains
@@ -572,12 +585,17 @@ export default function App() {
   }, []);
 
   const handleTabChange = (tab: AppTab) => {
-    setCurrentTab(tab);
+    const nextTab = !showerGateUnlockedRef.current && SHOWER_PROTECTED_TABS.includes(tab) ? 'habits' : tab;
+    if (nextTab !== tab) {
+      setActiveHabitTaskId(SHOWER_HABIT_TASK_ID);
+      setDispatcherMessage('Shower proof required before opening protected work features.');
+    }
+    setCurrentTab(nextTab);
     if (typeof window === 'undefined') return;
 
-    window.history.replaceState(null, '', `#${tab}`);
+    window.history.replaceState(null, '', `#${nextTab}`);
     window.setTimeout(() => {
-      document.getElementById(`tab-view-${tab}`)?.scrollIntoView({
+      document.getElementById(`tab-view-${nextTab}`)?.scrollIntoView({
         behavior: 'smooth',
         block: 'start'
       });
@@ -588,9 +606,15 @@ export default function App() {
     const handleHashChange = () => {
       const tab = getTabFromHash();
       if (tab) {
-        setCurrentTab(tab);
+        const nextTab = !showerGateUnlockedRef.current && SHOWER_PROTECTED_TABS.includes(tab) ? 'habits' : tab;
+        if (nextTab !== tab) {
+          setActiveHabitTaskId(SHOWER_HABIT_TASK_ID);
+          setDispatcherMessage('Shower proof required before opening protected work features.');
+          window.history.replaceState(null, '', `#${nextTab}`);
+        }
+        setCurrentTab(nextTab);
         window.setTimeout(() => {
-          document.getElementById(`tab-view-${tab}`)?.scrollIntoView({
+          document.getElementById(`tab-view-${nextTab}`)?.scrollIntoView({
             behavior: 'smooth',
             block: 'start'
           });
@@ -1515,14 +1539,41 @@ export default function App() {
   const showerCycleKey = getShowerCycleKey(now);
   const showerCycleLabel = new Date(`${showerCycleKey}T12:00:00`).toLocaleDateString([], { month: 'short', day: 'numeric', weekday: 'short' });
   const showerProofForCycle = showerProofs.find(proof => proof.cycleKey === showerCycleKey);
+  const showerProofAttachmentForCycle = showerProofDraft || (
+    showerProofForCycle?.proofAttachment
+      ? { name: showerProofForCycle.proofAttachment.name, dataUrl: showerProofForCycle.proofAttachment.dataUrl }
+      : showerProofForCycle?.proofName && showerProofForCycle?.proofDataUrl
+        ? { name: showerProofForCycle.proofName, dataUrl: showerProofForCycle.proofDataUrl }
+        : null
+  );
+  const persistedBarcodeVerifiedForCycle = Boolean(
+    showerProofForCycle?.barcodeVerified &&
+    showerProofForCycle?.scannedBarcode === REQUIRED_SHOWER_BARCODE &&
+    showerProofForCycle?.barcodeVerifiedAt
+  );
+  const barcodeVerifiedForCycle = Boolean(
+    persistedBarcodeVerifiedForCycle ||
+    (barcodeScanSuccess && scannedBarcodeValue === REQUIRED_SHOWER_BARCODE)
+  );
+  const showerProofRequiredSatisfied = !SHOWER_PROOF_MANDATORY || Boolean(showerProofAttachmentForCycle?.dataUrl);
   const showerGateUnlocked = Boolean(
-    showerProofForCycle?.proofDataUrl &&
-    showerProofForCycle?.confirmedAt &&
-    showerProofForCycle.barcodeValue === REQUIRED_SHOWER_BARCODE
+    showerProofForCycle?.showerConfirmed &&
+    showerProofForCycle?.showerConfirmedAt &&
+    showerProofForCycle?.scannedBarcode === REQUIRED_SHOWER_BARCODE &&
+    (!SHOWER_PROOF_MANDATORY || Boolean(showerProofForCycle?.proofAttachment?.dataUrl || showerProofForCycle?.proofDataUrl))
   );
   const showerGateStatusText = showerGateUnlocked
-    ? `Unlocked ${new Date(showerProofForCycle!.confirmedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
-    : 'Locked until shower proof is confirmed';
+    ? `Shower confirmed ${new Date(showerProofForCycle!.showerConfirmedAt || showerProofForCycle!.confirmedAt || now).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
+    : barcodeVerifiedForCycle && !showerProofRequiredSatisfied
+      ? 'Product verified. Proof missing.'
+      : barcodeVerifiedForCycle
+        ? 'Ready to confirm'
+        : barcodeScannerActive
+          ? 'Scanning'
+          : barcodeScanMessage === 'Incorrect product barcode.'
+          ? 'Incorrect barcode'
+          : 'Barcode not scanned';
+  showerGateUnlockedRef.current = showerGateUnlocked;
   const currentHabitLogs = habitLogs.filter(log => log.taskId === activeHabitTask.id || (!log.taskId && log.taskName === habitTaskName));
   const todayHabitMinutes = currentHabitLogs
     .filter(log => log.date === todayKey)
@@ -1650,15 +1701,22 @@ export default function App() {
         const confirmedAt = row.confirmed_at || row.confirmedAt || '';
         const folderPath = row.folder_path || row.folderPath || '';
         setShowerProofBackendFolder(folderPath);
-        if (confirmedAt && proofDataUrl && barcodeValue === REQUIRED_SHOWER_BARCODE) {
+        if (barcodeValue === REQUIRED_SHOWER_BARCODE || proofDataUrl || confirmedAt) {
           setShowerProofs(prev => [
             ...prev.filter(item => item.cycleKey !== showerCycleKey),
             {
+              ...(prev.find(item => item.cycleKey === showerCycleKey) || {}),
               cycleKey: showerCycleKey,
               proofName,
               proofDataUrl,
+              proofAttachment: proofName && proofDataUrl ? { name: proofName, dataUrl: proofDataUrl } : undefined,
               barcodeValue,
+              scannedBarcode: barcodeValue,
+              barcodeVerified: barcodeValue === REQUIRED_SHOWER_BARCODE,
+              barcodeVerifiedAt: confirmedAt || row.updated_at?.toString() || row.updatedAt?.toString() || new Date().toISOString(),
               confirmedAt,
+              showerConfirmed: Boolean(confirmedAt && proofDataUrl && barcodeValue === REQUIRED_SHOWER_BARCODE),
+              showerConfirmedAt: confirmedAt || undefined,
               backendFolderPath: folderPath,
             }
           ]);
@@ -1679,10 +1737,36 @@ export default function App() {
   const blockJobAccess = (action: string) => {
     if (showerGateUnlocked) return false;
     setCurrentTab('habits');
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(null, '', '#habits');
+    }
     setActiveHabitTaskId(SHOWER_HABIT_TASK_ID);
     setDispatcherMessage(`Shower proof required before ${action}. Confirm today's shower in Habits to unlock jobs.`);
     return true;
   };
+
+  useEffect(() => {
+    if (!showerGateUnlocked && SHOWER_PROTECTED_TABS.includes(currentTab)) {
+      setCurrentTab('habits');
+      setActiveHabitTaskId(SHOWER_HABIT_TASK_ID);
+      if (typeof window !== 'undefined') {
+        window.history.replaceState(null, '', '#habits');
+      }
+      setDispatcherMessage('Daily shower gate is locked. Confirm shower proof before opening protected work features.');
+    }
+  }, [currentTab, showerGateUnlocked]);
+
+  useEffect(() => {
+    setBarcodeScanSuccess(persistedBarcodeVerifiedForCycle);
+    setScannedBarcodeValue(persistedBarcodeVerifiedForCycle ? REQUIRED_SHOWER_BARCODE : '');
+    setBarcodeScanMessage(persistedBarcodeVerifiedForCycle
+      ? 'Product verified.'
+      : 'Scan the product barcode to unlock shower confirmation.'
+    );
+    if (!persistedBarcodeVerifiedForCycle) {
+      stopBarcodeScanner();
+    }
+  }, [showerCycleKey]);
 
   const stopBarcodeScanner = () => {
     if (barcodeScanLoopRef.current !== null) {
@@ -1705,10 +1789,28 @@ export default function App() {
   };
 
   const acceptScannedProductBarcode = (value: string) => {
+    if (barcodeScanHandledRef.current) return false;
     if (value === REQUIRED_SHOWER_BARCODE) {
+      barcodeScanHandledRef.current = true;
+      const verifiedAt = new Date().toISOString();
       setScannedBarcodeValue(value);
       setBarcodeScanSuccess(true);
-      setBarcodeScanMessage('Product barcode verified. Shower confirmation unlocked.');
+      setBarcodeScanMessage('Product verified.');
+      setShowerProofs(prev => [
+        ...prev.filter(item => item.cycleKey !== showerCycleKey),
+        {
+          ...(prev.find(item => item.cycleKey === showerCycleKey) || {}),
+          cycleKey: showerCycleKey,
+          proofName: showerProofAttachmentForCycle?.name,
+          proofDataUrl: showerProofAttachmentForCycle?.dataUrl,
+          proofAttachment: showerProofAttachmentForCycle || undefined,
+          barcodeValue: value,
+          scannedBarcode: value,
+          barcodeVerified: true,
+          barcodeVerifiedAt: verifiedAt,
+          showerConfirmed: false,
+        }
+      ]);
       void saveShowerProofToBackend({
         barcodeValue: value,
         eventType: 'barcode_scanned',
@@ -1719,6 +1821,7 @@ export default function App() {
       return true;
     }
 
+    barcodeScanHandledRef.current = true;
     void saveShowerProofToBackend({
       barcodeValue: value,
       eventType: 'barcode_rejected',
@@ -1726,15 +1829,34 @@ export default function App() {
       flashUsed: barcodeTorchOn,
     });
     rejectScannedBarcode();
+    window.setTimeout(() => {
+      barcodeScanHandledRef.current = false;
+    }, 1200);
     return false;
   };
 
   const startBarcodeScanner = async () => {
     stopBarcodeScanner();
     setBarcodePermissionStatus('requesting');
+    barcodeScanHandledRef.current = false;
     setBarcodeScanSuccess(false);
     setScannedBarcodeValue('');
     setBarcodeScanMessage('Point the camera at the product barcode.');
+    if (barcodeVerifiedForCycle) {
+      setShowerProofs(prev => prev.map(item => item.cycleKey === showerCycleKey
+        ? {
+          ...item,
+          barcodeValue: '',
+          scannedBarcode: '',
+          barcodeVerified: false,
+          barcodeVerifiedAt: undefined,
+          showerConfirmed: false,
+          showerConfirmedAt: undefined,
+          confirmedAt: undefined,
+        }
+        : item
+      ));
+    }
 
     if (!('mediaDevices' in navigator) || !navigator.mediaDevices?.getUserMedia) {
       setBarcodePermissionStatus('unsupported');
@@ -1892,6 +2014,20 @@ export default function App() {
         name: file.name,
         dataUrl
       });
+      setShowerProofs(prev => [
+        ...prev.filter(item => item.cycleKey !== showerCycleKey),
+        {
+          ...(prev.find(item => item.cycleKey === showerCycleKey) || {}),
+          cycleKey: showerCycleKey,
+          proofName: file.name,
+          proofDataUrl: dataUrl,
+          proofAttachment: {
+            name: file.name,
+            dataUrl,
+          },
+          showerConfirmed: false,
+        }
+      ]);
       void saveShowerProofToBackend({
         proofName: file.name,
         proofDataUrl: dataUrl,
@@ -1906,30 +2042,47 @@ export default function App() {
   };
 
   const handleConfirmDailyShower = async () => {
-    if (!showerProofDraft?.dataUrl) {
+    const proofAttachment = showerProofAttachmentForCycle;
+    const verifiedBarcode = scannedBarcodeValue === REQUIRED_SHOWER_BARCODE
+      ? scannedBarcodeValue
+      : showerProofForCycle?.scannedBarcode || showerProofForCycle?.barcodeValue || '';
+
+    if (!barcodeVerifiedForCycle || verifiedBarcode !== REQUIRED_SHOWER_BARCODE) {
+      rejectScannedBarcode();
+      setDispatcherMessage('Product barcode verification required before shower confirmation.');
+      return;
+    }
+    if (SHOWER_PROOF_MANDATORY && !proofAttachment?.dataUrl) {
       setDispatcherMessage('Add shower proof first. Jobs stay locked until proof is attached and confirmed.');
       return;
     }
-    if (!barcodeScanSuccess || scannedBarcodeValue !== REQUIRED_SHOWER_BARCODE) {
+    if (verifiedBarcode !== '075371003233') {
       rejectScannedBarcode();
-      setDispatcherMessage('Product barcode verification required before shower confirmation.');
+      setDispatcherMessage('Barcode validation failed. Scan the product barcode again.');
       return;
     }
 
     const confirmedAt = new Date().toISOString();
     const proof: ShowerProof = {
       cycleKey: showerCycleKey,
-      proofName: showerProofDraft.name,
-      proofDataUrl: showerProofDraft.dataUrl,
-      barcodeValue: scannedBarcodeValue,
+      ...(showerProofForCycle || {}),
+      proofName: proofAttachment?.name,
+      proofDataUrl: proofAttachment?.dataUrl,
+      proofAttachment: proofAttachment || undefined,
+      barcodeValue: verifiedBarcode,
+      scannedBarcode: verifiedBarcode,
+      barcodeVerified: true,
+      barcodeVerifiedAt: showerProofForCycle?.barcodeVerifiedAt || new Date().toISOString(),
       confirmedAt,
+      showerConfirmed: true,
+      showerConfirmedAt: confirmedAt,
       backendFolderPath: showerProofBackendFolder,
     };
 
     const backendFolderPath = await saveShowerProofToBackend({
-      proofName: showerProofDraft.name,
-      proofDataUrl: showerProofDraft.dataUrl,
-      barcodeValue: scannedBarcodeValue,
+      proofName: proofAttachment?.name,
+      proofDataUrl: proofAttachment?.dataUrl,
+      barcodeValue: verifiedBarcode,
       confirmedAt,
       eventType: 'proof_confirmed',
       flashAvailable: barcodeTorchAvailable,
@@ -1973,7 +2126,7 @@ export default function App() {
           taskName: SHOWER_HABIT_NAME,
           minutes: 1,
           date: showerCycleKey,
-          note: `Proof confirmed: ${showerProofDraft.name}. Product barcode verified.`,
+          note: `Proof confirmed: ${proofAttachment?.name || 'attached proof'}. Product barcode verified.`,
           createdAt: confirmedAt
         },
         ...prev
@@ -2354,12 +2507,15 @@ export default function App() {
 
         {/* Main Content Body */}
         <main className="app-main mx-auto max-w-7xl px-3 py-4 pb-40 sm:px-6 sm:py-6 lg:px-8 space-y-6">
+          {!showerGateUnlocked && (
           <section
             id="daily-shower-gate"
             className={`rounded-[8px] border-2 p-4 shadow-lg ${
-              showerGateUnlocked
+              barcodeVerifiedForCycle && showerProofRequiredSatisfied
                 ? 'border-emerald-300 bg-emerald-50 text-emerald-950 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100'
-                : 'border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100'
+                : barcodeScanMessage === 'Incorrect product barcode.'
+                  ? 'border-rose-300 bg-rose-50 text-rose-950 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-100'
+                  : 'border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100'
             }`}
           >
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -2370,7 +2526,7 @@ export default function App() {
                 <div>
                   <p className="text-sm font-black uppercase tracking-widest">Daily Shower Gate - 6:00 AM Reset</p>
                   <h2 className="mt-1 text-3xl font-black leading-none">
-                    {showerGateUnlocked ? 'Jobs unlocked for today.' : 'Shower proof required before jobs.'}
+                    {barcodeVerifiedForCycle && showerProofRequiredSatisfied ? 'Ready to confirm shower.' : 'Shower proof required before jobs.'}
                   </h2>
                   <p className="mt-2 text-sm font-bold opacity-80">
                     Cycle: {showerCycleLabel}. {showerGateStatusText}. This requirement renews every day at 6:00 AM.
@@ -2381,7 +2537,7 @@ export default function App() {
               <div className="grid gap-2 sm:grid-cols-[1fr_auto] lg:min-w-[420px]">
                 <label className="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-[8px] border-2 border-current/20 bg-white/70 px-4 text-sm font-black uppercase text-slate-800 shadow-sm dark:bg-black/20 dark:text-white">
                   <Camera size={18} />
-                  <span>{showerProofDraft?.name || showerProofForCycle?.proofName || 'Attach Proof'}</span>
+                  <span>{showerProofAttachmentForCycle?.name || 'Attach Proof'}</span>
                   <input
                     key={`shower-proof-main-${showerProofInputKey}`}
                     type="file"
@@ -2394,30 +2550,40 @@ export default function App() {
                 <button
                   type="button"
                   onClick={handleConfirmDailyShower}
-                  disabled={showerGateUnlocked || !showerProofDraft || !barcodeScanSuccess || scannedBarcodeValue !== REQUIRED_SHOWER_BARCODE}
+                  disabled={!barcodeVerifiedForCycle || !showerProofRequiredSatisfied}
                   className="flex min-h-12 items-center justify-center gap-2 rounded-[8px] bg-slate-950 px-4 text-sm font-black uppercase text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:bg-white dark:text-slate-950 dark:disabled:bg-white/10 dark:disabled:text-slate-500"
                 >
                   <CheckCircle2 size={18} />
-                  <span>{showerGateUnlocked ? 'Confirmed' : 'Confirm Shower'}</span>
+                  <span>Confirm Shower</span>
                 </button>
 
                 <div className="sm:col-span-2 rounded-[8px] border-2 border-current/20 bg-white/70 p-3 dark:bg-black/20">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="text-xs font-black uppercase tracking-widest">Product Barcode Check</p>
-                      <p className={`mt-1 text-sm font-black ${barcodeScanSuccess ? 'text-emerald-700 dark:text-emerald-200' : barcodeScanMessage === 'Incorrect product barcode.' ? 'text-rose-700 dark:text-rose-200' : ''}`}>
-                        {barcodeScanMessage}
+                      <p className={`mt-1 text-sm font-black ${barcodeVerifiedForCycle ? 'text-emerald-700 dark:text-emerald-200' : barcodeScanMessage === 'Incorrect product barcode.' ? 'text-rose-700 dark:text-rose-200' : ''}`}>
+                        {barcodeVerifiedForCycle ? '✓ Product verified' : barcodeScanMessage}
                       </p>
+                      {barcodeVerifiedForCycle && (
+                        <p className="mt-1 text-xs font-bold opacity-80">
+                          Barcode ending in 3233
+                        </p>
+                      )}
+                      {!showerProofRequiredSatisfied && (
+                        <p className="mt-1 text-xs font-bold text-amber-800 dark:text-amber-200">
+                          Proof missing.
+                        </p>
+                      )}
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
                         onClick={barcodeScannerActive ? stopBarcodeScanner : startBarcodeScanner}
-                        disabled={showerGateUnlocked || barcodePermissionStatus === 'requesting'}
-                        className="flex min-h-10 items-center justify-center gap-2 rounded-[8px] bg-blue-700 px-3 text-xs font-black uppercase text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600"
+                        disabled={barcodePermissionStatus === 'requesting'}
+                        className={`flex items-center justify-center gap-2 rounded-[8px] bg-blue-700 px-3 text-xs font-black uppercase text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 ${barcodeVerifiedForCycle ? 'min-h-9 opacity-80' : 'min-h-10'}`}
                       >
                         <Camera size={16} />
-                        <span>{barcodeScannerActive ? 'Stop Scan' : barcodePermissionStatus === 'requesting' ? 'Requesting' : 'Scan Barcode'}</span>
+                        <span>{barcodeScannerActive ? 'Stop Scan' : barcodePermissionStatus === 'requesting' ? 'Requesting' : barcodeVerifiedForCycle ? 'Scan Again' : 'Scan Barcode'}</span>
                       </button>
                       <button
                         type="button"
@@ -2457,6 +2623,7 @@ export default function App() {
               </div>
             </div>
           </section>
+          )}
 
           {/* Ride Mode V2: Distraction-free execution surface */}
           {currentTab === 'dashboard' && rideModeActive && (
@@ -4888,12 +5055,15 @@ export default function App() {
                 </div>
               </div>
 
+              {!showerGateUnlocked && (
               <section
                 id="mandatory-shower-habit"
                 className={`rounded-[8px] border-2 p-5 ${
-                  showerGateUnlocked
+                  barcodeVerifiedForCycle && showerProofRequiredSatisfied
                     ? 'border-emerald-300 bg-emerald-50 text-emerald-950 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100'
-                    : 'border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100'
+                    : barcodeScanMessage === 'Incorrect product barcode.'
+                      ? 'border-rose-300 bg-rose-50 text-rose-950 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-100'
+                      : 'border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100'
                 }`}
               >
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -4912,11 +5082,14 @@ export default function App() {
                       </span>
                       {showerProofForCycle && (
                         <span className="rounded-[8px] bg-white/70 px-3 py-2 text-slate-800 dark:bg-black/20 dark:text-white">
-                          Proof: {showerProofForCycle.proofName}
+                          Proof: {showerProofAttachmentForCycle?.name || showerProofForCycle.proofName}
                         </span>
                       )}
                       <span className="rounded-[8px] bg-white/70 px-3 py-2 text-slate-800 dark:bg-black/20 dark:text-white">
-                        Product barcode {showerGateUnlocked || barcodeScanSuccess ? 'verified' : 'required'}
+                        Product barcode {barcodeVerifiedForCycle ? 'verified' : 'required'}
+                      </span>
+                      <span className="rounded-[8px] bg-white/70 px-3 py-2 text-slate-800 dark:bg-black/20 dark:text-white">
+                        {showerProofRequiredSatisfied ? 'Ready to confirm' : 'Proof missing'}
                       </span>
                     </div>
                   </div>
@@ -4924,7 +5097,7 @@ export default function App() {
                   <div className="grid w-full gap-2 lg:max-w-md">
                     <label className="flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-[8px] border-2 border-current/20 bg-white/70 px-4 text-sm font-black uppercase text-slate-800 shadow-sm dark:bg-black/20 dark:text-white">
                       <Camera size={20} />
-                      <span>{showerProofDraft?.name || showerProofForCycle?.proofName || 'Attach Shower Proof'}</span>
+                      <span>{showerProofAttachmentForCycle?.name || 'Attach Shower Proof'}</span>
                       <input
                         key={`shower-proof-habits-${showerProofInputKey}`}
                         type="file"
@@ -4937,23 +5110,23 @@ export default function App() {
                     <button
                       type="button"
                       onClick={handleConfirmDailyShower}
-                      disabled={showerGateUnlocked || !showerProofDraft || !barcodeScanSuccess || scannedBarcodeValue !== REQUIRED_SHOWER_BARCODE}
+                      disabled={!barcodeVerifiedForCycle || !showerProofRequiredSatisfied}
                       className="flex min-h-14 items-center justify-center gap-2 rounded-[8px] bg-slate-950 px-4 text-lg font-black uppercase text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:bg-white dark:text-slate-950 dark:disabled:bg-white/10 dark:disabled:text-slate-500"
                     >
                       <CheckCircle2 size={22} />
-                      <span>{showerGateUnlocked ? 'Jobs Unlocked' : 'Confirm Shower'}</span>
+                      <span>Confirm Shower</span>
                     </button>
                     <button
                       type="button"
                       onClick={barcodeScannerActive ? stopBarcodeScanner : startBarcodeScanner}
-                      disabled={showerGateUnlocked || barcodePermissionStatus === 'requesting'}
-                      className="flex min-h-12 items-center justify-center gap-2 rounded-[8px] bg-blue-700 px-4 text-sm font-black uppercase text-white shadow-sm transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600"
+                      disabled={barcodePermissionStatus === 'requesting'}
+                      className={`flex items-center justify-center gap-2 rounded-[8px] bg-blue-700 px-4 text-sm font-black uppercase text-white shadow-sm transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 ${barcodeVerifiedForCycle ? 'min-h-10 opacity-80' : 'min-h-12'}`}
                     >
                       <Camera size={18} />
-                      <span>{barcodeScannerActive ? 'Stop Barcode Scan' : 'Scan Product Barcode'}</span>
+                      <span>{barcodeScannerActive ? 'Stop Barcode Scan' : barcodePermissionStatus === 'requesting' ? 'Requesting' : barcodeVerifiedForCycle ? 'Scan Again' : 'Scan Barcode'}</span>
                     </button>
-                    <p className={`text-sm font-black ${barcodeScanSuccess ? 'text-emerald-700 dark:text-emerald-200' : barcodeScanMessage === 'Incorrect product barcode.' ? 'text-rose-700 dark:text-rose-200' : ''}`}>
-                      {barcodeScanMessage}
+                    <p className={`text-sm font-black ${barcodeVerifiedForCycle ? 'text-emerald-700 dark:text-emerald-200' : barcodeScanMessage === 'Incorrect product barcode.' ? 'text-rose-700 dark:text-rose-200' : ''}`}>
+                      {barcodeVerifiedForCycle ? '✓ Product verified. Barcode ending in 3233.' : barcodeScanMessage}
                     </p>
                     {showerProofSyncMessage && (
                       <p className={`text-xs font-black ${
@@ -4974,6 +5147,7 @@ export default function App() {
                   </div>
                 </div>
               </section>
+              )}
 
               <section className="rounded-[8px] border-2 border-slate-300 bg-white p-4 dark:border-white/20 dark:bg-[#17181b]">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
