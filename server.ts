@@ -1,6 +1,8 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import path from "path";
 import dotenv from "dotenv";
+import crypto from "crypto";
+import fs from "fs/promises";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 
@@ -9,6 +11,92 @@ dotenv.config();
 
 const app = express();
 const PORT = Number(process.env.PORT || 3001);
+const REQUIRED_SHOWER_BARCODE = "075371003233";
+const showerProofRoot = path.join(process.cwd(), ".local-shower-proofs");
+const showerProofImageRoot = path.join(showerProofRoot, "images");
+const showerProofMetadataPath = path.join(showerProofRoot, "proofs.json");
+
+interface LocalShowerProofRecord {
+  id: string;
+  cycleId: string;
+  localDate: string;
+  barcode: string;
+  barcodeEnding: string;
+  capturedAt: string;
+  storageKey: string;
+  imageUrl: string;
+  uploadStatus: "saved";
+  verificationStatus: "verified";
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface MultipartPart {
+  name: string;
+  filename?: string;
+  contentType?: string;
+  data: Buffer;
+}
+
+const readLocalShowerProofs = async (): Promise<LocalShowerProofRecord[]> => {
+  try {
+    const text = await fs.readFile(showerProofMetadataPath, "utf8");
+    const records = JSON.parse(text) as LocalShowerProofRecord[];
+    return Array.isArray(records) ? records : [];
+  } catch {
+    return [];
+  }
+};
+
+const writeLocalShowerProofs = async (records: LocalShowerProofRecord[]) => {
+  await fs.mkdir(showerProofRoot, { recursive: true });
+  await fs.writeFile(showerProofMetadataPath, JSON.stringify(records, null, 2));
+};
+
+const normalizeLocalCycleId = (value: unknown) => {
+  const key = (value || "").toString().trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(key) ? key : new Date().toISOString().slice(0, 10);
+};
+
+const parseMultipartBuffer = (body: Buffer, contentType: string): MultipartPart[] => {
+  const boundaryMatch = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
+  const boundary = boundaryMatch?.[1] || boundaryMatch?.[2];
+  if (!boundary) return [];
+  const boundaryBuffer = Buffer.from(`--${boundary}`);
+  const parts: MultipartPart[] = [];
+  let cursor = body.indexOf(boundaryBuffer);
+
+  while (cursor !== -1) {
+    const nextCursor = body.indexOf(boundaryBuffer, cursor + boundaryBuffer.length);
+    if (nextCursor === -1) break;
+    const rawPart = body.subarray(cursor + boundaryBuffer.length, nextCursor);
+    cursor = nextCursor;
+    if (rawPart.length < 6) continue;
+    const part = rawPart.subarray(rawPart[0] === 13 && rawPart[1] === 10 ? 2 : 0);
+    const headerEnd = part.indexOf(Buffer.from("\r\n\r\n"));
+    if (headerEnd === -1) continue;
+    const headerText = part.subarray(0, headerEnd).toString("utf8");
+    const disposition = headerText.match(/content-disposition:[^\n]*name="([^"]+)"(?:; filename="([^"]+)")?/i);
+    if (!disposition) continue;
+    let data = part.subarray(headerEnd + 4);
+    if (data.length >= 2 && data[data.length - 2] === 13 && data[data.length - 1] === 10) {
+      data = data.subarray(0, data.length - 2);
+    }
+    const contentTypeMatch = headerText.match(/content-type:\s*([^\r\n]+)/i);
+    parts.push({
+      name: disposition[1],
+      filename: disposition[2],
+      contentType: contentTypeMatch?.[1]?.trim(),
+      data,
+    });
+  }
+
+  return parts;
+};
+
+app.use("/shower-proof-assets", express.static(showerProofImageRoot, {
+  setHeaders: (res) => res.setHeader("Cache-Control", "private, no-store"),
+}));
 
 // Body parser with 15MB limit for Base64 screenshot uploads
 app.use(express.json({ limit: '15mb' }));
@@ -39,6 +127,84 @@ function getGeminiClient(): GoogleGenAI {
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", time: new Date().toISOString() });
 });
+
+app.get("/api/shower-proofs/current", async (req: Request, res: Response) => {
+  const cycleId = normalizeLocalCycleId(req.query.cycleId);
+  const proofs = await readLocalShowerProofs();
+  const proof = proofs
+    .filter(record => record.cycleId === cycleId && record.barcode === REQUIRED_SHOWER_BARCODE && record.uploadStatus === "saved" && record.verificationStatus === "verified")
+    .sort((a, b) => b.capturedAt.localeCompare(a.capturedAt))[0] || null;
+  res.json({ proof });
+});
+
+app.get("/api/shower-proofs/:id", async (req: Request, res: Response) => {
+  const proofs = await readLocalShowerProofs();
+  const proof = proofs.find(record => record.id === req.params.id) || null;
+  res.json({ proof });
+});
+
+app.get("/api/shower-proofs", async (_req: Request, res: Response) => {
+  const proofs = await readLocalShowerProofs();
+  res.json({ proofs: proofs.sort((a, b) => b.capturedAt.localeCompare(a.capturedAt)).slice(0, 50) });
+});
+
+app.post(
+  "/api/shower-proofs",
+  express.raw({ type: request => request.headers["content-type"]?.startsWith("multipart/form-data") === true, limit: "15mb" }),
+  async (req: Request, res: Response) => {
+    try {
+      if (!Buffer.isBuffer(req.body)) {
+        return res.status(400).json({ error: "Invalid proof upload." });
+      }
+
+      const parts = parseMultipartBuffer(req.body, req.headers["content-type"] || "");
+      const getTextPart = (name: string) => parts.find(part => part.name === name)?.data.toString("utf8").trim() || "";
+      const barcode = getTextPart("barcode");
+
+      if (barcode !== REQUIRED_SHOWER_BARCODE) {
+        return res.status(400).json({ error: "Incorrect product barcode." });
+      }
+
+      const image = parts.find(part => part.name === "image");
+      if (!image || image.data.length === 0) {
+        return res.status(400).json({ error: "Proof image is required." });
+      }
+
+      const cycleId = normalizeLocalCycleId(getTextPart("cycleId"));
+      const localDate = normalizeLocalCycleId(getTextPart("localDate"));
+      const capturedDate = new Date(getTextPart("capturedAt"));
+      const capturedAt = Number.isNaN(capturedDate.getTime()) ? new Date().toISOString() : capturedDate.toISOString();
+      const id = `shower-${cycleId}-${crypto.randomUUID()}`;
+      const filename = `${id}.jpg`;
+      const storageKey = `daily-shower-gate/${cycleId}/${filename}`;
+      const now = new Date().toISOString();
+
+      await fs.mkdir(showerProofImageRoot, { recursive: true });
+      await fs.writeFile(path.join(showerProofImageRoot, filename), image.data);
+
+      const proof: LocalShowerProofRecord = {
+        id,
+        cycleId,
+        localDate,
+        barcode,
+        barcodeEnding: barcode.slice(-4),
+        capturedAt,
+        storageKey,
+        imageUrl: `/shower-proof-assets/${filename}`,
+        uploadStatus: "saved",
+        verificationStatus: "verified",
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      const proofs = await readLocalShowerProofs();
+      await writeLocalShowerProofs([proof, ...proofs.filter(record => record.id !== proof.id)].slice(0, 200));
+      res.json({ proof });
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Proof record save failed." });
+    }
+  }
+);
 
 // AI Dispatcher Chat Endpoint
 app.post("/api/dispatcher/chat", async (req: any, res: any) => {

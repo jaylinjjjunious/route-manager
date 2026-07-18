@@ -4,6 +4,7 @@ import handler from "vinext/server/app-router-entry";
 interface D1PreparedStatement {
   bind(...values: unknown[]): D1PreparedStatement;
   first<T = Record<string, unknown>>(): Promise<T | null>;
+  all<T = Record<string, unknown>>(): Promise<{ results: T[] }>;
   run(): Promise<unknown>;
 }
 
@@ -38,6 +39,20 @@ interface ShowerProofPayload {
   eventType?: string;
   flashAvailable?: boolean;
   flashUsed?: boolean;
+}
+
+interface ShowerProofRecordRow {
+  id: string;
+  cycle_id: string;
+  local_date: string;
+  barcode: string;
+  captured_at: string;
+  storage_key: string;
+  image_data_url: string;
+  upload_status: string;
+  verification_status: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface ExecutionContext {
@@ -92,6 +107,27 @@ const ensureShowerProofSchema = async (db: D1Database) => {
   ]);
 };
 
+const ensureShowerProofRecordSchema = async (db: D1Database) => {
+  await db.batch([
+    db.prepare(`CREATE TABLE IF NOT EXISTS shower_proof_records (
+      id TEXT PRIMARY KEY,
+      cycle_id TEXT NOT NULL,
+      local_date TEXT NOT NULL,
+      barcode TEXT NOT NULL,
+      captured_at TEXT NOT NULL,
+      storage_key TEXT NOT NULL,
+      image_data_url TEXT NOT NULL,
+      upload_status TEXT NOT NULL,
+      verification_status TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )`),
+  ]);
+
+  await db.prepare("CREATE INDEX IF NOT EXISTS idx_shower_proof_records_cycle ON shower_proof_records (cycle_id, captured_at DESC)").run();
+  await db.prepare("CREATE INDEX IF NOT EXISTS idx_shower_proof_records_captured ON shower_proof_records (captured_at DESC)").run();
+};
+
 const normalizeCycleKey = (value: unknown) => {
   const key = (value || "").toString().trim();
   return /^\d{4}-\d{2}-\d{2}$/.test(key) ? key : new Date().toISOString().slice(0, 10);
@@ -103,6 +139,165 @@ const buildShowerFolderPath = (cycleKey: string, proofName?: string) => {
     .replace(/^-+|-+$/g, "")
     .slice(0, 80) || "shower-proof.jpg";
   return `daily-shower-gate/${cycleKey}/${safeName}`;
+};
+
+const REQUIRED_SHOWER_BARCODE = "075371003233";
+
+const normalizeCycleId = (value: unknown) => {
+  const key = (value || "").toString().trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(key) ? key : new Date().toISOString().slice(0, 10);
+};
+
+const normalizeIsoTimestamp = (value: unknown) => {
+  const date = new Date((value || "").toString());
+  return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+};
+
+const blobToDataUrl = async (blob: Blob) => {
+  const buffer = await blob.arrayBuffer();
+  let binary = "";
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
+  }
+  return `data:${blob.type || "image/jpeg"};base64,${btoa(binary)}`;
+};
+
+const createShowerProofId = (cycleId: string) => {
+  const randomId = typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2);
+  return `shower-${cycleId}-${randomId}`.replace(/[^a-z0-9_.-]+/gi, "-");
+};
+
+const toShowerProofRecord = (request: Request, row: ShowerProofRecordRow) => ({
+  id: row.id,
+  cycleId: row.cycle_id,
+  localDate: row.local_date,
+  barcode: row.barcode,
+  barcodeEnding: row.barcode.slice(-4),
+  capturedAt: row.captured_at,
+  storageKey: row.storage_key,
+  imageUrl: new URL(`/api/shower-proofs/${encodeURIComponent(row.id)}/image`, request.url).toString(),
+  uploadStatus: row.upload_status,
+  verificationStatus: row.verification_status,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
+
+const handleShowerProofRecordsApi = async (request: Request, env: Env): Promise<Response> => {
+  if (!env.DB) {
+    return jsonResponse({ error: "Backend storage is not configured." }, { status: 503 });
+  }
+
+  await ensureShowerProofRecordSchema(env.DB);
+  const url = new URL(request.url);
+
+  if (request.method === "GET" && url.pathname === "/api/shower-proofs/current") {
+    const cycleId = normalizeCycleId(url.searchParams.get("cycleId"));
+    const row = await env.DB
+      .prepare(`SELECT * FROM shower_proof_records
+        WHERE cycle_id = ? AND barcode = ? AND upload_status = 'saved' AND verification_status = 'verified'
+        ORDER BY captured_at DESC LIMIT 1`)
+      .bind(cycleId, REQUIRED_SHOWER_BARCODE)
+      .first<ShowerProofRecordRow>();
+    return jsonResponse({ proof: row ? toShowerProofRecord(request, row) : null });
+  }
+
+  const imageMatch = url.pathname.match(/^\/api\/shower-proofs\/([^/]+)\/image$/);
+  if (request.method === "GET" && imageMatch) {
+    const id = decodeURIComponent(imageMatch[1]);
+    const row = await env.DB
+      .prepare("SELECT * FROM shower_proof_records WHERE id = ?")
+      .bind(id)
+      .first<ShowerProofRecordRow>();
+    if (!row) {
+      return jsonResponse({ error: "Proof image unavailable." }, { status: 404 });
+    }
+    const match = row.image_data_url.match(/^data:([^;]+);base64,(.*)$/);
+    if (!match) {
+      return jsonResponse({ error: "Proof image unavailable." }, { status: 404 });
+    }
+    const bytes = Uint8Array.from(atob(match[2]), character => character.charCodeAt(0));
+    return new Response(bytes, {
+      headers: {
+        "Content-Type": match[1],
+        "Cache-Control": "private, no-store",
+      },
+    });
+  }
+
+  const recordMatch = url.pathname.match(/^\/api\/shower-proofs\/([^/]+)$/);
+  if (request.method === "GET" && recordMatch) {
+    const id = decodeURIComponent(recordMatch[1]);
+    const row = await env.DB
+      .prepare("SELECT * FROM shower_proof_records WHERE id = ?")
+      .bind(id)
+      .first<ShowerProofRecordRow>();
+    return jsonResponse({ proof: row ? toShowerProofRecord(request, row) : null });
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/shower-proofs") {
+    const rows = await env.DB
+      .prepare("SELECT * FROM shower_proof_records ORDER BY captured_at DESC LIMIT 50")
+      .all<ShowerProofRecordRow>();
+    return jsonResponse({ proofs: rows.results.map(row => toShowerProofRecord(request, row)) });
+  }
+
+  if (request.method !== "POST" || url.pathname !== "/api/shower-proofs") {
+    return jsonResponse({ error: "Method not allowed." }, { status: 405 });
+  }
+
+  const form = await request.formData().catch(() => null);
+  if (!form) {
+    return jsonResponse({ error: "Invalid proof upload." }, { status: 400 });
+  }
+
+  const barcode = (form.get("barcode") || "").toString();
+  if (barcode !== REQUIRED_SHOWER_BARCODE) {
+    return jsonResponse({ error: "Incorrect product barcode." }, { status: 400 });
+  }
+
+  const image = form.get("image");
+  if (!(image instanceof Blob) || image.size === 0) {
+    return jsonResponse({ error: "Proof image is required." }, { status: 400 });
+  }
+
+  const cycleId = normalizeCycleId(form.get("cycleId"));
+  const localDate = normalizeCycleId(form.get("localDate"));
+  const capturedAt = normalizeIsoTimestamp(form.get("capturedAt"));
+  const id = createShowerProofId(cycleId);
+  const storageKey = `daily-shower-gate/${cycleId}/${id}.jpg`;
+  const imageDataUrl = await blobToDataUrl(image);
+  const now = new Date().toISOString();
+
+  await env.DB
+    .prepare(`INSERT INTO shower_proof_records (
+      id, cycle_id, local_date, barcode, captured_at, storage_key,
+      image_data_url, upload_status, verification_status, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .bind(
+      id,
+      cycleId,
+      localDate,
+      barcode,
+      capturedAt,
+      storageKey,
+      imageDataUrl,
+      "saved",
+      "verified",
+      now,
+      now,
+    )
+    .run();
+
+  const row = await env.DB
+    .prepare("SELECT * FROM shower_proof_records WHERE id = ?")
+    .bind(id)
+    .first<ShowerProofRecordRow>();
+
+  return jsonResponse({ proof: row ? toShowerProofRecord(request, row) : null });
 };
 
 const handleShowerProofApi = async (request: Request, env: Env): Promise<Response> => {
@@ -477,6 +672,10 @@ const worker = {
 
     if (url.pathname === "/api/shower-proof") {
       return handleShowerProofApi(request, env);
+    }
+
+    if (url.pathname === "/api/shower-proofs" || url.pathname.startsWith("/api/shower-proofs/")) {
+      return handleShowerProofRecordsApi(request, env);
     }
 
     if (url.pathname === "/api/safety-news") {

@@ -3,6 +3,7 @@ node_modules/
 dist/
 coverage/
 test-results/
+.local-shower-proofs/
 .DS_Store
 *.log
 .env*

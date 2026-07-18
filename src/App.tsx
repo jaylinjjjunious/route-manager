@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './index.css';
 import { Job, Coordinates, RouteMetrics, EbikeConfig, DispatcherAction, JobType } from './types';
 import {
@@ -31,7 +31,9 @@ import JobModal from './components/JobModal';
 import AIDispatcher from './components/AIDispatcher';
 import JobImportSystem from './components/JobImportSystem';
 import { EndOfDaySummary } from './components/EndOfDaySummary';
+import ShowerGatePanel from './components/ShowerGatePanel';
 import { useTextToSpeech } from './hooks/useTextToSpeech';
+import type { ShowerProofRecord } from './services/showerProofApi';
 import {
   Plus, Sliders, Play, RotateCcw, Search, Moon, Sun, Layers, ShieldCheck, MapPin, CheckSquare,
   LayoutDashboard, Map, Briefcase, Battery, Settings, Info, AlertTriangle, ArrowRightLeft,
@@ -84,12 +86,15 @@ interface HabitTask {
 
 interface ShowerProof {
   cycleKey: string;
+  proofId?: string;
   proofName?: string;
   proofDataUrl?: string;
   proofAttachment?: {
     name: string;
     dataUrl: string;
   };
+  storageKey?: string;
+  imageUrl?: string;
   barcodeValue?: string;
   scannedBarcode?: string;
   barcodeVerified?: boolean;
@@ -98,6 +103,10 @@ interface ShowerProof {
   showerConfirmed?: boolean;
   showerConfirmedAt?: string;
   backendFolderPath?: string;
+  capturedAt?: string;
+  localDate?: string;
+  uploadStatus?: 'saved' | 'failed';
+  verificationStatus?: 'verified' | 'rejected';
 }
 
 const SHOWER_HABIT_TASK_ID = 'habit-task-mandatory-shower';
@@ -586,10 +595,9 @@ export default function App() {
   }, []);
 
   const handleTabChange = (tab: AppTab) => {
-    const nextTab = !showerGateUnlockedRef.current && SHOWER_PROTECTED_TABS.includes(tab) ? 'habits' : tab;
+    const nextTab = !showerGateUnlockedRef.current && SHOWER_PROTECTED_TABS.includes(tab) ? 'dashboard' : tab;
     if (nextTab !== tab) {
-      setActiveHabitTaskId(SHOWER_HABIT_TASK_ID);
-      setDispatcherMessage('Shower proof required before opening protected work features.');
+      setDispatcherMessage('Shower proof required in Mission Control before opening protected work features.');
     }
     setCurrentTab(nextTab);
     if (typeof window === 'undefined') return;
@@ -621,10 +629,9 @@ export default function App() {
     const handleHashChange = () => {
       const tab = getTabFromHash();
       if (tab) {
-        const nextTab = !showerGateUnlockedRef.current && SHOWER_PROTECTED_TABS.includes(tab) ? 'habits' : tab;
+        const nextTab = !showerGateUnlockedRef.current && SHOWER_PROTECTED_TABS.includes(tab) ? 'dashboard' : tab;
         if (nextTab !== tab) {
-          setActiveHabitTaskId(SHOWER_HABIT_TASK_ID);
-          setDispatcherMessage('Shower proof required before opening protected work features.');
+          setDispatcherMessage('Shower proof required in Mission Control before opening protected work features.');
           window.history.replaceState(null, '', `#${nextTab}`);
         }
         setCurrentTab(nextTab);
@@ -1570,12 +1577,34 @@ export default function App() {
     persistedBarcodeVerifiedForCycle ||
     (barcodeScanSuccess && scannedBarcodeValue === REQUIRED_SHOWER_BARCODE)
   );
-  const showerProofRequiredSatisfied = !SHOWER_PROOF_MANDATORY || Boolean(showerProofAttachmentForCycle?.dataUrl);
+  const showerProofRequiredSatisfied = !SHOWER_PROOF_MANDATORY || Boolean(
+    showerProofAttachmentForCycle?.dataUrl ||
+    showerProofForCycle?.imageUrl ||
+    showerProofForCycle?.storageKey ||
+    showerProofForCycle?.proofId
+  );
   const showerGateUnlocked = Boolean(
     showerProofForCycle?.showerConfirmed &&
     showerProofForCycle?.showerConfirmedAt &&
     showerProofForCycle?.scannedBarcode === REQUIRED_SHOWER_BARCODE &&
-    (!SHOWER_PROOF_MANDATORY || Boolean(showerProofForCycle?.proofAttachment?.dataUrl || showerProofForCycle?.proofDataUrl))
+    (
+      !SHOWER_PROOF_MANDATORY ||
+      Boolean(
+        showerProofForCycle?.proofAttachment?.dataUrl ||
+        showerProofForCycle?.proofDataUrl ||
+        showerProofForCycle?.imageUrl ||
+        showerProofForCycle?.storageKey ||
+        showerProofForCycle?.proofId
+      )
+    ) &&
+    (
+      !showerProofForCycle?.uploadStatus ||
+      showerProofForCycle.uploadStatus === 'saved'
+    ) &&
+    (
+      !showerProofForCycle?.verificationStatus ||
+      showerProofForCycle.verificationStatus === 'verified'
+    )
   );
   const showerGateStatusText = showerGateUnlocked
     ? `Shower confirmed ${new Date(showerProofForCycle!.showerConfirmedAt || showerProofForCycle!.confirmedAt || now).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
@@ -1589,6 +1618,22 @@ export default function App() {
           ? 'Incorrect barcode'
           : 'Barcode not scanned';
   showerGateUnlockedRef.current = showerGateUnlocked;
+  const missionControlShowerProofRecord: ShowerProofRecord | null = showerProofForCycle?.proofId && showerProofForCycle?.imageUrl
+    ? {
+      id: showerProofForCycle.proofId,
+      cycleId: showerProofForCycle.cycleKey,
+      localDate: showerProofForCycle.localDate || showerProofForCycle.cycleKey,
+      barcode: showerProofForCycle.scannedBarcode || showerProofForCycle.barcodeValue || REQUIRED_SHOWER_BARCODE,
+      barcodeEnding: (showerProofForCycle.scannedBarcode || showerProofForCycle.barcodeValue || REQUIRED_SHOWER_BARCODE).slice(-4),
+      capturedAt: showerProofForCycle.capturedAt || showerProofForCycle.showerConfirmedAt || showerProofForCycle.confirmedAt || new Date().toISOString(),
+      storageKey: showerProofForCycle.storageKey || showerProofForCycle.backendFolderPath || '',
+      imageUrl: showerProofForCycle.imageUrl,
+      uploadStatus: showerProofForCycle.uploadStatus || 'saved',
+      verificationStatus: showerProofForCycle.verificationStatus || 'verified',
+      createdAt: showerProofForCycle.capturedAt || showerProofForCycle.showerConfirmedAt || showerProofForCycle.confirmedAt || new Date().toISOString(),
+      updatedAt: showerProofForCycle.showerConfirmedAt || showerProofForCycle.confirmedAt || showerProofForCycle.capturedAt || new Date().toISOString(),
+    }
+    : null;
   const currentHabitLogs = habitLogs.filter(log => log.taskId === activeHabitTask.id || (!log.taskId && log.taskName === habitTaskName));
   const todayHabitMinutes = currentHabitLogs
     .filter(log => log.date === todayKey)
@@ -1751,23 +1796,21 @@ export default function App() {
 
   const blockJobAccess = (action: string) => {
     if (showerGateUnlocked) return false;
-    setCurrentTab('habits');
+    setCurrentTab('dashboard');
     if (typeof window !== 'undefined') {
-      window.history.replaceState(null, '', '#habits');
+      window.history.replaceState(null, '', '#dashboard');
     }
-    setActiveHabitTaskId(SHOWER_HABIT_TASK_ID);
-    setDispatcherMessage(`Shower proof required before ${action}. Confirm today's shower in Habits to unlock jobs.`);
+    setDispatcherMessage(`Shower proof required before ${action}. Verify today's shower in Mission Control to unlock jobs.`);
     return true;
   };
 
   useEffect(() => {
     if (!showerGateUnlocked && SHOWER_PROTECTED_TABS.includes(currentTab)) {
-      setCurrentTab('habits');
-      setActiveHabitTaskId(SHOWER_HABIT_TASK_ID);
+      setCurrentTab('dashboard');
       if (typeof window !== 'undefined') {
-        window.history.replaceState(null, '', '#habits');
+        window.history.replaceState(null, '', '#dashboard');
       }
-      setDispatcherMessage('Daily shower gate is locked. Confirm shower proof before opening protected work features.');
+      setDispatcherMessage('Daily shower gate is locked. Verify shower proof in Mission Control before opening protected work features.');
     }
   }, [currentTab, showerGateUnlocked]);
 
@@ -2157,6 +2200,84 @@ export default function App() {
     setDispatcherMessage(`Shower confirmed. Jobs are unlocked for this daily cycle.${proof.backendFolderPath ? ` Backend folder: ${proof.backendFolderPath}` : ''}`);
   };
 
+  const handleMissionControlShowerVerified = useCallback((record: ShowerProofRecord) => {
+    if (
+      record.cycleId !== showerCycleKey ||
+      record.barcode !== REQUIRED_SHOWER_BARCODE ||
+      record.uploadStatus !== 'saved' ||
+      record.verificationStatus !== 'verified'
+    ) {
+      return;
+    }
+
+    const confirmedAt = record.capturedAt || new Date().toISOString();
+    setShowerProofs(prev => {
+      const proof: ShowerProof = {
+        cycleKey: showerCycleKey,
+        ...(prev.find(item => item.cycleKey === showerCycleKey) || {}),
+        proofId: record.id,
+        proofName: record.storageKey.split('/').pop() || 'shower-proof.jpg',
+        storageKey: record.storageKey,
+        imageUrl: record.imageUrl,
+        barcodeValue: record.barcode,
+        scannedBarcode: record.barcode,
+        barcodeVerified: true,
+        barcodeVerifiedAt: confirmedAt,
+        confirmedAt,
+        showerConfirmed: true,
+        showerConfirmedAt: confirmedAt,
+        backendFolderPath: record.storageKey,
+        capturedAt: record.capturedAt,
+        localDate: record.localDate,
+        uploadStatus: record.uploadStatus,
+        verificationStatus: record.verificationStatus,
+      };
+      return [
+        ...prev.filter(item => item.cycleKey !== showerCycleKey),
+        proof
+      ];
+    });
+
+    setHabitTasks(prev => {
+      if (prev.some(task => task.id === SHOWER_HABIT_TASK_ID)) return prev;
+      return [
+        ...prev,
+        {
+          id: SHOWER_HABIT_TASK_ID,
+          name: SHOWER_HABIT_NAME,
+          targetMinutes: 1,
+          lastMinutes: 1,
+          createdAt: confirmedAt
+        }
+      ];
+    });
+
+    setHabitLogs(prev => {
+      if (prev.some(log => log.date === showerCycleKey && (log.taskId === SHOWER_HABIT_TASK_ID || log.taskName === SHOWER_HABIT_NAME))) {
+        return prev;
+      }
+      return [
+        {
+          id: `habit-shower-${showerCycleKey}-${Date.now()}`,
+          taskId: SHOWER_HABIT_TASK_ID,
+          taskName: SHOWER_HABIT_NAME,
+          minutes: 1,
+          date: showerCycleKey,
+          note: 'Mission Control shower proof saved. Product barcode verified.',
+          createdAt: confirmedAt
+        },
+        ...prev
+      ];
+    });
+
+    setShowerProofDraft(null);
+    setShowerProofInputKey(prev => prev + 1);
+    setBarcodeScanSuccess(false);
+    setScannedBarcodeValue('');
+    setBarcodeScanMessage('Scan the product barcode to unlock shower confirmation.');
+    setDispatcherMessage('Shower verified in Mission Control. Jobs are unlocked for this daily cycle.');
+  }, [showerCycleKey]);
+
   useEffect(() => {
     if (!showerGateUnlocked && rideModeActive) {
       setRideModeActive(false);
@@ -2522,61 +2643,13 @@ export default function App() {
 
         {/* Main Content Body */}
         <main className="app-main mx-auto max-w-7xl px-3 py-4 pb-40 sm:px-6 sm:py-6 lg:px-8 space-y-6">
-          {!showerGateUnlocked && currentTab !== 'habits' && (
-          <section
-            id="daily-shower-gate"
-            className={`rounded-[8px] border-2 p-4 shadow-lg ${
-              barcodeVerifiedForCycle && showerProofRequiredSatisfied
-                ? 'border-emerald-300 bg-emerald-50 text-emerald-950 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100'
-                : barcodeScanMessage === 'Incorrect product barcode.'
-                  ? 'border-rose-300 bg-rose-50 text-rose-950 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-100'
-                  : 'border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100'
-            }`}
-          >
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex items-start gap-3">
-                <div className={`rounded-[8px] p-3 ${showerGateUnlocked ? 'bg-emerald-600 text-white' : 'bg-amber-400 text-slate-950'}`}>
-                  <ShieldCheck size={26} />
-                </div>
-                <div>
-                  <p className="text-sm font-black uppercase tracking-widest">Daily Shower Gate - 6:00 AM Reset</p>
-                  <h2 className="mt-1 text-3xl font-black leading-none">
-                    {barcodeVerifiedForCycle && showerProofRequiredSatisfied ? 'Ready to confirm shower.' : 'Shower proof required before jobs.'}
-                  </h2>
-                  <p className="mt-2 text-sm font-bold opacity-80">
-                    Cycle: {showerCycleLabel}. {showerGateStatusText}. This requirement renews every day at 6:00 AM.
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid gap-2 sm:grid-cols-[1fr_auto] lg:min-w-[360px]">
-                <button
-                  type="button"
-                  onClick={(event) => activateTabFromTap('habits', event)}
-                  onPointerUp={(event) => activateTabFromTap('habits', event)}
-                  onTouchEnd={(event) => activateTabFromTap('habits', event)}
-                  className="flex min-h-12 items-center justify-center gap-2 rounded-[8px] bg-slate-950 px-4 text-sm font-black uppercase text-white shadow-sm transition hover:bg-slate-800 dark:bg-white dark:text-slate-950"
-                >
-                  <Award size={18} />
-                  <span>Open Shower Gate</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={(event) => activateTabFromTap('habits', event)}
-                  onPointerUp={(event) => activateTabFromTap('habits', event)}
-                  onTouchEnd={(event) => activateTabFromTap('habits', event)}
-                  className="flex min-h-12 items-center justify-center gap-2 rounded-[8px] bg-slate-950 px-4 text-sm font-black uppercase text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:bg-white dark:text-slate-950 dark:disabled:bg-white/10 dark:disabled:text-slate-500"
-                >
-                  <CheckCircle2 size={18} />
-                  <span>{barcodeVerifiedForCycle && showerProofRequiredSatisfied ? 'Ready To Confirm' : 'Locked'}</span>
-                </button>
-
-                <p className="sm:col-span-2 rounded-[8px] border-2 border-current/20 bg-white/70 p-3 text-xs font-black uppercase dark:bg-black/20">
-                  {barcodeVerifiedForCycle ? 'Product verified' : 'Product barcode required'} · {showerProofRequiredSatisfied ? 'Proof attached' : 'Proof missing'}
-                </p>
-              </div>
-            </div>
-          </section>
+          {currentTab === 'dashboard' && !rideModeActive && (
+            <ShowerGatePanel
+              cycleId={showerCycleKey}
+              cycleLabel={showerCycleLabel}
+              completedProof={missionControlShowerProofRecord}
+              onVerifiedProof={handleMissionControlShowerVerified}
+            />
           )}
 
           {/* Ride Mode V2: Distraction-free execution surface */}
