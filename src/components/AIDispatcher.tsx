@@ -6,14 +6,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
-  ArrowRightLeft,
   Battery,
   CheckCircle2,
   CheckSquare,
+  ExternalLink,
   ListChecks,
+  MapPin,
   Navigation,
+  RefreshCw,
   RotateCcw,
   Send,
+  ShieldAlert,
   Sparkles,
   Undo2
 } from 'lucide-react';
@@ -51,6 +54,23 @@ type DispatcherResult = {
   action?: DispatcherAction;
 };
 
+type SafetyNewsItem = {
+  title: string;
+  source: string;
+  url: string;
+  publishedAt: string;
+  matchedArea: string;
+  safetyLevel: 'high' | 'watch' | 'info';
+};
+
+type SafetyNewsBrief = {
+  updatedAt: string;
+  areas: string[];
+  items: SafetyNewsItem[];
+  sourceSearches: Array<{ area: string; url: string }>;
+  summary: string;
+};
+
 const normalize = (value: string) =>
   value
     .toLowerCase()
@@ -72,6 +92,9 @@ export default function AIDispatcher({
   currentBattery = 100
 }: AIDispatcherProps) {
   const [command, setCommand] = useState('');
+  const [safetyBrief, setSafetyBrief] = useState<SafetyNewsBrief | null>(null);
+  const [safetyStatus, setSafetyStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [safetyError, setSafetyError] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     try {
       const saved = localStorage.getItem('dispatcher_chat_messages');
@@ -89,6 +112,7 @@ export default function AIDispatcher({
   });
 
   const remainingJobs = useMemo(() => routeAJobs.filter(job => !isJobCompleted(job)), [routeAJobs]);
+  const safetyJobs = useMemo(() => remainingJobs.slice(0, 6), [remainingJobs]);
   const currentStop = remainingJobs[0] || null;
   const projectedBatteryAfterRoute = Math.max(0, Math.round(currentBattery - activeMetrics.estimatedBatteryUsage));
   const batteryEstimate =
@@ -97,6 +121,52 @@ export default function AIDispatcher({
   useEffect(() => {
     localStorage.setItem('dispatcher_chat_messages', JSON.stringify(messages));
   }, [messages]);
+
+  const loadSafetyBrief = async (announce = false) => {
+    setSafetyStatus('loading');
+    setSafetyError('');
+
+    try {
+      const response = await fetch('/api/safety-news', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobs: safetyJobs })
+      });
+      if (!response.ok) throw new Error(`Safety brief failed with ${response.status}`);
+      const brief = await response.json() as SafetyNewsBrief;
+      setSafetyBrief(brief);
+      setSafetyStatus('ready');
+
+      if (announce) {
+        const highCount = brief.items.filter(item => item.safetyLevel === 'high').length;
+        const watchCount = brief.items.filter(item => item.safetyLevel === 'watch').length;
+        const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        setMessages(prev => [
+          ...prev,
+          {
+            id: `dispatcher-safety-${Date.now()}`,
+            sender: 'assistant',
+            text: [
+              'Safety brief updated.',
+              `${brief.items.length} recent item${brief.items.length === 1 ? '' : 's'} found near your stop areas.`,
+              highCount > 0 ? `${highCount} high-alert headline${highCount === 1 ? '' : 's'} surfaced.` : watchCount > 0 ? `${watchCount} watch item${watchCount === 1 ? '' : 's'} surfaced.` : 'No high-alert headlines surfaced from this search.',
+              '',
+              'Review sources before riding. For immediate danger, call 911.'
+            ].join('\n'),
+            timestamp
+          }
+        ]);
+      }
+    } catch (error) {
+      setSafetyStatus('error');
+      setSafetyError(error instanceof Error ? error.message : 'Safety brief unavailable');
+    }
+  };
+
+  useEffect(() => {
+    if (safetyStatus !== 'idle' || safetyJobs.length === 0) return;
+    loadSafetyBrief(false);
+  }, [safetyJobs, safetyStatus]);
 
   const findJob = (target: string) => {
     const cleaned = normalize(target);
@@ -184,6 +254,16 @@ export default function AIDispatcher({
 
     if (!input) {
       return { response: statusReadback() };
+    }
+
+    if (input.includes('safety') || input.includes('crime') || input.includes('news') || input.includes('police')) {
+      loadSafetyBrief(true);
+      return {
+        response: [
+          'Checking Bakersfield safety news near your active stop areas now.',
+          'Use the Area Safety Brief panel for linked sources and verify urgent conditions with official channels.'
+        ].join('\n')
+      };
     }
 
     if (input.includes('how many') || input.includes('jobs left') || input.includes('remaining')) {
@@ -330,9 +410,23 @@ export default function AIDispatcher({
     { label: 'Can I finish today?', value: 'Can I finish today?' },
     { label: 'Complete this job', value: 'Complete this job' },
     { label: 'Move this job', value: 'Move this job' },
+    { label: 'Safety news', value: 'Check safety news near my stops' },
     { label: 'Jobs left', value: 'How many jobs left?' },
     { label: 'Re-optimize', value: 'Re-optimize' }
   ];
+
+  const safetyTone = (level: SafetyNewsItem['safetyLevel']) => {
+    if (level === 'high') return 'border-rose-300 bg-rose-50 text-rose-950 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-100';
+    if (level === 'watch') return 'border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100';
+    return 'border-blue-200 bg-blue-50 text-blue-950 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-100';
+  };
+
+  const formatPublishedAt = (value: string) => {
+    if (!value) return 'Recent';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  };
 
   return (
     <div id="ai-dispatcher-panel" className="space-y-4">
@@ -406,6 +500,116 @@ export default function AIDispatcher({
           <p className="mt-3 text-5xl font-black leading-none">{projectedBatteryAfterRoute}%</p>
         </div>
       </div>
+
+      <section className="rounded-[8px] border-2 border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-black/20">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-[8px] bg-rose-600 text-white">
+              <ShieldAlert size={24} />
+            </div>
+            <div>
+              <p className="text-sm font-black uppercase tracking-widest text-rose-700 dark:text-rose-300">Area Safety Brief</p>
+              <h4 className="text-2xl font-black text-slate-950 dark:text-white">Bakersfield crime and safety news near your route</h4>
+              <p className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-300">
+                Checks recent local news for your next stop areas. Not a live emergency alert. If something feels dangerous, leave and call 911.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => loadSafetyBrief(true)}
+            disabled={safetyStatus === 'loading'}
+            className="flex min-h-12 items-center justify-center gap-2 rounded-[8px] bg-slate-950 px-4 text-sm font-black uppercase text-white transition hover:bg-slate-800 disabled:opacity-60 dark:bg-white dark:text-slate-950"
+          >
+            <RefreshCw size={18} className={safetyStatus === 'loading' ? 'animate-spin' : ''} />
+            <span>{safetyStatus === 'loading' ? 'Checking' : 'Update Safety'}</span>
+          </button>
+        </div>
+
+        <div className="mt-4 grid gap-3 lg:grid-cols-[260px_1fr]">
+          <div className="rounded-[8px] bg-slate-100 p-3 dark:bg-white/10">
+            <div className="flex items-center gap-2">
+              <MapPin size={18} className="text-blue-700 dark:text-blue-300" />
+              <p className="text-sm font-black uppercase text-slate-700 dark:text-slate-200">Checked Areas</p>
+            </div>
+            <div className="mt-3 space-y-2">
+              {(safetyBrief?.areas.length ? safetyBrief.areas : safetyJobs.map(job => `${job.storeName} - ${job.address}`).slice(0, 4)).map((area) => (
+                <p key={area} className="rounded-[8px] bg-white px-3 py-2 text-sm font-black text-slate-700 dark:bg-black/20 dark:text-slate-200">
+                  {area}
+                </p>
+              ))}
+              {safetyBrief?.updatedAt && (
+                <p className="pt-1 text-xs font-black uppercase text-slate-500 dark:text-slate-400">
+                  Updated {formatPublishedAt(safetyBrief.updatedAt)}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div>
+            {safetyStatus === 'error' && (
+              <div className="rounded-[8px] border-2 border-amber-300 bg-amber-50 p-3 text-sm font-black text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+                Safety lookup is unavailable right now: {safetyError}. Try again before heading out.
+              </div>
+            )}
+
+            {safetyStatus === 'loading' && (
+              <div className="rounded-[8px] border-2 border-blue-200 bg-blue-50 p-3 text-sm font-black text-blue-950 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-100">
+                Checking recent Bakersfield safety news near your active stops...
+              </div>
+            )}
+
+            {safetyBrief && safetyBrief.items.length === 0 && safetyStatus !== 'loading' && (
+              <div className="rounded-[8px] border-2 border-slate-200 bg-slate-50 p-3 text-sm font-black text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200">
+                {safetyBrief.summary}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {safetyBrief.sourceSearches.slice(0, 3).map(search => (
+                    <a
+                      key={search.url}
+                      href={search.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex min-h-9 items-center gap-2 rounded-[8px] bg-slate-950 px-3 text-xs font-black uppercase text-white dark:bg-white dark:text-slate-950"
+                    >
+                      <ExternalLink size={14} />
+                      <span>Open news search</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {safetyBrief && safetyBrief.items.length > 0 && (
+              <div className="grid gap-2 md:grid-cols-2">
+                {safetyBrief.items.slice(0, 6).map(item => (
+                  <a
+                    key={`${item.url}-${item.matchedArea}`}
+                    href={item.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={`block rounded-[8px] border-2 p-3 transition hover:scale-[1.01] ${safetyTone(item.safetyLevel)}`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="rounded-[8px] bg-black/10 px-2 py-1 text-[10px] font-black uppercase dark:bg-white/10">
+                        {item.safetyLevel === 'high' ? 'High alert' : item.safetyLevel === 'watch' ? 'Watch' : 'Info'}
+                      </span>
+                      <ExternalLink size={16} />
+                    </div>
+                    <p className="mt-2 text-base font-black leading-snug">{item.title}</p>
+                    <p className="mt-2 text-xs font-black uppercase opacity-75">
+                      {item.source} - {formatPublishedAt(item.publishedAt)}
+                    </p>
+                    <p className="mt-1 text-xs font-black opacity-75">
+                      Matched: {item.matchedArea}
+                    </p>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
         <div className="rounded-[8px] border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-black/20">

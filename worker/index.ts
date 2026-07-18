@@ -24,6 +24,11 @@ interface Env {
   };
 }
 
+interface SafetyNewsJob {
+  storeName?: string;
+  address?: string;
+}
+
 interface ExecutionContext {
   waitUntil(promise: Promise<unknown>): void;
   passThroughOnException(): void;
@@ -54,6 +59,149 @@ const ensureHabitSchema = async (db: D1Database) => {
 
   await db.prepare("ALTER TABLE habit_state ADD COLUMN active_task_id TEXT").run().catch(() => undefined);
   await db.prepare("ALTER TABLE habit_state ADD COLUMN tasks_json TEXT").run().catch(() => undefined);
+};
+
+const stripXml = (value: string) =>
+  value
+    .replace(/<!\[CDATA\[(.*?)\]\]>/gs, "$1")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .trim();
+
+const getXmlTag = (item: string, tag: string) => {
+  const match = item.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, "i"));
+  return match ? stripXml(match[1]) : "";
+};
+
+const extractNewsUrl = (link: string) => {
+  try {
+    const url = new URL(link);
+    return url.searchParams.get("url") || link;
+  } catch {
+    return link;
+  }
+};
+
+const getAreaParts = (job: SafetyNewsJob) => {
+  const address = (job.address || "").replace(/\s+/g, " ").trim();
+  const store = (job.storeName || "").replace(/\s+/g, " ").trim();
+  const streetMatch = address.match(/\b([A-Za-z][A-Za-z\s]+(?:Rd|Road|Ave|Avenue|Blvd|Boulevard|Ln|Lane|Hwy|Highway|Dr|Drive|St|Street|Way|Ct|Court))\b/i);
+  const street = streetMatch?.[1]?.replace(/\s+/g, " ").trim();
+  return {
+    label: [store, street || address].filter(Boolean).join(" near ").slice(0, 120) || "Bakersfield route area",
+    street: street || address || store,
+    store,
+  };
+};
+
+const classifySafetyLevel = (text: string) => {
+  const lowered = text.toLowerCase();
+  if (/\b(shooting|homicide|murder|stabbing|armed|gunfire|fatal|kidnapping|assault)\b/.test(lowered)) return "high";
+  if (/\b(robbery|burglary|theft|arrest|wanted|police|crash|pursuit|fire)\b/.test(lowered)) return "watch";
+  return "info";
+};
+
+const handleSafetyNewsApi = async (request: Request): Promise<Response> => {
+  if (request.method !== "POST") {
+    return jsonResponse({ error: "Method not allowed." }, { status: 405 });
+  }
+
+  const payload = await request.json().catch(() => null) as null | { jobs?: SafetyNewsJob[] };
+  const jobs = Array.isArray(payload?.jobs) ? payload.jobs.slice(0, 8) : [];
+  const areaParts = jobs.map(getAreaParts);
+  const areaLabels = Array.from(new Set(areaParts.map(area => area.label))).slice(0, 6);
+  const queries = (areaParts.length > 0 ? areaParts : [{ label: "Bakersfield route area", street: "Bakersfield", store: "" }])
+    .slice(0, 6)
+    .map((area) => ({
+      area: area.label,
+      query: area.street && area.street !== area.store
+        ? `Bakersfield ${area.street} crime police safety`
+        : `Bakersfield ${area.store || "crime"} police safety`,
+    }));
+  queries.push({
+    area: "Bakersfield citywide",
+    query: "Bakersfield crime police safety today",
+  });
+
+  const seen = new Set<string>();
+  const items: Array<{
+    title: string;
+    source: string;
+    url: string;
+    publishedAt: string;
+    matchedArea: string;
+    safetyLevel: "high" | "watch" | "info";
+  }> = [];
+  const localTerms = Array.from(new Set([
+    "bakersfield",
+    "kern",
+    "bpd",
+    "kbak",
+    "23abc",
+    "kget",
+    ...areaLabels
+      .flatMap((area) => area.toLowerCase().split(/[^a-z0-9]+/))
+      .filter((term) => term.length > 3 && !["near", "family", "dollar", "general", "revisit", "target"].includes(term)),
+  ]));
+
+  await Promise.all(queries.map(async ({ area, query }) => {
+    const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
+    try {
+      const response = await fetch(rssUrl, {
+        headers: {
+          "User-Agent": "RouteManagerSafetyBrief/1.0",
+          "Accept": "application/rss+xml,text/xml;q=0.9,*/*;q=0.8",
+        },
+      });
+      if (!response.ok) return;
+      const xml = await response.text();
+      const rssItems = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/gi)].slice(0, 4);
+      rssItems.forEach((match) => {
+        const raw = match[1];
+        const title = getXmlTag(raw, "title");
+        const link = extractNewsUrl(getXmlTag(raw, "link"));
+        if (!title || !link || seen.has(link)) return;
+        seen.add(link);
+        items.push({
+          title,
+          source: getXmlTag(raw, "source") || "News",
+          url: link,
+          publishedAt: getXmlTag(raw, "pubDate"),
+          matchedArea: area,
+          safetyLevel: classifySafetyLevel(title),
+        });
+      });
+    } catch {
+      // Keep a useful fallback below instead of failing the whole brief.
+    }
+  }));
+
+  const recencyCutoff = Date.now() - 1000 * 60 * 60 * 24 * 120;
+  const sortedItems = items
+    .filter((item) => {
+      const published = new Date(item.publishedAt || 0).getTime();
+      const searchable = `${item.title} ${item.source}`.toLowerCase();
+      return Number.isFinite(published) && published >= recencyCutoff && localTerms.some((term) => searchable.includes(term));
+    })
+    .sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime())
+    .slice(0, 12);
+
+  return jsonResponse({
+    updatedAt: new Date().toISOString(),
+    areas: areaLabels,
+    items: sortedItems,
+    sourceSearches: queries.map(({ area, query }) => ({
+      area,
+      url: `https://news.google.com/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`,
+    })),
+    summary: sortedItems.length > 0
+      ? `Checked ${queries.length} Bakersfield route area${queries.length === 1 ? "" : "s"} for recent crime and safety news.`
+      : "No recent matching news came back from the safety news search. Check official police and local news links before heading out.",
+  });
 };
 
 const handleHabitsApi = async (request: Request, env: Env): Promise<Response> => {
@@ -174,6 +322,10 @@ const worker = {
 
     if (url.pathname === "/api/habits") {
       return handleHabitsApi(request, env);
+    }
+
+    if (url.pathname === "/api/safety-news") {
+      return handleSafetyNewsApi(request);
     }
 
     if (url.pathname === "/_vinext/image") {
