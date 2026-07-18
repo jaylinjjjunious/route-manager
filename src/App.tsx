@@ -114,6 +114,33 @@ declare global {
   }
 }
 
+const safeStorage = {
+  getItem(key: string) {
+    if (typeof window === 'undefined') return null;
+    try {
+      return window.localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  setItem(key: string, value: string) {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(key, value);
+    } catch {
+      // Storage can be unavailable in private or restricted browser contexts.
+    }
+  },
+  removeItem(key: string) {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.removeItem(key);
+    } catch {
+      // Storage can be unavailable in private or restricted browser contexts.
+    }
+  }
+};
+
 const getLocalDateKey = (date: Date) => {
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
   return local.toISOString().slice(0, 10);
@@ -254,7 +281,7 @@ export default function App() {
   const [weatherWind, setWeatherWind] = useState<string>('none');
   const [terrain, setTerrain] = useState<string>('flat');
   const [learnedBatteryPercentPerMile, setLearnedBatteryPercentPerMile] = useState<number>(() => {
-    return Number(localStorage.getItem('battery_tracker_learned_percent_per_mile') || DEFAULT_EBIKE_CONFIG.batteryPercentPerMile);
+    return Number(safeStorage.getItem('battery_tracker_learned_percent_per_mile') || DEFAULT_EBIKE_CONFIG.batteryPercentPerMile);
   });
 
   const [activeTab, setActiveTab] = useState<'A' | 'B' | 'all'>('A');
@@ -262,23 +289,23 @@ export default function App() {
   
   // Ride Tracker States
   const [trackerStatus, setTrackerStatus] = useState<'idle' | 'riding' | 'at_store' | 'completed'>(() => {
-    return (localStorage.getItem('ride_tracker_status') as any) || 'idle';
+    return (safeStorage.getItem('ride_tracker_status') as any) || 'idle';
   });
   const [trackerRideTime, setTrackerRideTime] = useState<number>(() => {
-    return Number(localStorage.getItem('ride_tracker_ride_time') || '0');
+    return Number(safeStorage.getItem('ride_tracker_ride_time') || '0');
   });
   const [trackerStoreTime, setTrackerStoreTime] = useState<number>(() => {
-    return Number(localStorage.getItem('ride_tracker_store_time') || '0');
+    return Number(safeStorage.getItem('ride_tracker_store_time') || '0');
   });
   const [trackerTotalDayTime, setTrackerTotalDayTime] = useState<number>(() => {
-    return Number(localStorage.getItem('ride_tracker_total_day_time') || '0');
+    return Number(safeStorage.getItem('ride_tracker_total_day_time') || '0');
   });
   const [trackerStartBattery, setTrackerStartBattery] = useState<number>(() => {
-    return Number(localStorage.getItem('ride_tracker_start_battery') || '100');
+    return Number(safeStorage.getItem('ride_tracker_start_battery') || '100');
   });
   const [trackerJobsCompleted, setTrackerJobsCompleted] = useState<string[]>(() => {
     try {
-      const saved = localStorage.getItem('ride_tracker_jobs_completed');
+      const saved = safeStorage.getItem('ride_tracker_jobs_completed');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -289,7 +316,7 @@ export default function App() {
   const [rideSummary, setRideSummary] = useState<any | null>(null);
   const [trackerSessions, setTrackerSessions] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('ride_tracker_sessions');
+      const saved = safeStorage.getItem('ride_tracker_sessions');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -297,7 +324,7 @@ export default function App() {
   });
   const [jobsMovedToTomorrowIds, setJobsMovedToTomorrowIds] = useState<string[]>(() => {
     try {
-      const saved = localStorage.getItem('jobs_moved_to_tomorrow');
+      const saved = safeStorage.getItem('jobs_moved_to_tomorrow');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -306,7 +333,7 @@ export default function App() {
   const trackerTimerRef = useRef<number | null>(null);
   const [habitTasks, setHabitTasks] = useState<HabitTask[]>(() => {
     try {
-      const savedTasks = localStorage.getItem('habit_tracker_tasks');
+      const savedTasks = safeStorage.getItem('habit_tracker_tasks');
       if (savedTasks) {
         const parsedTasks = JSON.parse(savedTasks);
         if (Array.isArray(parsedTasks) && parsedTasks.length > 0) {
@@ -319,20 +346,20 @@ export default function App() {
 
     return [{
       id: 'habit-task-default',
-      name: localStorage.getItem('habit_tracker_task_name') || 'Daily Focus Task',
-      targetMinutes: Number(localStorage.getItem('habit_tracker_target_minutes') || '30'),
-      lastMinutes: Number(localStorage.getItem('habit_tracker_last_minutes') || '30'),
+      name: safeStorage.getItem('habit_tracker_task_name') || 'Daily Focus Task',
+      targetMinutes: Number(safeStorage.getItem('habit_tracker_target_minutes') || '30'),
+      lastMinutes: Number(safeStorage.getItem('habit_tracker_last_minutes') || '30'),
       createdAt: new Date().toISOString()
     }];
   });
-  const [activeHabitTaskId, setActiveHabitTaskId] = useState<string>(() => localStorage.getItem('habit_tracker_active_task_id') || 'habit-task-default');
+  const [activeHabitTaskId, setActiveHabitTaskId] = useState<string>(() => safeStorage.getItem('habit_tracker_active_task_id') || 'habit-task-default');
   const [habitLogNote, setHabitLogNote] = useState('');
   const [todayHabitTaskName, setTodayHabitTaskName] = useState('');
   const [todayHabitTaskMinutes, setTodayHabitTaskMinutes] = useState(20);
   const [todayHabitTaskNote, setTodayHabitTaskNote] = useState('');
   const [habitLogs, setHabitLogs] = useState<HabitLog[]>(() => {
     try {
-      const saved = localStorage.getItem('habit_tracker_logs');
+      const saved = safeStorage.getItem('habit_tracker_logs');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -340,7 +367,7 @@ export default function App() {
   });
   const [showerProofs, setShowerProofs] = useState<ShowerProof[]>(() => {
     try {
-      const saved = localStorage.getItem(SHOWER_GATE_STORAGE_KEY);
+      const saved = safeStorage.getItem(SHOWER_GATE_STORAGE_KEY);
       const parsed = saved ? JSON.parse(saved) : [];
       return Array.isArray(parsed) ? parsed : [];
     } catch {
@@ -370,7 +397,7 @@ export default function App() {
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
   const [proofVault, setProofVault] = useState<Record<string, ProofRecord>>(() => {
     try {
-      const saved = localStorage.getItem('proof_vault_records');
+      const saved = safeStorage.getItem('proof_vault_records');
       return saved ? JSON.parse(saved) : {};
     } catch {
       return {};
@@ -425,17 +452,17 @@ export default function App() {
 
   // Load from local storage
   useEffect(() => {
-    const savedJobs = localStorage.getItem('route_optimizer_jobs');
-    const savedStart = localStorage.getItem('route_optimizer_start');
-    const savedConfig = localStorage.getItem('route_optimizer_config');
-    const savedTheme = localStorage.getItem('route_optimizer_theme');
+    const savedJobs = safeStorage.getItem('route_optimizer_jobs');
+    const savedStart = safeStorage.getItem('route_optimizer_start');
+    const savedConfig = safeStorage.getItem('route_optimizer_config');
+    const savedTheme = safeStorage.getItem('route_optimizer_theme');
 
-    const savedBattery = localStorage.getItem('ebike_current_battery');
-    const savedAssist = localStorage.getItem('ebike_assist_level');
-    const savedRiderWeight = localStorage.getItem('ebike_rider_weight');
-    const savedCargoWeight = localStorage.getItem('ebike_cargo_weight');
-    const savedWeather = localStorage.getItem('ebike_weather_wind');
-    const savedTerrain = localStorage.getItem('ebike_terrain');
+    const savedBattery = safeStorage.getItem('ebike_current_battery');
+    const savedAssist = safeStorage.getItem('ebike_assist_level');
+    const savedRiderWeight = safeStorage.getItem('ebike_rider_weight');
+    const savedCargoWeight = safeStorage.getItem('ebike_cargo_weight');
+    const savedWeather = safeStorage.getItem('ebike_weather_wind');
+    const savedTerrain = safeStorage.getItem('ebike_terrain');
 
     if (savedBattery) setCurrentBattery(Number(savedBattery));
     if (savedAssist) setAssistLevel(Number(savedAssist));
@@ -451,19 +478,19 @@ export default function App() {
           ? normalizeJobsForStorage(parsedJobs)
           : normalizeJobsForStorage(SEED_JOBS);
         setJobs(migratedJobs);
-        localStorage.setItem('route_optimizer_jobs', JSON.stringify(migratedJobs));
-        localStorage.setItem('route_optimizer_jobs_schema_version', JOB_STATE_SCHEMA_VERSION);
+        safeStorage.setItem('route_optimizer_jobs', JSON.stringify(migratedJobs));
+        safeStorage.setItem('route_optimizer_jobs_schema_version', JOB_STATE_SCHEMA_VERSION);
       } catch (e) {
         const seededJobs = normalizeJobsForStorage(SEED_JOBS);
         setJobs(seededJobs);
-        localStorage.setItem('route_optimizer_jobs', JSON.stringify(seededJobs));
-        localStorage.setItem('route_optimizer_jobs_schema_version', JOB_STATE_SCHEMA_VERSION);
+        safeStorage.setItem('route_optimizer_jobs', JSON.stringify(seededJobs));
+        safeStorage.setItem('route_optimizer_jobs_schema_version', JOB_STATE_SCHEMA_VERSION);
       }
     } else {
       const seededJobs = normalizeJobsForStorage(SEED_JOBS);
       setJobs(seededJobs);
-      localStorage.setItem('route_optimizer_jobs', JSON.stringify(seededJobs));
-      localStorage.setItem('route_optimizer_jobs_schema_version', JOB_STATE_SCHEMA_VERSION);
+      safeStorage.setItem('route_optimizer_jobs', JSON.stringify(seededJobs));
+      safeStorage.setItem('route_optimizer_jobs_schema_version', JOB_STATE_SCHEMA_VERSION);
     }
 
     if (savedStart) {
@@ -493,13 +520,13 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(SHOWER_GATE_STORAGE_KEY, JSON.stringify(showerProofs.slice(-14)));
+    safeStorage.setItem(SHOWER_GATE_STORAGE_KEY, JSON.stringify(showerProofs.slice(-14)));
   }, [showerProofs]);
 
   // Synchronize Operations dashboard message with the latest assistant message
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('dispatcher_chat_messages');
+      const saved = safeStorage.getItem('dispatcher_chat_messages');
       if (saved) {
         const msgs = JSON.parse(saved);
         const assistantMsgs = msgs.filter((m: any) => m.sender === 'assistant');
@@ -515,35 +542,35 @@ export default function App() {
 
   // Persist e-bike battery settings
   useEffect(() => {
-    localStorage.setItem('ebike_current_battery', currentBattery.toString());
-    localStorage.setItem('ebike_assist_level', assistLevel.toString());
-    localStorage.setItem('ebike_rider_weight', riderWeight.toString());
-    localStorage.setItem('ebike_cargo_weight', cargoWeight.toString());
-    localStorage.setItem('ebike_weather_wind', weatherWind);
-    localStorage.setItem('ebike_terrain', terrain);
+    safeStorage.setItem('ebike_current_battery', currentBattery.toString());
+    safeStorage.setItem('ebike_assist_level', assistLevel.toString());
+    safeStorage.setItem('ebike_rider_weight', riderWeight.toString());
+    safeStorage.setItem('ebike_cargo_weight', cargoWeight.toString());
+    safeStorage.setItem('ebike_weather_wind', weatherWind);
+    safeStorage.setItem('ebike_terrain', terrain);
   }, [currentBattery, assistLevel, riderWeight, cargoWeight, weatherWind, terrain]);
 
   useEffect(() => {
-    localStorage.setItem('proof_vault_records', JSON.stringify(proofVault));
+    safeStorage.setItem('proof_vault_records', JSON.stringify(proofVault));
   }, [proofVault]);
 
   // Persist Ride Tracker active state variables
   useEffect(() => {
-    localStorage.setItem('ride_tracker_status', trackerStatus);
-    localStorage.setItem('ride_tracker_ride_time', trackerRideTime.toString());
-    localStorage.setItem('ride_tracker_store_time', trackerStoreTime.toString());
-    localStorage.setItem('ride_tracker_total_day_time', trackerTotalDayTime.toString());
-    localStorage.setItem('ride_tracker_start_battery', trackerStartBattery.toString());
-    localStorage.setItem('ride_tracker_jobs_completed', JSON.stringify(trackerJobsCompleted));
+    safeStorage.setItem('ride_tracker_status', trackerStatus);
+    safeStorage.setItem('ride_tracker_ride_time', trackerRideTime.toString());
+    safeStorage.setItem('ride_tracker_store_time', trackerStoreTime.toString());
+    safeStorage.setItem('ride_tracker_total_day_time', trackerTotalDayTime.toString());
+    safeStorage.setItem('ride_tracker_start_battery', trackerStartBattery.toString());
+    safeStorage.setItem('ride_tracker_jobs_completed', JSON.stringify(trackerJobsCompleted));
   }, [trackerStatus, trackerRideTime, trackerStoreTime, trackerTotalDayTime, trackerStartBattery, trackerJobsCompleted]);
 
   useEffect(() => {
-    localStorage.setItem('habit_tracker_tasks', JSON.stringify(habitTasks));
-    localStorage.setItem('habit_tracker_active_task_id', activeHabitTask.id);
-    localStorage.setItem('habit_tracker_task_name', habitTaskName);
-    localStorage.setItem('habit_tracker_target_minutes', habitTargetMinutes.toString());
-    localStorage.setItem('habit_tracker_last_minutes', habitLogMinutes.toString());
-    localStorage.setItem('habit_tracker_logs', JSON.stringify(habitLogs));
+    safeStorage.setItem('habit_tracker_tasks', JSON.stringify(habitTasks));
+    safeStorage.setItem('habit_tracker_active_task_id', activeHabitTask.id);
+    safeStorage.setItem('habit_tracker_task_name', habitTaskName);
+    safeStorage.setItem('habit_tracker_target_minutes', habitTargetMinutes.toString());
+    safeStorage.setItem('habit_tracker_last_minutes', habitLogMinutes.toString());
+    safeStorage.setItem('habit_tracker_logs', JSON.stringify(habitLogs));
   }, [habitTasks, activeHabitTask.id, habitTaskName, habitTargetMinutes, habitLogMinutes, habitLogs]);
 
   useEffect(() => {
@@ -818,8 +845,8 @@ export default function App() {
     const finalized = normalizeJobsForStorage([...optimizedRouteA, ...restJobs]);
 
     setJobs(finalized);
-    localStorage.setItem('route_optimizer_jobs', JSON.stringify(finalized));
-    localStorage.setItem('route_optimizer_jobs_schema_version', JOB_STATE_SCHEMA_VERSION);
+    safeStorage.setItem('route_optimizer_jobs', JSON.stringify(finalized));
+    safeStorage.setItem('route_optimizer_jobs_schema_version', JOB_STATE_SCHEMA_VERSION);
   };
 
   // Continuous Route Optimization & Explanations Monitor
@@ -924,18 +951,18 @@ export default function App() {
     setStartAddress(newAddr);
     const resolved = resolveCoordinates(newAddr);
     setStartCoord(resolved);
-    localStorage.setItem('route_optimizer_start', newAddr);
+    safeStorage.setItem('route_optimizer_start', newAddr);
   };
 
   const handleSaveConfig = (updated: EbikeConfig) => {
     setEbikeConfig(updated);
-    localStorage.setItem('route_optimizer_config', JSON.stringify(updated));
+    safeStorage.setItem('route_optimizer_config', JSON.stringify(updated));
   };
 
   const handleToggleTheme = () => {
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(nextTheme);
-    localStorage.setItem('route_optimizer_theme', nextTheme);
+    safeStorage.setItem('route_optimizer_theme', nextTheme);
   };
 
   // Ride simulation controls
@@ -1325,7 +1352,7 @@ export default function App() {
     saveJobsToStorage(SEED_JOBS);
     setStartAddress('1951 Golden State Ave');
     setStartCoord({ lat: 35.3904, lng: -119.0255 });
-    localStorage.removeItem('route_optimizer_start');
+    safeStorage.removeItem('route_optimizer_start');
   };
 
   const handleOpenAddModal = () => {
@@ -1366,7 +1393,7 @@ export default function App() {
     const unfinishedIds = unfinishedRouteAJobs.map(j => j.id);
     
     setJobsMovedToTomorrowIds(unfinishedIds);
-    localStorage.setItem('jobs_moved_to_tomorrow', JSON.stringify(unfinishedIds));
+    safeStorage.setItem('jobs_moved_to_tomorrow', JSON.stringify(unfinishedIds));
     
     const updatedJobs = jobs.map(j => {
       if (j.routeId === 'A' && isJobCompleted(j)) {
@@ -1385,7 +1412,7 @@ export default function App() {
     setTrackerTotalDayTime(0);
     setTrackerJobsCompleted([]);
     setJobsMovedToTomorrowIds([]);
-    localStorage.removeItem('jobs_moved_to_tomorrow');
+    safeStorage.removeItem('jobs_moved_to_tomorrow');
   };
 
   const formatDuration = (seconds: number) => {
@@ -1846,7 +1873,7 @@ export default function App() {
       const sampleRate = learningBatteryUsed / distance;
       const blendedRate = parseFloat(((learnedBatteryPercentPerMile * 0.75) + (sampleRate * 0.25)).toFixed(2));
       setLearnedBatteryPercentPerMile(blendedRate);
-      localStorage.setItem('battery_tracker_learned_percent_per_mile', blendedRate.toString());
+      safeStorage.setItem('battery_tracker_learned_percent_per_mile', blendedRate.toString());
     }
     const earned = completedRouteAJobs.reduce((sum, job) => sum + job.pay, 0);
     const elapsedHours = Math.max(trackerTotalDayTime / 3600, 0.01);
@@ -1897,7 +1924,7 @@ export default function App() {
     });
     const updatedSessions = [sessionLog, ...trackerSessions];
     setTrackerSessions(updatedSessions);
-    localStorage.setItem('ride_tracker_sessions', JSON.stringify(updatedSessions));
+    safeStorage.setItem('ride_tracker_sessions', JSON.stringify(updatedSessions));
 
     setRideModeActive(false);
     setTrackerStatus('idle');
@@ -1983,7 +2010,7 @@ export default function App() {
         if (matchedJob) {
           setJobsMovedToTomorrowIds(prev => {
             const next = [...prev, matchedJob.id];
-            localStorage.setItem('jobs_moved_to_tomorrow', JSON.stringify(next));
+            safeStorage.setItem('jobs_moved_to_tomorrow', JSON.stringify(next));
             return next;
           });
           handleUpdateJobStatus(matchedJob.id, { routeId: 'B' });
@@ -2008,7 +2035,7 @@ export default function App() {
         if (action.batteryValue !== undefined && !isNaN(action.batteryValue)) {
           const val = Math.max(0, Math.min(100, action.batteryValue));
           setCurrentBattery(val);
-          localStorage.setItem('ebike_current_battery', val.toString());
+          safeStorage.setItem('ebike_current_battery', val.toString());
           return `Updated battery status to ${val}%.`;
         }
         return 'No battery percentage specified.';
@@ -2032,9 +2059,9 @@ export default function App() {
     setHistoryStack(prev => prev.slice(0, -1));
     
     setJobs(previous.jobs);
-    localStorage.setItem('route_optimizer_jobs', JSON.stringify(previous.jobs));
+    safeStorage.setItem('route_optimizer_jobs', JSON.stringify(previous.jobs));
     setCurrentBattery(previous.battery);
-    localStorage.setItem('ebike_current_battery', previous.battery.toString());
+    safeStorage.setItem('ebike_current_battery', previous.battery.toString());
     return true;
   };
 
@@ -4290,7 +4317,7 @@ export default function App() {
                           setTrackerTotalDayTime(0);
                           setTrackerJobsCompleted([]);
                           setJobsMovedToTomorrowIds([]);
-                          localStorage.removeItem('jobs_moved_to_tomorrow');
+                          safeStorage.removeItem('jobs_moved_to_tomorrow');
                         }}
                         disabled={trackerStatus === 'riding'}
                         className={`road-action-lg ${
@@ -4367,7 +4394,7 @@ export default function App() {
 
                           const updatedSessions = [newSession, ...trackerSessions];
                           setTrackerSessions(updatedSessions);
-                          localStorage.setItem('ride_tracker_sessions', JSON.stringify(updatedSessions));
+                          safeStorage.setItem('ride_tracker_sessions', JSON.stringify(updatedSessions));
                           setTrackerStatus('completed');
                         }}
                         disabled={trackerStatus === 'idle' || trackerStatus === 'completed'}
@@ -4556,7 +4583,7 @@ export default function App() {
                           onClick={() => {
                             if (window.confirm('Delete all tracked ride history?')) {
                               setTrackerSessions([]);
-                              localStorage.removeItem('ride_tracker_sessions');
+                              safeStorage.removeItem('ride_tracker_sessions');
                             }
                           }}
                           className="text-[9px] font-bold text-red-500 hover:underline uppercase"
@@ -5254,6 +5281,7 @@ export default function App() {
     </div>
   );
 }
+
 
 
 
