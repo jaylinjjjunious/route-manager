@@ -1,1 +1,249 @@
-@import "../src/index.css";
+
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+html {
+  width: 100%;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+body,
+#root {
+  min-width: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(0, 122, 255, 0.12), transparent 30rem),
+    linear-gradient(180deg, #f7f7fb 0%, #eef0f5 100%);
+}
+
+html.dark body,
+body.dark {
+  background:
+    radial-gradient(circle at top left, rgba(10, 132, 255, 0.2), transparent 28rem),
+    linear-gradient(180deg, #050506 0%, #111113 100%);
+}
+
+button,
+a,
+input,
+textarea,
+select {
+  touch-action: manipulation;
+}
+
+.app-shell {
+  width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+.ios-app {
+  font-feature-settings: "ss01" on, "cv01" on;
+  background:
+    radial-gradient(circle at top left, rgba(0, 122, 255, 0.12), transparent 30rem),
+    linear-gradient(180deg, #f7f7fb 0%, #eef0f5 100%);
+}
+
+.ios-app .ios-page-glow {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 18% 8%, rgba(0, 122, 255, 0.14), transparent 22rem),
+    radial-gradient(circle at 85% 0%, rgba(52, 199, 89, 0.10), transparent 20rem);
+}
+
+.dark .ios-app {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(10, 132, 255, 0.24), transparent 30rem),
+    radial-gradient(circle at 95% 8%, rgba(48, 209, 88, 0.10), transparent 22rem),
+    linear-gradient(180deg, #030305 0%, #0b0b0f 42%, #111113 100%);
+}
+
+.dark .ios-app .ios-page-glow {
+  background:
+    radial-gradient(circle at 18% 8%, rgba(10, 132, 255, 0.18), transparent 23rem),
+    radial-gradient(circle at 85% 0%, rgba(48, 209, 88, 0.08), transparent 19rem);
+}
+
+.ios-app main {
+  position: relative;
+  z-index: 1;
+}
+
+.ios-app .rounded-\[8px\] {
+  border-radius: 22px !important;
+}
+
+.ios-app .border-4 {
+  border-width: 1px !important;
+}
+
+.ios-app .border-2 {
+  border-width: 1px !important;
+}
+
+.ios-app section.rounded-\[8px\],
+.ios-app article.rounded-\[8px\],
+.ios-app div.rounded-\[8px\] {
+  box-shadow: 0 18px 52px rgba(15, 23, 42, 0.08);
+}
+
+.dark .ios-app section.rounded-\[8px\],
+.dark .ios-app article.rounded-\[8px\],
+.dark .ios-app div.rounded-\[8px\] {
+  box-shadow: 0 18px 56px rgba(0, 0, 0, 0.42);
+}
+
+.ios-app button,
+.ios-app a,
+.ios-app input,
+.ios-app textarea,
+.ios-app select {
+  border-radius: 16px;
+}
+
+.ios-app input,
+.ios-app textarea,
+.ios-app select {
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.dark .ios-app input,
+.dark .ios-app textarea,
+.dark .ios-app select {
+  background: rgba(28, 28, 30, 0.72);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.app-main {
+  width: 100%;
+  min-width: 0;
+}
+
+.mobile-bottom-nav-shell {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+
+.mobile-bottom-nav {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-color: #2563eb rgba(148, 163, 184, 0.28);
+  scrollbar-width: thin;
+}
+
+.mobile-bottom-nav::-webkit-scrollbar {
+  height: 0.55rem;
+}
+
+.mobile-bottom-nav::-webkit-scrollbar-track {
+  margin-inline: 1rem;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.24);
+}
+
+.mobile-bottom-nav::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #2563eb;
+}
+
+@media (min-width: 768px) {
+  .mobile-bottom-nav {
+    scrollbar-width: none;
+  }
+
+  .mobile-bottom-nav::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@theme {
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Custom dashed route animation */
+@keyframes dash {
+  to {
+    stroke-dashoffset: -40;
+  }
+}
+
+@layer components {
+  .road-card {
+    @apply rounded-[24px] border border-white/70 bg-white/80 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.14] dark:bg-[#1C1C1E]/86 dark:shadow-[0_18px_56px_rgba(0,0,0,0.42)];
+  }
+
+  .road-surface {
+    @apply rounded-[22px] border border-white/70 bg-white/50 backdrop-blur-xl dark:border-white/[0.12] dark:bg-white/[0.075];
+  }
+
+  .road-action {
+    @apply min-h-12 rounded-[16px] px-4 py-3 text-sm font-extrabold tracking-wide transition-all flex items-center justify-center gap-2;
+  }
+
+  .road-action-lg {
+    @apply min-h-14 rounded-[18px] px-5 py-4 text-base font-extrabold tracking-wide transition-all flex items-center justify-center gap-2.5;
+  }
+
+  .road-icon-button {
+    @apply min-h-12 min-w-12 rounded-[16px] border flex items-center justify-center transition-all;
+  }
+
+  .road-pill {
+    @apply inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-extrabold tracking-wide;
+  }
+
+  .road-label {
+    @apply text-[11px] font-extrabold uppercase tracking-wide text-slate-500 dark:text-slate-400;
+  }
+
+  .road-value {
+    @apply text-4xl font-black leading-none tracking-tight text-slate-950 dark:text-white;
+  }
+
+  .road-input {
+    @apply min-h-12 rounded-[16px] border border-slate-200 bg-[#F5F5F7] px-4 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-white/[0.14] dark:bg-[#1C1C1E]/80 dark:text-white;
+  }
+
+  .road-slider {
+    @apply h-3 w-full cursor-pointer appearance-none rounded-full bg-slate-200 accent-blue-500 dark:bg-white/10;
+  }
+}
+
+
+
+
+
+/* Readability floor for driver-facing UI: no tiny production text. */
+.text-\[9px\], .text-\[10px\] {
+  font-size: 0.75rem !important;
+  line-height: 1rem !important;
+}
+
+.text-xs {
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
+}
+
+.text-sm {
+  font-size: 1rem !important;
+  line-height: 1.4rem !important;
+}
