@@ -492,6 +492,7 @@ export default function App() {
   const barcodeScanLoopRef = useRef<number | null>(null);
   const barcodeScanHandledRef = useRef(false);
   const showerGateUnlockedRef = useRef(false);
+  const mobileActivationRef = useRef({ key: '', time: 0 });
   const zxingScannerControlsRef = useRef<{ stop: () => void; switchTorch?: (onOff: boolean) => Promise<void> } | null>(null);
 
   // Real-time Optimization Alerts & explains
@@ -600,6 +601,20 @@ export default function App() {
         block: 'start'
       });
     }, 0);
+  };
+
+  const activateTabFromTap = (tab: AppTab, event?: React.SyntheticEvent<HTMLElement>) => {
+    event?.preventDefault();
+    event?.stopPropagation();
+
+    const nowMs = Date.now();
+    const key = `tab:${tab}`;
+    if (mobileActivationRef.current.key === key && nowMs - mobileActivationRef.current.time < 350) {
+      return;
+    }
+
+    mobileActivationRef.current = { key, time: nowMs };
+    handleTabChange(tab);
   };
 
   useEffect(() => {
@@ -2537,7 +2552,9 @@ export default function App() {
               <div className="grid gap-2 sm:grid-cols-[1fr_auto] lg:min-w-[360px]">
                 <button
                   type="button"
-                  onClick={() => handleTabChange('habits')}
+                  onClick={(event) => activateTabFromTap('habits', event)}
+                  onPointerUp={(event) => activateTabFromTap('habits', event)}
+                  onTouchEnd={(event) => activateTabFromTap('habits', event)}
                   className="flex min-h-12 items-center justify-center gap-2 rounded-[8px] bg-slate-950 px-4 text-sm font-black uppercase text-white shadow-sm transition hover:bg-slate-800 dark:bg-white dark:text-slate-950"
                 >
                   <Award size={18} />
@@ -2545,7 +2562,9 @@ export default function App() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleTabChange('habits')}
+                  onClick={(event) => activateTabFromTap('habits', event)}
+                  onPointerUp={(event) => activateTabFromTap('habits', event)}
+                  onTouchEnd={(event) => activateTabFromTap('habits', event)}
                   className="flex min-h-12 items-center justify-center gap-2 rounded-[8px] bg-slate-950 px-4 text-sm font-black uppercase text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:bg-white dark:text-slate-950 dark:disabled:bg-white/10 dark:disabled:text-slate-500"
                 >
                   <CheckCircle2 size={18} />
@@ -5521,10 +5540,9 @@ export default function App() {
                   key={tab.id}
                   id={`nav-tab-${tab.id}`}
                   type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    handleTabChange(tab.id as AppTab);
-                  }}
+                  onClick={(event) => activateTabFromTap(tab.id as AppTab, event)}
+                  onPointerUp={(event) => activateTabFromTap(tab.id as AppTab, event)}
+                  onTouchEnd={(event) => activateTabFromTap(tab.id as AppTab, event)}
                   aria-current={isActive ? 'page' : undefined}
                   className={`flex min-h-[62px] min-w-[78px] touch-manipulation snap-start flex-shrink-0 flex-col items-center justify-center gap-1.5 rounded-[22px] px-2.5 py-2.5 transition-all duration-300 sm:min-w-[82px] ${
                     isActive
