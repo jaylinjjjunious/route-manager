@@ -5173,11 +5173,19 @@ export default function App() {
               const IconComponent = tab.icon;
               const isActive = currentTab === tab.id;
               return (
-                <a
+                <button
                   key={tab.id}
                   id={`nav-tab-${tab.id}`}
-                  href={`#${tab.id}`}
+                  type="button"
                   onClick={(event) => {
+                    event.preventDefault();
+                    handleTabChange(tab.id as AppTab);
+                  }}
+                  onPointerUp={(event) => {
+                    event.preventDefault();
+                    handleTabChange(tab.id as AppTab);
+                  }}
+                  onTouchEnd={(event) => {
                     event.preventDefault();
                     handleTabChange(tab.id as AppTab);
                   }}
@@ -5190,7 +5198,7 @@ export default function App() {
                 >
                   <IconComponent size={22} className={isActive ? tab.color : 'text-current'} />
                   <span className="text-[10px] font-black tracking-wide uppercase">{tab.label}</span>
-                </a>
+                </button>
               );
             })}
           </div>
