@@ -1,4 +1,4 @@
-import { access, cp, mkdir, rm } from "node:fs/promises";
+import { access, cp, mkdir, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import type { Plugin } from "vite";
 
@@ -39,6 +39,18 @@ export function sites(): Plugin {
           recursive: true,
         });
       }
+
+      const clientHeaders = resolve(root, "dist", "client", "_headers");
+      const cacheHeaders = [
+        "/",
+        "  Cache-Control: no-store, max-age=0",
+        "/*.html",
+        "  Cache-Control: no-store, max-age=0",
+        "/assets/*",
+        "  Cache-Control: public, max-age=31536000, immutable",
+      ].join("\n");
+
+      await writeFile(clientHeaders, `${cacheHeaders}\n`);
     },
   };
 }
