@@ -96,6 +96,15 @@ const SHOWER_GATE_STORAGE_KEY = 'daily_shower_gate_proofs';
 const REQUIRED_SHOWER_BARCODE = '075371003233';
 
 type BarcodePermissionStatus = 'idle' | 'requesting' | 'granted' | 'denied' | 'unsupported' | 'error';
+type AppTab = 'dashboard' | 'route' | 'jobs' | 'battery' | 'tracker' | 'habits' | 'settings';
+
+const APP_TABS: AppTab[] = ['dashboard', 'route', 'jobs', 'tracker', 'habits', 'settings'];
+
+const getTabFromHash = (): AppTab | null => {
+  if (typeof window === 'undefined') return null;
+  const tab = window.location.hash.replace('#', '') as AppTab;
+  return APP_TABS.includes(tab) ? tab : null;
+};
 
 interface BarcodeDetectorResult {
   rawValue?: string;
@@ -286,7 +295,7 @@ export default function App() {
   });
 
   const [activeTab, setActiveTab] = useState<'A' | 'B' | 'all'>('A');
-  const [currentTab, setCurrentTab] = useState<'dashboard' | 'route' | 'jobs' | 'battery' | 'tracker' | 'habits' | 'settings'>('dashboard');
+  const [currentTab, setCurrentTab] = useState<AppTab>(() => getTabFromHash() || 'dashboard');
   
   // Ride Tracker States
   const [trackerStatus, setTrackerStatus] = useState<'idle' | 'riding' | 'at_store' | 'completed'>(() => {
@@ -518,6 +527,38 @@ export default function App() {
   useEffect(() => {
     const timer = window.setInterval(() => setNowTick(Date.now()), 60_000);
     return () => window.clearInterval(timer);
+  }, []);
+
+  const handleTabChange = (tab: AppTab) => {
+    setCurrentTab(tab);
+    if (typeof window === 'undefined') return;
+
+    window.history.replaceState(null, '', `#${tab}`);
+    window.setTimeout(() => {
+      document.getElementById(`tab-view-${tab}`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }, 0);
+  };
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      const tab = getTabFromHash();
+      if (tab) {
+        setCurrentTab(tab);
+        window.setTimeout(() => {
+          document.getElementById(`tab-view-${tab}`)?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }, 0);
+      }
+    };
+
+    handleHashChange();
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
   useEffect(() => {
@@ -5132,10 +5173,15 @@ export default function App() {
               const IconComponent = tab.icon;
               const isActive = currentTab === tab.id;
               return (
-                <button
+                <a
                   key={tab.id}
                   id={`nav-tab-${tab.id}`}
-                  onClick={() => setCurrentTab(tab.id as any)}
+                  href={`#${tab.id}`}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    handleTabChange(tab.id as AppTab);
+                  }}
+                  aria-current={isActive ? 'page' : undefined}
                   className={`flex min-h-[62px] min-w-[84px] snap-start flex-shrink-0 flex-col items-center justify-center gap-1.5 rounded-[22px] px-3 py-2.5 transition-all duration-300 sm:min-w-[82px] ${
                     isActive
                       ? 'bg-white text-slate-950 shadow-[0_10px_30px_rgba(15,23,42,0.12)] dark:bg-white/14 dark:text-white scale-[1.03] font-bold'
@@ -5144,7 +5190,7 @@ export default function App() {
                 >
                   <IconComponent size={22} className={isActive ? tab.color : 'text-current'} />
                   <span className="text-[10px] font-black tracking-wide uppercase">{tab.label}</span>
-                </button>
+                </a>
               );
             })}
           </div>

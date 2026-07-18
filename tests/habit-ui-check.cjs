@@ -7,7 +7,7 @@ const { chromium } = require('playwright');
 
   try {
     await page.goto('http://localhost:3000/', { waitUntil: 'domcontentloaded' });
-    await page.getByRole('button', { name: 'Habits' }).click();
+    await page.getByRole('link', { name: 'Habits' }).click();
     await page.locator('#tab-view-habits').waitFor({ state: 'visible' });
     await page.waitForFunction(() => {
       const text = document.querySelector('#tab-view-habits')?.innerText || '';
