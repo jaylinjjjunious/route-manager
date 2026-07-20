@@ -5,6 +5,10 @@ nixPkgs = ["curl", "xz"]
 [phases.install]
 cmds = [
   "curl -fsSL https://nodejs.org/dist/v22.16.0/node-v22.16.0-linux-x64.tar.xz | tar -xJ -C /usr/local --strip-components=1",
-  "node --version",
-  "npm ci"
+  "echo 'export PATH=/usr/local/bin:$PATH' > /etc/profile.d/node.sh && chmod +x /etc/profile.d/node.sh",
+  "PATH=/usr/local/bin:$PATH node --version",
+  "PATH=/usr/local/bin:$PATH npm ci"
 ]
+
+[phases.build]
+cmds = ["PATH=/usr/local/bin:$PATH npm run build"]
