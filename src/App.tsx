@@ -599,16 +599,12 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   }, []);
 
   const handleTabChange = (tab: AppTab) => {
-    const nextTab = !showerGateUnlockedRef.current && SHOWER_PROTECTED_TABS.includes(tab) ? 'dashboard' : tab;
-    if (nextTab !== tab) {
-      setDispatcherMessage('Shower proof required in Mission Control before opening protected work features.');
-    }
-    setCurrentTab(nextTab);
+    setCurrentTab(tab);
     if (typeof window === 'undefined') return;
 
-    window.history.replaceState(null, '', `#${nextTab}`);
+    window.history.replaceState(null, '', `#${tab}`);
     window.setTimeout(() => {
-      document.getElementById(`tab-view-${nextTab}`)?.scrollIntoView({
+      document.getElementById(`tab-view-${tab}`)?.scrollIntoView({
         behavior: 'smooth',
         block: 'start'
       });
@@ -633,14 +629,9 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     const handleHashChange = () => {
       const tab = getTabFromHash();
       if (tab) {
-        const nextTab = !showerGateUnlockedRef.current && SHOWER_PROTECTED_TABS.includes(tab) ? 'dashboard' : tab;
-        if (nextTab !== tab) {
-          setDispatcherMessage('Shower proof required in Mission Control before opening protected work features.');
-          window.history.replaceState(null, '', `#${nextTab}`);
-        }
-        setCurrentTab(nextTab);
+        setCurrentTab(tab);
         window.setTimeout(() => {
-          document.getElementById(`tab-view-${nextTab}`)?.scrollIntoView({
+          document.getElementById(`tab-view-${tab}`)?.scrollIntoView({
             behavior: 'smooth',
             block: 'start'
           });
@@ -1809,16 +1800,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     setDispatcherMessage(`Shower proof required before ${action}. Verify today's shower in Mission Control to unlock jobs.`);
     return true;
   };
-
-  useEffect(() => {
-    if (!showerGateUnlocked && SHOWER_PROTECTED_TABS.includes(currentTab)) {
-      setCurrentTab('dashboard');
-      if (typeof window !== 'undefined') {
-        window.history.replaceState(null, '', '#dashboard');
-      }
-      setDispatcherMessage('Daily shower gate is locked. Verify shower proof in Mission Control before opening protected work features.');
-    }
-  }, [currentTab, showerGateUnlocked]);
 
   useEffect(() => {
     setBarcodeScanSuccess(persistedBarcodeVerifiedForCycle);
@@ -3466,7 +3447,15 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           )}
 
           {/* Tab 2: Route Navigation Itinerary */}
-          {currentTab === 'route' && (
+          {currentTab === 'route' && !showerGateUnlocked && (
+            <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-8 text-center dark:border-amber-500/30 dark:bg-amber-500/10">
+              <ShieldCheck size={40} className="mx-auto mb-4 text-amber-500" />
+              <h3 className="text-lg font-black text-amber-900 dark:text-amber-100">Daily Verification Required</h3>
+              <p className="mt-2 text-sm text-amber-700 dark:text-amber-300">Complete your daily shower verification in Mission Control to unlock Route features.</p>
+              <button onClick={() => handleTabChange('dashboard')} className="mt-4 rounded-xl bg-amber-600 px-6 py-2.5 text-sm font-black text-white hover:bg-amber-500 transition-all">Go to Mission Control</button>
+            </div>
+          )}
+          {currentTab === 'route' && showerGateUnlocked && (
             <div className="space-y-6 animate-fade-in" id="tab-view-route">
               {/* Pluggable Routing Engine Selector & Active Status banner */}
               <div className="road-card p-5 space-y-4">
@@ -3946,7 +3935,15 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           )}
 
           {/* Tab 3: Jobs Management */}
-          {currentTab === 'jobs' && (
+          {currentTab === 'jobs' && !showerGateUnlocked && (
+            <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-8 text-center dark:border-amber-500/30 dark:bg-amber-500/10">
+              <ShieldCheck size={40} className="mx-auto mb-4 text-amber-500" />
+              <h3 className="text-lg font-black text-amber-900 dark:text-amber-100">Daily Verification Required</h3>
+              <p className="mt-2 text-sm text-amber-700 dark:text-amber-300">Complete your daily shower verification in Mission Control to unlock Jobs features.</p>
+              <button onClick={() => handleTabChange('dashboard')} className="mt-4 rounded-xl bg-amber-600 px-6 py-2.5 text-sm font-black text-white hover:bg-amber-500 transition-all">Go to Mission Control</button>
+            </div>
+          )}
+          {currentTab === 'jobs' && showerGateUnlocked && (
             <div className="space-y-6 animate-fade-in" id="tab-view-jobs">
               {/* Sub-Tabs Selector */}
               <div className="flex border-b border-slate-200 dark:border-white/5">
@@ -4128,7 +4125,15 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           )}
 
           {/* Tab 4: Battery Safety Parameters */}
-          {currentTab === 'battery' && (
+          {currentTab === 'battery' && !showerGateUnlocked && (
+            <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-8 text-center dark:border-amber-500/30 dark:bg-amber-500/10">
+              <ShieldCheck size={40} className="mx-auto mb-4 text-amber-500" />
+              <h3 className="text-lg font-black text-amber-900 dark:text-amber-100">Daily Verification Required</h3>
+              <p className="mt-2 text-sm text-amber-700 dark:text-amber-300">Complete your daily shower verification in Mission Control to unlock Battery features.</p>
+              <button onClick={() => handleTabChange('dashboard')} className="mt-4 rounded-xl bg-amber-600 px-6 py-2.5 text-sm font-black text-white hover:bg-amber-500 transition-all">Go to Mission Control</button>
+            </div>
+          )}
+          {currentTab === 'battery' && showerGateUnlocked && (
             <div className="space-y-6 animate-fade-in" id="tab-view-battery">
               {/* Top Summary Banner */}
               <div className="road-card p-6">
@@ -4676,7 +4681,15 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           )}
 
           {/* Tab 5: Ride Tracker */}
-          {currentTab === 'tracker' && (
+          {currentTab === 'tracker' && !showerGateUnlocked && (
+            <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-8 text-center dark:border-amber-500/30 dark:bg-amber-500/10">
+              <ShieldCheck size={40} className="mx-auto mb-4 text-amber-500" />
+              <h3 className="text-lg font-black text-amber-900 dark:text-amber-100">Daily Verification Required</h3>
+              <p className="mt-2 text-sm text-amber-700 dark:text-amber-300">Complete your daily shower verification in Mission Control to unlock Tracker features.</p>
+              <button onClick={() => handleTabChange('dashboard')} className="mt-4 rounded-xl bg-amber-600 px-6 py-2.5 text-sm font-black text-white hover:bg-amber-500 transition-all">Go to Mission Control</button>
+            </div>
+          )}
+          {currentTab === 'tracker' && showerGateUnlocked && (
             <div className="space-y-6 animate-fade-in" id="tab-view-tracker">
               {trackerStatus === 'completed' ? (
                 <EndOfDaySummary
