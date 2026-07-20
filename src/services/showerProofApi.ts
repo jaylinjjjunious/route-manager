@@ -60,7 +60,7 @@ export const uploadShowerProof = async (input: UploadShowerProofInput): Promise<
   const accessToken = await getFreshAccessToken();
 
   const formData = new FormData();
-  formData.append("image", input.imageBlob, "shower-proof.jpg");
+  formData.append("proofImage", input.imageBlob, `shower-proof-${Date.now()}.jpg`);
   formData.append("barcode", input.barcode);
   formData.append("cycleId", input.cycleId);
 

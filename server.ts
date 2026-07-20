@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import crypto from "crypto";
 import fs from "fs/promises";
 import os from "os";
+import multer from "multer";
 import { GoogleGenAI, Type } from "@google/genai";
 import { createClient } from "@supabase/supabase-js";
 
@@ -35,12 +36,17 @@ interface LocalShowerProofRecord {
   ownerId?: string;
 }
 
-interface MultipartPart {
-  name: string;
-  filename?: string;
-  contentType?: string;
-  data: Buffer;
-}
+const uploadProofImage = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype === "image/jpeg" || file.mimetype === "image/png" || file.mimetype === "image/webp") {
+      cb(null, true);
+    } else {
+      cb(new Error("Unsupported image type."));
+    }
+  },
+}).single("proofImage");
 
 const readLocalShowerProofs = async (): Promise<LocalShowerProofRecord[]> => {
   try {
@@ -60,42 +66,6 @@ const writeLocalShowerProofs = async (records: LocalShowerProofRecord[]) => {
 const normalizeLocalCycleId = (value: unknown) => {
   const key = (value || "").toString().trim();
   return /^\d{4}-\d{2}-\d{2}$/.test(key) ? key : new Date().toISOString().slice(0, 10);
-};
-
-const parseMultipartBuffer = (body: Buffer, contentType: string): MultipartPart[] => {
-  const boundaryMatch = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
-  const boundary = boundaryMatch?.[1] || boundaryMatch?.[2];
-  if (!boundary) return [];
-  const boundaryBuffer = Buffer.from(`--${boundary}`);
-  const parts: MultipartPart[] = [];
-  let cursor = body.indexOf(boundaryBuffer);
-
-  while (cursor !== -1) {
-    const nextCursor = body.indexOf(boundaryBuffer, cursor + boundaryBuffer.length);
-    if (nextCursor === -1) break;
-    const rawPart = body.subarray(cursor + boundaryBuffer.length, nextCursor);
-    cursor = nextCursor;
-    if (rawPart.length < 6) continue;
-    const part = rawPart.subarray(rawPart[0] === 13 && rawPart[1] === 10 ? 2 : 0);
-    const headerEnd = part.indexOf(Buffer.from("\r\n\r\n"));
-    if (headerEnd === -1) continue;
-    const headerText = part.subarray(0, headerEnd).toString("utf8");
-    const disposition = headerText.match(/content-disposition:[^\n]*name="([^"]+)"(?:; filename="([^"]+)")?/i);
-    if (!disposition) continue;
-    let data = part.subarray(headerEnd + 4);
-    if (data.length >= 2 && data[data.length - 2] === 13 && data[data.length - 1] === 10) {
-      data = data.subarray(0, data.length - 2);
-    }
-    const contentTypeMatch = headerText.match(/content-type:\s*([^\r\n]+)/i);
-    parts.push({
-      name: disposition[1],
-      filename: disposition[2],
-      contentType: contentTypeMatch?.[1]?.trim(),
-      data,
-    });
-  }
-
-  return parts;
 };
 
 app.use("/shower-proof-assets", express.static(showerProofImageRoot, {
@@ -212,29 +182,31 @@ app.get("/api/shower-proofs", requireAuth, async (req: Request, res: Response) =
 app.post(
   "/api/shower-proofs",
   requireAuth,
-  express.raw({ type: request => request.headers["content-type"]?.startsWith("multipart/form-data") === true, limit: "15mb" }),
+  (req: Request, res: Response, next: NextFunction) => {
+    uploadProofImage(req, res, (err) => {
+      if (err) {
+        console.log('[UPLOAD] multer error:', err.message);
+        return res.status(400).json({ error: err.message || "Image upload failed." });
+      }
+      next();
+    });
+  },
   async (req: Request, res: Response) => {
     try {
-      if (!Buffer.isBuffer(req.body)) {
-        return res.status(400).json({ error: "Invalid proof upload." });
+      const file = (req as any).file as Express.Multer.File | undefined;
+      if (!file || file.size === 0) {
+        console.log('[UPLOAD] No proofImage file in request');
+        return res.status(400).json({ error: "Proof image is required.", code: "PROOF_IMAGE_REQUIRED" });
       }
 
-      const parts = parseMultipartBuffer(req.body, req.headers["content-type"] || "");
-      const getTextPart = (name: string) => parts.find(part => part.name === name)?.data.toString("utf8").trim() || "";
-      const barcode = getTextPart("barcode");
-
+      const barcode = (req.body.barcode || "").toString().trim();
       if (barcode !== REQUIRED_SHOWER_BARCODE) {
         return res.status(400).json({ error: "Incorrect product barcode." });
       }
 
-      const image = parts.find(part => part.name === "image");
-      if (!image || image.data.length === 0) {
-        return res.status(400).json({ error: "Proof image is required." });
-      }
-
-      const cycleId = normalizeLocalCycleId(getTextPart("cycleId"));
-      const localDate = normalizeLocalCycleId(getTextPart("localDate"));
-      const capturedDate = new Date(getTextPart("capturedAt"));
+      const cycleId = normalizeLocalCycleId(req.body.cycleId);
+      const localDate = normalizeLocalCycleId(req.body.localDate);
+      const capturedDate = new Date((req.body.capturedAt || "").toString());
       const capturedAt = Number.isNaN(capturedDate.getTime()) ? new Date().toISOString() : capturedDate.toISOString();
       const id = `shower-${cycleId}-${crypto.randomUUID()}`;
       const filename = `${id}.jpg`;
@@ -242,7 +214,7 @@ app.post(
       const now = new Date().toISOString();
 
       await fs.mkdir(showerProofImageRoot, { recursive: true });
-      await fs.writeFile(path.join(showerProofImageRoot, filename), image.data);
+      await fs.writeFile(path.join(showerProofImageRoot, filename), file.buffer);
 
       const proof: LocalShowerProofRecord = {
         id,
