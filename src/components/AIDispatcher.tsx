@@ -23,6 +23,7 @@ import {
 import { Job, RouteMetrics, EbikeConfig, DispatcherAction, ChatMessage } from '../types';
 import { BAKERSFIELD_COORDINATES, getDistanceInMiles } from '../utils/routeUtils';
 import { isJobCompleted } from '../utils/jobState';
+import { authFetch } from '../services/apiClient';
 
 interface AIDispatcherProps {
   jobs: Job[];
@@ -127,7 +128,7 @@ export default function AIDispatcher({
     setSafetyError('');
 
     try {
-      const response = await fetch('/api/safety-news', {
+      const response = await authFetch('/api/safety-news', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jobs: safetyJobs })

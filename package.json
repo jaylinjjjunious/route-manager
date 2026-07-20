@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vinext dev",
-    "build": "vinext build",
-    "start": "vinext start",
+    "build": "vite build --config vite.config.standalone.ts && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "start": "node dist/server.cjs",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "test:habits": "node tests/habit-ui-check.cjs"
@@ -14,6 +14,7 @@
   "dependencies": {
     "@cloudflare/vite-plugin": "1.37.1",
     "@google/genai": "^2.4.0",
+    "@supabase/supabase-js": "^2.110.7",
     "@tailwindcss/vite": "^4.1.14",
     "@types/google.maps": "^3.65.2",
     "@vis.gl/react-google-maps": "^1.9.0",

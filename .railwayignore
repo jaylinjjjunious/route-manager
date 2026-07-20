@@ -1,0 +1,17 @@
+node_modules
+.wrangler
+dist
+coverage
+test-results
+.local-shower-proofs
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+.openai
+worker
+build
+playwright.config.ts
+tests
+railway.toml

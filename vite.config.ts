@@ -38,6 +38,10 @@ export default defineConfig(async () => {
   const { cloudflare } = await import("@cloudflare/vite-plugin");
 
   return {
+    server: {
+      host: "0.0.0.0",
+      port: 3000,
+    },
     plugins: [
       vinext(),
       sites(),

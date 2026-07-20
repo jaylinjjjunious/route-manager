@@ -1,6 +1,6 @@
 # Route Manager Application Knowledge Base
 
-Last updated: 2026-07-18
+Last updated: 2026-07-19
 
 Maintenance rule: update this file at the end of every development task that changes behavior, data models, APIs, routing, deployment, tests, limitations, or known problems. Do not store secrets, proof images, private contact information, payment information, tokens, or sensitive personal data here.
 
@@ -691,9 +691,72 @@ Current phase: stabilization / documentation / production-hardening.
 
 Next approved task: none recorded in code; current task is documentation audit only.
 
-Last successful build: 2026-07-18, `npm run build` passed after Mission Control Shower Gate changes.
+Last successful build: 2026-07-18, `npm run build` passed after Mission Control Shower Gate and mobile-access changes.
 
 Last test result: 2026-07-18, `npm run lint`, `npm run build`, focused mobile Playwright Shower Gate UI flow, and direct `/api/shower-proofs` exact/wrong barcode API check passed.
+
+## 31. Mobile Development Setup
+
+The app is fully functional on phones (iPhone Safari/Chrome, Android Chrome). All LAN access, camera, and layout changes were implemented on 2026-07-18.
+
+### LAN Access
+
+Dev server binds to `0.0.0.0` (all network interfaces). After starting `npm run dev`, the console shows:
+- Local URL: `http://localhost:3000`
+- Network URL: `http://<your-LAN-IP>:3000` (auto-detected)
+
+Open the Network URL on your phone (same Wi-Fi required). If the page does not load, allow Node.js through Windows Defender Firewall for Private networks.
+
+### HTTPS Tunnel for Camera
+
+iOS and Android require HTTPS for camera APIs (`getUserMedia`). For local development:
+
+```bash
+cloudflared tunnel --url http://localhost:3000
+```
+
+This gives an HTTPS URL like `https://random-name.trycloudflare.com` that works on phones. No account or config needed.
+
+### Camera Compatibility
+
+`ShowerGatePanel.tsx` handles:
+- Secure context check (`window.isSecureContext`) — shows amber warning banner on HTTP
+- `facingMode: { ideal: 'environment' }` — falls back gracefully if no rear camera
+- Safari `video.play()` promise handling with AbortError retry
+- Specific error messages: permission denied, camera in use, no rear camera, security error
+- BarcodeDetector with `@zxing/browser` fallback for unsupported browsers
+- Camera tracks cleaned up on unmount
+
+### Mobile Layout
+
+- `viewport-fit=cover` on both `index.html` and `app/layout.tsx` (vinext export) — iOS notch support
+- `safe-area-inset-bottom` padding on bottom nav shell — iPhone home indicator clearance
+- All buttons: `min-h-12` / `min-w-12` (48px+ touch targets)
+- `touch-action: manipulation` on all interactive elements — no double-tap zoom delay
+- Main content: `pb-40` (160px) — prevents content hidden behind floating bottom nav
+- Bottom nav: triple-bound (onClick + onPointerUp + onTouchEnd) for Safari reliability
+
+### Production Build
+
+All API calls use relative paths (`/api/...`) — no hardcoded localhost in production code.
+
+Two build targets exist:
+
+1. **Cloudflare Workers** (vinext): `npm run dev` / `vinext build` — used for local dev with RSC, D1, R2.
+2. **Railway / standalone** (Vite + Express): `npm run build` builds frontend with `vite.config.standalone.ts` and bundles `server.ts` with esbuild. `npm start` runs `node dist/server.cjs`.
+
+```bash
+npm run build   # Vite standalone build + esbuild server bundle
+npm run lint    # tsc --noEmit typecheck
+npm start       # node dist/server.cjs (production Express server)
+```
+
+### Key iOS Limitations
+
+- Camera requires HTTPS — use `cloudflared tunnel` for local dev
+- No background camera access — camera stops when app is backgrounded
+- `BarcodeDetector` API is not supported in Safari — falls back to `@zxing/browser`
+- PWA install requires manual "Add to Home Screen" from Safari share menu
 
 ## 30. Future Roadmap
 
@@ -725,3 +788,195 @@ Separate future projects:
 - Standalone e-bike application.
 - Community charging/outlet network.
 - Public charging-location reliability/reporting system.
+
+## 32. Railway Deployment
+
+Deployed on Railway as a single web service (Express backend + Vite SPA frontend).
+
+### Public URL
+
+- **App:** https://route-optimizer-app-production.up.railway.app
+- **Health check:** https://route-optimizer-app-production.up.railway.app/api/health
+- **Railway project:** `route-optimizer-app`
+- **Railway service:** `route-optimizer-app`
+
+### Deployment Architecture
+
+- **Provider:** Railway (nixpacks builder)
+- **Runtime:** Node.js + Express serving built Vite SPA
+- **Build:** `vite build --config vite.config.standalone.ts` + `esbuild server.ts --bundle`
+- **Entry:** `dist/server.cjs` (bundled Express server)
+- **Port:** Dynamic (`PORT` env var set by Railway, default 8080 internally)
+- **Binding:** `0.0.0.0` (all interfaces)
+- **HTTPS:** Automatic via Railway reverse proxy
+
+### Environment Variables Configured
+
+- `NODE_ENV=production`
+- `VITE_SUPABASE_URL` — Supabase project URL (browser-side)
+- `VITE_SUPABASE_ANON_KEY` — Supabase anon key (browser-side)
+- `SUPABASE_JWT_SECRET` — JWT verification secret (server-side only)
+
+### Environment Variables Still Needed (IMPORTANT)
+
+The following API keys must be added via the Railway dashboard or CLI for full functionality:
+
+- **GEMINI_API_KEY** — Required for AI Dispatcher chat, screenshot OCR import, and Gemini TTS voice. Without this, the AI Dispatcher, OCR import, and Gemini voice features will return error messages gracefully (browser voice fallback).
+- **GOOGLE_MAPS_PLATFORM_KEY** — Required for Google Maps display and route optimization. Without this, the map view will not render.
+- **OPENAI_API_KEY** — Optional. Required for OpenAI TTS voice engine. Without this, falls back to browser voice.
+- **ELEVENLABS_API_KEY** — Optional. Required for ElevenLabs TTS voice engine. Without this, falls back to browser voice.
+
+To add keys:
+```bash
+railway variables set GEMINI_API_KEY=your_key_here
+railway variables set GOOGLE_MAPS_PLATFORM_KEY=your_key_here
+```
+
+Supabase auth variables are already configured:
+```bash
+railway variables set VITE_SUPABASE_URL=https://pxgezwzrnxsbzmixmgxs.supabase.co
+railway variables set VITE_SUPABASE_ANON_KEY=your_anon_key
+railway variables set SUPABASE_JWT_SECRET=your_jwt_secret
+```
+
+### Deployment Command
+
+Redeploy after any code change:
+```bash
+railway up
+```
+
+### Proof Storage Limitation
+
+Shower proof images are stored on the container filesystem (`/.local-shower-proofs/`). These files are **NOT durable** across container restarts, redeployments, or service replacements. Proof images will be lost on each redeploy. Permanent storage (e.g., S3, R2, or external object storage) is a separate follow-up requirement.
+
+### Files Changed for Railway Deployment
+
+| File | Change |
+|------|--------|
+| `server.ts` | Default PORT changed from 3001 to 3000; Vite import made dynamic (only loaded in dev mode); production mode serves `dist/` with SPA fallback |
+| `vite.config.standalone.ts` | New file — standalone Vite config without Cloudflare/vinext plugins |
+| `package.json` | `build` script changed to `vite build --config vite.config.standalone.ts && esbuild server.ts ...`; `start` script changed to `node dist/server.cjs` |
+| `.railwayignore` | New file — excludes node_modules, .wrangler, .env, tests, etc. from Railway upload |
+| `railway.toml` | New file — explicit nixpacks builder, build command, health check config |
+| `src/lib/supabase.ts` | New file — Supabase client singleton |
+| `src/auth/AuthProvider.tsx` | New file — React auth context |
+| `src/auth/ProtectedApp.tsx` | New file — Auth gate with login/reset-password routing |
+| `src/components/LoginPage.tsx` | New file — Email/password login form |
+| `src/components/ForgotPasswordPage.tsx` | New file — Password reset request form |
+| `src/components/ResetPasswordPage.tsx` | New file — New password entry form |
+| `src/components/AuthLoadingScreen.tsx` | New file — Loading spinner during auth check |
+| `src/services/apiClient.ts` | New file — Authenticated fetch helper |
+| `src/vite-env.d.ts` | New file — Vite type declarations |
+| `vite.config.standalone.ts` | New file — standalone Vite config without Cloudflare/vinext plugins |
+| `src/main.tsx` | Updated — wraps app with AuthProvider > ProtectedApp |
+| `src/App.tsx` | Updated — Sign Out button in Settings tab |
+| `src/services/showerProofApi.ts` | Updated — uses authFetch/authFetchJson |
+| `server.ts` | Updated — requireAuth middleware, owner ID on proof records |
+| `.env.example` | Updated — Supabase variable names |
+| `docs/APP_KNOWLEDGE_BASE.md` | Updated with auth architecture and variable list |
+
+### Known Limitations
+
+- Container-local proof storage is ephemeral — lost on redeploy.
+- Missing API keys mean AI Dispatcher, OCR, maps, and premium TTS are non-functional until configured.
+- Large chunk size warning during build (App bundle > 500KB) — functional but could benefit from code splitting.
+- No persistent database — jobs and ride sessions remain client-side only (localStorage). Backend only stores shower proof metadata.
+
+## 33. Supabase Authentication
+
+### Overview
+
+All API routes are now protected with Supabase JWT authentication. Users must sign in with email/password to access the app. No public sign-up — accounts are created manually in the Supabase dashboard.
+
+### Architecture
+
+```
+Browser (React)                    Railway Server (Express)
+─────────────────                  ─────────────────────────
+LoginPage → Supabase sign-in       requireAuth middleware
+            ↓                           ↓
+AuthProvider stores session        verifySupabaseToken(token)
+            ↓                           ↓
+apiClient sends Bearer token  →   JWT HMAC-SHA256 verified
+            ↓                           ↓
+ProtectedApp shows App.tsx         req.userId = decoded.sub
+```
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/lib/supabase.ts` | Supabase client singleton (browser-side) |
+| `src/auth/AuthProvider.tsx` | React context — session, user, signIn, signOut, resetPassword |
+| `src/auth/ProtectedApp.tsx` | Auth gate — shows login when no session, App when authenticated |
+| `src/components/LoginPage.tsx` | Email/password login form |
+| `src/components/ForgotPasswordPage.tsx` | Password reset request |
+| `src/components/ResetPasswordPage.tsx` | New password entry |
+| `src/components/AuthLoadingScreen.tsx` | Loading spinner during auth check |
+| `src/services/apiClient.ts` | `authFetch`/`authFetchJson` — attaches Bearer token, handles 401 |
+| `src/vite-env.d.ts` | Vite client type declarations for `import.meta.env` |
+| `server.ts` | `requireAuth` middleware + `verifySupabaseToken` (HMAC-SHA256) |
+
+### Environment Variables (Browser-Side)
+
+| Variable | Description | Where |
+|----------|-------------|-------|
+| `VITE_SUPABASE_URL` | Supabase project URL | Browser (safe to expose) |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anon/public key | Browser (safe with RLS) |
+
+### Environment Variables (Server-Side Only)
+
+| Variable | Description | Where |
+|----------|-------------|-------|
+| `SUPABASE_JWT_SECRET` | HMAC-SHA256 secret for verifying JWTs | Server only — NEVER in browser |
+
+### Protected Routes (server.ts)
+
+All of these routes require a valid Supabase JWT:
+
+- `GET /api/shower-proofs` — returns only proofs owned by the authenticated user
+- `GET /api/shower-proofs/current` — current cycle proofs
+- `GET /api/shower-proofs/:id` — single proof by ID
+- `POST /api/shower-proofs` — creates proof with `ownerId` set to JWT `sub`
+- `POST /api/dispatcher/chat` — AI dispatcher chat
+- `POST /api/dispatcher/tts` — TTS generation
+- `POST /api/import/ocr` — OCR import
+
+Public routes (no auth):
+- `GET /api/health`
+
+### Auth Flow
+
+1. App loads → `AuthProvider` checks for existing Supabase session
+2. No session → `ProtectedApp` shows `LoginPage`
+3. User signs in with email/password
+4. `AuthProvider` stores session + subscribes to auth state changes
+5. `ProtectedApp` lazy-loads `App.tsx`
+6. `apiClient.authFetch()` attaches Bearer token to every API request
+7. Server `requireAuth` middleware verifies token with HMAC-SHA256
+8. User can sign out from Settings tab
+
+### SPA Routes
+
+The server catch-all serves `index.html` for all non-API GET routes, enabling client-side routing for:
+- `/login` — login page
+- `/forgot-password` — password reset request
+- `/reset-password` — password reset form (via Supabase email link)
+
+### User Ownership
+
+Each shower proof record has an optional `ownerId` field. When a proof is created via POST, `ownerId` is set to the JWT `sub` (Supabase user ID). GET routes filter proofs by `ownerId === userId`, so each user only sees their own proofs.
+
+### Adding New Users
+
+No public sign-up. Create users in the Supabase dashboard:
+1. Go to Authentication → Users
+2. Click "Add user"
+3. Enter email and password
+4. The user can now log in at the app URL
+
+### Supabase Dashboard Settings
+
+- **Authentication → URL Configuration → Redirect URLs**: Add `https://route-optimizer-app-production.up.railway.app/reset-password` and `.../login`
+- **Authentication → Providers → Email**: Ensure "Confirm email" is ON to prevent unauthorized sign-up

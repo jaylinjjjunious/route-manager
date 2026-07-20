@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { authFetch } from '../services/apiClient';
+
 export type VoiceStyle = 'calm' | 'professional' | 'fast' | 'friendly';
 
 export interface VoiceOptions {
@@ -234,7 +236,7 @@ export class PremiumVoiceProvider implements VoiceProvider {
     this.stop();
 
     try {
-      const response = await fetch('/api/dispatcher/tts', {
+      const response = await authFetch('/api/dispatcher/tts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

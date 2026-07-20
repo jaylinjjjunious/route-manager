@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './index.css';
+import { useAuth } from './auth/AuthProvider';
 import { Job, Coordinates, RouteMetrics, EbikeConfig, DispatcherAction, JobType } from './types';
 import {
   BAKERSFIELD_COORDINATES,
@@ -34,6 +35,7 @@ import { EndOfDaySummary } from './components/EndOfDaySummary';
 import ShowerGatePanel from './components/ShowerGatePanel';
 import { useTextToSpeech } from './hooks/useTextToSpeech';
 import type { ShowerProofRecord } from './services/showerProofApi';
+import { authFetch, authFetchJson } from './services/apiClient';
 import {
   Plus, Sliders, Play, RotateCcw, Search, Moon, Sun, Layers, ShieldCheck, MapPin, CheckSquare,
   LayoutDashboard, Map, Briefcase, Battery, Settings, Info, AlertTriangle, ArrowRightLeft,
@@ -339,6 +341,7 @@ const SEED_JOBS: Job[] = [
 ];
 
 export default function App() {
+  const { signOut } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [startAddress, setStartAddress] = useState('1951 Golden State Ave');
   const [startCoord, setStartCoord] = useState<Coordinates>({ lat: 35.3904, lng: -119.0255 });
@@ -740,7 +743,7 @@ export default function App() {
 
     const loadBackendHabits = async () => {
       try {
-        const response = await fetch('/api/habits');
+        const response = await authFetch('/api/habits');
         if (!response.ok) throw new Error('Habit backend unavailable');
         const backend = await response.json();
         if (!isMounted) return;
@@ -806,7 +809,7 @@ export default function App() {
     const saveTimer = window.setTimeout(async () => {
       try {
         setHabitSyncStatus('saving');
-        const response = await fetch('/api/habits', {
+        const response = await authFetch('/api/habits', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1702,7 +1705,7 @@ export default function App() {
     const timeout = window.setTimeout(() => controller.abort(), SHOWER_BACKEND_TIMEOUT_MS);
 
     try {
-      const response = await fetch('/api/shower-proof', {
+      const response = await authFetch('/api/shower-proof', {
         method: 'POST',
         signal: controller.signal,
         headers: { 'Content-Type': 'application/json' },
@@ -1731,7 +1734,9 @@ export default function App() {
       setShowerProofSyncStatus('error');
       setShowerProofSyncMessage(error instanceof DOMException && error.name === 'AbortError'
         ? 'Backend save timed out. Check signal and try again.'
-        : error instanceof Error ? error.message : 'Could not save shower proof to backend.'
+        : error instanceof Error && error.message.includes('Session expired')
+          ? 'Your session expired. Please sign in again.'
+          : error instanceof Error ? error.message : 'Could not save shower proof to backend.'
       );
       return '';
     } finally {
@@ -1744,7 +1749,7 @@ export default function App() {
 
     const loadBackendShowerProof = async () => {
       try {
-        const response = await fetch(`/api/shower-proof?cycleKey=${encodeURIComponent(showerCycleKey)}`);
+        const response = await authFetch(`/api/shower-proof?cycleKey=${encodeURIComponent(showerCycleKey)}`);
         if (!response.ok) return;
         const data = await response.json();
         const row = data?.proof;
@@ -2636,7 +2641,7 @@ export default function App() {
   return (
     <div className={theme === 'dark' ? 'dark' : ''}>
       <div className="ios-app app-shell min-h-screen bg-transparent text-slate-950 transition-colors duration-300 dark:text-slate-100 font-sans">
-        <div className="ios-page-glow" aria-hidden="true" />
+        <div className="ios-page-glow pointer-events-none" aria-hidden="true" />
         
         {/* Header */}
         {currentTab !== 'dashboard' && <Header theme={theme} onToggleTheme={handleToggleTheme} />}
@@ -5564,6 +5569,22 @@ export default function App() {
                       className="rounded-xl border border-dashed border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 bg-red-500/[0.01] hover:bg-red-500/[0.04] px-4 py-2.5 text-xs font-bold transition-all"
                     >
                       Purge Custom stops and Reset Seeds
+                    </button>
+                  </div>
+
+                  {/* Account */}
+                  <div className="rounded-2xl border border-slate-200 bg-white p-5  space-y-3">
+                    <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest">Account</h3>
+                    <p className="text-xs text-slate-500">Sign out of your account. You will need to enter your credentials again.</p>
+                    <button
+                      onClick={async () => {
+                        if (window.confirm("Sign out of Route Manager?")) {
+                          await signOut();
+                        }
+                      }}
+                      className="rounded-xl border border-dashed border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 bg-slate-500/[0.01] hover:bg-slate-500/[0.04] px-4 py-2.5 text-xs font-bold transition-all"
+                    >
+                      Sign Out
                     </button>
                   </div>
                 </div>

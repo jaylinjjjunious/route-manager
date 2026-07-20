@@ -275,9 +275,15 @@ export default function ShowerGatePanel({ cycleId, cycleLabel, completedProof, o
     setStatus('requesting');
     setStatusMessage('Opening camera...');
 
+    if (typeof window !== 'undefined' && !window.isSecureContext) {
+      setStatus('camera_error');
+      setStatusMessage('Camera scanning requires HTTPS on phones. Use a secure tunnel (cloudflared) or open the app on localhost.');
+      return;
+    }
+
     if (!navigator.mediaDevices?.getUserMedia) {
       setStatus('camera_error');
-      setStatusMessage('Camera API unsupported in this browser.');
+      setStatusMessage('Camera API is not supported in this browser. Use Chrome or Safari on a modern phone.');
       return;
     }
 
@@ -285,7 +291,7 @@ export default function ShowerGatePanel({ cycleId, cycleLabel, completedProof, o
       const video = videoRef.current;
       if (!video) {
         setStatus('camera_error');
-        setStatusMessage('Camera preview is not ready.');
+        setStatusMessage('Camera preview element is not ready. Try again.');
         return;
       }
 
@@ -305,7 +311,7 @@ export default function ShowerGatePanel({ cycleId, cycleLabel, completedProof, o
         const controls = await reader.decodeFromConstraints(
           {
             video: {
-              facingMode: { exact: 'environment' },
+              facingMode: { ideal: 'environment' },
               width: { ideal: 1280 },
               height: { ideal: 720 },
             },
@@ -330,7 +336,7 @@ export default function ShowerGatePanel({ cycleId, cycleLabel, completedProof, o
 
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: { exact: 'environment' },
+          facingMode: { ideal: 'environment' },
           width: { ideal: 1280 },
           height: { ideal: 720 },
         },
@@ -338,7 +344,16 @@ export default function ShowerGatePanel({ cycleId, cycleLabel, completedProof, o
       });
       streamRef.current = stream;
       video.srcObject = stream;
-      await video.play();
+
+      try {
+        await video.play();
+      } catch (playError) {
+        if (playError instanceof DOMException && playError.name === 'AbortError') {
+          // Safari may abort play if the user navigates quickly; retry once
+          await new Promise(resolve => { setTimeout(resolve, 200); });
+          try { await video.play(); } catch { /* ignore second failure */ }
+        }
+      }
 
       const track = stream.getVideoTracks()[0];
       const capabilities = typeof track.getCapabilities === 'function'
@@ -364,7 +379,7 @@ export default function ShowerGatePanel({ cycleId, cycleLabel, completedProof, o
           }
         } catch {
           setStatus('camera_error');
-          setStatusMessage('Barcode scanner failed. Try again.');
+          setStatusMessage('Barcode scanner encountered an error. Close and try again.');
           stopCamera();
           return;
         }
@@ -374,11 +389,17 @@ export default function ShowerGatePanel({ cycleId, cycleLabel, completedProof, o
     } catch (error) {
       const name = error instanceof DOMException ? error.name : '';
       setStatus('camera_error');
-      setStatusMessage(name === 'NotAllowedError' || name === 'PermissionDeniedError'
-        ? 'Camera permission denied. Allow camera access to scan the product.'
-        : name === 'OverconstrainedError' || name === 'NotFoundError'
-          ? 'No rear camera available on this device.'
-        : 'Could not open the rear camera.');
+      if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+        setStatusMessage('Camera permission denied. Please allow camera access in your browser settings and try again.');
+      } else if (name === 'NotReadableError' || name === 'TrackStartError') {
+        setStatusMessage('Camera is already in use by another app or browser tab. Close other camera apps and try again.');
+      } else if (name === 'OverconstrainedError' || name === 'NotFoundError') {
+        setStatusMessage('No rear camera found on this device. The front camera is not supported for barcode scanning.');
+      } else if (name === 'SecurityError') {
+        setStatusMessage('Camera blocked by browser security. Make sure you are using HTTPS or localhost.');
+      } else {
+        setStatusMessage('Could not open the camera. Check browser permissions and try again.');
+      }
       stopCamera();
     }
   }, [handleBarcodeValue, releasePreview, stopCamera]);
@@ -463,6 +484,11 @@ export default function ShowerGatePanel({ cycleId, cycleLabel, completedProof, o
                 <div className="h-24 w-full max-w-sm rounded-[8px] border-4 border-white/90 shadow-[0_0_0_999px_rgba(0,0,0,0.28)]" />
               </div>
             </div>
+            {typeof window !== 'undefined' && !window.isSecureContext && (
+              <div className="rounded-[8px] border border-amber-400 bg-amber-50 p-3 text-xs font-bold text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+                You are on HTTP. Camera scanning requires HTTPS on phones. Use: <code className="rounded bg-amber-100 px-1 dark:bg-amber-500/20">cloudflared tunnel --url http://localhost:3000</code>
+              </div>
+            )}
             <div className="grid gap-2 sm:grid-cols-2">
               <button type="button" onClick={cancelScanner} className="flex min-h-12 items-center justify-center gap-2 rounded-[8px] bg-slate-950 px-4 text-sm font-black uppercase text-white dark:bg-white dark:text-slate-950">
                 <X size={18} />

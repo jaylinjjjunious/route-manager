@@ -1,5 +1,7 @@
-import {StrictMode, type ComponentType} from 'react';
+import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
+import {AuthProvider} from './auth/AuthProvider';
+import ProtectedApp from './auth/ProtectedApp';
 import './index.css';
 
 const rootElement = document.getElementById('root');
@@ -39,11 +41,13 @@ async function bootApp() {
   root.render(<StartupScreen />);
 
   try {
-    const module = await import('./App.tsx');
-    const App = module.default as ComponentType;
+    // Validate Supabase config is available before rendering
+    await import('./lib/supabase.ts');
     root.render(
       <StrictMode>
-        <App />
+        <AuthProvider>
+          <ProtectedApp />
+        </AuthProvider>
       </StrictMode>,
     );
   } catch (error) {

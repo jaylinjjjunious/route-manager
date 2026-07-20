@@ -1,17 +1,18 @@
-import express, { Request, Response } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import path from "path";
 import dotenv from "dotenv";
 import crypto from "crypto";
 import fs from "fs/promises";
-import { createServer as createViteServer } from "vite";
+import os from "os";
 import { GoogleGenAI, Type } from "@google/genai";
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
-const PORT = Number(process.env.PORT || 3001);
+const PORT = Number(process.env.PORT || 3000);
 const REQUIRED_SHOWER_BARCODE = "075371003233";
+const SUPABASE_JWT_SECRET = process.env.SUPABASE_JWT_SECRET || "";
 const showerProofRoot = path.join(process.cwd(), ".local-shower-proofs");
 const showerProofImageRoot = path.join(showerProofRoot, "images");
 const showerProofMetadataPath = path.join(showerProofRoot, "proofs.json");
@@ -29,6 +30,7 @@ interface LocalShowerProofRecord {
   verificationStatus: "verified";
   createdAt: string;
   updatedAt: string;
+  ownerId?: string;
 }
 
 interface MultipartPart {
@@ -102,6 +104,71 @@ app.use("/shower-proof-assets", express.static(showerProofImageRoot, {
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
+// --- Supabase JWT Verification Middleware ---
+
+// Minimal JWT decoding (no external dependency needed)
+function base64UrlDecode(str: string): Buffer {
+  const base64 = str.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+  return Buffer.from(padded, "base64");
+}
+
+function verifySupabaseToken(token: string, secret: string): { sub: string; email?: string } | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+
+    const [headerB64, payloadB64, signatureB64] = parts;
+
+    // Verify HMAC-SHA256 signature
+    const expectedSig = crypto.createHmac("sha256", secret).update(`${headerB64}.${payloadB64}`).digest("base64url");
+    if (!crypto.timingSafeEqual(Buffer.from(signatureB64), Buffer.from(expectedSig))) {
+      return null;
+    }
+
+    const payload = JSON.parse(base64UrlDecode(payloadB64).toString("utf8"));
+
+    // Check expiry
+    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+      return null;
+    }
+
+    return { sub: payload.sub, email: payload.email };
+  } catch {
+    return null;
+  }
+}
+
+interface AuthenticatedRequest extends Request {
+  userId?: string;
+  userEmail?: string;
+}
+
+function requireAuth(req: Request, res: Response, next: NextFunction) {
+  if (!SUPABASE_JWT_SECRET) {
+    // If no JWT secret configured, auth middleware is disabled (dev mode)
+    return next();
+  }
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    console.log('[AUTH] No Bearer token for', req.method, req.path);
+    return res.status(401).json({ error: "Authentication required." });
+  }
+
+  const token = authHeader.slice(7);
+  const user = verifySupabaseToken(token, SUPABASE_JWT_SECRET);
+  if (!user) {
+    console.log('[AUTH] Token verification FAILED for', req.method, req.path);
+    return res.status(401).json({ error: "Invalid or expired token." });
+  }
+
+  console.log('[AUTH] Token verified OK for user', user.sub?.slice(0, 8) + '...', req.method, req.path);
+  (req as AuthenticatedRequest).userId = user.sub;
+  (req as AuthenticatedRequest).userEmail = user.email;
+  next();
+}
+
 // Lazy initializer for Google GenAI to avoid crashing on startup if the API Key is not yet configured
 let aiInstance: GoogleGenAI | null = null;
 
@@ -128,28 +195,33 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", time: new Date().toISOString() });
 });
 
-app.get("/api/shower-proofs/current", async (req: Request, res: Response) => {
+app.get("/api/shower-proofs/current", requireAuth, async (req: Request, res: Response) => {
   const cycleId = normalizeLocalCycleId(req.query.cycleId);
+  const userId = (req as AuthenticatedRequest).userId;
   const proofs = await readLocalShowerProofs();
   const proof = proofs
-    .filter(record => record.cycleId === cycleId && record.barcode === REQUIRED_SHOWER_BARCODE && record.uploadStatus === "saved" && record.verificationStatus === "verified")
+    .filter(record => (!userId || record.ownerId === userId) && record.cycleId === cycleId && record.barcode === REQUIRED_SHOWER_BARCODE && record.uploadStatus === "saved" && record.verificationStatus === "verified")
     .sort((a, b) => b.capturedAt.localeCompare(a.capturedAt))[0] || null;
   res.json({ proof });
 });
 
-app.get("/api/shower-proofs/:id", async (req: Request, res: Response) => {
+app.get("/api/shower-proofs/:id", requireAuth, async (req: Request, res: Response) => {
+  const userId = (req as AuthenticatedRequest).userId;
   const proofs = await readLocalShowerProofs();
-  const proof = proofs.find(record => record.id === req.params.id) || null;
+  const proof = proofs.find(record => record.id === req.params.id && (!userId || record.ownerId === userId)) || null;
   res.json({ proof });
 });
 
-app.get("/api/shower-proofs", async (_req: Request, res: Response) => {
+app.get("/api/shower-proofs", requireAuth, async (req: Request, res: Response) => {
+  const userId = (req as AuthenticatedRequest).userId;
   const proofs = await readLocalShowerProofs();
-  res.json({ proofs: proofs.sort((a, b) => b.capturedAt.localeCompare(a.capturedAt)).slice(0, 50) });
+  const filtered = userId ? proofs.filter(record => record.ownerId === userId) : proofs;
+  res.json({ proofs: filtered.sort((a, b) => b.capturedAt.localeCompare(a.capturedAt)).slice(0, 50) });
 });
 
 app.post(
   "/api/shower-proofs",
+  requireAuth,
   express.raw({ type: request => request.headers["content-type"]?.startsWith("multipart/form-data") === true, limit: "15mb" }),
   async (req: Request, res: Response) => {
     try {
@@ -195,6 +267,7 @@ app.post(
         verificationStatus: "verified",
         createdAt: now,
         updatedAt: now,
+        ownerId: (req as AuthenticatedRequest).userId,
       };
 
       const proofs = await readLocalShowerProofs();
@@ -207,7 +280,7 @@ app.post(
 );
 
 // AI Dispatcher Chat Endpoint
-app.post("/api/dispatcher/chat", async (req: any, res: any) => {
+app.post("/api/dispatcher/chat", requireAuth, async (req: any, res: any) => {
   try {
     const { message, jobs, currentBattery } = req.body;
 
@@ -357,7 +430,7 @@ function pcmToWav(pcmBuffer: Buffer, sampleRate: number = 24000): Buffer {
 }
 
 // AI Dispatcher Real AI Text-to-Speech API
-app.post("/api/dispatcher/tts", async (req: any, res: any) => {
+app.post("/api/dispatcher/tts", requireAuth, async (req: any, res: any) => {
   try {
     const { text, engine, style } = req.body;
 
@@ -528,7 +601,7 @@ app.post("/api/dispatcher/tts", async (req: any, res: any) => {
 });
 
 // Privacy-First Screenshot OCR Import API
-app.post("/api/import/ocr", async (req: any, res: any) => {
+app.post("/api/import/ocr", requireAuth, async (req: any, res: any) => {
   try {
     const { image, mimeType } = req.body;
 
@@ -615,26 +688,72 @@ IMPORTANT PRIVACY GUIDELINES:
   }
 });
 
+// Helper to get LAN IP address
+function getLanIp(): string | null {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name] || []) {
+      if (iface.family === "IPv4" && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return null;
+}
+
 // Setup Vite Dev server or static asset serving
 async function bootstrap() {
-  if (process.env.NODE_ENV !== "production") {
+  const isProduction = process.env.NODE_ENV === "production";
+
+  if (!isProduction) {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { middlewareMode: true, host: "0.0.0.0" },
       appType: "spa",
     });
     app.use(vite.middlewares);
-    console.log("Vite development middleware loaded.");
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
-    console.log("Serving static production build from dist.");
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT} in ${process.env.NODE_ENV || 'development'} mode.`);
+    const mode = isProduction ? "production" : "development";
+    const lanIp = getLanIp();
+
+    console.log("");
+    console.log("========================================");
+    console.log(`  Route Manager — ${mode} mode`);
+    console.log("========================================");
+    console.log(`  Port:    ${PORT}`);
+    console.log(`  Local:   http://localhost:${PORT}`);
+    if (lanIp) {
+      console.log(`  Network: http://${lanIp}:${PORT}`);
+    }
+    console.log(`  LAN binding: active (0.0.0.0)`);
+    console.log("========================================");
+    console.log("");
+    console.log("  MOBILE ACCESS:");
+    console.log("  1. Phone and computer must be on the same Wi-Fi.");
+    console.log("  2. Open the Network URL above on your phone.");
+    console.log("");
+    console.log("  CAMERA NOTE:");
+    console.log("  Camera APIs require HTTPS on phones (not HTTP LAN).");
+    console.log("  For camera scanning, use a secure tunnel:");
+    console.log("");
+    console.log("    cloudflared tunnel --url http://localhost:" + PORT);
+    console.log("");
+    console.log("  This gives you an HTTPS URL like:");
+    console.log("    https://random-name.trycloudflare.com");
+    console.log("");
+    console.log("  If the page does not load on phone, allow Node.js");
+    console.log("  through Windows Defender Firewall for Private networks.");
+    console.log("  Do NOT expose port " + PORT + " publicly on the router.");
+    console.log("========================================");
+    console.log("");
   });
 }
 

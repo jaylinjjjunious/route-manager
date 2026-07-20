@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { authFetch } from '../services/apiClient';
 import { 
   ShieldCheck, 
   Upload, 
@@ -204,7 +205,7 @@ export default function JobImportSystem({ onImportJobs, isOptimizing = false }: 
       const base64Data = await fileToBase64(selectedFile);
       
       setLoadingStep("Connecting to Gemini-3.5-Flash OCR engine...");
-      const response = await fetch('/api/import/ocr', {
+      const response = await authFetch('/api/import/ocr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
