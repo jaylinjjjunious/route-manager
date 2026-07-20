@@ -33,6 +33,7 @@ import AIDispatcher from './components/AIDispatcher';
 import JobImportSystem from './components/JobImportSystem';
 import { EndOfDaySummary } from './components/EndOfDaySummary';
 import ShowerGatePanel from './components/ShowerGatePanel';
+import { getCurrentCycleId, getCycleLabel, getNextResetTime, getLocalDateKey } from './utils/showerCycle';
 import { useTextToSpeech } from './hooks/useTextToSpeech';
 import type { ShowerProofRecord } from './services/showerProofApi';
 import { authFetch, authFetchJson } from './services/apiClient';
@@ -211,19 +212,6 @@ const resizeProofImage = (file: File): Promise<string> => {
     reader.onerror = () => reject(reader.error || new Error('Could not read proof file'));
     reader.readAsDataURL(file);
   });
-};
-
-const getLocalDateKey = (date: Date) => {
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 10);
-};
-
-const getShowerCycleKey = (date: Date) => {
-  const cycleDate = new Date(date);
-  if (cycleDate.getHours() < 6) {
-    cycleDate.setDate(cycleDate.getDate() - 1);
-  }
-  return getLocalDateKey(cycleDate);
 };
 
 const createDefaultHabitTask = (): HabitTask => ({
@@ -1553,8 +1541,8 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
 
   const now = new Date(nowTick);
   const todayKey = getDateKey(now);
-  const showerCycleKey = getShowerCycleKey(now);
-  const showerCycleLabel = new Date(`${showerCycleKey}T12:00:00`).toLocaleDateString([], { month: 'short', day: 'numeric', weekday: 'short' });
+  const showerCycleKey = getCurrentCycleId(now);
+  const showerCycleLabel = getCycleLabel(showerCycleKey);
   const showerProofForCycle = showerProofs.find(proof => proof.cycleKey === showerCycleKey);
   const showerProofAttachmentForCycle = showerProofDraft || (
     showerProofForCycle?.proofAttachment
