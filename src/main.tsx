@@ -1,6 +1,7 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import {AuthProvider} from './auth/AuthProvider';
+import {DebugProvider} from './debug/DebugProvider';
 import ProtectedApp from './auth/ProtectedApp';
 import './index.css';
 
@@ -45,9 +46,11 @@ async function bootApp() {
     await import('./lib/supabase.ts');
     root.render(
       <StrictMode>
-        <AuthProvider>
-          <ProtectedApp />
-        </AuthProvider>
+        <DebugProvider>
+          <AuthProvider>
+            <ProtectedApp />
+          </AuthProvider>
+        </DebugProvider>
       </StrictMode>,
     );
   } catch (error) {

@@ -36,12 +36,13 @@ import ShowerGatePanel from './components/ShowerGatePanel';
 import { useTextToSpeech } from './hooks/useTextToSpeech';
 import type { ShowerProofRecord } from './services/showerProofApi';
 import { authFetch, authFetchJson } from './services/apiClient';
+import DebugCenter from './components/settings/DebugCenter';
 import {
   Plus, Sliders, Play, RotateCcw, Search, Moon, Sun, Layers, ShieldCheck, MapPin, CheckSquare,
   LayoutDashboard, Map, Briefcase, Battery, Settings, Info, AlertTriangle, ArrowRightLeft,
   TrendingUp, HelpCircle, ShieldAlert, Sparkles, Compass, ExternalLink, Navigation, CheckCircle2,
   Pause, Square, Timer, Clock, ChevronDown, ChevronUp, DollarSign, Zap, Award, Volume2, VolumeX,
-  FolderOpen, Camera, FileImage, ReceiptText, StickyNote, X, Hourglass
+  FolderOpen, Camera, FileImage, ReceiptText, StickyNote, X, Hourglass, Bug
 } from 'lucide-react';
 
 type ProofAssetKind = 'photos' | 'screenshots' | 'receipts';
@@ -340,7 +341,7 @@ const SEED_JOBS: Job[] = [
   }
 ];
 
-export default function App() {
+export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCenter }: { debugCenterOpen?: boolean; onCloseDebugCenter?: () => void; onOpenDebugCenter?: () => void } = {}) {
   const { signOut } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [startAddress, setStartAddress] = useState('1951 Golden State Ave');
@@ -4717,9 +4718,6 @@ export default function App() {
                       } else if (trackerStatus === 'at_store') {
                         bg = 'bg-amber-500/10 text-amber-500 border border-amber-500/20';
                         label = 'BIKE OFF • PAUSED IN STORE';
-                      } else if (trackerStatus === 'completed') {
-                        bg = 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20';
-                        label = 'DAY COMPLETE • SAVED';
                       }
                       return (
                         <span className={`text-[10px] font-black px-3 py-1.5 rounded-full flex items-center gap-1.5 ${bg}`}>
@@ -4798,7 +4796,7 @@ export default function App() {
                       {/* Button 4: End Day */}
                       <button
                         onClick={() => {
-                          if (trackerStatus === 'idle' || trackerStatus === 'completed') return;
+                          if (trackerStatus === 'idle') return;
                           
                           const endBattery = currentBattery;
                           const batteryUsed = Math.max(0, trackerStartBattery - endBattery);
@@ -4834,9 +4832,9 @@ export default function App() {
                           safeStorage.setItem('ride_tracker_sessions', JSON.stringify(updatedSessions));
                           setTrackerStatus('completed');
                         }}
-                        disabled={trackerStatus === 'idle' || trackerStatus === 'completed'}
+                        disabled={trackerStatus === 'idle'}
                         className={`road-action-lg ${
-                          trackerStatus === 'idle' || trackerStatus === 'completed'
+                          trackerStatus === 'idle'
                             ? 'bg-slate-100 text-slate-400 dark:bg-white/5 dark:text-slate-600 cursor-not-allowed'
                             : 'bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/15'
                         }`}
@@ -4847,7 +4845,7 @@ export default function App() {
                     </div>
 
                     {/* Reset button if completed or active */}
-                    {(trackerStatus === 'completed' || trackerStatus !== 'idle') && (
+                    {trackerStatus !== 'idle' && (
                       <div className="flex justify-end pt-2">
                         <button
                           onClick={() => {
@@ -5587,6 +5585,36 @@ export default function App() {
                       Sign Out
                     </button>
                   </div>
+
+                  {/* Debug Center */}
+                  {debugCenterOpen && (
+                    <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3 dark:bg-slate-900 dark:border-white/10">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest">Debug Center</h3>
+                        <button
+                          onClick={onCloseDebugCenter}
+                          className="text-[10px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                        >
+                          Close
+                        </button>
+                      </div>
+                      <DebugCenter />
+                    </div>
+                  )}
+                  {!debugCenterOpen && (
+                    <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-5 space-y-3">
+                      <button
+                        onClick={() => onOpenDebugCenter?.()}
+                        className="w-full text-left flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                      >
+                        <Bug size={16} className="text-slate-400" />
+                        <div>
+                          <p className="text-xs font-black uppercase text-slate-400 tracking-widest">Debug Center</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">System diagnostics, auth status, and error logs</p>
+                        </div>
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* FAQ Instructions */}

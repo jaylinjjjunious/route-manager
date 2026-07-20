@@ -195,6 +195,20 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", time: new Date().toISOString() });
 });
 
+// Debug auth check endpoint
+app.get("/api/debug/auth-check", (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.json({ authenticated: false, userPresent: false });
+  }
+  const token = authHeader.slice(7);
+  if (!SUPABASE_JWT_SECRET) {
+    return res.json({ authenticated: true, userPresent: true });
+  }
+  const user = verifySupabaseToken(token, SUPABASE_JWT_SECRET);
+  res.json({ authenticated: !!user, userPresent: !!user?.sub });
+});
+
 app.get("/api/shower-proofs/current", requireAuth, async (req: Request, res: Response) => {
   const cycleId = normalizeLocalCycleId(req.query.cycleId);
   const userId = (req as AuthenticatedRequest).userId;

@@ -1,5 +1,6 @@
 import { supabase } from "../lib/supabase";
 import { authDebugApiStatus, authDebugRaw } from "../auth/authDebug";
+import { trackFetchRequest, completeFetchRequest, failFetchRequest } from "../debug/apiDiagnostics";
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const { data: { session } } = await supabase.auth.getSession();
@@ -26,7 +27,18 @@ export async function authFetch(input: RequestInfo, init: RequestInit = {}): Pro
   const url = typeof input === 'string' ? input : input instanceof URL ? input.pathname : input.url;
   const method = init.method || 'GET';
 
-  const response = await fetch(input, mergedInit);
+  const requestId = trackFetchRequest(url, method, !!authHeaders.Authorization);
+  const startTime = Date.now();
+
+  let response: Response;
+  try {
+    response = await fetch(input, mergedInit);
+  } catch (err) {
+    failFetchRequest(requestId, err);
+    throw err;
+  }
+
+  completeFetchRequest(requestId, response.status, Date.now() - startTime);
 
   authDebugApiStatus(response.status, url);
 
