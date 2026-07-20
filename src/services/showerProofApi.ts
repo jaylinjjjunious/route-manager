@@ -27,28 +27,69 @@ export interface UploadShowerProofInput {
   imageBlob: Blob;
 }
 
-export const uploadShowerProof = async (input: UploadShowerProofInput): Promise<ShowerProofRecord> => {
+async function getFreshAccessToken(): Promise<string> {
   const {
     data: { session },
     error,
   } = await supabase.auth.getSession();
 
-  if (error || !session?.access_token) {
+  if (error || !session) {
     throw new Error("No valid login session is available.");
   }
+
+  const expiresAtMs = (session.expires_at ?? 0) * 1000;
+  const expiresSoon = expiresAtMs <= Date.now() + 60_000;
+
+  if (!expiresSoon) {
+    return session.access_token;
+  }
+
+  const {
+    data: { session: refreshedSession },
+    error: refreshError,
+  } = await supabase.auth.refreshSession();
+
+  if (refreshError || !refreshedSession) {
+    throw new Error("Your login session could not be refreshed.");
+  }
+
+  return refreshedSession.access_token;
+}
+
+export const uploadShowerProof = async (input: UploadShowerProofInput): Promise<ShowerProofRecord> => {
+  const accessToken = await getFreshAccessToken();
 
   const formData = new FormData();
   formData.append("image", input.imageBlob, "shower-proof.jpg");
   formData.append("barcode", input.barcode);
   formData.append("cycleId", input.cycleId);
 
-  const response = await fetch("/api/shower-proofs", {
+  let response = await fetch("/api/shower-proofs", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${session.access_token}`,
+      Authorization: `Bearer ${accessToken}`,
     },
     body: formData,
   });
+
+  if (response.status === 401) {
+    const {
+      data: { session: refreshedSession },
+      error: refreshError,
+    } = await supabase.auth.refreshSession();
+
+    if (refreshError || !refreshedSession?.access_token) {
+      throw new Error("Your session needs to be renewed. Sign in again to retry this upload.");
+    }
+
+    response = await fetch("/api/shower-proofs", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${refreshedSession.access_token}`,
+      },
+      body: formData,
+    });
+  }
 
   if (!response.ok) {
     const data = await response.json().catch(() => null) as { error?: string } | null;

@@ -5,6 +5,7 @@ import crypto from "crypto";
 import fs from "fs/promises";
 import os from "os";
 import { GoogleGenAI, Type } from "@google/genai";
+import { createClient } from "@supabase/supabase-js";
 
 // Load environment variables
 dotenv.config();
@@ -12,7 +13,8 @@ dotenv.config();
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
 const REQUIRED_SHOWER_BARCODE = "075371003233";
-const SUPABASE_JWT_SECRET = process.env.SUPABASE_JWT_SECRET || "";
+const SUPABASE_URL = process.env.SUPABASE_URL || "";
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
 const showerProofRoot = path.join(process.cwd(), ".local-shower-proofs");
 const showerProofImageRoot = path.join(showerProofRoot, "images");
 const showerProofMetadataPath = path.join(showerProofRoot, "proofs.json");
@@ -104,53 +106,27 @@ app.use("/shower-proof-assets", express.static(showerProofImageRoot, {
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
-// --- Supabase JWT Verification Middleware ---
+// --- Supabase Auth Middleware (uses getUser for token validation) ---
 
-// Minimal JWT decoding (no external dependency needed)
-function base64UrlDecode(str: string): Buffer {
-  const base64 = str.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
-  return Buffer.from(padded, "base64");
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.error('[FATAL] SUPABASE_URL and SUPABASE_ANON_KEY must be set. Server cannot start without valid Supabase configuration.');
+  process.exit(1);
 }
 
-function verifySupabaseToken(token: string, secret: string): { sub: string; email?: string } | null {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-
-    const [headerB64, payloadB64, signatureB64] = parts;
-
-    // Supabase JWT secrets are base64-encoded; decode to get raw HMAC key bytes
-    const secretKey = Buffer.from(secret, "base64");
-    const expectedSig = crypto.createHmac("sha256", secretKey).update(`${headerB64}.${payloadB64}`).digest("base64url");
-    if (!crypto.timingSafeEqual(Buffer.from(signatureB64), Buffer.from(expectedSig))) {
-      return null;
-    }
-
-    const payload = JSON.parse(base64UrlDecode(payloadB64).toString("utf8"));
-
-    // Check expiry
-    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
-      return null;
-    }
-
-    return { sub: payload.sub, email: payload.email };
-  } catch {
-    return null;
-  }
-}
+const serverSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
+  },
+});
 
 interface AuthenticatedRequest extends Request {
   userId?: string;
   userEmail?: string;
 }
 
-function requireAuth(req: Request, res: Response, next: NextFunction) {
-  if (!SUPABASE_JWT_SECRET) {
-    // If no JWT secret configured, auth middleware is disabled (dev mode)
-    return next();
-  }
-
+async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     console.log('[AUTH] No Bearer token for', req.method, req.path);
@@ -158,14 +134,16 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
   }
 
   const token = authHeader.slice(7);
-  const user = verifySupabaseToken(token, SUPABASE_JWT_SECRET);
-  if (!user) {
-    console.log('[AUTH] Token verification FAILED for', req.method, req.path);
-    return res.status(401).json({ error: "Invalid or expired token." });
+
+  const { data: { user }, error } = await serverSupabase.auth.getUser(token);
+
+  if (error || !user) {
+    console.log('[AUTH] getUser failed for', req.method, req.path, error?.message || 'no user');
+    return res.status(401).json({ error: "Invalid or expired token.", code: "AUTH_TOKEN_INVALID" });
   }
 
-  console.log('[AUTH] Token verified OK for user', user.sub?.slice(0, 8) + '...', req.method, req.path);
-  (req as AuthenticatedRequest).userId = user.sub;
+  console.log('[AUTH] Token verified OK for user', user.id.slice(0, 8) + '...', req.method, req.path);
+  (req as AuthenticatedRequest).userId = user.id;
   (req as AuthenticatedRequest).userEmail = user.email;
   next();
 }
@@ -197,17 +175,14 @@ app.get("/api/health", (req, res) => {
 });
 
 // Debug auth check endpoint
-app.get("/api/debug/auth-check", (req, res) => {
+app.get("/api/debug/auth-check", async (req, res) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.json({ authenticated: false, userPresent: false });
   }
   const token = authHeader.slice(7);
-  if (!SUPABASE_JWT_SECRET) {
-    return res.json({ authenticated: true, userPresent: true });
-  }
-  const user = verifySupabaseToken(token, SUPABASE_JWT_SECRET);
-  res.json({ authenticated: !!user, userPresent: !!user?.sub });
+  const { data: { user }, error } = await serverSupabase.auth.getUser(token);
+  res.json({ authenticated: !!user && !error, userPresent: !!user?.id });
 });
 
 app.get("/api/shower-proofs/current", requireAuth, async (req: Request, res: Response) => {
