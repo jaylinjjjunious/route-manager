@@ -4,7 +4,7 @@ Recoverable milestones for the Route Optimizer project.
 
 | Tag | Date | SHA | Stable Features | Known Issues | Deployment | Restore Command |
 |-----|------|-----|-----------------|--------------|------------|-----------------|
-| checkpoint-2026-07-19-full-app-stable | 2026-07-19 | 397cdd0 | Auth (login/logout/refresh), route planning, vehicle management, shower gate, barcode scanner, mission control, mobile UI, AI chat, Express server, Supabase backend, Railway hosting | Old backup tags exist (pre-checkpoint format). ChatGPT origin remote is secondary. | Railway fallback deploy (`railway up`) | `git show checkpoint-2026-07-19-full-app-stable` |
+| checkpoint-2026-07-19-full-app-stable | 2026-07-19 | 65984c7 | Auth (login/logout/refresh), route planning, vehicle management, shower gate, barcode scanner, mission control, mobile UI, AI chat, Express server, Supabase backend, Railway hosting, deployment workflow, checkpoint system, Node 22.16 fix | Old backup tags exist (pre-checkpoint format). ChatGPT origin remote is secondary. | Railway autodeploy **ACTIVE** — SUCCESS at 2026-07-19 20:48 PDT | `git show checkpoint-2026-07-19-full-app-stable` |
 
 ## Restore Commands
 
