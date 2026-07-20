@@ -120,8 +120,9 @@ function verifySupabaseToken(token: string, secret: string): { sub: string; emai
 
     const [headerB64, payloadB64, signatureB64] = parts;
 
-    // Verify HMAC-SHA256 signature
-    const expectedSig = crypto.createHmac("sha256", secret).update(`${headerB64}.${payloadB64}`).digest("base64url");
+    // Supabase JWT secrets are base64-encoded; decode to get raw HMAC key bytes
+    const secretKey = Buffer.from(secret, "base64");
+    const expectedSig = crypto.createHmac("sha256", secretKey).update(`${headerB64}.${payloadB64}`).digest("base64url");
     if (!crypto.timingSafeEqual(Buffer.from(signatureB64), Buffer.from(expectedSig))) {
       return null;
     }

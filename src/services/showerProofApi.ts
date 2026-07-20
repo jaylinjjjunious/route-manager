@@ -1,4 +1,5 @@
-import { authFetch, authFetchJson } from "./apiClient";
+import { supabase } from "../lib/supabase";
+import { authFetchJson } from "./apiClient";
 
 export type ShowerProofUploadStatus = 'saved' | 'failed';
 export type ShowerProofVerificationStatus = 'verified' | 'rejected';
@@ -27,18 +28,35 @@ export interface UploadShowerProofInput {
 }
 
 export const uploadShowerProof = async (input: UploadShowerProofInput): Promise<ShowerProofRecord> => {
-  const body = new FormData();
-  body.set('cycleId', input.cycleId);
-  body.set('localDate', input.localDate);
-  body.set('barcode', input.barcode);
-  body.set('capturedAt', input.capturedAt);
-  body.set('image', input.imageBlob, `shower-proof-${input.cycleId}.jpg`);
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
 
-  const data = await authFetchJson<{ proof: ShowerProofRecord }>('/api/shower-proofs', {
-    method: 'POST',
-    body,
+  if (error || !session?.access_token) {
+    throw new Error("No valid login session is available.");
+  }
+
+  const formData = new FormData();
+  formData.append("image", input.imageBlob, "shower-proof.jpg");
+  formData.append("barcode", input.barcode);
+  formData.append("cycleId", input.cycleId);
+
+  const response = await fetch("/api/shower-proofs", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: formData,
   });
 
+  if (!response.ok) {
+    const data = await response.json().catch(() => null) as { error?: string } | null;
+    const message = data?.error || `Request failed with ${response.status}`;
+    throw new Error(message);
+  }
+
+  const data = await response.json() as { proof: ShowerProofRecord };
   return data.proof;
 };
 
