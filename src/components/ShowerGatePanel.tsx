@@ -266,6 +266,32 @@ export default function ShowerGatePanel({ cycleId, cycleLabel, completedProof, o
     }
   }, [captureStill, releasePreview, stopCamera, uploadCapturedProof]);
 
+  const waitForVideoElement = useCallback((timeoutMs = 3000): Promise<HTMLVideoElement | null> => {
+    if (videoRef.current) return Promise.resolve(videoRef.current);
+    return new Promise(resolve => {
+      const start = Date.now();
+      const check = () => {
+        if (videoRef.current) { resolve(videoRef.current); return; }
+        if (Date.now() - start > timeoutMs) { resolve(null); return; }
+        requestAnimationFrame(check);
+      };
+      requestAnimationFrame(check);
+    });
+  }, []);
+
+  const playVideoSafe = useCallback(async (video: HTMLVideoElement): Promise<void> => {
+    if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+      await video.play();
+      return;
+    }
+    await new Promise<void>((resolve) => {
+      const onMeta = () => { video.removeEventListener('loadedmetadata', onMeta); resolve(); };
+      video.addEventListener('loadedmetadata', onMeta);
+      setTimeout(() => { video.removeEventListener('loadedmetadata', onMeta); resolve(); }, 3000);
+    });
+    try { await video.play(); } catch { /* iOS Safari may abort; caller handles retry */ }
+  }, []);
+
   const startScanner = useCallback(async () => {
     stopCamera();
     releasePreview();
@@ -287,13 +313,14 @@ export default function ShowerGatePanel({ cycleId, cycleLabel, completedProof, o
       return;
     }
 
+    const video = await waitForVideoElement();
+    if (!video) {
+      setStatus('camera_error');
+      setStatusMessage('Camera preview element is not ready. Try again.');
+      return;
+    }
+
     try {
-      const video = videoRef.current;
-      if (!video) {
-        setStatus('camera_error');
-        setStatusMessage('Camera preview element is not ready. Try again.');
-        return;
-      }
 
       const BarcodeDetector = getBarcodeDetector();
       const supportedFormats = BarcodeDetector?.getSupportedFormats
@@ -345,15 +372,7 @@ export default function ShowerGatePanel({ cycleId, cycleLabel, completedProof, o
       streamRef.current = stream;
       video.srcObject = stream;
 
-      try {
-        await video.play();
-      } catch (playError) {
-        if (playError instanceof DOMException && playError.name === 'AbortError') {
-          // Safari may abort play if the user navigates quickly; retry once
-          await new Promise(resolve => { setTimeout(resolve, 200); });
-          try { await video.play(); } catch { /* ignore second failure */ }
-        }
-      }
+      await playVideoSafe(video);
 
       const track = stream.getVideoTracks()[0];
       const capabilities = typeof track.getCapabilities === 'function'
