@@ -1,3 +1,10 @@
-# nixpacks.toml — Pin Node 22 for Railway build (Vite 8 requires >=20.19)
+# nixpacks.toml — Pin Node 22.16 for Railway build (Vite 8 requires >=22.12)
 [phases.setup]
-nixPkgs = ["nodejs_22"]
+nixPkgs = ["curl", "xz"]
+
+[phases.install]
+cmds = [
+  "curl -fsSL https://nodejs.org/dist/v22.16.0/node-v22.16.0-linux-x64.tar.xz | tar -xJ -C /usr/local --strip-components=1",
+  "node --version",
+  "npm ci"
+]
