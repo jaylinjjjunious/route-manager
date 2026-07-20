@@ -9,7 +9,10 @@
     "start": "node dist/server.cjs",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "test:habits": "node tests/habit-ui-check.cjs"
+    "test:habits": "node tests/habit-ui-check.cjs",
+    "verify": "node scripts/verify.cjs",
+    "checkpoint": "node scripts/checkpoint.cjs",
+    "release": "node scripts/release.cjs"
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "1.37.1",
