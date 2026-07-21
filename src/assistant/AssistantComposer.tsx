@@ -40,7 +40,10 @@ export default function AssistantComposer() {
   };
 
   return (
-    <div className="border-t border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-black/20">
+    <div
+      className="border-t border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-black/20 sm:p-3"
+      style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))' }}
+    >
       {showQuickPrompts && (
         <div className="mb-3">
           <div className="flex items-center gap-1.5 mb-2">
