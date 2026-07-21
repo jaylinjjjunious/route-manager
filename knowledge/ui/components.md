@@ -1,6 +1,6 @@
 # UI Components
 
-**Last Updated:** 2026-07-20 (assistant-v1)
+**Last Updated:** 2026-07-21 (assistant-mobile-fullscreen-fix)
 **Related Source Files:** `src/components/*.tsx`, `src/assistant/*.tsx`
 
 ---
@@ -28,7 +28,7 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 
 | Component | File | Responsibility |
 |-----------|------|----------------|
-| **AssistantBubble** | `src/assistant/AssistantBubble.tsx` | Floating chat button (bottom-right) |
+| **AssistantBubble** | `src/assistant/AssistantBubble.tsx` | Floating chat button + full-screen panel wrapper. On mobile: fills entire viewport (`h-dvh`). On desktop (≥640px): 400×600px floating drawer in bottom-right. |
 | **AssistantPanel** | `src/assistant/AssistantPanel.tsx` | Expandable chat panel with header, messages, composer |
 | **AssistantMessageList** | `src/assistant/AssistantMessageList.tsx` | Message display with typing indicators |
 | **AssistantComposer** | `src/assistant/AssistantComposer.tsx` | Text input + quick prompts + send |

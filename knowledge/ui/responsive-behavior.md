@@ -78,6 +78,27 @@ The layout accounts for iOS safe areas:
 - Padding adjustments prevent content from being obscured by system UI
 - `env(safe-area-inset-bottom)` may be used for bottom spacing
 
+### Assistant Bubble and Panel (safe-area-aware)
+
+The assistant bubble and panel use `env(safe-area-inset-bottom)` for positioning:
+
+- **Bubble button**: `bottom: max(5.5rem, calc(5.5rem + env(safe-area-inset-bottom)))` — always clears the bottom nav + safe area
+- **Panel composer**: `paddingBottom: max(0.75rem, env(safe-area-inset-bottom))` — input clears the home indicator
+- **Panel container**: `h-dvh` on mobile (100dvh, dynamically adjusts for virtual keyboard), `sm:h-[600px]` on desktop
+
+### Assistant Panel Layout
+
+| Viewport | Container | Behavior |
+|----------|-----------|----------|
+| Mobile (<640px) | `fixed inset-0 h-dvh z-[100]` | Full-screen, fills entire viewport including safe areas |
+| Desktop (≥640px) | `fixed bottom-24 right-4 w-[400px] h-[600px] max-h-[80vh] z-[100]` | Floating drawer, rounded corners, border, shadow |
+
+Flex chain inside the panel:
+- Root: `h-full min-h-0 flex flex-col` — fills container
+- Header: `shrink-0` — fixed height, never compresses
+- MessageList: `flex-1 overflow-y-auto` — fills remaining space, scrolls
+- Composer: `shrink-0` — fixed height, never compresses
+
 ---
 
 ## Readability Floor
