@@ -107,7 +107,27 @@ Worker only. Serves the stored image data URL content for a proof record.
 
 ---
 
-## Domain: Dispatcher
+## Domain: AI Operations Assistant
+
+### POST `/api/assistant/chat`
+
+| Field | Value |
+|-------|-------|
+| **Auth** | JWT (Express via `requireAuth` middleware) |
+| **Content-Type** | `application/json` |
+| **Body** | `{ message: string, context: AppContext, history: Array<{role, text}> }` |
+| **Response** | `{ response: string, toolCalls?: Array<{tool, input, confirmationText}> }` |
+| **Runtime** | `server.ts` (Express), mounted at line ~144 via `createAssistantRouter(requireAuth)` |
+
+Sends a message to the AI Operations Assistant (Gemini 3.5 Flash). The assistant receives safe app context and conversation history. It returns a natural-language response and optionally a list of tool calls for the frontend to execute.
+
+**Server file:** `server/assistant/assistantRoute.ts`
+**System instructions:** `server/assistant/systemInstructions.ts`
+**Client:** `src/assistant/assistantApi.ts` → `sendToAssistant()`
+
+---
+
+## Domain: Dispatcher (Legacy)
 
 ### POST `/api/dispatcher/chat`
 
@@ -115,10 +135,10 @@ Worker only. Serves the stored image data URL content for a proof record.
 |-------|-------|
 | **Auth** | JWT (Express) |
 | **Content-Type** | `application/json` |
-| **Body** | `{ message: string }` (or similar chat payload) |
-| **Response** | Chat response from Gemini model |
+| **Body** | `{ message: string, jobs: Job[], currentBattery: number }` |
+| **Response** | `{ response: string, action: DispatcherAction }` |
 
-Sends a message to the AI dispatcher powered by Google Gemini.
+Sends a message to the legacy AI dispatcher (still active for the AIDispatcher component in the Route tab).
 
 ---
 

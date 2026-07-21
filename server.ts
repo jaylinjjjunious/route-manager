@@ -7,6 +7,7 @@ import os from "os";
 import multer from "multer";
 import { GoogleGenAI, Type } from "@google/genai";
 import { createClient } from "@supabase/supabase-js";
+import { createAssistantRouter } from "./server/assistant/assistantRoute";
 
 // Load environment variables
 dotenv.config();
@@ -138,6 +139,9 @@ function getGeminiClient(): GoogleGenAI {
   }
   return aiInstance;
 }
+
+// AI Operations Assistant
+app.use("/api/assistant", createAssistantRouter(requireAuth));
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {

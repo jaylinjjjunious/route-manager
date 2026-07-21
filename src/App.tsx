@@ -30,6 +30,8 @@ import BakersfieldMapPreview from './components/BakersfieldMapPreview';
 import JobCard from './components/JobCard';
 import JobModal from './components/JobModal';
 import AIDispatcher from './components/AIDispatcher';
+import AssistantProvider from './assistant/AssistantProvider';
+import AssistantBubble from './assistant/AssistantBubble';
 import JobImportSystem from './components/JobImportSystem';
 import { EndOfDaySummary } from './components/EndOfDaySummary';
 import ShowerGatePanel from './components/ShowerGatePanel';
@@ -1474,6 +1476,16 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     setIsModalOpen(true);
   };
 
+  const handleOpenProofHistory = () => {
+    const records = Object.values(proofVault);
+    if (records.length > 0) {
+      const sorted = [...records].sort(
+        (a, b) => new Date(b.completionTime).getTime() - new Date(a.completionTime).getTime()
+      );
+      setSelectedProofJobId(sorted[0].jobId);
+    }
+  };
+
   const handleOpenProcessServeModal = () => {
     setEditingJob(null);
     setDefaultJobType('process_serve');
@@ -2609,6 +2621,24 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
       : 'border-rose-300 bg-rose-50 text-rose-900 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-100';
 
   return (
+    <AssistantProvider
+      jobs={jobs}
+      routeAJobs={routeAJobs}
+      routeBJobs={routeBJobs}
+      currentBattery={currentBattery}
+      ebikeConfig={ebikeConfig}
+      activeMetrics={activeMetrics}
+      showerGateUnlocked={showerGateUnlocked}
+      currentTab={currentTab}
+      theme={theme}
+      weatherWind={weatherWind}
+      terrain={terrain}
+      dayEarnings={activeMetrics.totalPay}
+      onNavigate={(tab) => handleTabChange(tab as AppTab)}
+      onOpenProofHistory={handleOpenProofHistory}
+      onOpenAddJob={handleOpenAddModal}
+      onOptimizeRoute={handleOptimizeRouteSequence}
+    >
     <div className={theme === 'dark' ? 'dark' : ''}>
       <div className="ios-app app-shell min-h-screen bg-transparent text-slate-950 transition-colors duration-300 dark:text-slate-100 font-sans">
         <div className="ios-page-glow pointer-events-none" aria-hidden="true" />
@@ -5811,6 +5841,8 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
 
       </div>
     </div>
+    <AssistantBubble />
+  </AssistantProvider>
   );
 }
 

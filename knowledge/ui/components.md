@@ -1,11 +1,100 @@
 # UI Components
 
-**Last Updated:** 2026-07-20 (c12bd44)
-**Related Source Files:** `src/components/*.tsx`
+**Last Updated:** 2026-07-20 (assistant-v1)
+**Related Source Files:** `src/components/*.tsx`, `src/assistant/*.tsx`
 
 ---
 
 ## Component Reference
+
+### AI Operations Assistant System
+
+The AI Operations Assistant is a floating chat bubble available throughout the authenticated application. It is the primary conversational access point for controlling the app, reading context, and executing approved actions.
+
+**Architecture:**
+
+| Layer | Files | Responsibility |
+|-------|-------|----------------|
+| **Types** | `src/assistant/assistantTypes.ts` | All assistant-specific type definitions |
+| **Context** | `src/assistant/assistantContext.ts` | React context for assistant state |
+| **Provider** | `src/assistant/AssistantProvider.tsx` | Main orchestrator — wires tool registry, conversation store, API calls |
+| **Conversation** | `src/assistant/conversationStore.ts` | Chat message state with localStorage persistence |
+| **Tool Registry** | `src/assistant/toolRegistry.ts` | Tool registration and execution engine |
+| **Permission** | `src/assistant/permissionPolicy.ts` | Permission checking for tools |
+| **Confirmation** | `src/assistant/confirmationStore.ts` | Confirmation dialog state |
+| **API** | `src/assistant/assistantApi.ts` | Client for `POST /api/assistant/chat` |
+
+**UI Components:**
+
+| Component | File | Responsibility |
+|-----------|------|----------------|
+| **AssistantBubble** | `src/assistant/AssistantBubble.tsx` | Floating chat button (bottom-right) |
+| **AssistantPanel** | `src/assistant/AssistantPanel.tsx` | Expandable chat panel with header, messages, composer |
+| **AssistantMessageList** | `src/assistant/AssistantMessageList.tsx` | Message display with typing indicators |
+| **AssistantComposer** | `src/assistant/AssistantComposer.tsx` | Text input + quick prompts + send |
+| **AssistantActionCard** | `src/assistant/AssistantActionCard.tsx` | Action confirmation/rejection card |
+
+**Tools (`src/assistant/tools/`):**
+
+| Tool File | Tools Provided |
+|-----------|----------------|
+| `navigationTools.ts` | `navigate`, `get_current_page` |
+| `showerGateTools.ts` | `get_shower_gate_status`, `open_shower_gate` |
+| `jobTools.ts` | `get_job_list`, `get_next_job`, `get_job_detail`, `open_jobs_page` |
+| `batteryTools.ts` | `get_battery_status` |
+| `weatherTools.ts` | `get_weather_context` |
+| `travelTools.ts` | `get_travel_recommendation` |
+| `proofTools.ts` | `open_proof_history` |
+| `debugTools.ts` | `run_health_check` |
+| `contextBuilder.ts` | Builds safe app context for the AI |
+
+**Provider Props** (`AssistantProviderProps`):
+
+| Prop | Type | Source |
+|------|------|--------|
+| `jobs` | `Job[]` | App.tsx state |
+| `routeAJobs` | `Job[]` | App.tsx computed |
+| `routeBJobs` | `Job[]` | App.tsx computed |
+| `currentBattery` | `number` | App.tsx state |
+| `ebikeConfig` | `EbikeConfig` | App.tsx state |
+| `activeMetrics` | `RouteMetrics` | App.tsx computed |
+| `showerGateUnlocked` | `boolean` | App.tsx computed |
+| `currentTab` | `string` | App.tsx state |
+| `theme` | `'light' \| 'dark'` | App.tsx state |
+| `weatherWind` | `string` | App.tsx state |
+| `terrain` | `string` | App.tsx state |
+| `dayEarnings` | `number` | `activeMetrics.totalPay` |
+| `onNavigate` | `(tab: string) => void` | `handleTabChange` |
+| `onOpenProofHistory` | `() => void` | Sets `selectedProofJobId` |
+| `onOpenAddJob` | `() => void` | `handleOpenAddModal` |
+| `onOptimizeRoute` | `() => void` | `handleOptimizeRouteSequence` |
+
+**Context Value** (from `useAssistant()`):
+
+| Field | Type |
+|-------|------|
+| `isOpen` | `boolean` |
+| `setIsOpen` | `(open: boolean) => void` |
+| `messages` | `AssistantMessage[]` |
+| `sendMessage` | `(text: string) => Promise<void>` |
+| `confirmAction` | `(messageId: string) => void` |
+| `dismissAction` | `(messageId: string) => void` |
+| `clearConversation` | `() => void` |
+| `isLoading` | `boolean` |
+| `tools` | `AssistantTool[]` |
+| `appContext` | `AppContext \| null` |
+
+---
+
+### AIDispatcher (Legacy)
+
+| Field | Value |
+|-------|-------|
+| **File** | `src/components/AIDispatcher.tsx` |
+| **Props** | 15 props including all job/route data and action callbacks |
+| **Responsibility** | Chat-style operations console rendered in the Route tab. Uses keyword matching (not real AI). Being superseded by the new AI Operations Assistant bubble. |
+
+---
 
 ### ShowerGatePanel
 
