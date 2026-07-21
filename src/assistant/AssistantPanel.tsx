@@ -15,14 +15,10 @@ export default function AssistantPanel() {
 
   return (
     <div
-      className="flex flex-col"
-      style={{
-        height: '100%',
-        maxHeight: '100%'
-      }}
+      className="flex h-full min-h-0 flex-col bg-white dark:bg-slate-950 sm:rounded-[16px]"
     >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 dark:border-white/10 dark:bg-black/30">
+      <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 py-3 dark:border-white/10 dark:bg-black/30">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-blue-700 text-white">
             <Bot size={16} />

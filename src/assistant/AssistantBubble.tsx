@@ -9,11 +9,11 @@ export default function AssistantBubble() {
     <>
       {/* Panel overlay + drawer */}
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex flex-col bg-white dark:bg-slate-950 sm:bottom-24 sm:left-auto sm:right-4 sm:top-auto sm:h-[600px] sm:max-h-[80vh] sm:w-[400px] sm:rounded-[16px] sm:border sm:border-slate-200 sm:bg-white sm:shadow-2xl dark:sm:border-white/10 dark:sm:bg-slate-950">
-          {/* Panel — full screen on mobile, drawer on desktop */}
-          <div className="flex h-full flex-col">
-            <AssistantPanel />
-          </div>
+        <div
+          className="fixed inset-0 z-[100] flex flex-col sm:bottom-24 sm:left-auto sm:right-4 sm:top-auto sm:h-[600px] sm:max-h-[80vh] sm:w-[400px] sm:rounded-[16px] sm:border sm:border-slate-200 sm:shadow-2xl dark:sm:border-white/10"
+          style={{ height: '100dvh' }}
+        >
+          <AssistantPanel />
         </div>
       )}
 

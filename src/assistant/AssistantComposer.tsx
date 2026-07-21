@@ -41,7 +41,7 @@ export default function AssistantComposer() {
 
   return (
     <div
-      className="border-t border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-black/20 sm:p-3"
+      className="shrink-0 border-t border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-black/20 sm:p-3"
       style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))' }}
     >
       {showQuickPrompts && (
