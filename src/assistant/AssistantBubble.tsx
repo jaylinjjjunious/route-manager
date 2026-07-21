@@ -9,21 +9,9 @@ export default function AssistantBubble() {
     <>
       {/* Panel overlay + drawer */}
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex flex-col sm:bottom-24 sm:left-auto sm:right-4 sm:top-auto sm:z-[100] sm:h-[600px] sm:max-h-[80vh] sm:w-[400px] sm:rounded-[16px] sm:border sm:border-slate-200 sm:shadow-2xl dark:sm:border-white/10">
-          {/* Backdrop (mobile only) */}
-          <div
-            className="absolute inset-0 bg-black/40 sm:hidden"
-            onClick={() => setIsOpen(false)}
-          />
-
-          {/* Panel */}
-          <div
-            className="relative z-10 mt-auto flex flex-col rounded-t-2xl border-2 border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-slate-950 sm:mt-0 sm:h-full sm:rounded-[16px]"
-            style={{
-              height: 'max(75vh, calc(100vh - 120px - env(safe-area-inset-bottom, 0px)))',
-              maxHeight: '85vh',
-            }}
-          >
+        <div className="fixed inset-0 z-[100] flex flex-col bg-white dark:bg-slate-950 sm:bottom-24 sm:left-auto sm:right-4 sm:top-auto sm:h-[600px] sm:max-h-[80vh] sm:w-[400px] sm:rounded-[16px] sm:border sm:border-slate-200 sm:bg-white sm:shadow-2xl dark:sm:border-white/10 dark:sm:bg-slate-950">
+          {/* Panel — full screen on mobile, drawer on desktop */}
+          <div className="flex h-full flex-col">
             <AssistantPanel />
           </div>
         </div>
