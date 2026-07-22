@@ -2975,7 +2975,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                               </div>
                             </div>
                             {idx < routeListStops.length - 1 && (
-                              <div className="flex justify-center text-2xl font-black leading-none text-slate-400 dark:text-slate-500" aria-hidden="true">
+                              <div className="mx-auto flex w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-50 py-1 text-base font-black leading-none text-slate-400 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-500" aria-hidden="true">
                                 ↓
                               </div>
                             )}
