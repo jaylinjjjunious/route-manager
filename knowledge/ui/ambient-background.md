@@ -32,30 +32,32 @@ The component renders two elements inside a fixed, full-viewport container:
 
 | Property | Value |
 |----------|-------|
-| Size | 80vw × 48vh (desktop), 95vw × 42vh (mobile) |
-| Blur | 52px (desktop), 44px (mobile) |
-| Initial position | `top: 14vh; left: 50%` |
+| Size | 44vw × 36vh (desktop), 36vw × 28vh (mobile) |
+| Blur | 50px (desktop), 40px (mobile) |
+| Initial position | `top: 12vh; left: 0` |
 | Opacity | 1.0 (varies 0.92–1.0 during path) |
-| Gradient | `radial-gradient(ellipse 78% 100% at 50% 50%, ...)` |
+| Gradient | `radial-gradient(ellipse 80% 100% at 50% 50%, ...)` |
 
-## Motion Path
+## Motion Path — Negative Space Design
 
-140-second loop with 10 waypoints at irregular intervals:
+140-second loop with 10 waypoints. Path travels through visible background zones around panels:
 
-| % | X | Y | Scale | Notes |
-|---|---|---|-------|-------|
-| 0% | 0vw | 0vh | 1.0 | Start (upper-center) |
-| 9% | +14vw | -4vh | 1.07 | Upper-right drift |
-| 19% | -12vw | +6vh | 0.94 | Left-down diagonal |
-| 31% | +8vw | -8vh | 1.12 | High center hover |
-| 43% | -16vw | +2vh | 0.96 | Far left sweep |
-| 56% | +18vw | -2vh | 1.08 | Far right sweep |
-| 68% | -8vw | +8vh | 0.93 | Lower-left hover |
-| 79% | +10vw | -6vh | 1.10 | Upper-right return |
-| 90% | -14vw | +4vh | 0.97 | Left mid-drift |
-| 100% | 0vw | 0vh | 1.0 | Seamless loop |
+| % | X | Y | Location | Visibility |
+|---|---|---|----------|------------|
+| 0% | 4vw | 0vh | Left gutter, upper | Fully visible |
+| 9% | 8vw | -6vh | Upper-left open area | Fully visible |
+| 19% | 38vw | -2vh | Top center (behind Next Stop top edge) | Partial — blur visible |
+| 31% | 82vw | 2vh | Right gutter, upper | Fully visible |
+| 43% | 80vw | 22vh | Right gutter, mid | Fully visible |
+| 56% | 42vw | 48vh | Gap between panels and stat tiles | Fully visible |
+| 68% | 2vw | 32vh | Left gutter, mid | Fully visible |
+| 79% | 6vw | 52vh | Left gutter, lower (above nav) | Fully visible |
+| 90% | 30vw | 56vh | Lower-center open area | Fully visible |
+| 100% | 4vw | 0vh | Return to left gutter | Fully visible |
 
-Y stays within 8vh–52vh to keep lower page dark. X spans ±18vw. Scale 0.93–1.12. Rotation ±1.5deg. Border-radius deforms at each waypoint.
+Desktop layout zones used: left page margin (`px-8`), right page margin, upper area above cards, gap between main panels and stat tiles, lower area above `pb-40` bottom nav clearance.
+
+**7 of 10 waypoints are fully visible.** Waypoint 19% passes partially behind the Next Stop panel's top edge but the blur extends past the panel.
 
 ## Color Palette — 8-Phase Full Rotation
 
@@ -124,19 +126,22 @@ Two independent animations on the single orb element:
 
 ## Reduced Motion
 
-`@media (prefers-reduced-motion: reduce)` stops all movement. Orb stays visible at a centered rest position (`translate(0, 2vh) scale(1.04) opacity: 0.92`). Color cycle continues at 360s.
+`@media (prefers-reduced-motion: reduce)` stops all movement. Orb stays visible in the left gutter at `translate(4vw, 16vh) scale(1.04) opacity: 0.92`. Color cycle continues at 360s.
 
 ## Responsive Behavior
 
 | Viewport | Adjustment |
 |----------|-----------|
-| Desktop (>640px) | 80vw × 48vh, 52px blur |
-| Mobile (≤640px) | 95vw × 42vh, 44px blur, top: 10vh |
+| Desktop (>640px) | 44vw × 36vh orb, 50px blur, path uses page margins and panel gaps |
+| Mobile (≤640px) | 36vw × 28vh orb, 40px blur, tighter path through narrow margins and between-card gaps |
+
+Mobile path stays within the `px-3` page margins and vertical card gaps. Reduced-motion places orb at `translate(4vw, 16vh)` — left gutter, fully visible.
 
 ## Design Principles
 
-- **One orb** — single atmospheric element, not multiple layers
-- **Organic path** — 10 irregular waypoints prevent obvious loop
+- **One orb** — single atmospheric element
+- **Negative space path** — travels through gutters, gaps, and exposed background
+- **7/10 waypoints fully visible** — orb is clearly present in open areas
 - **Space-black always visible** — edges, lower page, between panels
 - **Full palette rotation** — 8 recognizable color families
 - **Long cycle** — 140s motion prevents repetition recognition
