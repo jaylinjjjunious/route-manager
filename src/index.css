@@ -230,9 +230,10 @@ select {
 /* ============================================
    Ambient Liquid Background — Single Floating Orb
    ============================================
-   One orb drifting organically through space-black.
-   Full palette color cycle every 90 seconds.
-   140-second motion path with 10 waypoints.
+   One orb drifting through negative space around panels.
+   Path favors left/right gutters, gaps between cards,
+   upper open area, and exposed background edges.
+   90-second color cycle. 140-second motion path.
    ============================================ */
 
 /* --- Animatable color custom properties --- */
@@ -257,23 +258,22 @@ select {
   overflow: clip;
 }
 
-/* --- Single orb --- */
+/* --- Single orb — positioned in negative space --- */
 .ambient-orb {
   position: absolute;
-  top: 14vh;
-  left: 50%;
-  width: 80vw;
-  height: 48vh;
-  transform: translateX(-50%);
+  top: 12vh;
+  left: 0;
+  width: 44vw;
+  height: 36vh;
   background:
     radial-gradient(
-      ellipse 78% 100% at 50% 50%,
+      ellipse 80% 100% at 50% 50%,
       var(--amb-in) 0%,
-      var(--amb-out) 46%,
-      transparent 70%
+      var(--amb-out) 44%,
+      transparent 68%
     );
   border-radius: 42% 58% 55% 45% / 46% 54% 46% 54%;
-  filter: blur(52px);
+  filter: blur(50px);
   opacity: 1;
   will-change: transform, opacity;
   animation:
@@ -296,59 +296,73 @@ select {
 
 /* ============================================
    Motion path — 10 waypoints, 140 seconds
-   Orb drifts through upper and middle regions.
-   Y stays within 8vh–52vh to keep lower page dark.
-   Irregular spacing prevents obvious loop.
+   Path travels through negative space around panels:
+   - Left gutter (page margin)
+   - Upper open area above cards
+   - Gap between main panels and stat tiles
+   - Right gutter (page margin)
+   - Lower open area above bottom nav
+   Y stays within 4vh–58vh (above bottom nav at ~82vh).
    ============================================ */
 
 @keyframes ambient-orb-path {
+  /* Left gutter, upper area — fully visible */
   0% {
-    transform: translateX(-50%) translate(0, 0) scale(1) rotate(0deg);
+    transform: translate(4vw, 0) scale(1) rotate(0deg);
     border-radius: 42% 58% 55% 45% / 46% 54% 46% 54%;
     opacity: 1;
   }
+  /* Upper-left open area above panels — fully visible */
   9% {
-    transform: translateX(-50%) translate(14vw, -4vh) scale(1.07) rotate(1.2deg);
+    transform: translate(8vw, -6vh) scale(1.06) rotate(1.2deg);
     border-radius: 38% 62% 50% 50% / 50% 50% 50% 50%;
-    opacity: 0.95;
-  }
-  19% {
-    transform: translateX(-50%) translate(-12vw, 6vh) scale(0.94) rotate(-1.5deg);
-    border-radius: 55% 45% 42% 58% / 42% 58% 42% 58%;
-    opacity: 1;
-  }
-  31% {
-    transform: translateX(-50%) translate(8vw, -8vh) scale(1.12) rotate(0.8deg);
-    border-radius: 45% 55% 58% 42% / 52% 48% 52% 48%;
-    opacity: 0.92;
-  }
-  43% {
-    transform: translateX(-50%) translate(-16vw, 2vh) scale(0.96) rotate(-0.5deg);
-    border-radius: 50% 50% 45% 55% / 48% 52% 48% 52%;
-    opacity: 1;
-  }
-  56% {
-    transform: translateX(-50%) translate(18vw, -2vh) scale(1.08) rotate(1.5deg);
-    border-radius: 40% 60% 52% 48% / 54% 46% 54% 46%;
-    opacity: 0.94;
-  }
-  68% {
-    transform: translateX(-50%) translate(-8vw, 8vh) scale(0.93) rotate(-1.2deg);
-    border-radius: 52% 48% 48% 52% / 44% 56% 44% 56%;
-    opacity: 1;
-  }
-  79% {
-    transform: translateX(-50%) translate(10vw, -6vh) scale(1.10) rotate(0.6deg);
-    border-radius: 46% 54% 55% 45% / 50% 50% 50% 50%;
     opacity: 0.96;
   }
-  90% {
-    transform: translateX(-50%) translate(-14vw, 4vh) scale(0.97) rotate(-0.8deg);
-    border-radius: 55% 45% 50% 50% / 46% 54% 46% 54%;
+  /* Top center — partially behind Next Stop top edge, blur visible */
+  19% {
+    transform: translate(38vw, -2vh) scale(0.95) rotate(-1deg);
+    border-radius: 50% 50% 42% 58% / 42% 58% 42% 58%;
+    opacity: 0.92;
+  }
+  /* Right gutter, upper — fully visible */
+  31% {
+    transform: translate(82vw, 2vh) scale(1.08) rotate(0.8deg);
+    border-radius: 45% 55% 58% 42% / 52% 48% 52% 48%;
     opacity: 1;
   }
+  /* Right gutter, mid — fully visible */
+  43% {
+    transform: translate(80vw, 22vh) scale(0.96) rotate(-0.5deg);
+    border-radius: 50% 50% 45% 55% / 48% 52% 48% 52%;
+    opacity: 0.95;
+  }
+  /* Gap between panels and stat tiles — between-row space */
+  56% {
+    transform: translate(42vw, 48vh) scale(1.04) rotate(1.2deg);
+    border-radius: 46% 54% 52% 48% / 54% 46% 54% 46%;
+    opacity: 1;
+  }
+  /* Left gutter, mid — fully visible */
+  68% {
+    transform: translate(2vw, 32vh) scale(0.94) rotate(-1.2deg);
+    border-radius: 52% 48% 48% 52% / 44% 56% 44% 56%;
+    opacity: 0.96;
+  }
+  /* Left gutter, lower — above bottom nav, fully visible */
+  79% {
+    transform: translate(6vw, 52vh) scale(1.06) rotate(0.6deg);
+    border-radius: 46% 54% 55% 45% / 50% 50% 50% 50%;
+    opacity: 1;
+  }
+  /* Lower-center open area — above bottom nav, fully visible */
+  90% {
+    transform: translate(30vw, 56vh) scale(0.98) rotate(-0.8deg);
+    border-radius: 55% 45% 50% 50% / 46% 54% 46% 54%;
+    opacity: 0.94;
+  }
+  /* Seamless return to left gutter start */
   100% {
-    transform: translateX(-50%) translate(0, 0) scale(1) rotate(0deg);
+    transform: translate(4vw, 0) scale(1) rotate(0deg);
     border-radius: 42% 58% 55% 45% / 46% 54% 46% 54%;
     opacity: 1;
   }
@@ -372,27 +386,28 @@ select {
 }
 
 /* ============================================
-   Reduced Motion — visible but stationary
+   Reduced Motion — visible, stationary in left gutter
    ============================================ */
 
 @media (prefers-reduced-motion: reduce) {
   .ambient-orb {
     animation: ambient-orb-color 360s ease-in-out infinite;
-    transform: translateX(-50%) translate(0, 2vh) scale(1.04);
+    transform: translate(4vw, 16vh) scale(1.04);
     opacity: 0.92;
   }
 }
 
 /* ============================================
-   Mobile Responsive — slightly smaller orb
+   Mobile Responsive — narrower orb, tighter margins
+   Path uses left/right page margins and between-card gaps.
    ============================================ */
 
 @media (max-width: 640px) {
   .ambient-orb {
-    width: 95vw;
-    height: 42vh;
-    top: 10vh;
-    filter: blur(44px);
+    width: 36vw;
+    height: 28vh;
+    top: 8vh;
+    filter: blur(40px);
   }
 
   .ambient-vignette {
