@@ -529,6 +529,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   
   // Modal configurations
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [routeDetailJobId, setRouteDetailJobId] = useState<string | null>(null);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [defaultJobType, setDefaultJobType] = useState<JobType>('retail_audit');
   const [isConfigExpanded, setIsConfigExpanded] = useState(false);
@@ -2573,6 +2574,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const routeListStops = remainingRouteAJobs;
   const proofRecords = (Object.values(proofVault) as ProofRecord[]).sort((a, b) => new Date(b.completionTime).getTime() - new Date(a.completionTime).getTime());
   const selectedProofRecord = selectedProofJobId ? proofVault[selectedProofJobId] : null;
+  const routeDetailJob = routeDetailJobId ? jobs.find(job => job.id === routeDetailJobId) || null : null;
   const getRouteStopNavLink = (job: Job, idx: number) => {
     const origin = idx === 0
       ? startCoord
@@ -2932,7 +2934,10 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                                 )}
                                 <button
                                   type="button"
-                                  onClick={() => job.status === 'under_review' ? handleToggleComplete(job.id) : handleMarkUnderReview(job.id)}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    job.status === 'under_review' ? handleToggleComplete(job.id) : handleMarkUnderReview(job.id);
+                                  }}
                                   disabled={!showerGateUnlocked || completingJobIds.includes(job.id)}
                                   className={`flex min-h-11 items-center justify-center gap-1 rounded-[8px] px-2 text-sm font-black uppercase text-white transition disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:disabled:bg-white/10 dark:disabled:text-slate-500 ${
                                     job.status === 'under_review'
@@ -2947,7 +2952,10 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => handleMoveJobRoute(job.id, 'B')}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleMoveJobRoute(job.id, 'B');
+                                  }}
                                   className="flex min-h-11 items-center justify-center gap-1 rounded-[8px] bg-amber-400 px-2 text-sm font-black uppercase text-slate-950 transition hover:bg-amber-300"
                                   title={`Move ${job.storeName}`}
                                   aria-label={`Move ${job.storeName}`}
@@ -3193,11 +3201,21 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                         return (
                           <div
                             key={job.id}
-                            className={`rounded-2xl border p-2.5 transition-all ${
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setRouteDetailJobId(job.id)}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                setRouteDetailJobId(job.id);
+                              }
+                            }}
+                            className={`rounded-2xl border p-2.5 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-[#0A0A0A] ${
                               isNext
-                                ? 'border-indigo-300 bg-indigo-50 shadow-sm dark:border-indigo-500/30 dark:bg-indigo-500/10'
-                                : 'border-slate-200/70 bg-white/70 dark:border-white/10 dark:bg-white/[0.04]'
+                                ? 'border-indigo-300 bg-indigo-50 shadow-sm hover:border-indigo-400 hover:bg-indigo-100/80 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/15'
+                                : 'border-slate-200/70 bg-white/70 hover:border-slate-300 hover:bg-white dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-white/20 dark:hover:bg-white/[0.07]'
                             }`}
+                            aria-label={`Open details for ${job.storeName}`}
                           >
                             <div className="flex items-center gap-2.5">
                               <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-black ${
@@ -3235,7 +3253,10 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                               <div className="grid shrink-0 grid-cols-3 gap-1.5">
                                 <button
                                   type="button"
-                                  onClick={() => job.status === 'under_review' ? handleToggleComplete(job.id) : handleMarkUnderReview(job.id)}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    job.status === 'under_review' ? handleToggleComplete(job.id) : handleMarkUnderReview(job.id);
+                                  }}
                                   className={`flex h-10 w-10 items-center justify-center rounded-xl text-white transition sm:w-auto sm:px-2.5 ${
                                     job.status === 'under_review'
                                       ? 'bg-blue-700 hover:bg-blue-600'
@@ -3250,6 +3271,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                                 <a
                                   href={navLink}
                                   target="_blank"
+                                  onClick={(event) => event.stopPropagation()}
                                   referrerPolicy="no-referrer"
                                   className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white transition hover:bg-emerald-500 sm:w-auto sm:px-2.5"
                                   title={`Navigate to ${job.storeName}`}
@@ -3260,7 +3282,10 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                                 </a>
                                 <button
                                   type="button"
-                                  onClick={() => handleMoveJobRoute(job.id, 'B')}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleMoveJobRoute(job.id, 'B');
+                                  }}
                                   className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-800 transition hover:bg-amber-200 dark:bg-amber-500/15 dark:text-amber-200 sm:w-auto sm:px-2.5"
                                   title={`Move ${job.storeName} to standby`}
                                   aria-label={`Move ${job.storeName} to standby`}
@@ -5289,6 +5314,139 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           </div>
         )}
 
+        {routeDetailJob && (() => {
+          const routeIndex = routeAJobs.findIndex(job => job.id === routeDetailJob.id);
+          const displayIndex = routeIndex >= 0 ? routeIndex + 1 : null;
+          const previousStop = routeIndex <= 0 ? null : routeAJobs[routeIndex - 1];
+          const origin = previousStop?.coordinates || startCoord;
+          const legDistance = getDistanceInMiles(origin, routeDetailJob.coordinates);
+          const rideMinutes = Math.max(1, Math.round((legDistance / ebikeConfig.avgSpeedMph) * 60));
+          const isRevision = isRevisionJob(routeDetailJob);
+          const proofRecord = proofVault[routeDetailJob.id];
+
+          return (
+            <div
+              className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-3 backdrop-blur-sm sm:items-center sm:p-4"
+              onClick={() => setRouteDetailJobId(null)}
+            >
+              <section
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="route-job-detail-title"
+                className="w-full max-w-md overflow-hidden rounded-[8px] border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-[#111214]"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="flex items-start justify-between gap-3 border-b border-slate-200 p-4 dark:border-white/10">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-300">
+                      {displayIndex ? `Route Stop ${displayIndex}` : 'Route Job'}
+                    </p>
+                    <h3 id="route-job-detail-title" className="mt-1 truncate text-2xl font-black leading-tight text-slate-950 dark:text-white">
+                      {routeDetailJob.storeName}
+                    </h3>
+                    <p className="mt-1 truncate text-sm font-bold text-slate-500 dark:text-slate-300">
+                      {routeDetailJob.address}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setRouteDetailJobId(null)}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] bg-slate-100 text-slate-600 transition hover:bg-slate-200 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/15"
+                    aria-label="Close job details"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <div className="max-h-[72vh] overflow-y-auto p-4">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-[8px] bg-slate-100 p-3 dark:bg-white/10">
+                      <p className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">Status</p>
+                      <p className="mt-1 text-sm font-black text-slate-950 dark:text-white">{getRouteBadgeLabel(routeDetailJob)}</p>
+                    </div>
+                    <div className="rounded-[8px] bg-slate-100 p-3 dark:bg-white/10">
+                      <p className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">Type</p>
+                      <p className="mt-1 text-sm font-black text-slate-950 dark:text-white">{getJobTypeLabel(routeDetailJob)}</p>
+                    </div>
+                    <div className="rounded-[8px] bg-emerald-50 p-3 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-200">
+                      <p className="text-[10px] font-black uppercase">Pay</p>
+                      <p className="mt-1 text-xl font-black">${routeDetailJob.pay.toFixed(2)}</p>
+                    </div>
+                    <div className="rounded-[8px] bg-blue-50 p-3 text-blue-800 dark:bg-blue-500/10 dark:text-blue-200">
+                      <p className="text-[10px] font-black uppercase">Work Time</p>
+                      <p className="mt-1 text-xl font-black">{routeDetailJob.estimatedMinutes} min</p>
+                    </div>
+                    <div className="rounded-[8px] bg-amber-50 p-3 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200">
+                      <p className="text-[10px] font-black uppercase">Ride From Previous</p>
+                      <p className="mt-1 text-xl font-black">{rideMinutes} min</p>
+                    </div>
+                    <div className="rounded-[8px] bg-slate-950 p-3 text-white dark:bg-white dark:text-slate-950">
+                      <p className="text-[10px] font-black uppercase">Distance</p>
+                      <p className="mt-1 text-xl font-black">{legDistance.toFixed(1)} mi</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 space-y-2 rounded-[8px] border border-slate-200 p-3 dark:border-white/10">
+                    <div className="flex items-start gap-2">
+                      <MapPin size={16} className="mt-0.5 shrink-0 text-indigo-600 dark:text-indigo-300" />
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-black uppercase text-slate-400">Address</p>
+                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{routeDetailJob.address}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm font-bold text-slate-700 dark:text-slate-200">
+                      <span>Due: <strong>{routeDetailJob.dueTime || 'Flexible'}</strong></span>
+                      <span>Route: <strong>{routeDetailJob.routeId}</strong></span>
+                    </div>
+                  </div>
+
+                  {(isRevision || routeDetailJob.revisionStatus || routeDetailJob.smartMergeExplanation) && (
+                    <div className="mt-3 rounded-[8px] border border-rose-200 bg-rose-50 p-3 text-rose-800 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-100">
+                      <p className="text-[10px] font-black uppercase tracking-widest">Revision Information</p>
+                      <p className="mt-1 text-sm font-bold">{routeDetailJob.revisionStatus || (isRevision ? 'Revision required' : 'Route update')}</p>
+                      {routeDetailJob.smartMergeExplanation && (
+                        <p className="mt-1 text-xs font-bold opacity-85">{routeDetailJob.smartMergeExplanation}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {routeDetailJob.notes && (
+                    <div className="mt-3 rounded-[8px] border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/[0.04]">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Notes</p>
+                      <p className="mt-1 whitespace-pre-wrap text-sm font-bold text-slate-700 dark:text-slate-200">{routeDetailJob.notes}</p>
+                    </div>
+                  )}
+
+                  {isProcessServeJob(routeDetailJob) && routeDetailJob.processServe && (
+                    <div className="mt-3 rounded-[8px] border border-red-200 bg-red-50 p-3 text-red-800 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-100">
+                      <p className="text-[10px] font-black uppercase tracking-widest">Process Serve</p>
+                      <div className="mt-1 grid gap-1 text-xs font-bold">
+                        <span>Company: {routeDetailJob.processServe.company || 'Not set'}</span>
+                        <span>Party: {routeDetailJob.processServe.partyName || 'Not set'}</span>
+                        <span>Attempt: {routeDetailJob.processServe.attemptStatus || 'not_attempted'}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div className="rounded-[8px] bg-slate-100 p-3 dark:bg-white/10">
+                      <p className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">Coordinates</p>
+                      <p className="mt-1 text-xs font-black text-slate-950 dark:text-white">
+                        {routeDetailJob.coordinates.lat.toFixed(4)}, {routeDetailJob.coordinates.lng.toFixed(4)}
+                      </p>
+                    </div>
+                    <div className="rounded-[8px] bg-slate-100 p-3 dark:bg-white/10">
+                      <p className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">Proof</p>
+                      <p className="mt-1 text-xs font-black text-slate-950 dark:text-white">
+                        {proofRecord ? 'Proof folder ready' : 'No proof yet'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+          );
+        })()}
         {/* Job Creator / Updater modal */}
         <JobModal
           isOpen={isModalOpen}

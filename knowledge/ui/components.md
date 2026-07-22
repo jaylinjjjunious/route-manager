@@ -1,6 +1,6 @@
 # UI Components
 
-**Last Updated:** 2026-07-22 (routes-page-removed)
+**Last Updated:** 2026-07-22 (dashboard-route-job-details)
 **Related Source Files:** `src/components/*.tsx`, `src/assistant/*.tsx`
 
 ---
@@ -122,9 +122,9 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 |-------|-------|
 | **File** | `src/components/BottomNav.tsx` |
 | **Props** | `currentTab: string`, `onTabChange: (tab: string) => void`, `isUnlocked: boolean` |
-| **Responsibility** | Floating pill navigation bar with 7 tabs. Locked tabs are visually indicated when `isUnlocked` is false. Touch-friendly horizontal scrolling. |
+| **Responsibility** | Floating pill navigation bar with 6 tabs. Locked tabs are visually indicated when `isUnlocked` is false. Touch-friendly horizontal scrolling. |
 
-**Tabs:** Dashboard, Route, Jobs, Battery, Tracker, Habits, Settings
+**Tabs:** Dashboard, Jobs, Battery, Tracker, Habits, Settings
 
 ---
 
@@ -144,7 +144,7 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 |-------|-------|
 | **File** | `src/components/JobCard.tsx` |
 | **Props** | `job: Job`, `onClick: (job: Job) => void`, `jobAccessLocked: boolean` |
-| **Responsibility** | Individual job display card. Shows job details in a road-card styled container. When `jobAccessLocked` is true, the card is visually locked (amber styling) and click is suppressed. |
+| **Responsibility** | Individual Jobs-tab job display card. Dashboard Today's Route cards are inline in `src/App.tsx` and open a compact per-job detail panel from the main card surface while Navigate, Review, and Move controls stop event propagation. |
 
 ---
 

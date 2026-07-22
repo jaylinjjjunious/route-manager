@@ -10,7 +10,7 @@
 - **Daily Shower Gate:** Barcode scan + proof upload + cycle management with 6:00 AM reset.
 - **Job system:** 5 types, 7 statuses, completion workflow, proof vault.
 - **Route optimization:** Nearest-neighbor algorithm, battery-aware, outlier detection.
-- **Dashboard route interface:** Dashboard is the authoritative route-planning and route-management surface; the standalone Route page has been retired.
+- **Dashboard route interface:** Dashboard is the authoritative route-planning and route-management surface; the standalone Route page has been retired. Today's Route cards open compact per-job detail panels from the card surface.
 - **Ride Mode:** Distraction-free execution surface for job completion.
 - **Habit tracker:** Mandatory shower + custom daily tasks with streak tracking.
 - **AI Dispatcher:** Gemini 2 chat integration for route advice.
@@ -37,4 +37,4 @@
 
 ---
 
-**Last Updated:** 2026-07-22 (routes-page-removed)
+**Last Updated:** 2026-07-22 (dashboard-route-job-details)

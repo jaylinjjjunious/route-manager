@@ -21,7 +21,6 @@ Describes the React application structure, component hierarchy, state management
           <main>
             <ShowerGatePanel />          (dashboard, gate locked)
             <RideModeV2 />               (dashboard, ride mode)
-            <RouteTab />                 (route optimization)
             <JobsTab />                  (job list, import)
             <BatteryTab />               (e-bike telemetry)
             <TrackerTab />               (end of day summary)
@@ -38,12 +37,11 @@ Describes the React application structure, component hierarchy, state management
 
 ### Tab Structure
 
-Six app tabs defined at `src/App.tsx:128`:
+Six app tabs defined in `src/App.tsx`:
 
 | Tab | ID | Protected | Purpose |
 |-----|----|-----------|---------|
-| Dashboard | `dashboard` | No | Shower gate, ride mode toggle, quick actions |
-| Route | `route` | Yes | Route optimization, routing provider, sequence |
+| Dashboard | `dashboard` | No | Shower gate, ride mode toggle, quick actions, Today's Route management |
 | Jobs | `jobs` | Yes | Job list, sub-tabs (Active, Secure Import, Archived), proof vault |
 | Battery | `battery` | Yes | Jasion EB5 telemetry, range calculator |
 | Tracker | `tracker` | Yes | End of day summary, ride telemetry |
@@ -67,7 +65,7 @@ Key state groups:
 
 ### Rendering Patterns
 
-- **Dashboard route management**: Dashboard is the authoritative route interface; the standalone Route tab was retired and `/route`, `/routes`, and `#route` redirect to Dashboard.
+- **Dashboard route management**: Dashboard is the authoritative route interface; the standalone Route tab was retired and `/route`, `/routes`, and `#route` redirect to Dashboard. Today's Route cards open compact per-job detail panels from the card surface while action buttons keep their own behavior.
 - **Conditional rendering** based on `currentTab` and `showerGateUnlocked`
 - **Protected tab overlay**: Rendered before actual tab content when `!showerGateUnlocked`
 - **Ride Mode**: Replaces entire dashboard with distraction-free execution surface
@@ -111,7 +109,7 @@ Targets modern mobile browsers (iOS Safari, Android Chrome) and desktop (Chrome,
 
 ## Related Source Files
 
-- `src/App.tsx` — Main application (5837 lines)
+- `src/App.tsx` — Main application shell, Dashboard route cards, compact route job detail panel
 - `src/main.tsx` — Entry point (62 lines)
 - `src/index.css` — Styles (249 lines)
 - `src/types.ts` — Shared types (132 lines)
@@ -128,4 +126,4 @@ Targets modern mobile browsers (iOS Safari, Android Chrome) and desktop (Chrome,
 
 ## Last Updated
 
-2026-07-22 (routes-page-removed)
+2026-07-22 (dashboard-route-job-details)

@@ -28,6 +28,10 @@ Job-based field work management system with proof vault, multiple job types, and
 | `postponed` | Job has been postponed |
 | `outlier` | Job is outside normal route parameters (>4.2 miles) |
 
+### Dashboard Route Job Details
+
+Dashboard Today's Route cards open a compact read-only detail panel for the selected job when the main card surface is tapped or clicked. The panel resolves the selected job from current app state by job ID, so Job 1, Job 2, and later route stops each show their own live data. Existing card action controls such as Navigate, Review, and Move stop event propagation and do not open the detail panel.
+
 ### Job Interface (src/types.ts)
 
 ```typescript
@@ -133,7 +137,7 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 
 ## Related Source Files
 
-- `src/App.tsx` — main app state and handlers
+- `src/App.tsx` — main app state, Dashboard Today's Route cards, compact route job detail panel, and handlers
 - `src/types.ts` — Job type definitions
 - `src/utils/jobState.ts` — schema normalization
 - `src/components/JobCard.tsx` — job display component
@@ -148,4 +152,4 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 
 ## Last Updated
 
-2026-07-20 (commit c12bd44)
+2026-07-22 (dashboard-route-job-details)

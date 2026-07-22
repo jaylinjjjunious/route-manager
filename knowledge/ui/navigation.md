@@ -1,6 +1,6 @@
 # Navigation System
 
-**Last Updated:** 2026-07-22 (routes-page-removed)
+**Last Updated:** 2026-07-22 (dashboard-route-job-details)
 **Related Source Files:** `src/components/BottomNav.tsx`, `src/App.tsx`
 
 ---
@@ -74,7 +74,7 @@ This creates a frosted glass appearance that sits above the content layer while 
 
 ## Standalone Route Destination
 
-The standalone Route tab was retired. Dashboard is now the authoritative interface for route planning and route management, including Next Stop, Today's Route, navigation actions, review/complete actions, move controls, revision alerts, route order, and route calculations.
+The standalone Route tab was retired. Dashboard is now the authoritative interface for route planning and route management, including Next Stop, Today's Route, compact per-job route details, navigation actions, review/complete actions, move controls, revision alerts, route order, and route calculations.
 
 Retired route destinations (`/route`, `/routes`, and `#route`) redirect to Dashboard. Assistant route requests also open Dashboard and focus Today's Route when possible.
 
