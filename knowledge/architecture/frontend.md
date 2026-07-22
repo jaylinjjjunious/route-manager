@@ -127,4 +127,4 @@ Targets modern mobile browsers (iOS Safari, Android Chrome) and desktop (Chrome,
 
 ## Last Updated
 
-2026-07-22 (7efb4ec)
+2026-07-22 (5389fd3)

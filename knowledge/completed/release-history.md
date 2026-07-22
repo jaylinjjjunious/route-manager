@@ -4,7 +4,7 @@
 
 | SHA | Description |
 |-----|-------------|
-| 7efb4ec | Replace header bike icon with custom app logo |
+| 5389fd3 | Replace header bike icon with custom app logo |
 | 1c03658 | Add official app icon assets |
 | c12bd44 | Extract shared Shower Gate cycle calculation |
 | 74822b6 | Hide Shower Gate panel from Dashboard after cycle complete |
@@ -37,4 +37,4 @@ Plus approximately 45 earlier commits covering the full feature progression: hab
 
 ---
 
-**Last Updated:** 2026-07-22 (7efb4ec)
+**Last Updated:** 2026-07-22 (5389fd3)

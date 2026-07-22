@@ -1,6 +1,6 @@
 # UI Components
 
-**Last Updated:** 2026-07-22 (7efb4ec)
+**Last Updated:** 2026-07-22 (5389fd3)
 **Related Source Files:** `src/components/*.tsx`, `src/assistant/*.tsx`
 
 ---
