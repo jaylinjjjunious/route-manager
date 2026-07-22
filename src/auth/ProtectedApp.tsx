@@ -8,8 +8,16 @@ import ErrorBoundary from "../debug/ErrorBoundary";
 import { authDebugProtectedAppRendered, authDebugLoginPageRendered } from "./authDebug";
 
 const App = lazy(() => import("../App"));
+const JobDetailPage = lazy(() => import("../components/JobDetailPage"));
 
 type AuthView = "login" | "forgot-password" | "reset-password" | "app";
+
+const JOB_PATH_RE = /^\/job\/([A-Za-z0-9_-]+)$/;
+
+function parseJobIdFromPath(pathname: string): string | null {
+  const match = pathname.match(JOB_PATH_RE);
+  return match ? match[1] : null;
+}
 
 function isRetiredRoutePath(pathname: string): boolean {
   const normalized = pathname.toLowerCase().replace(/^\/+/, "").replace(/\/+$/, "");
@@ -41,6 +49,7 @@ export default function ProtectedApp() {
   const { session, loading } = useAuth();
   const [view, setView] = useState<AuthView>(() => getInitialView(window.location.pathname));
   const [debugCenterOpen, setDebugCenterOpen] = useState(false);
+  const [jobDetailId, setJobDetailId] = useState<string | null>(() => parseJobIdFromPath(window.location.pathname));
 
   const openDebugCenter = useCallback(() => {
     setDebugCenterOpen(true);
@@ -51,9 +60,11 @@ export default function ProtectedApp() {
     return () => { globalOpenDebugCenter = null; };
   }, [openDebugCenter]);
 
-  // Sync view with URL changes (back/forward)
+  // Sync view and job detail route with URL changes (back/forward)
   useEffect(() => {
     const handler = () => {
+      const jobId = parseJobIdFromPath(window.location.pathname);
+      setJobDetailId(jobId);
       const next = getInitialView(window.location.pathname);
       if (next !== view) setView(next);
     };
@@ -66,8 +77,13 @@ export default function ProtectedApp() {
     if (window.location.pathname !== path) {
       window.history.pushState(null, "", path);
     }
+    setJobDetailId(null);
     setView(next);
   };
+
+  const navigateBackFromJob = useCallback(() => {
+    window.history.back();
+  }, []);
 
   // Still checking session
   if (loading) {
@@ -91,6 +107,17 @@ export default function ProtectedApp() {
   // Authenticated — reset-password can still be reached via recovery link
   if (view === "reset-password") {
     return <ResetPasswordPage onDone={() => navigate("app")} />;
+  }
+
+  // Job detail page — full-screen route, rendered instead of the main App
+  if (jobDetailId) {
+    return (
+      <ErrorBoundary onOpenDebugCenter={openDebugCenter}>
+        <Suspense fallback={<AuthLoadingScreen />}>
+          <JobDetailPage jobId={jobDetailId} onBack={navigateBackFromJob} />
+        </Suspense>
+      </ErrorBoundary>
+    );
   }
 
   // Authenticated and viewing app
