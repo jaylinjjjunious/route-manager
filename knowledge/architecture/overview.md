@@ -2,11 +2,11 @@
 
 ## Purpose
 
-Describes the complete system architecture of Route Manager, a field-work mission control application for e-bike gig workers. The app provides route optimization, job management, daily shower gate verification, battery tracking, habit tracking, AI-powered dispatch, and safety monitoring.
+Describes the complete system architecture of All in One 667, a field-work mission control application for e-bike gig workers. The app provides route optimization, job management, daily shower gate verification, battery tracking, habit tracking, AI-powered dispatch, and safety monitoring.
 
 ## Current Implementation
 
-Route Manager is a single-page React application served by an Express backend with Supabase authentication. The app is deployed on Railway using nixpacks and also has a Cloudflare Workers variant for the API layer.
+All in One 667 is a single-page React application served by an Express backend with Supabase authentication. The app is deployed on Railway using nixpacks and also has a Cloudflare Workers variant for the API layer.
 
 ### Tech Stack
 

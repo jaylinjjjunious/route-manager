@@ -7,7 +7,7 @@
 
 ## Mobile-First Layout
 
-The Route Manager is designed **mobile-first** — the primary target is phone-sized screens used in the field. Desktop layouts are enhanced versions of the mobile layout.
+The All in One 667 is designed **mobile-first** — the primary target is phone-sized screens used in the field. Desktop layouts are enhanced versions of the mobile layout.
 
 ---
 

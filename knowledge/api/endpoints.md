@@ -7,7 +7,7 @@
 
 ## Overview
 
-The Route Manager exposes two backend variants:
+The All in One 667 exposes two backend variants:
 
 1. **Express server** (`server.ts`) — local development and Railway production. Serves the React app and API.
 2. **Cloudflare Worker** (`worker/index.ts`) — serverless edge API with D1 storage.

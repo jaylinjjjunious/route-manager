@@ -44,7 +44,7 @@ export default function LoginPage({ onForgotPassword }: LoginPageProps) {
               <ShieldCheck size={32} className="text-white" />
             </div>
             <h1 className="text-3xl font-black tracking-tight text-white">
-              Route Manager
+              All in One 667
             </h1>
             <p className="mt-2 text-sm font-bold text-slate-400">
               Sign in to continue

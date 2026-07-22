@@ -7,7 +7,7 @@
 
 ## Bottom Pill Navigation
 
-The Route Manager uses a **floating pill-shaped bottom navigation bar** pinned to the bottom of the viewport on all screen sizes.
+The All in One 667 uses a **floating pill-shaped bottom navigation bar** pinned to the bottom of the viewport on all screen sizes.
 
 ### Tab List
 

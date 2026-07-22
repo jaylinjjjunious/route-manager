@@ -178,7 +178,7 @@ export function captureSafeErrorInfo(error: unknown): { message: string; categor
 
 export function buildDiagnosticSummary(): string {
   const lines: string[] = [
-    `Route Manager — Diagnostic Summary`,
+    `All in One 667 — Diagnostic Summary`,
     `Generated: ${new Date().toISOString()}`,
     `URL: ${window.location.pathname}`,
     `Online: ${navigator.onLine}`,

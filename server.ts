@@ -692,7 +692,7 @@ async function bootstrap() {
 
     console.log("");
     console.log("========================================");
-    console.log(`  Route Manager — ${mode} mode`);
+    console.log(`  All in One 667 — ${mode} mode`);
     console.log("========================================");
     console.log(`  Port:    ${PORT}`);
     console.log(`  Local:   http://localhost:${PORT}`);

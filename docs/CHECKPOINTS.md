@@ -1,6 +1,6 @@
 # Checkpoints
 
-Recoverable milestones for the Route Optimizer project.
+Recoverable milestones for the All in One 667 project.
 
 | Tag | Date | SHA | Stable Features | Known Issues | Deployment | Restore Command |
 |-----|------|-----|-----------------|--------------|------------|-----------------|

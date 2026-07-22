@@ -11,7 +11,7 @@ function StartupScreen({ error }: { error?: string }) {
   return (
     <main className="min-h-screen bg-slate-950 p-6 text-white">
       <p className={`text-sm font-black uppercase tracking-widest ${error ? 'text-red-300' : 'text-blue-300'}`}>
-        Route Manager
+        All in One 667
       </p>
       <h1 className="mt-3 text-4xl font-black">
         {error ? 'Mission Control could not load.' : 'Loading Mission Control...'}

@@ -9,7 +9,7 @@ export default function AuthLoadingScreen() {
           <Loader2 size={32} className="animate-spin text-blue-400" />
         </div>
         <p className="text-sm font-black uppercase tracking-widest text-blue-300">
-          Route Manager
+          All in One 667
         </p>
         <h1 className="mt-3 text-3xl font-black text-white">
           Checking credentials...

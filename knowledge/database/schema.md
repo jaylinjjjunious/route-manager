@@ -7,7 +7,7 @@
 
 ## Overview
 
-The Route Manager uses two storage backends:
+The All in One 667 uses two storage backends:
 
 1. **Cloudflare D1** (SQLite-compatible) — primary database for the Worker
 2. **Express local storage** — JSON file + filesystem for the Express server

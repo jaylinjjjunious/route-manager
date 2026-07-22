@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Route Manager",
+  title: "All in One 667",
   description: "Field route mission control with ride mode, route optimization, proof vault, and battery-aware planning.",
 };
 

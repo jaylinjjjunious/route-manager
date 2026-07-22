@@ -7,7 +7,7 @@
 
 ## Two Backend Variants
 
-The Route Manager runs two API backends:
+The All in One 667 runs two API backends:
 
 ### Express Server (`server.ts`)
 

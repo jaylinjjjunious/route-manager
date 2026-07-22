@@ -1,8 +1,8 @@
-# Route Manager Knowledge System
+# All in One 667 Knowledge System
 
 ## Purpose
 
-This directory is the persistent, Markdown-based project memory for the Route Manager application. It captures architectural intent, business rules, feature behavior, development workflows, and current state so that any AI coding session can recover context quickly and work accurately.
+This directory is the persistent, Markdown-based project memory for the All in One 667 application. It captures architectural intent, business rules, feature behavior, development workflows, and current state so that any AI coding session can recover context quickly and work accurately.
 
 ## Authoritative Documents
 

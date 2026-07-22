@@ -7,7 +7,7 @@
 
 ## Tailwind CSS v4 Architecture
 
-The Route Manager uses **Tailwind CSS v4** with a utility-first approach. All styling is defined through Tailwind utility classes in JSX, with minimal custom CSS in `src/index.css`.
+The All in One 667 uses **Tailwind CSS v4** with a utility-first approach. All styling is defined through Tailwind utility classes in JSX, with minimal custom CSS in `src/index.css`.
 
 ---
 

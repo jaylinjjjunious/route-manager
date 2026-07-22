@@ -7,7 +7,7 @@
 
 ## Single-User Architecture
 
-The Route Manager is designed as a **single-user application**. There is no multi-tenant data isolation in the current implementation.
+The All in One 667 is designed as a **single-user application**. There is no multi-tenant data isolation in the current implementation.
 
 - One user account manages all routes, jobs, and shower proofs.
 - There is no concept of "organizations" or "teams."

@@ -23,11 +23,8 @@ export default function Header({ theme, onToggleTheme }: HeaderProps) {
           </div>
           <div>
             <h1 className="text-lg font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
-              <span>Route Manager</span>
+              <span>All in One 667</span>
             </h1>
-            <p className="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wide leading-none">
-              Field Route Console
-            </p>
           </div>
         </div>
 

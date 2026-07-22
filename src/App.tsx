@@ -5583,7 +5583,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                     <p className="text-xs text-slate-500">Sign out of your account. You will need to enter your credentials again.</p>
                     <button
                       onClick={async () => {
-                        if (window.confirm("Sign out of Route Manager?")) {
+                        if (window.confirm("Sign out of All in One 667?")) {
                           await signOut();
                         }
                       }}
@@ -5809,7 +5809,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
         {currentTab !== 'dashboard' && (
         <footer className="mt-12 border-t border-slate-200 bg-white py-6 dark:border-white/5 dark:bg-[#1C1C1E]/80">
           <div className="mx-auto max-w-7xl px-4 text-center text-xs text-slate-400 dark:text-slate-500 space-y-1">
-            <p className="font-bold text-slate-500 dark:text-slate-400">Route Manager &bull; Field Route Console</p>
+            <p className="font-bold text-slate-500 dark:text-slate-400">All in One 667</p>
             <p>Built for fast stop review, sequencing, and field-ready route decisions.</p>
           </div>
         </footer>

@@ -972,7 +972,7 @@ export default function JobImportSystem({ onImportJobs, isOptimizing = false }: 
                 </h4>
                 <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
                   When you are out in Bakersfield executing deliveries on iOS or Android, you can click "Share" directly inside DoorDash or UberEats. 
-                  By choosing our "Route Optimizer" from your phone's native share menu, the text is securely parsed on import.
+                  By choosing our "All in One 667" from your phone's native share menu, the text is securely parsed on import.
                 </p>
               </div>
 
@@ -1131,7 +1131,7 @@ export default function JobImportSystem({ onImportJobs, isOptimizing = false }: 
             {oauthStep === 1 && (
               <div className="space-y-4 text-xs">
                 <p className="font-semibold text-slate-600 dark:text-slate-300">
-                  <span className="font-extrabold text-slate-900 dark:text-white">Route Optimizer</span> is requesting permission to access your {selectedPartner === 'uber' ? 'Uber Direct' : 'DoorDash Drive'} account details:
+                  <span className="font-extrabold text-slate-900 dark:text-white">All in One 667</span> is requesting permission to access your {selectedPartner === 'uber' ? 'Uber Direct' : 'DoorDash Drive'} account details:
                 </p>
                 
                 <div className="rounded-xl bg-slate-50 dark:bg-white/5 p-4 border border-slate-200/50 dark:border-white/5 space-y-2.5">
@@ -1151,7 +1151,7 @@ export default function JobImportSystem({ onImportJobs, isOptimizing = false }: 
 
                 <div className="rounded-xl bg-blue-500/[0.02] border border-blue-500/10 p-3 text-[10px] text-blue-800 dark:text-blue-400 leading-normal font-semibold flex items-start gap-1.5">
                   <ShieldCheck size={14} className="text-blue-500 flex-shrink-0 mt-0.5" />
-                  <span>By clicking Authorize, you grant a highly isolated token valid for 60 minutes. Your login credentials are NOT shared with Route Optimizer.</span>
+                  <span>By clicking Authorize, you grant a highly isolated token valid for 60 minutes. Your login credentials are NOT shared with All in One 667.</span>
                 </div>
 
                 <div className="flex items-center gap-3 pt-2">

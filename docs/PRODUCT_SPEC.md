@@ -1,8 +1,8 @@
-# Route Manager Product Spec
+# All in One 667 Product Spec
 
 ## Product Purpose
 
-Route Manager is a field-work mission control app for a gig worker riding an e-bike in Bakersfield. The app helps the user plan, execute, and prove completion for mixed daily work: retail audits, merchandising, mystery shops, delivery-style field tasks, revisions, and occasional process server jobs.
+All in One 667 is a field-work mission control app for a gig worker riding an e-bike in Bakersfield. The app helps the user plan, execute, and prove completion for mixed daily work: retail audits, merchandising, mystery shops, delivery-style field tasks, revisions, and occasional process server jobs.
 
 The app should answer the user's most urgent question within two seconds:
 

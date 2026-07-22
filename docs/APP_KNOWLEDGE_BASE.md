@@ -1,4 +1,4 @@
-# Route Manager Application Knowledge Base
+# All in One 667 Application Knowledge Base
 
 Last updated: 2026-07-19
 
@@ -6,7 +6,7 @@ Maintenance rule: update this file at the end of every development task that cha
 
 ## 1. Product Overview
 
-Route Manager / Route Optimizer is a mobile-first field-work mission-control app for an e-bike gig worker in Bakersfield. It helps plan, execute, track, and prove completion for mixed work such as retail audits, merchandising, mystery shops, delivery-style field tasks, revisions, and process-server jobs.
+All in One 667 is a mobile-first field-work mission-control app for an e-bike gig worker in Bakersfield. It helps plan, execute, track, and prove completion for mixed work such as retail audits, merchandising, mystery shops, delivery-style field tasks, revisions, and process-server jobs.
 
 The core user problem is fast field execution: answer "what do I do next?", preserve battery, avoid wasted miles, track earnings, protect proof, and keep work safe enough to complete. The app currently combines route planning, job state, battery risk, Ride Mode, proof folders, habits, and a local AI Dispatcher-style command panel.
 

@@ -1,6 +1,6 @@
-# Route Manager — Features Knowledge Base
+# All in One 667 — Features Knowledge Base
 
-Index of feature documentation for the Route Manager application.
+Index of feature documentation for the All in One 667 application.
 
 ## Feature Documents
 
