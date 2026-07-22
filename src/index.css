@@ -234,18 +234,23 @@ select {
    Path favors left/right gutters, gaps between cards,
    upper open area, and exposed background edges.
    90-second color cycle. 140-second motion path.
+
+   Responsive sizing via CSS custom properties:
+   --orb-w / --orb-h use clamp() so the orb adapts to
+   any viewport — phones, tablets, laptops, desktops,
+   portrait or landscape — without device detection.
    ============================================ */
 
 /* --- Animatable color custom properties --- */
 @property --amb-in {
   syntax: '<color>';
   inherits: false;
-  initial-value: rgba(0, 122, 255, 0.78);
+  initial-value: rgba(0, 122, 255, 0.92);
 }
 @property --amb-out {
   syntax: '<color>';
   inherits: false;
-  initial-value: rgba(0, 90, 210, 0.14);
+  initial-value: rgba(0, 90, 210, 0.18);
 }
 
 /* --- Container --- */
@@ -258,13 +263,17 @@ select {
   overflow: clip;
 }
 
-/* --- Single orb — positioned in negative space --- */
+/* --- Single orb — responsive size via vmin/clamp --- */
 .ambient-orb {
+  --orb-w: clamp(260px, 42vmin, 620px);
+  --orb-h: clamp(210px, 34vmin, 520px);
+  --orb-blur: clamp(40px, 5vmin, 60px);
+
   position: absolute;
   top: 12vh;
   left: 0;
-  width: 44vw;
-  height: 36vh;
+  width: var(--orb-w);
+  height: var(--orb-h);
   background:
     radial-gradient(
       ellipse 80% 100% at 50% 50%,
@@ -273,7 +282,7 @@ select {
       transparent 68%
     );
   border-radius: 42% 58% 55% 45% / 46% 54% 46% 54%;
-  filter: blur(50px);
+  filter: blur(var(--orb-blur));
   opacity: 1;
   will-change: transform, opacity;
   animation:
@@ -370,19 +379,20 @@ select {
 
 /* ============================================
    Color shift — 8-phase full palette, 90 seconds
+   Brighter core + outer glow for stronger visibility.
    Blue → Teal → Emerald → Gold → Amber → Orange → Pink → Violet → Blue
    ============================================ */
 
 @keyframes ambient-orb-color {
-  0%   { --amb-in: rgba(0, 122, 255, 0.78);  --amb-out: rgba(0, 90, 210, 0.14); }    /* blue */
-  12%  { --amb-in: rgba(20, 184, 166, 0.74);  --amb-out: rgba(13, 148, 136, 0.12); }   /* teal */
-  25%  { --amb-in: rgba(16, 185, 129, 0.68);  --amb-out: rgba(10, 150, 105, 0.10); }   /* emerald */
-  37%  { --amb-in: rgba(234, 179, 8, 0.65);   --amb-out: rgba(202, 138, 4, 0.09); }    /* gold */
-  50%  { --amb-in: rgba(245, 158, 11, 0.68);  --amb-out: rgba(217, 119, 6, 0.10); }    /* amber */
-  62%  { --amb-in: rgba(249, 115, 22, 0.72);  --amb-out: rgba(234, 88, 12, 0.12); }    /* orange */
-  75%  { --amb-in: rgba(236, 72, 153, 0.66);  --amb-out: rgba(219, 39, 119, 0.10); }   /* pink */
-  87%  { --amb-in: rgba(139, 92, 246, 0.70);  --amb-out: rgba(109, 40, 217, 0.12); }   /* violet */
-  100% { --amb-in: rgba(0, 122, 255, 0.78);  --amb-out: rgba(0, 90, 210, 0.14); }     /* blue */
+  0%   { --amb-in: rgba(0, 122, 255, 0.92);  --amb-out: rgba(0, 90, 210, 0.18); }    /* blue */
+  12%  { --amb-in: rgba(20, 184, 166, 0.88);  --amb-out: rgba(13, 148, 136, 0.16); }   /* teal */
+  25%  { --amb-in: rgba(16, 185, 129, 0.84);  --amb-out: rgba(10, 150, 105, 0.14); }   /* emerald */
+  37%  { --amb-in: rgba(234, 179, 8, 0.82);   --amb-out: rgba(202, 138, 4, 0.13); }    /* gold */
+  50%  { --amb-in: rgba(245, 158, 11, 0.86);  --amb-out: rgba(217, 119, 6, 0.15); }    /* amber */
+  62%  { --amb-in: rgba(249, 115, 22, 0.90);  --amb-out: rgba(234, 88, 12, 0.17); }    /* orange */
+  75%  { --amb-in: rgba(236, 72, 153, 0.84);  --amb-out: rgba(219, 39, 119, 0.14); }   /* pink */
+  87%  { --amb-in: rgba(139, 92, 246, 0.88);  --amb-out: rgba(109, 40, 217, 0.16); }   /* violet */
+  100% { --amb-in: rgba(0, 122, 255, 0.92);  --amb-out: rgba(0, 90, 210, 0.18); }     /* blue */
 }
 
 /* ============================================
@@ -398,21 +408,25 @@ select {
 }
 
 /* ============================================
-   Mobile Responsive — narrower orb, tighter margins
-   Path uses left/right page margins and between-card gaps.
+   Mobile — tighten vignette only.
+   Orb size is fully handled by clamp() above.
    ============================================ */
 
 @media (max-width: 640px) {
-  .ambient-orb {
-    width: 36vw;
-    height: 28vh;
-    top: 8vh;
-    filter: blur(40px);
-  }
-
   .ambient-vignette {
     background:
       radial-gradient(ellipse 90% 65% at 50% 30%, transparent 18%, rgba(3, 3, 5, 0.48) 48%, rgba(3, 3, 5, 0.85) 76%, rgba(3, 3, 5, 0.95) 100%),
       linear-gradient(180deg, transparent 0%, rgba(3, 3, 5, 0.16) 18%, rgba(3, 3, 5, 0.38) 38%, rgba(3, 3, 5, 0.48) 52%, rgba(3, 3, 5, 0.25) 68%, rgba(3, 3, 5, 0.05) 100%);
+  }
+}
+
+/* ============================================
+   Landscape phones — prevent orb from dominating
+   the narrow vertical viewport.
+   ============================================ */
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .ambient-orb {
+    top: 6vh;
   }
 }

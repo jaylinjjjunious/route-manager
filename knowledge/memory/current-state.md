@@ -13,6 +13,7 @@
 - **Ride Mode:** Distraction-free execution surface for job completion.
 - **Habit tracker:** Mandatory shower + custom daily tasks with streak tracking.
 - **AI Dispatcher:** Gemini 2 chat integration for route advice.
+- **AI Operations Assistant:** 22-file assistant system with floating chat bubble, tool registry, server-side Gemini integration, and 10 tools (navigation, shower gate, jobs, battery, weather, travel, proof, debug).
 - **Safety News:** Bakersfield area crime/safety via Google News RSS.
 - **Screenshot OCR import:** Extract job data from screenshots.
 - **Text-to-speech:** Gemini, OpenAI, ElevenLabs providers.
@@ -30,8 +31,8 @@
 - Alternative backend: Cloudflare Worker.
 - Database: Cloudflare D1 (for proofs) + Supabase (for auth).
 - Hosting: Railway (production) + Cloudflare Workers (alternative).
-- Latest checkpoint: `checkpoint-2026-07-19-full-app-stable` (SHA 65984c7).
+- Latest checkpoint: `checkpoint-2026-07-21-remove-road-card-slab` (SHA cef52e5).
 
 ---
 
-**Last Updated:** 2026-07-20 (c12bd44)
+**Last Updated:** 2026-07-21 (20913a6)

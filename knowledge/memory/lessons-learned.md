@@ -21,6 +21,10 @@
 - Bottom navigation on mobile needs `overflow-x-auto` for small screens to prevent tab overflow.
 - Focus trapping improves accessibility for modal-like components.
 
+## CSS / Dark Mode
+
+- Transparent child elements inside a dark-mode parent with `dark:bg-[color]` will visually inherit that background. A connector `<div>` with no bg class appeared as a "black rectangle" because the parent section's `dark:bg-[#17181b]` showed through. Fix: give the element its own explicit background matching the surrounding card aesthetic.
+
 ## Process
 
 - Checkpoint tags enable safe rollback without losing work.
@@ -29,4 +33,4 @@
 
 ---
 
-**Last Updated:** 2026-07-20 (c12bd44)
+**Last Updated:** 2026-07-21 (20913a6)
