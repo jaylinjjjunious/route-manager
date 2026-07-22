@@ -32,6 +32,7 @@ import JobModal from './components/JobModal';
 import AIDispatcher from './components/AIDispatcher';
 import AssistantProvider from './assistant/AssistantProvider';
 import AssistantBubble from './assistant/AssistantBubble';
+import AmbientLiquidBackground from './components/backgrounds/AmbientLiquidBackground';
 import JobImportSystem from './components/JobImportSystem';
 import { EndOfDaySummary } from './components/EndOfDaySummary';
 import ShowerGatePanel from './components/ShowerGatePanel';
@@ -2641,7 +2642,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     >
     <div className={theme === 'dark' ? 'dark' : ''}>
       <div className="ios-app app-shell min-h-screen bg-transparent text-slate-950 transition-colors duration-300 dark:text-slate-100 font-sans">
-        <div className="ios-page-glow pointer-events-none" aria-hidden="true" />
+        <AmbientLiquidBackground />
         
         {/* Header */}
         {currentTab !== 'dashboard' && <Header theme={theme} onToggleTheme={handleToggleTheme} />}

@@ -16,16 +16,12 @@ body,
 }
 
 body {
-  background:
-    radial-gradient(circle at top left, rgba(0, 122, 255, 0.12), transparent 30rem),
-    linear-gradient(180deg, #f7f7fb 0%, #eef0f5 100%);
+  background: linear-gradient(180deg, #f7f7fb 0%, #eef0f5 100%);
 }
 
 html.dark body,
 body.dark {
-  background:
-    radial-gradient(circle at top left, rgba(10, 132, 255, 0.2), transparent 28rem),
-    linear-gradient(180deg, #050506 0%, #111113 100%);
+  background: linear-gradient(180deg, #050506 0%, #111113 100%);
 }
 
 button,
@@ -44,32 +40,15 @@ select {
 
 .ios-app {
   font-feature-settings: "ss01" on, "cv01" on;
-  background:
-    radial-gradient(circle at top left, rgba(0, 122, 255, 0.12), transparent 30rem),
-    linear-gradient(180deg, #f7f7fb 0%, #eef0f5 100%);
 }
 
-.ios-app .ios-page-glow {
-  pointer-events: none;
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  background:
-    radial-gradient(circle at 18% 8%, rgba(0, 122, 255, 0.14), transparent 22rem),
-    radial-gradient(circle at 85% 0%, rgba(52, 199, 89, 0.10), transparent 20rem);
+.ios-app main {
+  position: relative;
+  z-index: 1;
 }
 
 .dark .ios-app {
-  background:
-    radial-gradient(circle at 12% 0%, rgba(10, 132, 255, 0.24), transparent 30rem),
-    radial-gradient(circle at 95% 8%, rgba(48, 209, 88, 0.10), transparent 22rem),
-    linear-gradient(180deg, #030305 0%, #0b0b0f 42%, #111113 100%);
-}
-
-.dark .ios-app .ios-page-glow {
-  background:
-    radial-gradient(circle at 18% 8%, rgba(10, 132, 255, 0.18), transparent 23rem),
-    radial-gradient(circle at 85% 0%, rgba(48, 209, 88, 0.08), transparent 19rem);
+  background: linear-gradient(180deg, #030305 0%, #0b0b0f 42%, #111113 100%);
 }
 
 .ios-app main {
@@ -246,4 +225,247 @@ select {
 .text-sm {
   font-size: 1rem !important;
   line-height: 1.4rem !important;
+}
+
+/* ============================================
+   Ambient Liquid Background System
+   All in One 667 — original implementation
+   ============================================ */
+
+.ambient-liquid-root {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  overflow: clip;
+}
+
+.ambient-layer {
+  position: absolute;
+  border-radius: 40% 60% 55% 45% / 50% 40% 60% 50%;
+  will-change: transform, opacity;
+}
+
+/* --- Blue primary: upper-left --- */
+.ambient-blue-primary {
+  width: 55vw;
+  height: 50vh;
+  top: -8vh;
+  left: -6vw;
+  background: radial-gradient(ellipse at center, rgba(0, 122, 255, 0.18) 0%, rgba(0, 90, 210, 0.08) 40%, transparent 70%);
+  filter: blur(60px);
+  opacity: 0.9;
+  animation: ambient-drift-blue-primary 28s ease-in-out infinite alternate;
+}
+
+/* --- Blue secondary: slightly offset for depth --- */
+.ambient-blue-secondary {
+  width: 45vw;
+  height: 40vh;
+  top: 2vh;
+  left: 8vw;
+  background: radial-gradient(ellipse at center, rgba(10, 132, 255, 0.14) 0%, rgba(0, 80, 200, 0.06) 45%, transparent 70%);
+  filter: blur(70px);
+  opacity: 0.7;
+  animation: ambient-drift-blue-secondary 36s ease-in-out infinite alternate;
+}
+
+/* --- Amber primary: upper-right --- */
+.ambient-amber-primary {
+  width: 50vw;
+  height: 48vh;
+  top: -6vh;
+  right: -8vw;
+  left: auto;
+  background: radial-gradient(ellipse at center, rgba(200, 140, 40, 0.14) 0%, rgba(180, 110, 20, 0.06) 42%, transparent 70%);
+  filter: blur(65px);
+  opacity: 0.85;
+  animation: ambient-drift-amber-primary 32s ease-in-out infinite alternate;
+}
+
+/* --- Amber secondary: offset for depth --- */
+.ambient-amber-secondary {
+  width: 40vw;
+  height: 38vh;
+  top: 4vh;
+  right: 6vw;
+  left: auto;
+  background: radial-gradient(ellipse at center, rgba(180, 120, 30, 0.10) 0%, rgba(160, 100, 20, 0.04) 40%, transparent 65%);
+  filter: blur(75px);
+  opacity: 0.65;
+  animation: ambient-drift-amber-secondary 40s ease-in-out infinite alternate;
+}
+
+/* --- Dark overlay: keeps center and lower area readable --- */
+.ambient-dark-overlay {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  background:
+    radial-gradient(ellipse at 50% 15%, transparent 20%, rgba(3, 3, 5, 0.35) 55%, rgba(3, 3, 5, 0.7) 100%),
+    linear-gradient(180deg, transparent 0%, rgba(3, 3, 5, 0.25) 50%, rgba(3, 3, 5, 0.5) 100%);
+  filter: none;
+  opacity: 1;
+  animation: none;
+}
+
+/* ============================================
+   Keyframes — independent per layer
+   ============================================ */
+
+@keyframes ambient-drift-blue-primary {
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+    border-radius: 42% 58% 63% 37% / 51% 39% 61% 49%;
+    opacity: 0.9;
+  }
+  33% {
+    transform: translate(6vw, 3vh) scale(1.06) rotate(1deg);
+    border-radius: 48% 52% 55% 45% / 44% 56% 44% 56%;
+    opacity: 0.82;
+  }
+  66% {
+    transform: translate(3vw, 5vh) scale(0.97) rotate(-1deg);
+    border-radius: 55% 45% 48% 52% / 58% 42% 58% 42%;
+    opacity: 0.92;
+  }
+  100% {
+    transform: translate(8vw, 2vh) scale(1.04) rotate(0.5deg);
+    border-radius: 44% 56% 60% 40% / 48% 52% 48% 52%;
+    opacity: 0.85;
+  }
+}
+
+@keyframes ambient-drift-blue-secondary {
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+    border-radius: 50% 50% 45% 55% / 55% 45% 55% 45%;
+    opacity: 0.7;
+  }
+  30% {
+    transform: translate(-4vw, 4vh) scale(1.08) rotate(-1.5deg);
+    border-radius: 45% 55% 52% 48% / 50% 50% 50% 50%;
+    opacity: 0.62;
+  }
+  60% {
+    transform: translate(5vw, -2vh) scale(0.95) rotate(1deg);
+    border-radius: 55% 45% 48% 52% / 42% 58% 42% 58%;
+    opacity: 0.75;
+  }
+  100% {
+    transform: translate(2vw, 6vh) scale(1.03) rotate(-0.5deg);
+    border-radius: 48% 52% 55% 45% / 52% 48% 52% 48%;
+    opacity: 0.68;
+  }
+}
+
+@keyframes ambient-drift-amber-primary {
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+    border-radius: 55% 45% 50% 50% / 45% 55% 45% 55%;
+    opacity: 0.85;
+  }
+  25% {
+    transform: translate(-5vw, 4vh) scale(1.05) rotate(-1deg);
+    border-radius: 48% 52% 58% 42% / 52% 48% 52% 48%;
+    opacity: 0.78;
+  }
+  55% {
+    transform: translate(-3vw, -3vh) scale(0.96) rotate(1.5deg);
+    border-radius: 42% 58% 45% 55% / 58% 42% 58% 42%;
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-7vw, 2vh) scale(1.08) rotate(-0.5deg);
+    border-radius: 52% 48% 52% 48% / 48% 52% 48% 52%;
+    opacity: 0.82;
+  }
+}
+
+@keyframes ambient-drift-amber-secondary {
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+    border-radius: 50% 50% 55% 45% / 48% 52% 48% 52%;
+    opacity: 0.65;
+  }
+  35% {
+    transform: translate(4vw, -3vh) scale(1.07) rotate(1deg);
+    border-radius: 45% 55% 50% 50% / 55% 45% 55% 45%;
+    opacity: 0.58;
+  }
+  70% {
+    transform: translate(-3vw, 5vh) scale(0.94) rotate(-1deg);
+    border-radius: 58% 42% 45% 55% / 50% 50% 50% 50%;
+    opacity: 0.72;
+  }
+  100% {
+    transform: translate(2vw, 3vh) scale(1.02) rotate(0.5deg);
+    border-radius: 52% 48% 52% 48% / 45% 55% 45% 55%;
+    opacity: 0.62;
+  }
+}
+
+/* ============================================
+   Reduced Motion
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-blue-primary,
+  .ambient-blue-secondary,
+  .ambient-amber-primary,
+  .ambient-amber-secondary {
+    animation: none;
+  }
+
+  .ambient-blue-primary {
+    transform: translate(3vw, 2vh) scale(1.02);
+    opacity: 0.85;
+  }
+
+  .ambient-blue-secondary {
+    transform: translate(1vw, 4vh) scale(1.01);
+    opacity: 0.65;
+  }
+
+  .ambient-amber-primary {
+    transform: translate(-4vw, 2vh) scale(1.03);
+    opacity: 0.8;
+  }
+
+  .ambient-amber-secondary {
+    transform: translate(-2vw, 3vh) scale(1.01);
+    opacity: 0.6;
+  }
+}
+
+/* ============================================
+   Mobile Responsive
+   ============================================ */
+
+@media (max-width: 640px) {
+  .ambient-blue-primary {
+    width: 70vw;
+    height: 40vh;
+    filter: blur(50px);
+  }
+
+  .ambient-blue-secondary {
+    width: 55vw;
+    height: 32vh;
+    filter: blur(55px);
+  }
+
+  .ambient-amber-primary {
+    width: 65vw;
+    height: 38vh;
+    filter: blur(55px);
+  }
+
+  .ambient-amber-secondary {
+    width: 50vw;
+    height: 30vh;
+    filter: blur(60px);
+  }
 }
