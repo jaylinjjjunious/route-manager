@@ -2710,7 +2710,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                   </div>
                 </section>
 
-                <section className="col-span-2 rounded-[8px] border-2 border-slate-300 bg-white p-4 dark:border-white/20 dark:bg-[#17181b] lg:col-span-2">
+                <section className="col-span-2 rounded-[8px] border-4 border-slate-950 bg-white p-4 shadow-[0_18px_42px_rgba(15,23,42,0.16)] transition-all duration-500 dark:border-white dark:bg-[#17181b] lg:col-span-2">
                   <h3 className="text-3xl font-black text-slate-950 dark:text-white">Current Route</h3>
                   <div className="mt-3 space-y-2">
                     {routeListStops.length === 0 ? (
@@ -2868,7 +2868,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                   </div>
                 </section>
 
-                <section className="col-span-2 lg:col-span-2 lg:row-span-2 rounded-[8px] border-2 border-slate-300 bg-white p-4 dark:border-white/20 dark:bg-[#17181b] lg:p-3">
+                <section className="col-span-2 lg:col-span-2 lg:row-span-2 rounded-[8px] border-4 border-slate-950 bg-white p-4 shadow-[0_18px_42px_rgba(15,23,42,0.16)] transition-all duration-500 dark:border-white dark:bg-[#17181b] lg:p-3">
                   <div className="flex items-center justify-between">
                     <h3 className="text-2xl font-black text-slate-950 dark:text-white">Today&apos;s Route</h3>
                     <span className="rounded-[8px] bg-blue-700 px-3 py-1 text-lg font-black text-white">{remainingRouteAJobs.length}</span>
