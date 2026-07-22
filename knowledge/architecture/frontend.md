@@ -38,7 +38,7 @@ Describes the React application structure, component hierarchy, state management
 
 ### Tab Structure
 
-Seven app tabs defined at `src/App.tsx:128`:
+Six app tabs defined at `src/App.tsx:128`:
 
 | Tab | ID | Protected | Purpose |
 |-----|----|-----------|---------|
@@ -50,7 +50,7 @@ Seven app tabs defined at `src/App.tsx:128`:
 | Habits | `habits` | No | Mandatory shower habit + custom habit tasks |
 | Settings | `settings` | No | Hub address, theme, DB maintenance, Debug Center, sign out |
 
-Protected tabs (`route`, `jobs`, `battery`, `tracker`) show a "Shower Gate Locked" overlay when `showerGateUnlocked` is false.
+Protected tabs (`jobs`, `battery`, `tracker`) show a "Shower Gate Locked" overlay when `showerGateUnlocked` is false.
 
 ### State Management
 
@@ -67,6 +67,7 @@ Key state groups:
 
 ### Rendering Patterns
 
+- **Dashboard route management**: Dashboard is the authoritative route interface; the standalone Route tab was retired and `/route`, `/routes`, and `#route` redirect to Dashboard.
 - **Conditional rendering** based on `currentTab` and `showerGateUnlocked`
 - **Protected tab overlay**: Rendered before actual tab content when `!showerGateUnlocked`
 - **Ride Mode**: Replaces entire dashboard with distraction-free execution surface
@@ -127,4 +128,4 @@ Targets modern mobile browsers (iOS Safari, Android Chrome) and desktop (Chrome,
 
 ## Last Updated
 
-2026-07-22 (5389fd3)
+2026-07-22 (routes-page-removed)

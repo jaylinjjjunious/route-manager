@@ -5,6 +5,19 @@ import {DebugProvider} from './debug/DebugProvider';
 import ProtectedApp from './auth/ProtectedApp';
 import './index.css';
 
+function isRetiredRouteDestination(value: string): boolean {
+  const normalized = value.toLowerCase().replace(/^[/#]+/, '').replace(/\/$/, '');
+  return normalized === 'route' || normalized === 'routes';
+}
+
+function redirectRetiredRouteDestination() {
+  if (isRetiredRouteDestination(window.location.pathname) || isRetiredRouteDestination(window.location.hash)) {
+    window.history.replaceState(null, '', '/#dashboard');
+  }
+}
+
+redirectRetiredRouteDestination();
+
 const rootElement = document.getElementById('root');
 
 function StartupScreen({ error }: { error?: string }) {

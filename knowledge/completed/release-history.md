@@ -28,6 +28,7 @@ Plus approximately 45 earlier commits covering the full feature progression: hab
 6. Bottom navigation improvements
 7. Debug Center
 8. Deployment workflow and checkpoint system
+9. Dashboard became the authoritative route interface; standalone Routes page retired
 
 ## Tags
 
@@ -37,4 +38,4 @@ Plus approximately 45 earlier commits covering the full feature progression: hab
 
 ---
 
-**Last Updated:** 2026-07-22 (5389fd3)
+**Last Updated:** 2026-07-22 (routes-page-removed)

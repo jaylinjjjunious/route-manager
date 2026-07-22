@@ -6,8 +6,8 @@
 2. Dashboard loads — Shower Gate panel shows as locked.
 3. Tap "Scan Product Barcode" — camera permission prompt appears.
 4. Scan the required barcode (075371003233) — gate unlocks.
-5. Protected tabs (Route, Jobs, Battery, Tracker) become available.
-6. Plan route in the Route tab — optimizer runs nearest-neighbor algorithm.
+5. Protected tabs (Jobs, Battery, Tracker) become available.
+6. Plan and manage today's route on Dashboard — optimizer runs nearest-neighbor algorithm.
 7. Start Ride Mode from the Dashboard — distraction-free execution begins.
 
 ## Flow 2: Complete Jobs
@@ -28,7 +28,7 @@
 
 ## Flow 4: AI Dispatcher
 
-1. Open AIDispatcher from any tab.
+1. Open the AI Operations Assistant from any tab.
 2. Ask a question about route, jobs, or schedule.
 3. Receive Gemini-powered advice or suggestions.
 4. Add or remove jobs based on dispatcher recommendations.
@@ -49,4 +49,4 @@
 
 ---
 
-**Last Updated:** 2026-07-20 (c12bd44)
+**Last Updated:** 2026-07-22 (routes-page-removed)

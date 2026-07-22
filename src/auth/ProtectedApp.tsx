@@ -11,7 +11,19 @@ const App = lazy(() => import("../App"));
 
 type AuthView = "login" | "forgot-password" | "reset-password" | "app";
 
+function isRetiredRoutePath(pathname: string): boolean {
+  const normalized = pathname.toLowerCase().replace(/^\/+/, "").replace(/\/+$/, "");
+  return normalized === "route" || normalized === "routes";
+}
+
+function redirectRetiredRoutePath() {
+  if (isRetiredRoutePath(window.location.pathname)) {
+    window.history.replaceState(null, "", "/#dashboard");
+  }
+}
+
 function getInitialView(pathname: string): AuthView {
+  if (isRetiredRoutePath(pathname)) return "app";
   if (pathname === "/reset-password") return "reset-password";
   if (pathname === "/login") return "login";
   if (pathname === "/forgot-password") return "forgot-password";
@@ -25,6 +37,7 @@ export function triggerOpenDebugCenter() {
 }
 
 export default function ProtectedApp() {
+  redirectRetiredRoutePath();
   const { session, loading } = useAuth();
   const [view, setView] = useState<AuthView>(() => getInitialView(window.location.pathname));
   const [debugCenterOpen, setDebugCenterOpen] = useState(false);

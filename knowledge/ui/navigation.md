@@ -1,6 +1,6 @@
 # Navigation System
 
-**Last Updated:** 2026-07-20 (c12bd44)
+**Last Updated:** 2026-07-22 (routes-page-removed)
 **Related Source Files:** `src/components/BottomNav.tsx`, `src/App.tsx`
 
 ---
@@ -14,16 +14,15 @@ The All in One 667 uses a **floating pill-shaped bottom navigation bar** pinned 
 | # | Tab | Icon | Protected |
 |---|-----|------|-----------|
 | 1 | Dashboard | — | No |
-| 2 | Route | — | **Yes** |
-| 3 | Jobs | — | **Yes** |
-| 4 | Battery | — | **Yes** |
-| 5 | Tracker | — | **Yes** |
-| 6 | Habits | — | No |
-| 7 | Settings | — | No |
+| 2 | Jobs | — | **Yes** |
+| 3 | Battery | — | **Yes** |
+| 4 | Tracker | — | **Yes** |
+| 5 | Habits | — | No |
+| 6 | Settings | — | No |
 
 ### Protected Tabs
 
-Tabs 2–5 (Route, Jobs, Battery, Tracker) are **locked** until the shower gate is verified. When locked:
+Tabs 2-4 (Jobs, Battery, Tracker) are **locked** until the shower gate is verified. When locked:
 
 - The tab buttons are visually dimmed or show an amber lock indicator.
 - Clicking a locked tab does not navigate — it may prompt the user to verify their shower proof.
@@ -55,7 +54,7 @@ The bottom nav supports horizontal touch scrolling on small screens:
 - `snap-x` — snap-to-tab scrolling behavior
 - `scroll-snap-type: x mandatory` — ensures clean snap alignment
 
-This ensures all 7 tabs are accessible on narrow screens without requiring the user to pinch or zoom.
+This ensures all 6 tabs are accessible on narrow screens without requiring the user to pinch or zoom.
 
 ---
 
@@ -70,6 +69,14 @@ The bottom nav uses a glassmorphism effect inspired by Apple's design language:
 | Border | `border-white/75` (semi-transparent white border) |
 
 This creates a frosted glass appearance that sits above the content layer while allowing the background to show through subtly.
+
+---
+
+## Standalone Route Destination
+
+The standalone Route tab was retired. Dashboard is now the authoritative interface for route planning and route management, including Next Stop, Today's Route, navigation actions, review/complete actions, move controls, revision alerts, route order, and route calculations.
+
+Retired route destinations (`/route`, `/routes`, and `#route`) redirect to Dashboard. Assistant route requests also open Dashboard and focus Today's Route when possible.
 
 ---
 

@@ -125,7 +125,7 @@ Key endpoints:
 - `SHOWER_PROOF_MANDATORY = true` — Gate is always enforced.
 - Cycle resets at 6:00 AM local time (configurable in `showerCycle.ts:SHOWER_CYCLE_RESET`).
 - At exactly the reset boundary (e.g., 6:00:00), a new cycle begins.
-- Protected tabs: route, jobs, battery, tracker.
+- Protected tabs: jobs, battery, tracker. Dashboard route controls still enforce current-cycle shower access for navigation and completion actions.
 - Proof must have `uploadStatus === 'saved'` and `verificationStatus === 'verified'` to unlock.
 
 ## Error Handling

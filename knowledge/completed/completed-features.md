@@ -1,7 +1,7 @@
 # Completed Features
 
 ## Navigation
-- 7-tab navigation with protected tab support.
+- 6-tab navigation with protected tab support.
 - Bottom navigation with overflow handling for small screens.
 
 ## Shower Gate
@@ -60,4 +60,9 @@
 
 ---
 
-**Last Updated:** 2026-07-20 (c12bd44)
+**Last Updated:** 2026-07-22 (routes-page-removed)
+
+
+## 2026-07-22
+
+- Dashboard authoritative route interface: standalone Route page and navigation destination retired; shared route calculations and Dashboard route controls preserved.

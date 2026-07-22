@@ -140,6 +140,10 @@ function getGeminiClient(): GoogleGenAI {
   return aiInstance;
 }
 
+// Retired standalone route page redirects. The dashboard is the route interface.
+app.get(["/route", "/routes"], (_req, res) => {
+  res.redirect(302, "/#dashboard");
+});
 // AI Operations Assistant
 app.use("/api/assistant", createAssistantRouter(requireAuth));
 

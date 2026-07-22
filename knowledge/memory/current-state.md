@@ -6,10 +6,11 @@
 
 ## Features Built
 
-- **7-tab navigation:** Dashboard, Route, Jobs, Battery, Tracker, Habits, Settings — with protected tab support.
+- **6-tab navigation:** Dashboard, Jobs, Battery, Tracker, Habits, Settings — with protected tab support.
 - **Daily Shower Gate:** Barcode scan + proof upload + cycle management with 6:00 AM reset.
 - **Job system:** 5 types, 7 statuses, completion workflow, proof vault.
 - **Route optimization:** Nearest-neighbor algorithm, battery-aware, outlier detection.
+- **Dashboard route interface:** Dashboard is the authoritative route-planning and route-management surface; the standalone Route page has been retired.
 - **Ride Mode:** Distraction-free execution surface for job completion.
 - **Habit tracker:** Mandatory shower + custom daily tasks with streak tracking.
 - **AI Dispatcher:** Gemini 2 chat integration for route advice.
@@ -36,4 +37,4 @@
 
 ---
 
-**Last Updated:** 2026-07-22 (1c03658)
+**Last Updated:** 2026-07-22 (routes-page-removed)

@@ -8,9 +8,12 @@ AI-powered dispatcher chat for route advice and job management, plus Bakersfield
 
 ### AI Dispatcher Chat
 
+Assistant route navigation now opens Dashboard and focuses Today's Route when possible. The retired standalone Route tab is no longer a valid navigation destination, but route advice and route context remain available through shared route state and services.
+
+
 - **Model**: Gemini 2
 - **Capabilities**: Route advice, job management suggestions, natural language interface
-- **Component**: AIDispatcher (src/components/AIDispatcher.tsx)
+- **Component**: AI Operations Assistant bubble. The legacy AIDispatcher component remains in source but is no longer mounted by a standalone Route tab.
 - **Integration**: Chat interface with message history
 
 **Use cases:**
@@ -56,7 +59,7 @@ User Query → Gemini 2 → Response → Chat UI + TTS
 
 ### Key Components
 
-- **AIDispatcher**: Chat interface component
+- **AI Operations Assistant**: Primary chat interface component
 - **Safety Brief Panel**: Real-time safety level display
 - **Voice Provider**: TTS integration for responses
 
@@ -130,7 +133,7 @@ User Query → Gemini 2 → Response → Chat UI + TTS
 
 ## Related Source Files
 
-- `src/components/AIDispatcher.tsx` — chat interface
+- `src/assistant/tools/navigationTools.ts` — assistant navigation to Dashboard for route requests`r`n- `src/components/AIDispatcher.tsx` — retired legacy route chat component
 - `server.ts` — backend API for dispatcher and safety news
 - `worker/index.ts` — Worker backend variant
 - `src/hooks/useTextToSpeech.ts` — TTS hook
@@ -144,4 +147,4 @@ User Query → Gemini 2 → Response → Chat UI + TTS
 
 ## Last Updated
 
-2026-07-20 (commit c12bd44)
+2026-07-22 (routes-page-removed)

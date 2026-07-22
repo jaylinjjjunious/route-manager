@@ -138,7 +138,7 @@ Sends a message to the AI Operations Assistant (Gemini 3.5 Flash). The assistant
 | **Body** | `{ message: string, jobs: Job[], currentBattery: number }` |
 | **Response** | `{ response: string, action: DispatcherAction }` |
 
-Sends a message to the legacy AI dispatcher (still active for the AIDispatcher component in the Route tab).
+Sends a message to the legacy AI dispatcher endpoint. The standalone Route tab was retired, so this endpoint is not mounted through that page UI, but the backend contract remains available.
 
 ---
 

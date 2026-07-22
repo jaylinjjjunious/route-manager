@@ -2,9 +2,15 @@
 
 ## Purpose
 
-Greedy nearest-neighbor route optimization with battery-aware planning and distraction-free ride execution mode.
+Greedy nearest-neighbor route optimization with battery-aware planning, Dashboard route management, and distraction-free ride execution mode.
 
 ## Current Implementation
+
+### Dashboard Route Interface
+
+Dashboard is the authoritative route interface. The standalone Route tab/page was retired; Dashboard owns the user-facing route workflow for next stop, Today's Route, navigation links, review/complete actions, move controls, revision alerts, route order, route updates, and route calculations.
+
+The underlying route system remains shared: `src/utils/routeUtils.ts`, route state in `src/App.tsx`, route/job types, battery-aware metrics, revision insertion, and Route A/Route B assignment logic are still active. Retired route destinations (`/route`, `/routes`, `#route`) redirect to Dashboard.
 
 ### Route Optimization Algorithm
 
@@ -164,7 +170,7 @@ Jobs → optimizeRoute → Optimized List → Ride Mode
 
 - `src/utils/routeUtils.ts` — core algorithms and config
 - `src/App.tsx` — Ride Mode and route state
-- `src/components/BakersfieldMapPreview.tsx` — map visualization
+- `src/components/BakersfieldMapPreview.tsx` — shared map visualization component, currently not mounted by the retired Route tab
 
 ## Related Knowledge
 
@@ -174,4 +180,4 @@ Jobs → optimizeRoute → Optimized List → Ride Mode
 
 ## Last Updated
 
-2026-07-20 (commit c12bd44)
+2026-07-22 (routes-page-removed)

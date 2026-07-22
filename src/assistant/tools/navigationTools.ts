@@ -1,11 +1,11 @@
 import type { AssistantTool } from '../assistantTypes';
 
-const VALID_TABS = ['dashboard', 'route', 'jobs', 'battery', 'tracker', 'habits', 'settings'];
+const VALID_TABS = ['dashboard', 'jobs', 'battery', 'tracker', 'habits', 'settings'];
 
 export function createNavigationTools(onNavigate: (tab: string) => void): AssistantTool[] {
   const navigateTool: AssistantTool = {
     name: 'navigate',
-    description: 'Navigate to a specific app page. Valid pages: dashboard, route, jobs, battery, tracker, habits, settings.',
+    description: "Navigate to a specific app page. Valid pages: dashboard, jobs, battery, tracker, habits, settings. Route requests open Dashboard and focus Today's Route when possible.",
     permission: 'navigate',
     requiresConfirmation: false,
     inputSchema: {
@@ -17,6 +17,19 @@ export function createNavigationTools(onNavigate: (tab: string) => void): Assist
     },
     execute: async (input: Record<string, unknown>) => {
       const page = String(input.page || '').toLowerCase();
+      if (page === 'route' || page === 'routes') {
+        onNavigate('dashboard');
+        window.setTimeout(() => {
+          document.getElementById('bento-tile-todays-route')?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }, 0);
+        return {
+          success: true,
+          output: 'Opened Dashboard and focused Today\'s Route.'
+        };
+      }
       if (!VALID_TABS.includes(page)) {
         return {
           success: false,

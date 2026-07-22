@@ -25,11 +25,8 @@ import {
   normalizeJobsForStorage
 } from './utils/jobState';
 import Header from './components/Header';
-import OutlierDetector from './components/OutlierDetector';
-import BakersfieldMapPreview from './components/BakersfieldMapPreview';
 import JobCard from './components/JobCard';
 import JobModal from './components/JobModal';
-import AIDispatcher from './components/AIDispatcher';
 import AssistantProvider from './assistant/AssistantProvider';
 import AssistantBubble from './assistant/AssistantBubble';
 import AmbientLiquidBackground from './components/backgrounds/AmbientLiquidBackground';
@@ -43,7 +40,7 @@ import { authFetch, authFetchJson } from './services/apiClient';
 import DebugCenter from './components/settings/DebugCenter';
 import {
   Plus, Sliders, Play, RotateCcw, Search, Moon, Sun, Layers, ShieldCheck, MapPin, CheckSquare,
-  LayoutDashboard, Map, Briefcase, Battery, Settings, Info, AlertTriangle, ArrowRightLeft,
+  LayoutDashboard, Briefcase, Battery, Settings, AlertTriangle, ArrowRightLeft,
   TrendingUp, HelpCircle, ShieldAlert, Sparkles, Compass, ExternalLink, Navigation, CheckCircle2,
   Pause, Square, Timer, Clock, ChevronDown, ChevronUp, DollarSign, Zap, Award, Volume2, VolumeX,
   FolderOpen, Camera, FileImage, ReceiptText, StickyNote, X, Hourglass, Bug
@@ -126,13 +123,32 @@ const SHOWER_PROOF_JPEG_QUALITY = 0.58;
 const SHOWER_BACKEND_TIMEOUT_MS = 15000;
 
 type BarcodePermissionStatus = 'idle' | 'requesting' | 'granted' | 'denied' | 'unsupported' | 'error';
-type AppTab = 'dashboard' | 'route' | 'jobs' | 'battery' | 'tracker' | 'habits' | 'settings';
+type AppTab = 'dashboard' | 'jobs' | 'battery' | 'tracker' | 'habits' | 'settings';
 
-const APP_TABS: AppTab[] = ['dashboard', 'route', 'jobs', 'battery', 'tracker', 'habits', 'settings'];
-const SHOWER_PROTECTED_TABS: AppTab[] = ['route', 'jobs', 'battery', 'tracker'];
+const APP_TABS: AppTab[] = ['dashboard', 'jobs', 'battery', 'tracker', 'habits', 'settings'];
+const SHOWER_PROTECTED_TABS: AppTab[] = ['jobs', 'battery', 'tracker'];
+
+const RETIRED_ROUTE_DESTINATIONS = new Set(['route', 'routes']);
+
+const isRetiredRouteDestination = (value: string): boolean => {
+  const normalized = value.toLowerCase().replace(/^[/#]+/, '').replace(/\/$/, '');
+  return RETIRED_ROUTE_DESTINATIONS.has(normalized);
+};
+
+const redirectRetiredRouteDestination = (): boolean => {
+  if (typeof window === 'undefined') return false;
+
+  if (isRetiredRouteDestination(window.location.pathname) || isRetiredRouteDestination(window.location.hash)) {
+    window.history.replaceState(null, '', '/#dashboard');
+    return true;
+  }
+
+  return false;
+};
 
 const getTabFromHash = (): AppTab | null => {
   if (typeof window === 'undefined') return null;
+  if (redirectRetiredRouteDestination()) return 'dashboard';
   const tab = window.location.hash.replace('#', '') as AppTab;
   return APP_TABS.includes(tab) ? tab : null;
 };
@@ -457,8 +473,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const habitTaskName = activeHabitTask.name;
   const habitTargetMinutes = Math.max(1, Number(activeHabitTask.targetMinutes) || 30);
   const habitLogMinutes = Math.max(1, Number(activeHabitTask.lastMinutes) || habitTargetMinutes);
-  const [selectedEngine, setSelectedEngine] = useState<'mock' | 'google' | 'apple' | 'osrm' | 'mapbox'>('mock');
-  const [engineNotification, setEngineNotification] = useState<string | null>(null);
   const [jobsSubTab, setJobsSubTab] = useState<'list' | 'import'>('list');
   const [searchQuery, setSearchQuery] = useState('');
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
@@ -518,7 +532,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [defaultJobType, setDefaultJobType] = useState<JobType>('retail_audit');
   const [isConfigExpanded, setIsConfigExpanded] = useState(false);
-  const [googleMetrics, setGoogleMetrics] = useState<{ distance: number; duration: number } | null>(null);
 
   // Load from local storage
   useEffect(() => {
@@ -617,6 +630,8 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   };
 
   useEffect(() => {
+    redirectRetiredRouteDestination();
+
     const handleHashChange = () => {
       const tab = getTabFromHash();
       if (tab) {
@@ -884,19 +899,9 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     estimatedBatteryUsage: parseFloat((baseStandardMetrics.estimatedBatteryUsage * batteryFactor).toFixed(1))
   };
   
-  const activeMetrics = googleMetrics 
-    ? {
-        ...standardMetrics,
-        totalDistance: googleMetrics.distance,
-        totalRideTime: googleMetrics.duration,
-        totalTime: googleMetrics.duration + standardMetrics.totalWorkTime,
-        estimatedBatteryUsage: parseFloat((googleMetrics.distance * ebikeConfig.batteryPercentPerMile * batteryFactor).toFixed(1)),
-        earningsPerHour: (googleMetrics.duration + standardMetrics.totalWorkTime) > 0
-          ? parseFloat((standardMetrics.totalPay / ((googleMetrics.duration + standardMetrics.totalWorkTime) / 60)).toFixed(2))
-          : 0,
-        isGoogleLive: true,
-      }
-    : standardMetrics;
+
+  const activeMetrics = standardMetrics;
+
 
   const outliersReport = detectOutliers(startCoord, routeAJobs, ebikeConfig);
   const outlierIds = outliersReport.map(r => r.jobId);
@@ -1186,28 +1191,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
       if (simTimerRef.current) clearInterval(simTimerRef.current);
     };
   }, []);
-
-  const handleSelectEngine = (engine: 'mock' | 'google' | 'apple' | 'osrm' | 'mapbox') => {
-    setSelectedEngine(engine);
-    if (engine === 'mock') {
-      setEngineNotification("Offline high-precision routing engine selected.");
-    } else {
-      const providerNames: Record<string, string> = {
-        google: 'Google Maps directions services',
-        apple: 'Apple Maps directions services',
-        osrm: 'OSRM routing engines',
-        mapbox: 'Mapbox Directions API'
-      };
-      setEngineNotification(`Switched to pluggable ${providerNames[engine]} interface. To connect live services, supply API keys under Settings. Falling back safely to mock routing.`);
-    }
-  };
-
-  useEffect(() => {
-    if (engineNotification) {
-      const t = setTimeout(() => setEngineNotification(null), 5000);
-      return () => clearTimeout(t);
-    }
-  }, [engineNotification]);
 
   const createProofFolder = (job: Job) => {
     const now = new Date();
@@ -3441,495 +3424,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
             </div>
           )}
 
-          {/* Tab 2: Route Navigation Itinerary */}
-          {currentTab === 'route' && !showerGateUnlocked && (
-            <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-8 text-center dark:border-amber-500/30 dark:bg-amber-500/10">
-              <ShieldCheck size={40} className="mx-auto mb-4 text-amber-500" />
-              <h3 className="text-lg font-black text-amber-900 dark:text-amber-100">Daily Verification Required</h3>
-              <p className="mt-2 text-sm text-amber-700 dark:text-amber-300">Complete your daily shower verification in Mission Control to unlock Route features.</p>
-              <button onClick={() => handleTabChange('dashboard')} className="mt-4 rounded-xl bg-amber-600 px-6 py-2.5 text-sm font-black text-white hover:bg-amber-500 transition-all">Go to Mission Control</button>
-            </div>
-          )}
-          {currentTab === 'route' && showerGateUnlocked && (
-            <div className="space-y-6 animate-fade-in" id="tab-view-route">
-              {/* Pluggable Routing Engine Selector & Active Status banner */}
-              <div className="road-card p-5 space-y-4">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
-                    <h3 className="text-base font-extrabold text-slate-900 dark:text-white uppercase tracking-wide flex items-center gap-2">
-                      <Sparkles size={18} className="text-indigo-500 " />
-                      <span>Dynamic Sequence Optimizer</span>
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
-                      Real-time nearest-neighbor sequencing with six strict priority rules. Prioritizes: 
-                      <span className="font-bold text-rose-500 dark:text-rose-400"> 1. Revisions </span> → 
-                      <span className="font-bold text-amber-500 dark:text-amber-400"> 2. Deadlines </span> → 
-                      <span className="font-bold text-blue-500"> 3. Closeness </span> → 
-                      <span className="font-bold text-emerald-500"> 4. Pay </span> → 
-
-                      <span className="font-bold text-slate-500"> 5. Outliers last</span>.
-                    </p>
-                  </div>
-                  
-                  {/* Engine Selection pill selector */}
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Routing Provider</label>
-                    <div className="flex flex-wrap bg-slate-100 p-1 rounded-xl dark:bg-white/5 border border-slate-200/50 dark:border-white/10 gap-1">
-                      {[
-                        { id: 'mock', label: 'Mock Engine' },
-                        { id: 'google', label: 'Google Maps' },
-                        { id: 'apple', label: 'Apple Maps' },
-                        { id: 'osrm', label: 'OSRM' },
-                        { id: 'mapbox', label: 'Mapbox' }
-                      ].map((eng) => (
-                        <button
-                          key={eng.id}
-                          onClick={() => handleSelectEngine(eng.id as any)}
-                          className={`rounded-lg px-3 py-1.5 text-xs font-extrabold transition-all ${
-                            selectedEngine === eng.id
-                              ? 'bg-indigo-600 text-white shadow-xs'
-                              : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/5'
-                          }`}
-                        >
-                          {eng.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {engineNotification && (
-                  <div className="bg-indigo-50 border border-indigo-200/50 dark:bg-indigo-950/20 dark:border-indigo-500/20 rounded-xl p-3 text-xs text-indigo-700 dark:text-indigo-300 flex items-start gap-2 animate-fade-in">
-                    <Info size={16} className="text-indigo-500 flex-shrink-0 mt-0.5" />
-                    <span>{engineNotification}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Next Stop Hero and Metrics Overview Row */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                
-                {/* NEXT STOP CARD */}
-                <div className="md:col-span-1 rounded-2xl border border-slate-200 bg-white p-5  flex flex-col justify-between space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-extrabold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest bg-indigo-50 dark:bg-indigo-950/40 px-2.5 py-1 rounded-full flex items-center gap-1">
-                        <Navigation size={10} className="" />
-                        <span>Next Target stop</span>
-                      </span>
-                      {routeAJobs.find(j => !isJobDone(j)) && (
-                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">
-                          Stop #{routeAJobs.indexOf(routeAJobs.find(j => !isJobDone(j))!) + 1} of {routeAJobs.length}
-                        </span>
-                      )}
-                    </div>
-
-                    {(() => {
-                      const nextStop = routeAJobs.find(j => !isJobDone(j));
-                      if (!nextStop) {
-                        return (
-                          <div className="py-6 text-center space-y-2">
-                            <CheckCircle2 size={36} className="text-emerald-500 mx-auto" />
-                            <h4 className="font-extrabold text-slate-800 dark:text-white text-sm">All Stops Completed!</h4>
-                            <p className="text-xs text-slate-400">Great job. Return safely back to the Starting Hub.</p>
-                            <a
-                              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(startAddress)}`}
-                              target="_blank"
-                              referrerPolicy="no-referrer"
-                              className="inline-flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400 font-extrabold hover:underline cursor-pointer"
-                            >
-                              <span>Navigate back to Hub</span>
-                              <ExternalLink size={12} />
-                            </a>
-                          </div>
-                        );
-                      }
-
-                      const nextStopIdx = routeAJobs.indexOf(nextStop);
-                      const prevCoordForNextStop = nextStopIdx <= 0 ? startCoord : routeAJobs[nextStopIdx - 1].coordinates;
-                      const prevNameForNextStop = nextStopIdx <= 0 ? "Starting Hub" : routeAJobs[nextStopIdx - 1].storeName;
-                      const nextStopDist = getDistanceInMiles(prevCoordForNextStop, nextStop.coordinates);
-                      const nextStopRideMin = (nextStopDist / ebikeConfig.avgSpeedMph) * 60;
-                      const nextStopNavLink = `https://www.google.com/maps/dir/?api=1&origin=${prevCoordForNextStop.lat},${prevCoordForNextStop.lng}&destination=${nextStop.coordinates.lat},${nextStop.coordinates.lng}&travelmode=bicycling`;
-
-                      return (
-                        <div className="space-y-3 pt-1">
-                          <div>
-                            <div className="flex items-center justify-between gap-2">
-                              <h4 className="font-black text-slate-900 dark:text-white text-base truncate">{nextStop.storeName}</h4>
-                              <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">${nextStop.pay.toFixed(2)}</span>
-                            </div>
-                            <p className="text-xs text-slate-400 truncate mt-0.5">{nextStop.address}</p>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-white/[0.02] border border-slate-200/50 dark:border-white/5 p-3 rounded-xl">
-                            <div>
-                              <span className="text-[9px] font-bold text-slate-400 uppercase">Est. Distance</span>
-                              <p className="text-xs font-black text-slate-800 dark:text-white">{nextStopDist.toFixed(1)} miles</p>
-                            </div>
-                            <div>
-                              <span className="text-[9px] font-bold text-slate-400 uppercase">Travel Time</span>
-                              <p className="text-xs font-black text-slate-800 dark:text-white">~{nextStopRideMin.toFixed(0)} mins</p>
-                            </div>
-                            <div className="mt-1.5">
-                              <span className="text-[9px] font-bold text-slate-400 uppercase">Store Work Time</span>
-                              <p className="text-xs font-black text-indigo-600 dark:text-indigo-400">{nextStop.estimatedMinutes} mins</p>
-                            </div>
-                            <div className="mt-1.5">
-                              <span className="text-[9px] font-bold text-slate-400 uppercase">Due Time</span>
-                              <p className="text-xs font-black text-amber-500">{nextStop.dueTime || 'Flexible'}</p>
-                            </div>
-                          </div>
-
-                          <div className="flex flex-wrap gap-1.5 pt-1">
-                            {isRevisionJob(nextStop) && (
-                              <span className="bg-rose-50 border border-rose-200/60 text-rose-600 dark:bg-rose-950/20 dark:border-rose-500/20 dark:text-rose-400 text-[9px] font-black uppercase px-2 py-0.5 rounded-md">
-                                Revision Required
-                              </span>
-                            )}
-                            {nextStop.dueTime && (
-                              <span className="bg-amber-50 border border-amber-200/60 text-amber-600 dark:bg-amber-950/20 dark:border-amber-500/20 dark:text-amber-400 text-[9px] font-black uppercase px-2 py-0.5 rounded-md">
-                                Deadline Priority
-                              </span>
-                            )}
-                            {outlierIds.includes(nextStop.id) && (
-                              <span className="bg-slate-50 border border-slate-200/60 text-slate-500 dark:bg-white/5 dark:border-white/10 dark:text-slate-400 text-[9px] font-black uppercase px-2 py-0.5 rounded-md">
-                                Outlier
-                              </span>
-                            )}
-                          </div>
-
-                          <a
-                            href={nextStopNavLink}
-                            target="_blank"
-                            referrerPolicy="no-referrer"
-                            className="mt-4 w-full bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-950 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black transition-all shadow-md cursor-pointer"
-                          >
-                            <Compass size={14} />
-                            <span>One-Tap Nav to Next Stop</span>
-                            <ExternalLink size={12} />
-                          </a>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-
-                {/* ROUTE METRICS CARD */}
-                <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-white p-5  flex flex-col justify-between space-y-4">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full">
-                        Route A Financials & Metrics
-                      </span>
-                      <span className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400">Optimized Map Bounds</span>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                      <div className="bg-slate-50 dark:bg-white/[0.02] border border-slate-200/50 dark:border-white/5 p-3 rounded-xl text-center space-y-0.5">
-                        <span className="text-[9px] font-bold text-slate-400 uppercase block">Total Pay</span>
-                        <p className="text-lg font-black text-emerald-600 dark:text-emerald-400">${activeMetrics.totalPay.toFixed(2)}</p>
-                      </div>
-                      <div className="bg-slate-50 dark:bg-white/[0.02] border border-slate-200/50 dark:border-white/5 p-3 rounded-xl text-center space-y-0.5">
-                        <span className="text-[9px] font-bold text-slate-400 uppercase block">Est. Ride Time</span>
-                        <p className="text-lg font-black text-slate-800 dark:text-white">~{activeMetrics.totalRideTime.toFixed(0)}m</p>
-                      </div>
-                      <div className="bg-slate-50 dark:bg-white/[0.02] border border-slate-200/50 dark:border-white/5 p-3 rounded-xl text-center space-y-0.5">
-                        <span className="text-[9px] font-bold text-slate-400 uppercase block">Est. Work Time</span>
-                        <p className="text-lg font-black text-slate-800 dark:text-white">{activeMetrics.totalWorkTime.toFixed(0)}m</p>
-                      </div>
-                      <div className="bg-slate-50 dark:bg-white/[0.02] border border-slate-200/50 dark:border-white/5 p-3 rounded-xl text-center space-y-0.5">
-                        <span className="text-[9px] font-bold text-slate-400 uppercase block">Total Distance</span>
-                        <p className="text-lg font-black text-indigo-600 dark:text-indigo-400">{activeMetrics.totalDistance.toFixed(1)} mi</p>
-                      </div>
-                      <div className="bg-slate-50 dark:bg-white/[0.02] border border-slate-200/50 dark:border-white/5 p-3 rounded-xl text-center space-y-0.5 col-span-2 sm:col-span-1">
-                        <span className="text-[9px] font-bold text-slate-400 uppercase block">Hourly Yield</span>
-                        <p className="text-lg font-black text-amber-500">${activeMetrics.earningsPerHour.toFixed(2)}/h</p>
-                      </div>
-                    </div>
-
-                    <p className="text-[10px] text-slate-400 italic text-center">
-                    </p>
-                  </div>
-
-                  {routeAJobs.length > 0 ? (
-                    <a
-                      href={routeAJobs.length > 0 
-                        ? `https://www.google.com/maps/dir/?api=1&origin=${startCoord.lat},${startCoord.lng}&destination=${routeAJobs[routeAJobs.length - 1].coordinates.lat},${routeAJobs[routeAJobs.length - 1].coordinates.lng}&waypoints=${routeAJobs.slice(0, -1).map(j => `${j.coordinates.lat},${j.coordinates.lng}`).join('|')}&travelmode=bicycling`
-                        : '#'}
-                      target="_blank"
-                      referrerPolicy="no-referrer"
-                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all shadow-md cursor-pointer mt-2"
-                    >
-                      <ExternalLink size={14} />
-                      <span>One-Tap Full Route Navigation (Google Maps Multi-Stop)</span>
-                    </a>
-                  ) : (
-                    <div className="w-full bg-slate-100 dark:bg-white/5 text-slate-400 dark:text-slate-500 text-center py-3 rounded-xl text-xs font-extrabold border border-dashed border-slate-200 dark:border-white/10 mt-2">
-                      Please add jobs to active Route A to initialize navigation link
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Grid: Map left/top, timeline stop details right/bottom */}
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                <div className="lg:col-span-2 space-y-4">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4 ">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h3 className="text-sm font-extrabold text-slate-900 dark:text-white uppercase tracking-wide">Road Navigation Map</h3>
-                        <p className="text-[10px] text-slate-400 font-semibold mt-0.5">GEOGRAPHIC DISPATCH BOUNDS FOR BAKERSFIELD, CA</p>
-                      </div>
-                      <div className="flex bg-slate-100 p-0.5 rounded-lg dark:bg-white/5 border border-slate-200/50 dark:border-white/10">
-                        <button
-                          onClick={() => setActiveTab('A')}
-                          className={`rounded-md px-2.5 py-1 text-[10px] font-extrabold transition-all ${
-                            activeTab === 'A'
-                              ? 'bg-white text-slate-950 shadow-xs dark:bg-white/10 dark:text-white'
-                              : 'text-slate-500 hover:text-slate-900 dark:text-slate-400'
-                          }`}
-                        >
-                          Active (A)
-                        </button>
-                        <button
-                          onClick={() => setActiveTab('B')}
-                          className={`rounded-md px-2.5 py-1 text-[10px] font-extrabold transition-all ${
-                            activeTab === 'B'
-                              ? 'bg-white text-slate-950 shadow-xs dark:bg-white/10 dark:text-white'
-                              : 'text-slate-500 hover:text-slate-900 dark:text-slate-400'
-                          }`}
-                        >
-                          Standby (B)
-                        </button>
-                      </div>
-                    </div>
-                    {/* Bakersfield SVG Geographic Route Visualization map */}
-                    <BakersfieldMapPreview
-                      startAddress={startAddress}
-                      startCoord={startCoord}
-                      routeAJobs={routeAJobs}
-                      routeBJobs={routeBJobs}
-                      outlierIds={outlierIds}
-                      activeTab={activeTab}
-                      onSelectJob={(id) => {
-                        const targetJob = jobs.find(j => j.id === id);
-                        if (targetJob) {
-                          handleOpenEditModal(targetJob);
-                        }
-                      }}
-                      onGoogleMetrics={setGoogleMetrics}
-                      isOptimizing={isOptimizing}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="road-card p-5 space-y-4">
-                    <div>
-                      <h3 className="text-sm font-extrabold text-slate-900 dark:text-white uppercase tracking-wide flex items-center gap-1.5">
-                        <Map size={15} className="text-indigo-500" />
-                        <span>Itinerary Stop Sequence</span>
-                      </h3>
-                      <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-widest mt-0.5">
-                        {activeTab === 'A' ? `Route A Active Sequence (${routeAJobs.length})` : `Route B Standby stops (${routeBJobs.length})`}
-                      </p>
-                    </div>
-
-                    <div className="max-h-[60vh] overflow-y-auto pr-1 space-y-4">
-                      {/* Starting Hub node */}
-                      <div className="relative flex items-start gap-4 pb-4">
-                        <div className="absolute left-[14px] top-7 bottom-0 w-0.5 bg-indigo-500/20 dark:bg-white/10" />
-                        <div className="z-10 flex h-7.5 w-7.5 flex-shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white font-extrabold text-[10px] shadow-sm">
-                          START
-                        </div>
-                        <div className="flex-1 min-w-0 bg-indigo-500/[0.02] border border-indigo-200/55 dark:border-indigo-500/10 p-3 rounded-xl">
-                          <h4 className="font-extrabold text-slate-900 dark:text-white text-xs">Hub Home Starting Location</h4>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">{startAddress}</p>
-                        </div>
-                      </div>
-
-                      {/* Stops list */}
-                      {activeTab === 'A' && routeAJobs.map((job, idx) => {
-                        const prevCoord = idx === 0 ? startCoord : routeAJobs[idx - 1].coordinates;
-                        const dist = getDistanceInMiles(prevCoord, job.coordinates);
-                        const rideMin = (dist / ebikeConfig.avgSpeedMph) * 60;
-                        const singleLegNavLink = `https://www.google.com/maps/dir/?api=1&origin=${prevCoord.lat},${prevCoord.lng}&destination=${job.coordinates.lat},${job.coordinates.lng}&travelmode=bicycling`;
-                        return (
-                          <div key={job.id} className="relative flex items-start gap-4 pb-4 last:pb-0">
-                            {idx < routeAJobs.length - 1 && (
-                              <div className="absolute left-[14px] top-7 bottom-0 w-0.5 bg-indigo-500/20 dark:bg-white/10" />
-                            )}
-                            <div className="z-10 flex h-7.5 w-7.5 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-white font-extrabold text-xs shadow-sm">
-                              {idx + 1}
-                            </div>
-                            <div className={`flex-1 min-w-0 border p-3.5 rounded-xl space-y-1.5 hover:border-slate-300 dark:hover:border-white/10 transition-all ${
-                              isJobDone(job)
-                                ? 'bg-slate-50/70 border-slate-200 dark:bg-white/[0.02] dark:border-white/5 opacity-70'
-                                : isRevisionJob(job)
-                                ? 'bg-rose-500/[0.02] border-rose-200/60 dark:border-rose-500/15'
-                                : 'bg-slate-500/[0.01] border-slate-200 dark:border-white/5'
-                            }`}>
-                              <div className="flex items-start gap-2.5">
-                                <input
-                                  type="checkbox"
-                                  checked={isJobDone(job)}
-                                  onChange={() => handleToggleComplete(job.id)}
-                                  className="mt-0.5 h-4 w-4 rounded-md border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-white/10 cursor-pointer"
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between gap-1">
-                                    <h4 className={`font-extrabold text-xs truncate ${isJobDone(job) ? 'line-through text-slate-400' : 'text-slate-900 dark:text-white'}`}>{job.storeName}</h4>
-                                    <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">${job.pay.toFixed(2)}</span>
-                                  </div>
-                                  <p className="text-[10px] text-slate-400 dark:text-slate-400 truncate mt-0.5">{job.address}</p>
-                                  
-                                  <div className="flex flex-wrap gap-1 mt-1.5">
-                                    {isRevisionJob(job) && (
-                                      <span className="bg-rose-50 text-rose-600 border border-rose-100 dark:bg-rose-950/20 dark:border-rose-500/20 dark:text-rose-400 text-[8px] font-black uppercase px-1.5 py-0.2 rounded">
-                                        Revision Required
-                                      </span>
-                                    )}
-                                    {job.dueTime && (
-                                      <span className="bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-950/20 dark:border-amber-500/20 dark:text-amber-400 text-[8px] font-black uppercase px-1.5 py-0.2 rounded">
-                                        Deadline
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-white/5 mt-2">
-                                    <div className="flex flex-wrap items-center gap-1.5 text-[9px] font-black uppercase text-slate-400">
-                                      <span className="bg-slate-100 dark:bg-white/10 px-1.5 py-0.5 rounded-sm">
-                                        {getJobTypeLabel(job)}
-                                      </span>
-                                      <span>•</span>
-                                      <span className="text-indigo-600 dark:text-indigo-400">{dist.toFixed(1)} MI (~{rideMin.toFixed(0)} MINS)</span>
-                                    </div>
-                                    <a
-                                      href={singleLegNavLink}
-                                      target="_blank"
-                                      referrerPolicy="no-referrer"
-                                      className="text-[10px] font-extrabold text-indigo-500 hover:text-indigo-600 flex items-center gap-0.5 hover:underline cursor-pointer"
-                                    >
-                                      <span>Nav</span>
-                                      <ExternalLink size={10} />
-                                    </a>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-
-                      {activeTab === 'B' && routeBJobs.map((job, idx) => (
-                        <div key={job.id} className="relative flex items-start gap-4 pb-4 last:pb-0">
-                          <div className="z-10 flex h-7.5 w-7.5 flex-shrink-0 items-center justify-center rounded-full bg-slate-400 text-white font-extrabold text-xs shadow-sm">
-                            S
-                          </div>
-                          <div className="flex-1 min-w-0 bg-slate-500/[0.01] border border-slate-200 dark:border-white/5 p-3.5 rounded-xl space-y-1 hover:border-slate-300 dark:hover:border-white/10 transition-colors">
-                            <div className="flex items-center justify-between gap-1">
-                              <h4 className="font-extrabold text-slate-900 dark:text-white text-xs truncate">{job.storeName}</h4>
-                              <span className="text-xs font-black text-slate-500">${job.pay.toFixed(2)}</span>
-                            </div>
-                            <p className="text-[10px] text-slate-400 dark:text-slate-400 truncate">{job.address}</p>
-                            <span className="inline-block bg-slate-100 dark:bg-white/10 px-1.5 py-0.5 rounded-sm text-[9px] font-black uppercase text-slate-400">
-                              {getJobTypeLabel(job)}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-
-                      {activeTab === 'A' && routeAJobs.length === 0 && (
-                        <p className="text-xs text-slate-400 italic text-center py-6">No stops registered in active sequence</p>
-                      )}
-                      {activeTab === 'B' && routeBJobs.length === 0 && (
-                        <p className="text-xs text-slate-400 italic text-center py-6">No stops shelved in Route B standby</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Back-Office Operational Controls & Dispatch Console */}
-                <div className="border-t border-slate-200 dark:border-white/5 pt-8 mt-8 space-y-6">
-                  <div>
-                    <h3 className="text-base font-extrabold text-slate-900 dark:text-white uppercase tracking-wide flex items-center gap-2">
-                      <Sliders size={18} className="text-indigo-500" />
-                      <span>Route Analytics & Dispatch Controls</span>
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">
-                      Advanced geo-spatial analysis, outlier mitigation, and real-time dispatcher agent commands.
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Geographic Outlier Guard */}
-                    <div className="road-card p-5 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <ShieldAlert size={18} className="text-amber-500" />
-                          <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider">Geographic Outlier Guard</h4>
-                        </div>
-                        <span className="text-[10px] font-mono text-slate-400 font-bold uppercase">
-                          {outliersReport.length} Detected
-                        </span>
-                      </div>
-                      <OutlierDetector
-                        outliers={outliersReport}
-                        onMoveToRouteB={handleQuickMoveToB}
-                      />
-                    </div>
-
-                    {/* 1-Click Sequence Optimization Trigger */}
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5  space-y-4 flex flex-col justify-between">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-3">
-                          <Sparkles size={18} className="text-indigo-500 " />
-                          <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider">Instant Sequence Optimizer</h4>
-                        </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal font-sans">
-                          Instantly recalculates the dynamic nearest-neighbor path starting from your current coordinates, accounting for deadlines, high pay, and route clustering.
-                        </p>
-                      </div>
-
-                      <button
-                        onClick={handleOptimizeRouteSequence}
-                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all shadow-md cursor-pointer"
-                      >
-                        <Play size={14} className="fill-white" />
-                        <span>OPTIMIZE SEQUENCE NOW</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Operations Console */}
-                  <div className="road-card p-6">
-                    <AIDispatcher
-                      jobs={jobs}
-                      routeAJobs={routeAJobs}
-                      routeBJobs={routeBJobs}
-                      activeMetrics={activeMetrics}
-                      ebikeConfig={ebikeConfig}
-                      outlierIds={outlierIds}
-                      onOptimizeRoute={handleOptimizeRouteSequence}
-                      onMoveJobRoute={handleMoveJobRoute}
-                      onAddJobClick={handleOpenAddModal}
-                      onResetSeeds={handleResetSeeds}
-                      lastOptimizationLog={lastOptimizationLog}
-                      isOptimizing={isOptimizing}
-                      onExecuteAction={handleExecuteDispatcherAction}
-                      onUndoAction={handleUndoLastAction}
-                      canUndo={historyStack.length > 0}
-                      currentBattery={currentBattery}
-                    />
-                  </div>
-                </div>
-
-              </div>
-            </div>
-          )}
-
-          {/* Tab 3: Jobs Management */}
           {currentTab === 'jobs' && !showerGateUnlocked && (
             <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-8 text-center dark:border-amber-500/30 dark:bg-amber-500/10">
               <ShieldCheck size={40} className="mx-auto mb-4 text-amber-500" />
@@ -5656,7 +5150,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           >
             {[
               { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, color: 'text-blue-500' },
-              { id: 'route', label: 'Route', icon: Map, color: 'text-indigo-500' },
               { id: 'jobs', label: 'Jobs', icon: Briefcase, color: 'text-emerald-500' },
               { id: 'battery', label: 'Battery', icon: Battery, color: 'text-lime-600' },
               { id: 'tracker', label: 'Tracker', icon: Timer, color: 'text-indigo-500' },

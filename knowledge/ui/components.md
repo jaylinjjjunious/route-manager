@@ -1,6 +1,6 @@
 # UI Components
 
-**Last Updated:** 2026-07-22 (5389fd3)
+**Last Updated:** 2026-07-22 (routes-page-removed)
 **Related Source Files:** `src/components/*.tsx`, `src/assistant/*.tsx`
 
 ---
@@ -92,7 +92,7 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 |-------|-------|
 | **File** | `src/components/AIDispatcher.tsx` |
 | **Props** | 15 props including all job/route data and action callbacks |
-| **Responsibility** | Chat-style operations console rendered in the Route tab. Uses keyword matching (not real AI). Being superseded by the new AI Operations Assistant bubble. |
+| **Responsibility** | Retired legacy route chat component. No longer mounted after the standalone Route tab was removed; route assistance now goes through the AI Operations Assistant bubble and Dashboard route context. |
 
 ---
 
