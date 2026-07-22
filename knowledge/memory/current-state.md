@@ -23,6 +23,7 @@
 - **Cloudflare Worker API variant:** Alternative backend deployment.
 - **Checkpoint and release scripts:** `scripts/checkpoint.cjs`, `scripts/release.cjs`.
 - **Knowledge system:** This documentation directory.
+- **Official app icon:** Preserved source artwork and generated iPhone Safari/Home Screen plus favicon PNG assets.
 
 ## Infrastructure
 
@@ -35,4 +36,4 @@
 
 ---
 
-**Last Updated:** 2026-07-21 (20913a6)
+**Last Updated:** 2026-07-22 (app icon integration)

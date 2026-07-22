@@ -80,6 +80,19 @@ Key state groups:
 - HTTP camera access blocked on mobile; requires HTTPS (cloudflared tunnel for dev)
 - Touch target sizes are minimum 48px for mobile buttons
 
+### App Icons
+
+The official application icon source is preserved at `public/branding/all-in-one-667-source-icon.png`. Safari iPhone home-screen installation uses `public/apple-touch-icon.png` through the `<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />` tag in `index.html`.
+
+Generated icon outputs:
+- `public/apple-touch-icon.png` - 180x180 for iPhone Safari Add to Home Screen
+- `public/icons/icon-192.png` - 192x192 PNG
+- `public/icons/icon-512.png` - 512x512 PNG
+- `public/favicon-32x32.png` - 32x32 PNG
+- `public/favicon-16x16.png` - 16x16 PNG
+
+A maskable 512 icon is not currently generated because the supplied artwork has not been verified as adaptive-icon safe without risking crop or padding changes to the design.
+
 ### Browser Support
 
 Targets modern mobile browsers (iOS Safari, Android Chrome) and desktop (Chrome, Firefox, Edge). No IE support.
@@ -101,6 +114,9 @@ Targets modern mobile browsers (iOS Safari, Android Chrome) and desktop (Chrome,
 - `src/main.tsx` — Entry point (62 lines)
 - `src/index.css` — Styles (249 lines)
 - `src/types.ts` — Shared types (132 lines)
+- `index.html` - Vite HTML shell and app icon link tags
+- `public/branding/all-in-one-667-source-icon.png` - preserved official app icon source
+- `public/apple-touch-icon.png`, `public/icons/`, `public/favicon-*.png` - generated icon outputs
 
 ## Related Knowledge
 
@@ -111,4 +127,4 @@ Targets modern mobile browsers (iOS Safari, Android Chrome) and desktop (Chrome,
 
 ## Last Updated
 
-2026-07-20 (c12bd44)
+2026-07-22 (app icon integration)
