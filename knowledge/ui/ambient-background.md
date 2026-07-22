@@ -32,6 +32,15 @@ The component renders five absolutely-positioned layers inside a fixed, full-vie
 | `ambient-amber-secondary` | Upper-right offset | Amber-warm → Rose-muted → Amber | 130s color / 40s drift |
 | `ambient-dark-overlay` | Full viewport | Dark center/lower gradient | Static |
 
+### Layer Sizes and Opacity (v2)
+
+| Layer | Size | Opacity | Blur |
+|-------|------|---------|------|
+| Left primary | 60vw × 55vh | 1.0 | 50px |
+| Left secondary | 48vw × 44vh | 0.92 | 60px |
+| Right primary | 60vw × 55vh | 1.0 | 50px |
+| Right secondary | 48vw × 44vh | 0.90 | 60px |
+
 ## Positioning
 
 All layers are anchored deep into their respective corners:
@@ -79,20 +88,20 @@ All colors derived from the product design system. No invented colors.
 
 | Name | Inner Color | Outer Color | Derived From |
 |------|-------------|-------------|-------------|
-| Blue | `rgba(0, 122, 255, 0.30)` | `rgba(0, 90, 210, 0.12)` | Apple blue (#007AFF) |
-| Blue-deep | `rgba(29, 78, 216, 0.26)` | `rgba(20, 55, 180, 0.10)` | blue-700 |
-| Indigo | `rgba(99, 102, 241, 0.26)` | `rgba(79, 82, 200, 0.10)` | indigo-500 (#6366F1) |
-| Emerald | `rgba(16, 185, 129, 0.22)` | `rgba(10, 150, 105, 0.09)` | emerald-500 (#10B981) |
-| Emerald-deep | `rgba(5, 150, 105, 0.20)` | `rgba(5, 120, 85, 0.08)` | emerald-600 (#059669) |
+| Blue | `rgba(0, 122, 255, 0.55)` | `rgba(0, 90, 210, 0.24)` | Apple blue (#007AFF) |
+| Blue-deep | `rgba(29, 78, 216, 0.48)` | `rgba(20, 55, 180, 0.20)` | blue-700 |
+| Indigo | `rgba(99, 102, 241, 0.48)` | `rgba(79, 82, 200, 0.20)` | indigo-500 (#6366F1) |
+| Emerald | `rgba(16, 185, 129, 0.42)` | `rgba(10, 150, 105, 0.18)` | emerald-500 (#10B981) |
+| Emerald-deep | `rgba(5, 150, 105, 0.35)` | `rgba(5, 120, 85, 0.16)` | emerald-600 (#059669) |
 
 ### Warm Side (Right — Layers 3 & 4)
 
 | Name | Inner Color | Outer Color | Derived From |
 |------|-------------|-------------|-------------|
-| Amber | `rgba(200, 140, 40, 0.26)` | `rgba(180, 110, 20, 0.11)` | Amber (#C88C28) |
-| Amber-warm | `rgba(180, 120, 30, 0.22)` | `rgba(160, 100, 20, 0.09)` | amber-600 tone |
-| Rose | `rgba(200, 60, 80, 0.18)` | `rgba(180, 50, 65, 0.08)` | rose-500 (#F43F5E) muted |
-| Rose-muted | `rgba(180, 50, 70, 0.16)` | `rgba(160, 40, 55, 0.07)` | rose-600 (#E11D48) muted |
+| Amber | `rgba(200, 140, 40, 0.50)` | `rgba(180, 110, 20, 0.22)` | Amber (#C88C28) |
+| Amber-warm | `rgba(180, 120, 30, 0.42)` | `rgba(160, 100, 20, 0.18)` | amber-600 tone |
+| Rose | `rgba(200, 60, 80, 0.38)` | `rgba(180, 50, 65, 0.16)` | rose-500 (#F43F5E) muted |
+| Rose-muted | `rgba(180, 50, 70, 0.30)` | `rgba(160, 40, 55, 0.14)` | rose-600 (#E11D48) muted |
 
 ## Animation Strategy
 
