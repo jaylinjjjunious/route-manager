@@ -10,19 +10,66 @@
 
 ## Purpose
 
-Provides a slow, liquid-light animated background behind all authenticated application pages. The effect creates an atmospheric sense of depth with moving glow fields that cycle through the full product color palette, while keeping content readable and interactions unimpeded.
+Provides a slow, liquid-light animated background anchored to the upper corners. Strong color glow in the upper-left and upper-right, dark center, dark lower half. Colors cycle through the product palette while the composition remains stable.
+
+## Composition
+
+```
+[blue/palette glow]     dark center     [amber/palette glow]
+          dark operational content area
+          dark lower page and navigation
+```
 
 ## Architecture
 
 The component renders five absolutely-positioned layers inside a fixed, full-viewport container:
 
-| Layer | Position | Color Cycle | Duration |
-|-------|----------|-------------|----------|
-| `ambient-blue-primary` | Upper-left | Blue → Indigo → Emerald → Blue-deep | 140s color / 28s drift |
+| Layer | Anchor | Color Cycle | Duration |
+|-------|--------|-------------|----------|
+| `ambient-blue-primary` | Upper-left corner | Blue → Indigo → Emerald → Blue-deep | 140s color / 28s drift |
 | `ambient-blue-secondary` | Upper-left offset | iOS Blue → Emerald-deep → Blue → Indigo | 160s color / 36s drift |
-| `ambient-amber-primary` | Upper-right | Amber → Rose → Amber-warm | 150s color / 32s drift |
+| `ambient-amber-primary` | Upper-right corner | Amber → Rose → Amber-warm | 150s color / 32s drift |
 | `ambient-amber-secondary` | Upper-right offset | Amber-warm → Rose-muted → Amber | 130s color / 40s drift |
-| `ambient-dark-overlay` | Full viewport | Dark gradient (static) | None |
+| `ambient-dark-overlay` | Full viewport | Dark center/lower gradient | Static |
+
+## Positioning
+
+All layers are anchored deep into their respective corners:
+
+| Layer | Position | Gradient Anchor |
+|-------|----------|-----------------|
+| Left primary | `top: -20vh; left: -18vw` | `radial-gradient at 12% 12%` |
+| Left secondary | `top: -10vh; left: -8vw` | `radial-gradient at 18% 18%` |
+| Right primary | `top: -20vh; right: -18vw` | `radial-gradient at 88% 12%` |
+| Right secondary | `top: -10vh; right: -8vw` | `radial-gradient at 82% 18%` |
+
+The gradient focal points are near the corner edges, not at element center. This ensures the strongest color is near the viewport corner with soft falloff inward.
+
+## Drift Limits
+
+Motion is constrained to stay within corner zones:
+
+| Layer | X Range | Y Range |
+|-------|---------|---------|
+| Left primary | -2vw to +3vw | 0vh to +4vh |
+| Left secondary | -3vw to +2vw | -2vh to +4vh |
+| Right primary | -4vw to 0vw | -3vh to +3vh |
+| Right secondary | -3vw to +3vw | -2vh to +4vh |
+
+No layer moves more than ~4vw from its corner origin. The center stays dark.
+
+## Dark Overlay
+
+The dark overlay uses two gradients:
+
+1. **Radial vignette** — transparent at top center (8%), darkening through the center (35–65%), darkest at edges (92%)
+2. **Linear gradient** — transparent at top, increasingly dark toward bottom (30% at 30vh, 65% at 60vh, 85% at bottom)
+
+This ensures:
+- Corner glows remain visible through the top
+- Center is dark
+- Lower half is dark
+- No white outer halo
 
 ## Color Palette
 
@@ -47,25 +94,12 @@ All colors derived from the product design system. No invented colors.
 | Rose | `rgba(200, 60, 80, 0.18)` | `rgba(180, 50, 65, 0.08)` | rose-500 (#F43F5E) muted |
 | Rose-muted | `rgba(180, 50, 70, 0.16)` | `rgba(160, 40, 55, 0.07)` | rose-600 (#E11D48) muted |
 
-### Colors Excluded
-
-| Family | Reason |
-|--------|--------|
-| Violet | Not used in product palette |
-| Purple | Not used in product palette |
-| Teal | Not used in product palette |
-| Cyan | Not used in product palette |
-| Orange | Amber is the warm tone; orange would muddy |
-| Lime | Only used for one battery icon, not a design family |
-| Red | Too alarming; rose serves this role at lower saturation |
-| Gray/Slate | Neutral, not suitable for ambient atmosphere |
-
 ## Animation Strategy
 
 Two independent animation systems run simultaneously on each layer:
 
 1. **Motion** — `ambient-drift-*` keyframes (28–40s, `alternate`)
-   - `transform`: translate, scale, rotate
+   - `transform`: translate (constrained), scale, rotate
    - `border-radius`: organic shape deformation
    - `opacity`: subtle breathing
 
@@ -73,17 +107,6 @@ Two independent animation systems run simultaneously on each layer:
    - `@property` registered custom properties (`--amb-color-1` through `--amb-color-4b`)
    - Animated through palette stops at smooth intervals
    - Different durations per layer prevent synchronized color changes
-
-### Layer Color Cycles
-
-**Layer 1 (140s):** Blue → Indigo → Emerald → Blue-deep → Blue
-**Layer 2 (160s):** iOS Blue → Emerald-deep → Blue → Indigo → iOS Blue
-**Layer 3 (150s):** Amber → Rose → Amber-warm → Amber
-**Layer 4 (130s):** Amber-warm → Rose-muted → Amber → Amber-warm
-
-### Full Cycle Duration
-
-The LCM of 140, 160, 150, 130 = very long (hundreds of minutes). The visual effect is that the palette never visibly repeats.
 
 ## Token Architecture
 
@@ -112,7 +135,7 @@ To edit the palette, modify the `ambient-shift-*` keyframes and the `@property` 
 - `pointer-events: none` on entire container
 - `overflow: clip` prevents any layout impact
 - `@property` registration enables GPU-accelerated color interpolation
-- Mobile: reduced blur radius via media query
+- Mobile: reduced blur radius and smaller field sizes via media query
 
 ## Z-Index Stacking
 
@@ -126,22 +149,24 @@ To edit the palette, modify the `ambient-shift-*` keyframes and the `@property` 
 
 ## Reduced Motion
 
-`@media (prefers-reduced-motion: reduce)` stops all positional movement and shape deformation. A very slow non-moving color fade remains (300–350s duration). The background still shows atmospheric color but without drift.
+`@media (prefers-reduced-motion: reduce)` stops all positional movement and shape deformation. A very slow non-moving color fade remains (280–350s per layer). Transform offsets keep glows near corners at reduced-motion rest positions.
 
 ## Responsive Behavior
 
 | Viewport | Adjustment |
 |----------|-----------|
-| Desktop (>640px) | Full-size layers, 55–85px blur |
-| Mobile (≤640px) | Layers widen to 60–80vw, blur reduced to 45–65px |
+| Desktop (>640px) | 58vw fields, 55px blur, positioned deep in corners |
+| Mobile (≤640px) | 65vw fields, 45px blur, repositioned tighter to corners (top: -18vh, left/right: -20vw) |
 
 ## Design Principles
 
 - **Left side = cool** (blue, indigo, emerald family)
 - **Right side = warm** (amber, rose family)
+- **Strongest glow at corners** — not center
+- **Dark center and lower half** — always
 - **No rainbow** — two distinct atmospheric regions
-- **No saturated fills** — all colors at 16–30% opacity
-- **Dark overlay** always present for readability
+- **No white outer halo** — corners are colored, edges are dark
+- **Constrained drift** — layers stay within ~4vw of their corner origin
 - **Blue and amber remain dominant** — other colors appear as subtle accents
 
 ## Known Limitations
