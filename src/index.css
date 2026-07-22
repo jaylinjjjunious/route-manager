@@ -232,6 +232,64 @@ select {
    All in One 667 — original implementation
    ============================================ */
 
+/* ============================================
+   Ambient Liquid Background — Full Palette
+   ============================================
+   Colors derived from the product design system:
+     Blue    — #007AFF / #0A84FF (primary actions)
+     Indigo  — #6366F1 (secondary nav, route B)
+     Emerald — #10B981 (success, completion)
+     Amber   — rgba(200,140,40) (warnings, deadlines)
+     Rose    — #F43F5E (danger, outliers)
+
+   Left side stays cool (blue/indigo/emerald).
+   Right side stays warm (amber/rose).
+   No rainbow — two atmospheric regions.
+   ============================================ */
+
+/* --- Animatable color custom properties --- */
+@property --amb-color-1 {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: rgba(0, 122, 255, 0.30);
+}
+@property --amb-color-1b {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: rgba(0, 90, 210, 0.12);
+}
+@property --amb-color-2 {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: rgba(10, 132, 255, 0.22);
+}
+@property --amb-color-2b {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: rgba(0, 80, 200, 0.09);
+}
+@property --amb-color-3 {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: rgba(200, 140, 40, 0.26);
+}
+@property --amb-color-3b {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: rgba(180, 110, 20, 0.11);
+}
+@property --amb-color-4 {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: rgba(180, 120, 30, 0.20);
+}
+@property --amb-color-4b {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: rgba(160, 100, 20, 0.08);
+}
+
+/* --- Container --- */
 .ambient-liquid-root {
   position: fixed;
   inset: 0;
@@ -247,57 +305,65 @@ select {
   will-change: transform, opacity;
 }
 
-/* --- Blue primary: upper-left --- */
+/* --- Layer 1: Left primary — blue → indigo → emerald → blue-deep (140s) --- */
 .ambient-blue-primary {
   width: 60vw;
   height: 55vh;
   top: -10vh;
   left: -8vw;
-  background: radial-gradient(ellipse at center, rgba(0, 122, 255, 0.32) 0%, rgba(0, 90, 210, 0.14) 40%, transparent 72%);
+  background: radial-gradient(ellipse at center, var(--amb-color-1) 0%, var(--amb-color-1b) 40%, transparent 72%);
   filter: blur(55px);
   opacity: 1;
-  animation: ambient-drift-blue-primary 28s ease-in-out infinite alternate;
+  animation:
+    ambient-drift-blue-primary 28s ease-in-out infinite alternate,
+    ambient-shift-1 140s ease-in-out infinite;
 }
 
-/* --- Blue secondary: offset for depth, closer/larger feel --- */
+/* --- Layer 2: Left secondary — iOS blue → emerald-deep → blue → indigo (160s) --- */
 .ambient-blue-secondary {
   width: 50vw;
   height: 45vh;
   top: 0vh;
   left: 10vw;
-  background: radial-gradient(ellipse at center, rgba(10, 132, 255, 0.24) 0%, rgba(0, 80, 200, 0.10) 42%, transparent 68%);
+  background: radial-gradient(ellipse at center, var(--amb-color-2) 0%, var(--amb-color-2b) 42%, transparent 68%);
   filter: blur(80px);
   opacity: 0.85;
-  animation: ambient-drift-blue-secondary 36s ease-in-out infinite alternate;
+  animation:
+    ambient-drift-blue-secondary 36s ease-in-out infinite alternate,
+    ambient-shift-2 160s ease-in-out infinite;
 }
 
-/* --- Amber primary: upper-right --- */
+/* --- Layer 3: Right primary — amber → rose → amber-warm (150s) --- */
 .ambient-amber-primary {
   width: 55vw;
   height: 52vh;
   top: -8vh;
   right: -10vw;
   left: auto;
-  background: radial-gradient(ellipse at center, rgba(200, 140, 40, 0.26) 0%, rgba(180, 110, 20, 0.12) 40%, transparent 70%);
+  background: radial-gradient(ellipse at center, var(--amb-color-3) 0%, var(--amb-color-3b) 40%, transparent 70%);
   filter: blur(60px);
   opacity: 1;
-  animation: ambient-drift-amber-primary 32s ease-in-out infinite alternate;
+  animation:
+    ambient-drift-amber-primary 32s ease-in-out infinite alternate,
+    ambient-shift-3 150s ease-in-out infinite;
 }
 
-/* --- Amber secondary: offset for depth --- */
+/* --- Layer 4: Right secondary — amber-warm → rose-muted → amber (130s) --- */
 .ambient-amber-secondary {
   width: 45vw;
   height: 42vh;
   top: 2vh;
   right: 8vw;
   left: auto;
-  background: radial-gradient(ellipse at center, rgba(180, 120, 30, 0.20) 0%, rgba(160, 100, 20, 0.08) 38%, transparent 65%);
+  background: radial-gradient(ellipse at center, var(--amb-color-4) 0%, var(--amb-color-4b) 38%, transparent 65%);
   filter: blur(85px);
   opacity: 0.8;
-  animation: ambient-drift-amber-secondary 40s ease-in-out infinite alternate;
+  animation:
+    ambient-drift-amber-secondary 40s ease-in-out infinite alternate,
+    ambient-shift-4 130s ease-in-out infinite;
 }
 
-/* --- Dark overlay: strengthened readability control --- */
+/* --- Dark overlay: readability control (unchanged) --- */
 .ambient-dark-overlay {
   inset: 0;
   width: 100%;
@@ -312,7 +378,7 @@ select {
 }
 
 /* ============================================
-   Keyframes — independent per layer, amplified
+   Motion keyframes (liquid drift, shape deformation)
    ============================================ */
 
 @keyframes ambient-drift-blue-primary {
@@ -428,33 +494,70 @@ select {
 }
 
 /* ============================================
+   Color shift keyframes (full palette cycle)
+   ============================================ */
+
+/* Layer 1: Blue → Indigo → Emerald → Blue-deep → Blue */
+@keyframes ambient-shift-1 {
+  0%   { --amb-color-1: rgba(0, 122, 255, 0.30); --amb-color-1b: rgba(0, 90, 210, 0.12); }
+  25%  { --amb-color-1: rgba(99, 102, 241, 0.26); --amb-color-1b: rgba(79, 82, 200, 0.10); }
+  50%  { --amb-color-1: rgba(16, 185, 129, 0.22); --amb-color-1b: rgba(10, 150, 105, 0.09); }
+  75%  { --amb-color-1: rgba(29, 78, 216, 0.26); --amb-color-1b: rgba(20, 55, 180, 0.10); }
+  100% { --amb-color-1: rgba(0, 122, 255, 0.30); --amb-color-1b: rgba(0, 90, 210, 0.12); }
+}
+
+/* Layer 2: iOS blue → Emerald-deep → Blue → Indigo → iOS blue */
+@keyframes ambient-shift-2 {
+  0%   { --amb-color-2: rgba(10, 132, 255, 0.22); --amb-color-2b: rgba(0, 80, 200, 0.09); }
+  25%  { --amb-color-2: rgba(5, 150, 105, 0.20); --amb-color-2b: rgba(5, 120, 85, 0.08); }
+  50%  { --amb-color-2: rgba(0, 122, 255, 0.24); --amb-color-2b: rgba(0, 90, 210, 0.10); }
+  75%  { --amb-color-2: rgba(99, 102, 241, 0.22); --amb-color-2b: rgba(79, 82, 200, 0.09); }
+  100% { --amb-color-2: rgba(10, 132, 255, 0.22); --amb-color-2b: rgba(0, 80, 200, 0.09); }
+}
+
+/* Layer 3: Amber → Rose → Amber-warm → Amber */
+@keyframes ambient-shift-3 {
+  0%   { --amb-color-3: rgba(200, 140, 40, 0.26); --amb-color-3b: rgba(180, 110, 20, 0.11); }
+  33%  { --amb-color-3: rgba(200, 60, 80, 0.18); --amb-color-3b: rgba(180, 50, 65, 0.08); }
+  66%  { --amb-color-3: rgba(180, 120, 30, 0.22); --amb-color-3b: rgba(160, 100, 20, 0.09); }
+  100% { --amb-color-3: rgba(200, 140, 40, 0.26); --amb-color-3b: rgba(180, 110, 20, 0.11); }
+}
+
+/* Layer 4: Amber-warm → Rose-muted → Amber → Amber-warm */
+@keyframes ambient-shift-4 {
+  0%   { --amb-color-4: rgba(180, 120, 30, 0.20); --amb-color-4b: rgba(160, 100, 20, 0.08); }
+  33%  { --amb-color-4: rgba(180, 50, 70, 0.16); --amb-color-4b: rgba(160, 40, 55, 0.07); }
+  66%  { --amb-color-4: rgba(200, 140, 40, 0.22); --amb-color-4b: rgba(180, 110, 20, 0.09); }
+  100% { --amb-color-4: rgba(180, 120, 30, 0.20); --amb-color-4b: rgba(160, 100, 20, 0.08); }
+}
+
+/* ============================================
    Reduced Motion
+   Stops all positional movement and shape deformation.
+   Preserves a very slow non-moving color fade.
    ============================================ */
 
 @media (prefers-reduced-motion: reduce) {
-  .ambient-blue-primary,
-  .ambient-blue-secondary,
-  .ambient-amber-primary,
-  .ambient-amber-secondary {
-    animation: none;
-  }
-
   .ambient-blue-primary {
+    animation: ambient-shift-1 300s ease-in-out infinite;
     transform: translate(4vw, 3vh) scale(1.04);
     opacity: 0.92;
   }
 
   .ambient-blue-secondary {
+    animation: ambient-shift-2 350s ease-in-out infinite;
     transform: translate(2vw, 5vh) scale(1.02);
     opacity: 0.78;
   }
 
   .ambient-amber-primary {
+    animation: ambient-shift-3 320s ease-in-out infinite;
     transform: translate(-5vw, 3vh) scale(1.05);
     opacity: 0.9;
   }
 
   .ambient-amber-secondary {
+    animation: ambient-shift-4 280s ease-in-out infinite;
     transform: translate(-3vw, 4vh) scale(1.02);
     opacity: 0.72;
   }
