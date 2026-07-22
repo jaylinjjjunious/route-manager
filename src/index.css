@@ -228,44 +228,23 @@ select {
 }
 
 /* ============================================
-   Ambient Liquid Background — Centered Atmosphere
+   Ambient Liquid Background — Single Floating Orb
    ============================================
-   Deep space-black base. Color atmosphere
-   concentrated through the middle region.
-   Black negative space preserved around edges.
-   8-color palette cycles every ~80 seconds.
+   One orb drifting organically through space-black.
+   Full palette color cycle every 90 seconds.
+   140-second motion path with 10 waypoints.
    ============================================ */
 
-/* --- @property registrations for animated color custom properties --- */
-@property --amb-a-in {
+/* --- Animatable color custom properties --- */
+@property --amb-in {
   syntax: '<color>';
   inherits: false;
-  initial-value: rgba(0, 122, 255, 0.82);
+  initial-value: rgba(0, 122, 255, 0.78);
 }
-@property --amb-a-out {
+@property --amb-out {
   syntax: '<color>';
   inherits: false;
-  initial-value: rgba(0, 90, 210, 0.16);
-}
-@property --amb-b-in {
-  syntax: '<color>';
-  inherits: false;
-  initial-value: rgba(10, 132, 255, 0.64);
-}
-@property --amb-b-out {
-  syntax: '<color>';
-  inherits: false;
-  initial-value: rgba(0, 80, 200, 0.12);
-}
-@property --amb-c-in {
-  syntax: '<color>';
-  inherits: false;
-  initial-value: rgba(16, 185, 129, 0.52);
-}
-@property --amb-c-out {
-  syntax: '<color>';
-  inherits: false;
-  initial-value: rgba(10, 150, 105, 0.08);
+  initial-value: rgba(0, 90, 210, 0.14);
 }
 
 /* --- Container --- */
@@ -278,78 +257,33 @@ select {
   overflow: clip;
 }
 
-.ambient-layer {
+/* --- Single orb --- */
+.ambient-orb {
   position: absolute;
-  will-change: transform, opacity;
-}
-
-/* --- Layer A: Primary — wide centered field, strongest color --- */
-.ambient-layer-primary {
-  width: 85vw;
-  height: 50vh;
-  top: 6vh;
+  top: 14vh;
   left: 50%;
+  width: 80vw;
+  height: 48vh;
   transform: translateX(-50%);
   background:
     radial-gradient(
-      ellipse 75% 100% at 50% 50%,
-      var(--amb-a-in) 0%,
-      var(--amb-a-out) 48%,
-      transparent 72%
+      ellipse 78% 100% at 50% 50%,
+      var(--amb-in) 0%,
+      var(--amb-out) 46%,
+      transparent 70%
     );
   border-radius: 42% 58% 55% 45% / 46% 54% 46% 54%;
-  filter: blur(55px);
+  filter: blur(52px);
   opacity: 1;
+  will-change: transform, opacity;
   animation:
-    ambient-drift-a 32s ease-in-out infinite alternate,
-    ambient-shift-a 80s ease-in-out infinite;
+    ambient-orb-path 140s cubic-bezier(0.37, 0, 0.63, 1) infinite,
+    ambient-orb-color 90s ease-in-out infinite;
 }
 
-/* --- Layer B: Support — medium, offset left --- */
-.ambient-layer-support-a {
-  width: 60vw;
-  height: 38vh;
-  top: 12vh;
-  left: 12%;
-  background:
-    radial-gradient(
-      ellipse 80% 100% at 40% 50%,
-      var(--amb-b-in) 0%,
-      var(--amb-b-out) 44%,
-      transparent 68%
-    );
-  border-radius: 55% 45% 48% 52% / 42% 58% 42% 58%;
-  filter: blur(65px);
-  opacity: 0.92;
-  animation:
-    ambient-drift-b 40s ease-in-out infinite alternate,
-    ambient-shift-b 80s ease-in-out infinite;
-}
-
-/* --- Layer C: Support — smaller, offset right --- */
-.ambient-layer-support-b {
-  width: 50vw;
-  height: 30vh;
-  top: 16vh;
-  right: 8%;
-  left: auto;
-  background:
-    radial-gradient(
-      ellipse 85% 100% at 60% 50%,
-      var(--amb-c-in) 0%,
-      var(--amb-c-out) 40%,
-      transparent 64%
-    );
-  border-radius: 48% 52% 54% 46% / 52% 48% 52% 48%;
-  filter: blur(60px);
-  opacity: 0.88;
-  animation:
-    ambient-drift-c 36s ease-in-out infinite alternate,
-    ambient-shift-c 80s ease-in-out infinite;
-}
-
-/* --- Vignette overlay — dark edges, dark bottom, space-black frame --- */
-.ambient-layer-vignette {
+/* --- Vignette overlay --- */
+.ambient-vignette {
+  position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
@@ -361,192 +295,107 @@ select {
 }
 
 /* ============================================
-   Motion keyframes — centered drift
-   X: ±10–18vw horizontal through middle
-   Y: ±3–8vh vertical
-   Scale: 0.95–1.15
+   Motion path — 10 waypoints, 140 seconds
+   Orb drifts through upper and middle regions.
+   Y stays within 8vh–52vh to keep lower page dark.
+   Irregular spacing prevents obvious loop.
    ============================================ */
 
-@keyframes ambient-drift-a {
+@keyframes ambient-orb-path {
   0% {
     transform: translateX(-50%) translate(0, 0) scale(1) rotate(0deg);
     border-radius: 42% 58% 55% 45% / 46% 54% 46% 54%;
+    opacity: 1;
   }
-  16% {
-    transform: translateX(-50%) translate(12vw, -3vh) scale(1.08) rotate(1.2deg);
+  9% {
+    transform: translateX(-50%) translate(14vw, -4vh) scale(1.07) rotate(1.2deg);
     border-radius: 38% 62% 50% 50% / 50% 50% 50% 50%;
+    opacity: 0.95;
   }
-  33% {
-    transform: translateX(-50%) translate(-10vw, 5vh) scale(0.95) rotate(-1.5deg);
+  19% {
+    transform: translateX(-50%) translate(-12vw, 6vh) scale(0.94) rotate(-1.5deg);
     border-radius: 55% 45% 42% 58% / 42% 58% 42% 58%;
+    opacity: 1;
   }
-  50% {
-    transform: translateX(-50%) translate(6vw, -6vh) scale(1.12) rotate(0.8deg);
+  31% {
+    transform: translateX(-50%) translate(8vw, -8vh) scale(1.12) rotate(0.8deg);
     border-radius: 45% 55% 58% 42% / 52% 48% 52% 48%;
+    opacity: 0.92;
   }
-  66% {
-    transform: translateX(-50%) translate(-14vw, 2vh) scale(0.97) rotate(-0.5deg);
+  43% {
+    transform: translateX(-50%) translate(-16vw, 2vh) scale(0.96) rotate(-0.5deg);
     border-radius: 50% 50% 45% 55% / 48% 52% 48% 52%;
+    opacity: 1;
   }
-  83% {
-    transform: translateX(-50%) translate(18vw, -4vh) scale(1.06) rotate(1.5deg);
+  56% {
+    transform: translateX(-50%) translate(18vw, -2vh) scale(1.08) rotate(1.5deg);
     border-radius: 40% 60% 52% 48% / 54% 46% 54% 46%;
+    opacity: 0.94;
+  }
+  68% {
+    transform: translateX(-50%) translate(-8vw, 8vh) scale(0.93) rotate(-1.2deg);
+    border-radius: 52% 48% 48% 52% / 44% 56% 44% 56%;
+    opacity: 1;
+  }
+  79% {
+    transform: translateX(-50%) translate(10vw, -6vh) scale(1.10) rotate(0.6deg);
+    border-radius: 46% 54% 55% 45% / 50% 50% 50% 50%;
+    opacity: 0.96;
+  }
+  90% {
+    transform: translateX(-50%) translate(-14vw, 4vh) scale(0.97) rotate(-0.8deg);
+    border-radius: 55% 45% 50% 50% / 46% 54% 46% 54%;
+    opacity: 1;
   }
   100% {
-    transform: translateX(-50%) translate(-6vw, 3vh) scale(1.02) rotate(-0.8deg);
-    border-radius: 44% 56% 48% 52% / 50% 50% 50% 50%;
-  }
-}
-
-@keyframes ambient-drift-b {
-  0% {
-    transform: translate(0, 0) scale(1) rotate(0deg);
-    border-radius: 55% 45% 48% 52% / 42% 58% 42% 58%;
-  }
-  20% {
-    transform: translate(8vw, -4vh) scale(1.06) rotate(-1.2deg);
-    border-radius: 48% 52% 55% 45% / 50% 50% 50% 50%;
-  }
-  40% {
-    transform: translate(-12vw, 6vh) scale(0.95) rotate(1deg);
-    border-radius: 42% 58% 52% 48% / 44% 56% 44% 56%;
-  }
-  60% {
-    transform: translate(16vw, -2vh) scale(1.10) rotate(-0.5deg);
-    border-radius: 58% 42% 45% 55% / 52% 48% 52% 48%;
-  }
-  80% {
-    transform: translate(-8vw, 4vh) scale(0.96) rotate(1.5deg);
-    border-radius: 50% 50% 55% 45% / 46% 54% 46% 54%;
-  }
-  100% {
-    transform: translate(4vw, -3vh) scale(1.04) rotate(-1deg);
-    border-radius: 52% 48% 50% 50% / 48% 52% 48% 52%;
-  }
-}
-
-@keyframes ambient-drift-c {
-  0% {
-    transform: translate(0, 0) scale(1) rotate(0deg);
-    border-radius: 48% 52% 54% 46% / 52% 48% 52% 48%;
-  }
-  25% {
-    transform: translate(-10vw, 3vh) scale(1.08) rotate(1deg);
-    border-radius: 52% 48% 48% 52% / 46% 54% 46% 54%;
-  }
-  50% {
-    transform: translate(14vw, -5vh) scale(0.94) rotate(-1.5deg);
-    border-radius: 44% 56% 52% 48% / 50% 50% 50% 50%;
-  }
-  75% {
-    transform: translate(-6vw, 6vh) scale(1.10) rotate(0.5deg);
-    border-radius: 55% 45% 45% 55% / 44% 56% 44% 56%;
-  }
-  100% {
-    transform: translate(8vw, -2vh) scale(1.02) rotate(-0.8deg);
-    border-radius: 50% 50% 50% 50% / 52% 48% 52% 48%;
+    transform: translateX(-50%) translate(0, 0) scale(1) rotate(0deg);
+    border-radius: 42% 58% 55% 45% / 46% 54% 46% 54%;
+    opacity: 1;
   }
 }
 
 /* ============================================
-   Color shift keyframes — 8-phase full palette
-   80 seconds total: 10s hold + 2s overlap
+   Color shift — 8-phase full palette, 90 seconds
    Blue → Teal → Emerald → Gold → Amber → Orange → Pink → Violet → Blue
    ============================================ */
 
-/* Layer A — primary */
-@keyframes ambient-shift-a {
-  0%   { --amb-a-in: rgba(0, 122, 255, 0.82); --amb-a-out: rgba(0, 90, 210, 0.16); }   /* blue */
-  12%  { --amb-a-in: rgba(20, 184, 166, 0.78); --amb-a-out: rgba(13, 148, 136, 0.14); }   /* teal */
-  25%  { --amb-a-in: rgba(16, 185, 129, 0.72); --amb-a-out: rgba(10, 150, 105, 0.12); }   /* emerald */
-  37%  { --amb-a-in: rgba(234, 179, 8, 0.68); --amb-a-out: rgba(202, 138, 4, 0.10); }     /* gold */
-  50%  { --amb-a-in: rgba(245, 158, 11, 0.72); --amb-a-out: rgba(217, 119, 6, 0.12); }    /* amber */
-  62%  { --amb-a-in: rgba(249, 115, 22, 0.76); --amb-a-out: rgba(234, 88, 12, 0.14); }    /* orange */
-  75%  { --amb-a-in: rgba(236, 72, 153, 0.70); --amb-a-out: rgba(219, 39, 119, 0.12); }   /* pink */
-  87%  { --amb-a-in: rgba(139, 92, 246, 0.74); --amb-a-out: rgba(109, 40, 217, 0.14); }   /* violet */
-  100% { --amb-a-in: rgba(0, 122, 255, 0.82); --amb-a-out: rgba(0, 90, 210, 0.16); }     /* blue */
-}
-
-/* Layer B — support left */
-@keyframes ambient-shift-b {
-  0%   { --amb-b-in: rgba(10, 132, 255, 0.64); --amb-b-out: rgba(0, 80, 200, 0.12); }
-  12%  { --amb-b-in: rgba(34, 211, 238, 0.58); --amb-b-out: rgba(6, 182, 212, 0.10); }
-  25%  { --amb-b-in: rgba(5, 150, 105, 0.52); --amb-b-out: rgba(5, 120, 85, 0.08); }
-  37%  { --amb-b-in: rgba(250, 204, 21, 0.48); --amb-b-out: rgba(234, 179, 8, 0.07); }
-  50%  { --amb-b-in: rgba(245, 158, 11, 0.52); --amb-b-out: rgba(217, 119, 6, 0.08); }
-  62%  { --amb-b-in: rgba(251, 146, 60, 0.56); --amb-b-out: rgba(234, 88, 12, 0.10); }
-  75%  { --amb-b-in: rgba(244, 63, 94, 0.50); --amb-b-out: rgba(225, 29, 72, 0.08); }
-  87%  { --amb-b-in: rgba(124, 58, 237, 0.54); --amb-b-out: rgba(109, 40, 217, 0.10); }
-  100% { --amb-b-in: rgba(10, 132, 255, 0.64); --amb-b-out: rgba(0, 80, 200, 0.12); }
-}
-
-/* Layer C — support right */
-@keyframes ambient-shift-c {
-  0%   { --amb-c-in: rgba(16, 185, 129, 0.52); --amb-c-out: rgba(10, 150, 105, 0.08); }
-  12%  { --amb-c-in: rgba(45, 212, 191, 0.48); --amb-c-out: rgba(20, 184, 166, 0.07); }
-  25%  { --amb-c-in: rgba(34, 197, 94, 0.44); --amb-c-out: rgba(22, 163, 74, 0.06); }
-  37%  { --amb-c-in: rgba(217, 119, 6, 0.48); --amb-c-out: rgba(180, 83, 9, 0.07); }
-  50%  { --amb-c-in: rgba(234, 88, 12, 0.52); --amb-c-out: rgba(194, 65, 12, 0.08); }
-  62%  { --amb-c-in: rgba(251, 146, 60, 0.50); --amb-c-out: rgba(234, 88, 12, 0.08); }
-  75%  { --amb-c-in: rgba(219, 39, 119, 0.46); --amb-c-out: rgba(190, 18, 100, 0.06); }
-  87%  { --amb-c-in: rgba(109, 40, 217, 0.48); --amb-c-out: rgba(91, 33, 182, 0.07); }
-  100% { --amb-c-in: rgba(16, 185, 129, 0.52); --amb-c-out: rgba(10, 150, 105, 0.08); }
+@keyframes ambient-orb-color {
+  0%   { --amb-in: rgba(0, 122, 255, 0.78);  --amb-out: rgba(0, 90, 210, 0.14); }    /* blue */
+  12%  { --amb-in: rgba(20, 184, 166, 0.74);  --amb-out: rgba(13, 148, 136, 0.12); }   /* teal */
+  25%  { --amb-in: rgba(16, 185, 129, 0.68);  --amb-out: rgba(10, 150, 105, 0.10); }   /* emerald */
+  37%  { --amb-in: rgba(234, 179, 8, 0.65);   --amb-out: rgba(202, 138, 4, 0.09); }    /* gold */
+  50%  { --amb-in: rgba(245, 158, 11, 0.68);  --amb-out: rgba(217, 119, 6, 0.10); }    /* amber */
+  62%  { --amb-in: rgba(249, 115, 22, 0.72);  --amb-out: rgba(234, 88, 12, 0.12); }    /* orange */
+  75%  { --amb-in: rgba(236, 72, 153, 0.66);  --amb-out: rgba(219, 39, 119, 0.10); }   /* pink */
+  87%  { --amb-in: rgba(139, 92, 246, 0.70);  --amb-out: rgba(109, 40, 217, 0.12); }   /* violet */
+  100% { --amb-in: rgba(0, 122, 255, 0.78);  --amb-out: rgba(0, 90, 210, 0.14); }     /* blue */
 }
 
 /* ============================================
-   Reduced Motion — frozen color, no movement
+   Reduced Motion — visible but stationary
    ============================================ */
 
 @media (prefers-reduced-motion: reduce) {
-  .ambient-layer-primary {
-    animation: ambient-shift-a 320s ease-in-out infinite;
+  .ambient-orb {
+    animation: ambient-orb-color 360s ease-in-out infinite;
     transform: translateX(-50%) translate(0, 2vh) scale(1.04);
     opacity: 0.92;
-  }
-
-  .ambient-layer-support-a {
-    animation: ambient-shift-b 320s ease-in-out infinite;
-    transform: translate(-4vw, 3vh) scale(1.02);
-    opacity: 0.78;
-  }
-
-  .ambient-layer-support-b {
-    animation: ambient-shift-c 320s ease-in-out infinite;
-    transform: translate(4vw, 2vh) scale(1.02);
-    opacity: 0.75;
   }
 }
 
 /* ============================================
-   Mobile Responsive — contained middle, dark bottom
+   Mobile Responsive — slightly smaller orb
    ============================================ */
 
 @media (max-width: 640px) {
-  .ambient-layer-primary {
-    width: 100vw;
-    height: 44vh;
-    top: 4vh;
-    filter: blur(48px);
-  }
-
-  .ambient-layer-support-a {
-    width: 80vw;
-    height: 32vh;
+  .ambient-orb {
+    width: 95vw;
+    height: 42vh;
     top: 10vh;
-    left: 5%;
-    filter: blur(55px);
+    filter: blur(44px);
   }
 
-  .ambient-layer-support-b {
-    width: 70vw;
-    height: 26vh;
-    top: 14vh;
-    right: 5%;
-    left: auto;
-    filter: blur(50px);
-  }
-
-  .ambient-layer-vignette {
+  .ambient-vignette {
     background:
       radial-gradient(ellipse 90% 65% at 50% 30%, transparent 18%, rgba(3, 3, 5, 0.48) 48%, rgba(3, 3, 5, 0.85) 76%, rgba(3, 3, 5, 0.95) 100%),
       linear-gradient(180deg, transparent 0%, rgba(3, 3, 5, 0.18) 18%, rgba(3, 3, 5, 0.50) 42%, rgba(3, 3, 5, 0.80) 66%, rgba(3, 3, 5, 0.92) 100%);
