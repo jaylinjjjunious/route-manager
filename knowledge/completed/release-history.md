@@ -4,7 +4,7 @@
 
 | SHA | Description |
 |-----|-------------|
-| fb48cec | Add dashboard route job detail panel |
+| ac44277 | Add dashboard route job detail panel |
 | 5389fd3 | Replace header bike icon with custom app logo |
 | 1c03658 | Add official app icon assets |
 | c12bd44 | Extract shared Shower Gate cycle calculation |
@@ -39,4 +39,4 @@ Plus approximately 45 earlier commits covering the full feature progression: hab
 
 ---
 
-**Last Updated:** 2026-07-22 (fb48cec)
+**Last Updated:** 2026-07-22 (ac44277)
