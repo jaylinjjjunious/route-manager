@@ -3,138 +3,128 @@
 **Created:** 2026-07-21
 **Last Updated:** 2026-07-21
 **Component:** `src/components/backgrounds/AmbientLiquidBackground.tsx`
-**CSS:** `src/index.css` (ambient-liquid-* section)
-**Replaces:** `.ios-page-glow` static gradient div
+**CSS:** `src/index.css` (ambient centered section)
+**Replaces:** corner-anchored ambient system
 
 ---
 
 ## Purpose
 
-Provides a slow, liquid-light animated background anchored to the upper corners. Strong color glow in the upper-left and upper-right, dark center, dark lower half. Colors cycle through the product palette while the composition remains stable.
+Provides a slow, liquid-light animated background concentrated through the middle of the authenticated app. Deep space-black base. Color atmosphere cycles through the full product palette every ~80 seconds. Black negative space preserved around edges and lower page.
 
 ## Composition
 
 ```
-[blue/palette glow]     dark center     [amber/palette glow]
-          dark operational content area
+             dark outer edges
+  [support left]  COLOR MIDDLE  [support right]
           dark lower page and navigation
 ```
 
 ## Architecture
 
-The component renders five absolutely-positioned layers inside a fixed, full-viewport container:
+The component renders four absolutely-positioned layers inside a fixed, full-viewport container:
 
-| Layer | Anchor | Color Cycle | Duration |
-|-------|--------|-------------|----------|
-| `ambient-blue-primary` | Upper-left corner | Blue → Indigo → Emerald → Blue-deep | 140s color / 28s drift |
-| `ambient-blue-secondary` | Upper-left offset | iOS Blue → Emerald-deep → Blue → Indigo | 160s color / 36s drift |
-| `ambient-amber-primary` | Upper-right corner | Amber → Rose → Amber-warm | 150s color / 32s drift |
-| `ambient-amber-secondary` | Upper-right offset | Amber-warm → Rose-muted → Amber | 130s color / 40s drift |
-| `ambient-dark-overlay` | Full viewport | Dark center/lower gradient | Static |
+| Layer | Purpose | Color Cycle | Motion Duration |
+|-------|---------|-------------|-----------------|
+| `ambient-layer-primary` | Wide centered field, strongest | Full 8-color palette | 32s drift / 80s color |
+| `ambient-layer-support-a` | Medium, offset left | Full 8-color palette (offset) | 40s drift / 80s color |
+| `ambient-layer-support-b` | Smaller, offset right | Full 8-color palette (offset) | 36s drift / 80s color |
+| `ambient-layer-vignette` | Dark edges, dark bottom | Static | None |
 
-### Layer Sizes and Opacity (v2)
+### Layer Sizes and Opacity
 
 | Layer | Size | Opacity | Blur |
 |-------|------|---------|------|
-| Left primary | 60vw × 55vh | 1.0 | 50px |
-| Left secondary | 48vw × 44vh | 0.92 | 60px |
-| Right primary | 60vw × 55vh | 1.0 | 50px |
-| Right secondary | 48vw × 44vh | 0.90 | 60px |
+| Primary | 85vw × 50vh | 1.0 | 55px |
+| Support A | 60vw × 38vh | 0.92 | 65px |
+| Support B | 50vw × 30vh | 0.88 | 60px |
 
 ## Positioning
 
-All layers are anchored deep into their respective corners:
+All layers centered through the middle region:
 
 | Layer | Position | Gradient Anchor |
 |-------|----------|-----------------|
-| Left primary | `top: -20vh; left: -18vw` | `radial-gradient at 12% 12%` |
-| Left secondary | `top: -10vh; left: -8vw` | `radial-gradient at 18% 18%` |
-| Right primary | `top: -20vh; right: -18vw` | `radial-gradient at 88% 12%` |
-| Right secondary | `top: -10vh; right: -8vw` | `radial-gradient at 82% 18%` |
-
-The gradient focal points are near the corner edges, not at element center. This ensures the strongest color is near the viewport corner with soft falloff inward.
+| Primary | `top: 6vh; left: 50%; transform: translateX(-50%)` | `ellipse 75% 100% at 50% 50%` |
+| Support A | `top: 12vh; left: 12%` | `ellipse 80% 100% at 40% 50%` |
+| Support B | `top: 16vh; right: 8%` | `ellipse 85% 100% at 60% 50%` |
 
 ## Drift Limits
 
-Motion is constrained to stay within corner zones:
+Motion through the middle area:
 
-| Layer | X Range | Y Range |
-|-------|---------|---------|
-| Left primary | -2vw to +3vw | 0vh to +4vh |
-| Left secondary | -3vw to +2vw | -2vh to +4vh |
-| Right primary | -4vw to 0vw | -3vh to +3vh |
-| Right secondary | -3vw to +3vw | -2vh to +4vh |
+| Layer | X Range | Y Range | Scale |
+|-------|---------|---------|-------|
+| Primary | ±18vw | ±6vh | 0.95–1.12 |
+| Support A | ±16vw | ±6vh | 0.95–1.10 |
+| Support B | ±14vw | ±6vh | 0.94–1.10 |
 
-No layer moves more than ~4vw from its corner origin. The center stays dark.
+## Vignette Overlay
 
-## Dark Overlay
+The vignette uses two gradients:
 
-The dark overlay uses two gradients:
+1. **Radial vignette** — transparent at center (24%), darkening outward (56%), darkest at edges (82–95%)
+2. **Linear gradient** — transparent at top, increasingly dark toward bottom (50% at 48vh, 82% at 72vh, 92% at bottom)
 
-1. **Radial vignette** — transparent at top center (8%), darkening through the center (35–65%), darkest at edges (92%)
-2. **Linear gradient** — transparent at top, increasingly dark toward bottom (30% at 30vh, 65% at 60vh, 85% at bottom)
+## Color Palette — 8-Phase Full Rotation
 
-This ensures:
-- Corner glows remain visible through the top
-- Center is dark
-- Lower half is dark
-- No white outer halo
+All colors derived from the product design system.
 
-## Color Palette
+| Phase | Color | Timing |
+|-------|-------|--------|
+| 0% | Blue `rgba(0, 122, 255)` | 0–12% |
+| 12% | Teal `rgba(20, 184, 166)` | 12–25% |
+| 25% | Emerald `rgba(16, 185, 129)` | 25–37% |
+| 37% | Gold `rgba(234, 179, 8)` | 37–50% |
+| 50% | Amber `rgba(245, 158, 11)` | 50–62% |
+| 62% | Orange `rgba(249, 115, 22)` | 62–75% |
+| 75% | Pink `rgba(236, 72, 153)` | 75–87% |
+| 87% | Violet `rgba(139, 92, 246)` | 87–100% |
 
-All colors derived from the product design system. No invented colors.
-
-### Cool Side (Left — Layers 1 & 2)
-
-| Name | Inner Color | Outer Color | Derived From |
-|------|-------------|-------------|-------------|
-| Blue | `rgba(0, 122, 255, 0.55)` | `rgba(0, 90, 210, 0.24)` | Apple blue (#007AFF) |
-| Blue-deep | `rgba(29, 78, 216, 0.48)` | `rgba(20, 55, 180, 0.20)` | blue-700 |
-| Indigo | `rgba(99, 102, 241, 0.48)` | `rgba(79, 82, 200, 0.20)` | indigo-500 (#6366F1) |
-| Emerald | `rgba(16, 185, 129, 0.42)` | `rgba(10, 150, 105, 0.18)` | emerald-500 (#10B981) |
-| Emerald-deep | `rgba(5, 150, 105, 0.35)` | `rgba(5, 120, 85, 0.16)` | emerald-600 (#059669) |
-
-### Warm Side (Right — Layers 3 & 4)
-
-| Name | Inner Color | Outer Color | Derived From |
-|------|-------------|-------------|-------------|
-| Amber | `rgba(200, 140, 40, 0.50)` | `rgba(180, 110, 20, 0.22)` | Amber (#C88C28) |
-| Amber-warm | `rgba(180, 120, 30, 0.42)` | `rgba(160, 100, 20, 0.18)` | amber-600 tone |
-| Rose | `rgba(200, 60, 80, 0.38)` | `rgba(180, 50, 65, 0.16)` | rose-500 (#F43F5E) muted |
-| Rose-muted | `rgba(180, 50, 70, 0.30)` | `rgba(160, 40, 55, 0.14)` | rose-600 (#E11D48) muted |
+Each phase: ~10s hold + ~2s overlap = 80s total loop.
 
 ## Animation Strategy
 
-Two independent animation systems run simultaneously on each layer:
+Two independent animation systems per layer:
 
-1. **Motion** — `ambient-drift-*` keyframes (28–40s, `alternate`)
-   - `transform`: translate (constrained), scale, rotate
+1. **Motion** — `ambient-drift-*` keyframes (32–40s, `alternate`)
+   - `transform`: translate, scale, rotate (organic drift)
    - `border-radius`: organic shape deformation
-   - `opacity`: subtle breathing
 
-2. **Color shift** — `ambient-shift-*` keyframes (130–160s, `infinite`)
-   - `@property` registered custom properties (`--amb-color-1` through `--amb-color-4b`)
-   - Animated through palette stops at smooth intervals
-   - Different durations per layer prevent synchronized color changes
+2. **Color shift** — `ambient-shift-*` keyframes (80s, `infinite`)
+   - `@property` registered custom properties (`--amb-a-in`, `--amb-a-out`, `--amb-b-in`, `--amb-b-out`, `--amb-c-in`, `--amb-c-out`)
+   - Animated through 8 palette stops
 
 ## Token Architecture
 
-Eight CSS custom properties control the gradient colors:
+Six CSS custom properties control the gradient colors:
 
 ```css
-@property --amb-color-1  /* Layer 1 inner */
-@property --amb-color-1b /* Layer 1 outer */
-@property --amb-color-2  /* Layer 2 inner */
-@property --amb-color-2b /* Layer 2 outer */
-@property --amb-color-3  /* Layer 3 inner */
-@property --amb-color-3b /* Layer 3 outer */
-@property --amb-color-4  /* Layer 4 inner */
-@property --amb-color-4b /* Layer 4 outer */
+@property --amb-a-in   /* Primary inner */
+@property --amb-a-out  /* Primary outer */
+@property --amb-b-in   /* Support A inner */
+@property --amb-b-out  /* Support A outer */
+@property --amb-c-in   /* Support B inner */
+@property --amb-c-out  /* Support B outer */
 ```
 
 All registered with `syntax: '<color>'` for CSS animation support.
 
-To edit the palette, modify the `ambient-shift-*` keyframes and the `@property` initial-values in `src/index.css`.
+## Space-Black Base
+
+The deep black background is preserved by:
+
+- Body dark: `linear-gradient(180deg, #050506 0%, #111113 100%)`
+- `.dark .ios-app`: `linear-gradient(180deg, #030305 0%, #0b0b0f 42%, #111113 100%)`
+- Ambient root: `position: fixed; z-index: 0`
+- Vignette overlay keeps edges black
+
+## Panel Contrast
+
+- Page background: deepest black (`#030305`–`#050506`)
+- Standard panels: dark gray-black (`#17181b` / `#0F1218`)
+- Elevated panels: slightly lighter with shadow
+- Border: `border-4 border-slate-950 dark:border-white`
 
 ## Performance
 
@@ -144,7 +134,6 @@ To edit the palette, modify the `ambient-shift-*` keyframes and the `@property` 
 - `pointer-events: none` on entire container
 - `overflow: clip` prevents any layout impact
 - `@property` registration enables GPU-accelerated color interpolation
-- Mobile: reduced blur radius and smaller field sizes via media query
 
 ## Z-Index Stacking
 
@@ -158,29 +147,26 @@ To edit the palette, modify the `ambient-shift-*` keyframes and the `@property` 
 
 ## Reduced Motion
 
-`@media (prefers-reduced-motion: reduce)` stops all positional movement and shape deformation. A very slow non-moving color fade remains (280–350s per layer). Transform offsets keep glows near corners at reduced-motion rest positions.
+`@media (prefers-reduced-motion: reduce)` stops all positional movement. A very slow non-moving color fade remains (320s). Transform offsets keep layers at centered rest positions with reduced opacity.
 
 ## Responsive Behavior
 
 | Viewport | Adjustment |
 |----------|-----------|
-| Desktop (>640px) | 58vw fields, 55px blur, positioned deep in corners |
-| Mobile (≤640px) | 65vw fields, 45px blur, repositioned tighter to corners (top: -18vh, left/right: -20vw) |
+| Desktop (>640px) | 85vw primary, 55px blur, centered |
+| Mobile (≤640px) | 100vw primary, 48px blur, tighter vertical positioning |
 
 ## Design Principles
 
-- **Left side = cool** (blue, indigo, emerald family)
-- **Right side = warm** (amber, rose family)
-- **Strongest glow at corners** — not center
-- **Dark center and lower half** — always
-- **No rainbow** — two distinct atmospheric regions
-- **No white outer halo** — corners are colored, edges are dark
-- **Constrained drift** — layers stay within ~4vw of their corner origin
-- **Blue and amber remain dominant** — other colors appear as subtle accents
+- **Color through the middle** — strongest in upper-middle and center-middle
+- **Deep space-black base** — always visible at edges, lower page, between panels
+- **Full palette rotation** — 8 recognizable color families, not just blue and amber
+- **Controlled transitions** — one dominant, one incoming, one outgoing, no muddy gray
+- **Professional vibrancy** — rich darkened palette with brighter internal accents
+- **Dark lower region** — navigation and lower content stay stable
 
 ## Known Limitations
 
 - No texture/grain layer (kept clean for performance)
-- Body and `.ios-app` retain fallback linear gradients in case component fails to load
-- Light mode and dark mode share the same animation (overlay handles contrast)
+- Body and `.ios-app` retain fallback linear gradients
 - `@property` not supported in very old browsers (shows static initial-value colors)
