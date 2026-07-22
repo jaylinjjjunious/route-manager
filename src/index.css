@@ -167,11 +167,11 @@ select {
 
 @layer components {
   .road-card {
-    @apply rounded-[24px] border border-white/70 bg-white/80 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.14] dark:bg-[#1C1C1E]/86 dark:shadow-[0_18px_56px_rgba(0,0,0,0.42)];
+    @apply rounded-[24px] border bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)] dark:border-white/[0.07] dark:bg-[#0F1218]/88 dark:shadow-[0_8px_24px_rgba(0,0,0,0.22)];
   }
 
   .road-surface {
-    @apply rounded-[22px] border border-white/70 bg-white/50 backdrop-blur-xl dark:border-white/[0.12] dark:bg-white/[0.075];
+    @apply rounded-[22px] border bg-white/50 dark:border-white/[0.07] dark:bg-[#0F1218]/80;
   }
 
   .road-action {
@@ -249,92 +249,97 @@ select {
 
 /* --- Blue primary: upper-left --- */
 .ambient-blue-primary {
-  width: 55vw;
-  height: 50vh;
-  top: -8vh;
-  left: -6vw;
-  background: radial-gradient(ellipse at center, rgba(0, 122, 255, 0.18) 0%, rgba(0, 90, 210, 0.08) 40%, transparent 70%);
-  filter: blur(60px);
-  opacity: 0.9;
+  width: 60vw;
+  height: 55vh;
+  top: -10vh;
+  left: -8vw;
+  background: radial-gradient(ellipse at center, rgba(0, 122, 255, 0.32) 0%, rgba(0, 90, 210, 0.14) 40%, transparent 72%);
+  filter: blur(55px);
+  opacity: 1;
   animation: ambient-drift-blue-primary 28s ease-in-out infinite alternate;
 }
 
-/* --- Blue secondary: slightly offset for depth --- */
+/* --- Blue secondary: offset for depth, closer/larger feel --- */
 .ambient-blue-secondary {
-  width: 45vw;
-  height: 40vh;
-  top: 2vh;
-  left: 8vw;
-  background: radial-gradient(ellipse at center, rgba(10, 132, 255, 0.14) 0%, rgba(0, 80, 200, 0.06) 45%, transparent 70%);
-  filter: blur(70px);
-  opacity: 0.7;
+  width: 50vw;
+  height: 45vh;
+  top: 0vh;
+  left: 10vw;
+  background: radial-gradient(ellipse at center, rgba(10, 132, 255, 0.24) 0%, rgba(0, 80, 200, 0.10) 42%, transparent 68%);
+  filter: blur(80px);
+  opacity: 0.85;
   animation: ambient-drift-blue-secondary 36s ease-in-out infinite alternate;
 }
 
 /* --- Amber primary: upper-right --- */
 .ambient-amber-primary {
-  width: 50vw;
-  height: 48vh;
-  top: -6vh;
-  right: -8vw;
+  width: 55vw;
+  height: 52vh;
+  top: -8vh;
+  right: -10vw;
   left: auto;
-  background: radial-gradient(ellipse at center, rgba(200, 140, 40, 0.14) 0%, rgba(180, 110, 20, 0.06) 42%, transparent 70%);
-  filter: blur(65px);
-  opacity: 0.85;
+  background: radial-gradient(ellipse at center, rgba(200, 140, 40, 0.26) 0%, rgba(180, 110, 20, 0.12) 40%, transparent 70%);
+  filter: blur(60px);
+  opacity: 1;
   animation: ambient-drift-amber-primary 32s ease-in-out infinite alternate;
 }
 
 /* --- Amber secondary: offset for depth --- */
 .ambient-amber-secondary {
-  width: 40vw;
-  height: 38vh;
-  top: 4vh;
-  right: 6vw;
+  width: 45vw;
+  height: 42vh;
+  top: 2vh;
+  right: 8vw;
   left: auto;
-  background: radial-gradient(ellipse at center, rgba(180, 120, 30, 0.10) 0%, rgba(160, 100, 20, 0.04) 40%, transparent 65%);
-  filter: blur(75px);
-  opacity: 0.65;
+  background: radial-gradient(ellipse at center, rgba(180, 120, 30, 0.20) 0%, rgba(160, 100, 20, 0.08) 38%, transparent 65%);
+  filter: blur(85px);
+  opacity: 0.8;
   animation: ambient-drift-amber-secondary 40s ease-in-out infinite alternate;
 }
 
-/* --- Dark overlay: keeps center and lower area readable --- */
+/* --- Dark overlay: strengthened readability control --- */
 .ambient-dark-overlay {
   inset: 0;
   width: 100%;
   height: 100%;
   border-radius: 0;
   background:
-    radial-gradient(ellipse at 50% 15%, transparent 20%, rgba(3, 3, 5, 0.35) 55%, rgba(3, 3, 5, 0.7) 100%),
-    linear-gradient(180deg, transparent 0%, rgba(3, 3, 5, 0.25) 50%, rgba(3, 3, 5, 0.5) 100%);
+    radial-gradient(ellipse at 50% 12%, transparent 15%, rgba(3, 3, 5, 0.42) 50%, rgba(3, 3, 5, 0.75) 100%),
+    linear-gradient(180deg, transparent 0%, rgba(3, 3, 5, 0.30) 45%, rgba(3, 3, 5, 0.55) 100%);
   filter: none;
   opacity: 1;
   animation: none;
 }
 
 /* ============================================
-   Keyframes — independent per layer
+   Keyframes — independent per layer, amplified
    ============================================ */
 
 @keyframes ambient-drift-blue-primary {
   0% {
     transform: translate(0, 0) scale(1) rotate(0deg);
     border-radius: 42% 58% 63% 37% / 51% 39% 61% 49%;
-    opacity: 0.9;
+    opacity: 1;
   }
-  33% {
-    transform: translate(6vw, 3vh) scale(1.06) rotate(1deg);
-    border-radius: 48% 52% 55% 45% / 44% 56% 44% 56%;
-    opacity: 0.82;
+  25% {
+    transform: translate(9vw, 5vh) scale(1.12) rotate(1.5deg);
+    border-radius: 38% 62% 55% 45% / 44% 56% 44% 56%;
+    opacity: 0.88;
   }
-  66% {
-    transform: translate(3vw, 5vh) scale(0.97) rotate(-1deg);
-    border-radius: 55% 45% 48% 52% / 58% 42% 58% 42%;
+  50% {
+    transform: translate(5vw, 9vh) scale(0.92) rotate(-2deg);
+    border-radius: 55% 45% 38% 62% / 58% 42% 58% 42%;
+    opacity: 1;
+  }
+  75% {
+    transform: translate(11vw, 3vh) scale(1.16) rotate(1deg);
+    border-radius: 35% 65% 60% 40% / 48% 52% 48% 52%;
     opacity: 0.92;
   }
   100% {
-    transform: translate(8vw, 2vh) scale(1.04) rotate(0.5deg);
-    border-radius: 44% 56% 60% 40% / 48% 52% 48% 52%;
-    opacity: 0.85;
+    transform: translate(7vw, 7vh) scale(1.06) rotate(-0.5deg);
+    border-radius: 44% 56% 52% 48% / 42% 58% 42% 58%;
+    opacity: 0.95;
   }
 }
 
@@ -342,22 +347,27 @@ select {
   0% {
     transform: translate(0, 0) scale(1) rotate(0deg);
     border-radius: 50% 50% 45% 55% / 55% 45% 55% 45%;
-    opacity: 0.7;
+    opacity: 0.85;
   }
-  30% {
-    transform: translate(-4vw, 4vh) scale(1.08) rotate(-1.5deg);
-    border-radius: 45% 55% 52% 48% / 50% 50% 50% 50%;
-    opacity: 0.62;
-  }
-  60% {
-    transform: translate(5vw, -2vh) scale(0.95) rotate(1deg);
-    border-radius: 55% 45% 48% 52% / 42% 58% 42% 58%;
+  20% {
+    transform: translate(-6vw, 6vh) scale(1.14) rotate(-2deg);
+    border-radius: 40% 60% 52% 48% / 50% 50% 50% 50%;
     opacity: 0.75;
   }
+  45% {
+    transform: translate(7vw, -3vh) scale(0.91) rotate(1.5deg);
+    border-radius: 58% 42% 42% 58% / 38% 62% 38% 62%;
+    opacity: 0.9;
+  }
+  70% {
+    transform: translate(-3vw, 8vh) scale(1.08) rotate(-1deg);
+    border-radius: 45% 55% 58% 42% / 55% 45% 55% 45%;
+    opacity: 0.8;
+  }
   100% {
-    transform: translate(2vw, 6vh) scale(1.03) rotate(-0.5deg);
-    border-radius: 48% 52% 55% 45% / 52% 48% 52% 48%;
-    opacity: 0.68;
+    transform: translate(4vw, 4vh) scale(1.04) rotate(0.5deg);
+    border-radius: 52% 48% 48% 52% / 48% 52% 48% 52%;
+    opacity: 0.82;
   }
 }
 
@@ -365,22 +375,27 @@ select {
   0% {
     transform: translate(0, 0) scale(1) rotate(0deg);
     border-radius: 55% 45% 50% 50% / 45% 55% 45% 55%;
-    opacity: 0.85;
+    opacity: 1;
   }
-  25% {
-    transform: translate(-5vw, 4vh) scale(1.05) rotate(-1deg);
-    border-radius: 48% 52% 58% 42% / 52% 48% 52% 48%;
-    opacity: 0.78;
-  }
-  55% {
-    transform: translate(-3vw, -3vh) scale(0.96) rotate(1.5deg);
-    border-radius: 42% 58% 45% 55% / 58% 42% 58% 42%;
+  20% {
+    transform: translate(-8vw, 5vh) scale(1.10) rotate(-1.5deg);
+    border-radius: 42% 58% 58% 42% / 52% 48% 52% 48%;
     opacity: 0.9;
   }
+  45% {
+    transform: translate(-4vw, -5vh) scale(0.91) rotate(2deg);
+    border-radius: 38% 62% 42% 58% / 58% 42% 58% 42%;
+    opacity: 1;
+  }
+  70% {
+    transform: translate(-10vw, 3vh) scale(1.14) rotate(-1deg);
+    border-radius: 48% 52% 55% 45% / 42% 58% 42% 58%;
+    opacity: 0.92;
+  }
   100% {
-    transform: translate(-7vw, 2vh) scale(1.08) rotate(-0.5deg);
-    border-radius: 52% 48% 52% 48% / 48% 52% 48% 52%;
-    opacity: 0.82;
+    transform: translate(-6vw, 6vh) scale(1.06) rotate(0.5deg);
+    border-radius: 52% 48% 48% 52% / 50% 50% 50% 50%;
+    opacity: 0.95;
   }
 }
 
@@ -388,22 +403,27 @@ select {
   0% {
     transform: translate(0, 0) scale(1) rotate(0deg);
     border-radius: 50% 50% 55% 45% / 48% 52% 48% 52%;
-    opacity: 0.65;
+    opacity: 0.8;
   }
-  35% {
-    transform: translate(4vw, -3vh) scale(1.07) rotate(1deg);
-    border-radius: 45% 55% 50% 50% / 55% 45% 55% 45%;
-    opacity: 0.58;
+  25% {
+    transform: translate(5vw, -5vh) scale(1.12) rotate(1.5deg);
+    border-radius: 42% 58% 48% 52% / 55% 45% 55% 45%;
+    opacity: 0.7;
   }
-  70% {
-    transform: translate(-3vw, 5vh) scale(0.94) rotate(-1deg);
-    border-radius: 58% 42% 45% 55% / 50% 50% 50% 50%;
-    opacity: 0.72;
+  50% {
+    transform: translate(-5vw, 7vh) scale(0.90) rotate(-1.5deg);
+    border-radius: 60% 40% 42% 58% / 42% 58% 42% 58%;
+    opacity: 0.88;
+  }
+  75% {
+    transform: translate(3vw, 3vh) scale(1.06) rotate(0.5deg);
+    border-radius: 48% 52% 55% 45% / 52% 48% 52% 48%;
+    opacity: 0.75;
   }
   100% {
-    transform: translate(2vw, 3vh) scale(1.02) rotate(0.5deg);
-    border-radius: 52% 48% 52% 48% / 45% 55% 45% 55%;
-    opacity: 0.62;
+    transform: translate(-3vw, 5vh) scale(1.02) rotate(-0.5deg);
+    border-radius: 55% 45% 50% 50% / 45% 55% 45% 55%;
+    opacity: 0.78;
   }
 }
 
@@ -420,23 +440,23 @@ select {
   }
 
   .ambient-blue-primary {
-    transform: translate(3vw, 2vh) scale(1.02);
-    opacity: 0.85;
+    transform: translate(4vw, 3vh) scale(1.04);
+    opacity: 0.92;
   }
 
   .ambient-blue-secondary {
-    transform: translate(1vw, 4vh) scale(1.01);
-    opacity: 0.65;
+    transform: translate(2vw, 5vh) scale(1.02);
+    opacity: 0.78;
   }
 
   .ambient-amber-primary {
-    transform: translate(-4vw, 2vh) scale(1.03);
-    opacity: 0.8;
+    transform: translate(-5vw, 3vh) scale(1.05);
+    opacity: 0.9;
   }
 
   .ambient-amber-secondary {
-    transform: translate(-2vw, 3vh) scale(1.01);
-    opacity: 0.6;
+    transform: translate(-3vw, 4vh) scale(1.02);
+    opacity: 0.72;
   }
 }
 
@@ -446,26 +466,26 @@ select {
 
 @media (max-width: 640px) {
   .ambient-blue-primary {
-    width: 70vw;
-    height: 40vh;
-    filter: blur(50px);
+    width: 80vw;
+    height: 45vh;
+    filter: blur(45px);
   }
 
   .ambient-blue-secondary {
-    width: 55vw;
-    height: 32vh;
-    filter: blur(55px);
+    width: 65vw;
+    height: 35vh;
+    filter: blur(60px);
   }
 
   .ambient-amber-primary {
-    width: 65vw;
-    height: 38vh;
-    filter: blur(55px);
+    width: 75vw;
+    height: 42vh;
+    filter: blur(50px);
   }
 
   .ambient-amber-secondary {
-    width: 50vw;
-    height: 30vh;
-    filter: blur(60px);
+    width: 60vw;
+    height: 33vh;
+    filter: blur(65px);
   }
 }

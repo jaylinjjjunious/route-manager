@@ -5651,7 +5651,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
         {!rideModeActive && (
         <div className="mobile-bottom-nav-shell fixed inset-x-0 bottom-0 z-50 mx-auto w-full px-3 pb-3 sm:left-1/2 sm:bottom-5 sm:w-[96%] sm:max-w-3xl sm:-translate-x-1/2 sm:px-0 sm:pb-0">
           <div 
-            className="mobile-bottom-nav flex w-full snap-x items-center justify-start gap-2 overflow-x-auto whitespace-nowrap rounded-[28px] border border-white/75 bg-white/72 px-2 py-2 shadow-[0_22px_70px_rgba(15,23,42,0.22)] backdrop-blur-2xl dark:border-white/10 dark:bg-[#1C1C1E]/78 sm:rounded-[32px] sm:px-3 sm:py-3 md:justify-around"
+            className="mobile-bottom-nav flex w-full snap-x items-center justify-start gap-2 overflow-x-auto whitespace-nowrap rounded-[28px] border bg-white px-2 py-2 shadow-[0_22px_70px_rgba(15,23,42,0.22)] dark:border-white/[0.07] dark:bg-[#0F1218] sm:rounded-[32px] sm:px-3 sm:py-3 md:justify-around"
             aria-label="Primary app navigation"
           >
             {[
@@ -5676,7 +5676,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                   aria-current={isActive ? 'page' : undefined}
                   className={`flex min-h-[62px] min-w-[78px] touch-manipulation snap-start flex-shrink-0 flex-col items-center justify-center gap-1.5 rounded-[22px] px-2.5 py-2.5 transition-all duration-300 sm:min-w-[82px] ${
                     isActive
-                      ? 'bg-white text-slate-950 shadow-[0_10px_30px_rgba(15,23,42,0.12)] dark:bg-white/14 dark:text-white scale-[1.03] font-bold'
+                      ? 'bg-white text-slate-950 shadow-[0_10px_30px_rgba(15,23,42,0.12)] dark:bg-[#1C1C1E] dark:text-white dark:shadow-[0_4px_16px_rgba(0,0,0,0.3)] scale-[1.03] font-bold'
                       : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'
                   }`}
                 >

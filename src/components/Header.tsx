@@ -13,7 +13,7 @@ interface HeaderProps {
 
 export default function Header({ theme, onToggleTheme }: HeaderProps) {
   return (
-    <header id="app-header" className="sticky top-0 z-40 w-full border-b border-white/50 bg-white/58 backdrop-blur-2xl dark:border-white/10 dark:bg-[#111113]/70">
+    <header id="app-header" className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/58 backdrop-blur-2xl dark:border-white/[0.07] dark:bg-[#0F1218]/92 dark:backdrop-blur-none">
       <div className="mx-auto flex min-h-[76px] max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         
         {/* Logo and Name */}
@@ -32,7 +32,7 @@ export default function Header({ theme, onToggleTheme }: HeaderProps) {
         <div className="flex items-center gap-3 sm:gap-4">
           
           {/* User Profile Info */}
-          <div className="hidden sm:flex items-center gap-2 rounded-full bg-white/62 border border-white/70 px-3.5 py-1.5 shadow-sm backdrop-blur-xl dark:bg-white/[0.06] dark:border-white/10">
+          <div className="hidden sm:flex items-center gap-2 rounded-full bg-white/62 border border-white/70 px-3.5 py-1.5 shadow-sm backdrop-blur-xl dark:bg-[#0F1218] dark:border-white/[0.07] dark:backdrop-blur-none">
             <Mail size={12} className="text-slate-400 dark:text-slate-500" />
             <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">
               jaylinjjjunious@gmail.com
@@ -40,7 +40,7 @@ export default function Header({ theme, onToggleTheme }: HeaderProps) {
           </div>
 
           {/* Ebike Status Tag */}
-          <div className="road-pill bg-white/62 border border-white/70 shadow-sm backdrop-blur-xl dark:bg-white/[0.06] dark:border-white/10 text-slate-700 dark:text-slate-300">
+          <div className="road-pill bg-white/62 border border-white/70 shadow-sm backdrop-blur-xl dark:bg-[#0F1218] dark:border-white/[0.07] dark:backdrop-blur-none text-slate-700 dark:text-slate-300">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -54,7 +54,7 @@ export default function Header({ theme, onToggleTheme }: HeaderProps) {
           <button
             id="theme-toggle-btn"
             onClick={onToggleTheme}
-            className="road-icon-button border-white/70 bg-white/70 text-slate-600 shadow-sm backdrop-blur-xl hover:bg-white dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-300 dark:hover:bg-white/10"
+            className="road-icon-button border-white/70 bg-white/70 text-slate-600 shadow-sm backdrop-blur-xl hover:bg-white dark:border-white/[0.07] dark:bg-[#0F1218] dark:text-slate-300 dark:hover:bg-[#1C1C1E] dark:backdrop-blur-none"
             title="Toggle color theme"
           >
             {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
