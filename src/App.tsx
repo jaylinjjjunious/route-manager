@@ -3019,17 +3019,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                   <p className="mt-2 text-base font-black uppercase">{earningsTileFooter}</p>
                 </section>
 
-                <section className="col-span-2 lg:col-span-3 rounded-[8px] border-2 border-slate-300 bg-white p-4 dark:border-white/20 dark:bg-[#17181b] lg:p-3">
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-[8px] bg-blue-700 p-3 text-white">
-                      <Sparkles size={26} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-black uppercase text-blue-700 dark:text-blue-300">AI Dispatcher Message</p>
-                      <p className="text-2xl font-black text-slate-950 dark:text-white lg:text-xl">{dispatcherBrief}</p>
-                    </div>
-                  </div>
-                </section>
+
 
                 <section className={`col-span-2 lg:col-span-3 rounded-[8px] border-2 p-4 lg:p-3 ${revisionAlertJobs.length > 0 ? 'border-rose-400 bg-rose-50 text-rose-950 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-100' : 'border-emerald-300 bg-emerald-50 text-emerald-950 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100'}`}>
                   <div className="flex items-center justify-between gap-3">
@@ -3445,21 +3435,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                     </div>
                   </div>
                 </div>
-                {/* 7. Short Dispatcher Message — compact dashboard tile */}
-                <div id="bento-tile-dispatcher-message" className="col-span-2 lg:col-span-4 road-card p-6 space-y-3 transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
-                      <Sparkles size={22} />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-black uppercase text-slate-500 tracking-wide dark:text-slate-400">Dispatcher</h3>
-                      <p className="text-2xl font-black text-slate-900 dark:text-white leading-tight">Field Message</p>
-                    </div>
-                  </div>
-                  <p className="text-lg font-bold leading-snug text-slate-700 dark:text-slate-200">
-                    {dispatcherMessage}
-                  </p>
-                </div>
+
               </div>
             </div>
           )}
