@@ -82,7 +82,7 @@ Key state groups:
 
 ### App Icons
 
-The official application icon source is preserved at `public/branding/all-in-one-667-source-icon.png`. Safari iPhone home-screen installation uses `public/apple-touch-icon.png` through the `<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />` tag in `index.html`.
+The official application icon source is preserved at `public/branding/all-in-one-667-source-icon.png`. Safari iPhone home-screen installation uses `public/apple-touch-icon.png` through the `<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />` tag in `index.html`. The app header reuses `public/icons/icon-192.png` for the small logo next to the `All in One 667` title.
 
 Generated icon outputs:
 - `public/apple-touch-icon.png` - 180x180 for iPhone Safari Add to Home Screen
@@ -127,4 +127,4 @@ Targets modern mobile browsers (iOS Safari, Android Chrome) and desktop (Chrome,
 
 ## Last Updated
 
-2026-07-22 (1c03658)
+2026-07-22 (7efb4ec)

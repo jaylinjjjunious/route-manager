@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Bike, Moon, Sun, Mail } from 'lucide-react';
+import { Moon, Sun, Mail } from 'lucide-react';
 
 interface HeaderProps {
   theme: 'dark' | 'light';
@@ -18,8 +18,14 @@ export default function Header({ theme, onToggleTheme }: HeaderProps) {
         
         {/* Logo and Name */}
         <div className="flex items-center gap-2.5">
-          <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-gradient-to-br from-[#0A84FF] to-[#007AFF] text-white shadow-[0_12px_30px_rgba(0,122,255,0.28)]">
-            <Bike size={24} />
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[18px]">
+            <img
+              src="/icons/icon-192.png"
+              alt="All in One 667 logo"
+              width={48}
+              height={48}
+              className="h-full w-full object-contain"
+            />
           </div>
           <div>
             <h1 className="text-lg font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">

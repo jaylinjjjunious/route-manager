@@ -1,6 +1,6 @@
 # UI Components
 
-**Last Updated:** 2026-07-21 (assistant-mobile-fullscreen-fix)
+**Last Updated:** 2026-07-22 (7efb4ec)
 **Related Source Files:** `src/components/*.tsx`, `src/assistant/*.tsx`
 
 ---
@@ -112,7 +112,7 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 |-------|-------|
 | **File** | `src/components/Header.tsx` |
 | **Props** | `theme: 'light' \| 'dark'`, `onToggleTheme: () => void` |
-| **Responsibility** | App header with title and theme toggle. Hidden on the dashboard tab. |
+| **Responsibility** | App header with official logo image, title, e-bike status, user email, and theme toggle. Hidden on the dashboard tab. |
 
 ---
 
