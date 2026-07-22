@@ -36,4 +36,4 @@
 
 ---
 
-**Last Updated:** 2026-07-22 (app icon integration)
+**Last Updated:** 2026-07-22 (1c03658)
