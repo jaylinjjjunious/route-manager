@@ -30,7 +30,6 @@ import JobModal from './components/JobModal';
 import AssistantProvider from './assistant/AssistantProvider';
 import AssistantBubble from './assistant/AssistantBubble';
 import AmbientLiquidBackground from './components/backgrounds/AmbientLiquidBackground';
-import JobImportSystem from './components/JobImportSystem';
 import JobDetailModal from './components/JobDetailModal';
 import { EndOfDaySummary } from './components/EndOfDaySummary';
 import ShowerGatePanel from './components/ShowerGatePanel';
@@ -40,7 +39,7 @@ import type { ShowerProofRecord } from './services/showerProofApi';
 import { authFetch, authFetchJson } from './services/apiClient';
 import DebugCenter from './components/settings/DebugCenter';
 import {
-  Plus, Sliders, Play, RotateCcw, Search, Moon, Sun, Layers, ShieldCheck, MapPin, CheckSquare,
+  Plus, Sliders, Play, RotateCcw, Moon, Sun, Layers, ShieldCheck, MapPin, CheckSquare,
   LayoutDashboard, Briefcase, Battery, Settings, AlertTriangle, ArrowRightLeft,
   TrendingUp, HelpCircle, ShieldAlert, Sparkles, Compass, ExternalLink, Navigation, CheckCircle2,
   Pause, Square, Timer, Clock, ChevronDown, ChevronUp, DollarSign, Zap, Award, Volume2, VolumeX,
@@ -124,12 +123,12 @@ const SHOWER_PROOF_JPEG_QUALITY = 0.58;
 const SHOWER_BACKEND_TIMEOUT_MS = 15000;
 
 type BarcodePermissionStatus = 'idle' | 'requesting' | 'granted' | 'denied' | 'unsupported' | 'error';
-type AppTab = 'dashboard' | 'jobs' | 'battery' | 'tracker' | 'habits' | 'settings';
+type AppTab = 'dashboard' | 'battery' | 'tracker' | 'habits' | 'settings';
 
-const APP_TABS: AppTab[] = ['dashboard', 'jobs', 'battery', 'tracker', 'habits', 'settings'];
-const SHOWER_PROTECTED_TABS: AppTab[] = ['jobs', 'battery', 'tracker'];
+const APP_TABS: AppTab[] = ['dashboard', 'battery', 'tracker', 'habits', 'settings'];
+const SHOWER_PROTECTED_TABS: AppTab[] = ['battery', 'tracker'];
 
-const RETIRED_ROUTE_DESTINATIONS = new Set(['route', 'routes']);
+const RETIRED_ROUTE_DESTINATIONS = new Set(['route', 'routes', 'jobs']);
 
 const isRetiredRouteDestination = (value: string): boolean => {
   const normalized = value.toLowerCase().replace(/^[/#]+/, '').replace(/\/$/, '');
@@ -474,9 +473,8 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const habitTaskName = activeHabitTask.name;
   const habitTargetMinutes = Math.max(1, Number(activeHabitTask.targetMinutes) || 30);
   const habitLogMinutes = Math.max(1, Number(activeHabitTask.lastMinutes) || habitTargetMinutes);
-  const [jobsSubTab, setJobsSubTab] = useState<'list' | 'import'>('list');
-  const [searchQuery, setSearchQuery] = useState('');
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
+  const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [proofVault, setProofVault] = useState<Record<string, ProofRecord>>(() => {
     try {
       const saved = safeStorage.getItem('proof_vault_records');
@@ -603,6 +601,18 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     const timer = window.setInterval(() => setNowTick(Date.now()), 60_000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!addMenuOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('[data-add-menu]')) {
+        setAddMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [addMenuOpen]);
 
   const handleTabChange = (tab: AppTab) => {
     setCurrentTab(tab);
@@ -2554,15 +2564,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     return true;
   };
 
-  // Filtering for UI lists
-  const filterList = (list: Job[]) => {
-    return list.filter(j =>
-      j.storeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      j.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      j.jobType.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  };
-
   const nextStopIndex = nextRouteAJob ? routeAJobs.findIndex(j => j.id === nextRouteAJob.id) : -1;
   const nextStopOrigin = nextStopIndex <= 0 ? startCoord : routeAJobs[nextStopIndex - 1].coordinates;
   const nextStopDistance = nextRouteAJob ? getDistanceInMiles(nextStopOrigin, nextRouteAJob.coordinates) : 0;
@@ -2857,7 +2858,39 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                 <section className="col-span-2 lg:col-span-2 lg:row-span-2 rounded-[8px] border-4 border-slate-950 bg-white p-4 shadow-[0_18px_42px_rgba(15,23,42,0.16)] transition-all duration-500 dark:border-white dark:bg-[#17181b] lg:p-3">
                   <div className="flex items-center justify-between">
                     <h3 className="text-2xl font-black text-slate-950 dark:text-white">Today&apos;s Route</h3>
-                    <span className="rounded-[8px] bg-blue-700 px-3 py-1 text-lg font-black text-white">{remainingRouteAJobs.length}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-[8px] bg-blue-700 px-3 py-1 text-lg font-black text-white">{remainingRouteAJobs.length}</span>
+                      <div className="relative" data-add-menu>
+                        <button
+                          type="button"
+                          onClick={() => setAddMenuOpen((prev) => !prev)}
+                          className="flex items-center gap-1 rounded-[8px] bg-blue-600 px-3 py-1.5 text-xs font-black text-white shadow-md hover:bg-blue-500 transition-all"
+                        >
+                          <Plus size={13} />
+                          <span>Add</span>
+                        </button>
+                        {addMenuOpen && (
+                          <div className="absolute right-0 top-full z-50 mt-1 w-48 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-white/10 dark:bg-[#17181b]">
+                            <button
+                              type="button"
+                              onClick={() => { setAddMenuOpen(false); handleOpenAddModal(); }}
+                              className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-white/5"
+                            >
+                              <Plus size={14} className="text-blue-500" />
+                              Add Stop
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { setAddMenuOpen(false); handleOpenProcessServeModal(); }}
+                              className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-white/5"
+                            >
+                              <Briefcase size={14} className="text-red-500" />
+                              Add Process Serve
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                   <div className="mt-3 max-h-[620px] space-y-1.5 overflow-y-auto pr-1">
                     {routeListStops.length === 0 ? (
@@ -3191,9 +3224,41 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                         What&apos;s Left After This
                       </h3>
                     </div>
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-black text-slate-600 dark:bg-white/10 dark:text-slate-200">
-                      {remainingRouteAJobs.length} left
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-black text-slate-600 dark:bg-white/10 dark:text-slate-200">
+                        {remainingRouteAJobs.length} left
+                      </span>
+                      <div className="relative" data-add-menu>
+                        <button
+                          type="button"
+                          onClick={() => setAddMenuOpen((prev) => !prev)}
+                          className="flex items-center gap-1 rounded-full bg-blue-600 px-3 py-1 text-xs font-black text-white shadow-md hover:bg-blue-500 transition-all"
+                        >
+                          <Plus size={13} />
+                          <span>Add</span>
+                        </button>
+                        {addMenuOpen && (
+                          <div className="absolute right-0 top-full z-50 mt-1 w-48 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-white/10 dark:bg-[#17181b]">
+                            <button
+                              type="button"
+                              onClick={() => { setAddMenuOpen(false); handleOpenAddModal(); }}
+                              className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-white/5"
+                            >
+                              <Plus size={14} className="text-blue-500" />
+                              Add Stop
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { setAddMenuOpen(false); handleOpenProcessServeModal(); }}
+                              className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-white/5"
+                            >
+                              <Briefcase size={14} className="text-red-500" />
+                              Add Process Serve
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   {remainingRouteAJobs.length === 0 ? (
@@ -3460,195 +3525,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                 </div>
 
               </div>
-            </div>
-          )}
-
-          {currentTab === 'jobs' && !showerGateUnlocked && (
-            <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-8 text-center dark:border-amber-500/30 dark:bg-amber-500/10">
-              <ShieldCheck size={40} className="mx-auto mb-4 text-amber-500" />
-              <h3 className="text-lg font-black text-amber-900 dark:text-amber-100">Daily Verification Required</h3>
-              <p className="mt-2 text-sm text-amber-700 dark:text-amber-300">Complete your daily shower verification in Mission Control to unlock Jobs features.</p>
-              <button onClick={() => handleTabChange('dashboard')} className="mt-4 rounded-xl bg-amber-600 px-6 py-2.5 text-sm font-black text-white hover:bg-amber-500 transition-all">Go to Mission Control</button>
-            </div>
-          )}
-          {currentTab === 'jobs' && showerGateUnlocked && (
-            <div className="space-y-6 animate-fade-in" id="tab-view-jobs">
-              {/* Sub-Tabs Selector */}
-              <div className="flex border-b border-slate-200 dark:border-white/5">
-                <button
-                  onClick={() => setJobsSubTab('list')}
-                  className={`px-5 py-3 text-xs font-black tracking-wider uppercase border-b-2 transition-all ${
-                    jobsSubTab === 'list'
-                      ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                      : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
-                  }`}
-                >
-                  Active Stops List ({jobs.length})
-                </button>
-                <button
-                  onClick={() => setJobsSubTab('import')}
-                  className={`px-5 py-3 text-xs font-black tracking-wider uppercase border-b-2 transition-all flex items-center gap-1.5 ${
-                    jobsSubTab === 'import'
-                      ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                      : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
-                  }`}
-                >
-                  <Sparkles size={13} className="text-blue-500 " />
-                  <span>Secure Import</span>
-                </button>
-              </div>
-
-              {jobsSubTab === 'import' ? (
-                <div className="animate-fade-in">
-                  <JobImportSystem onImportJobs={(newJobs) => {
-                    handleImportJobs(newJobs);
-                    setJobsSubTab('list');
-                  }} isOptimizing={isOptimizing} />
-                </div>
-              ) : (
-                <>
-                  {/* Controls and filtering bar */}
-                  <div className="road-card p-4 space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                      
-                      {/* Route Selector tabs */}
-                      <div className="flex bg-slate-100 p-1 rounded-xl dark:bg-white/5 border border-slate-200/50 dark:border-white/10">
-                        <button
-                          id="tab-route-a"
-                          onClick={() => setActiveTab('A')}
-                          className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-black transition-all ${
-                            activeTab === 'A'
-                              ? 'bg-white text-slate-950 shadow-xs dark:bg-white/10 dark:text-white'
-                              : 'text-slate-500 hover:text-slate-900 dark:text-slate-400'
-                          }`}
-                        >
-                          <Layers size={13} className="text-emerald-500" />
-                          <span>Route A Active ({routeAJobs.length})</span>
-                        </button>
-                        <button
-                          id="tab-route-b"
-                          onClick={() => setActiveTab('B')}
-                          className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-black transition-all ${
-                            activeTab === 'B'
-                              ? 'bg-white text-slate-950 shadow-xs dark:bg-white/10 dark:text-white'
-                              : 'text-slate-500 hover:text-slate-900 dark:text-slate-400'
-                          }`}
-                        >
-                          <Layers size={13} className="text-slate-500" />
-                          <span>Route B Standby ({routeBJobs.length})</span>
-                        </button>
-                        <button
-                          id="tab-route-all"
-                          onClick={() => setActiveTab('all')}
-                          className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-black transition-all ${
-                            activeTab === 'all'
-                              ? 'bg-white text-slate-950 shadow-xs dark:bg-white/10 dark:text-white'
-                              : 'text-slate-500 hover:text-slate-900 dark:text-slate-400'
-                          }`}
-                        >
-                          <span>All stops ({jobs.length})</span>
-                        </button>
-                      </div>
-
-                      {/* Actions row */}
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {activeTab === 'A' && routeAJobs.length > 1 && (
-                          <button
-                            id="optimize-route-btn"
-                            onClick={handleOptimizeRouteSequence}
-                            className="road-action bg-blue-600 text-white shadow-md hover:bg-blue-500"
-                            title="Optimize sequence using sequential greedy nearest neighbor"
-                          >
-                            <Play size={12} className="fill-white " />
-                            <span>Optimize Sequence</span>
-                          </button>
-                        )}
-                        <button
-                          id="add-job-btn"
-                          onClick={handleOpenAddModal}
-                          className="road-action border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
-                        >
-                          <Plus size={13} />
-                          <span>Add Stop Details</span>
-                        </button>
-                        <button
-                          id="add-process-serve-btn"
-                          onClick={handleOpenProcessServeModal}
-                          className="road-action bg-red-600 text-white shadow-md hover:bg-red-500"
-                        >
-                          <Briefcase size={13} />
-                          <span>Add Process Serve</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Search input field */}
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                        <Search size={14} />
-                      </span>
-                      <input
-                        id="search-input"
-                        type="text"
-                        placeholder="Search by store name, address, or task type..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="road-input w-full pl-10 pr-4"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Jobs List Grid */}
-                  <div className="space-y-4">
-                    {(() => {
-                      const activeList = activeTab === 'A' ? routeAJobs : activeTab === 'B' ? routeBJobs : jobs;
-                      const filtered = filterList(activeList);
-
-                      if (filtered.length === 0) {
-                        return (
-                          <div id="empty-state-panel" className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center dark:border-white/5 dark:bg-[#1C1C1E]">
-                            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 text-slate-400 dark:bg-white/5">
-                              <CheckSquare size={24} />
-                            </div>
-                            <h4 className="mt-4 text-sm font-bold text-slate-900 dark:text-white">No registered stops match filters</h4>
-                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                              {searchQuery ? 'Try adjusting your search query terms' : `No stops found in Route ${activeTab}`}
-                            </p>
-                            {!searchQuery && (
-                              <button
-                                id="empty-add-btn"
-                                onClick={handleOpenAddModal}
-                                className="mt-4 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-blue-500"
-                              >
-                                Add New Stop
-                              </button>
-                            )}
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                          {filtered.map((job) => (
-                            <JobCard
-                              key={job.id}
-                              job={job}
-                              isOutlier={outlierIds.includes(job.id)}
-                              onToggleComplete={handleToggleComplete}
-                              onEdit={handleOpenEditModal}
-                              onDelete={handleDeleteJob}
-                              onDuplicate={handleDuplicateJob}
-                              onToggleRoute={handleToggleRoute}
-                              onUpdateStatus={handleUpdateJobStatus}
-                              jobAccessLocked={!showerGateUnlocked}
-                            />
-                          ))}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </>
-              )}
             </div>
           )}
 
@@ -5189,7 +5065,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           >
             {[
               { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, color: 'text-blue-500' },
-              { id: 'jobs', label: 'Jobs', icon: Briefcase, color: 'text-emerald-500' },
               { id: 'battery', label: 'Battery', icon: Battery, color: 'text-lime-600' },
               { id: 'tracker', label: 'Tracker', icon: Timer, color: 'text-indigo-500' },
               { id: 'habits', label: 'Habits', icon: Award, color: 'text-amber-500' },

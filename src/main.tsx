@@ -7,7 +7,7 @@ import './index.css';
 
 function isRetiredRouteDestination(value: string): boolean {
   const normalized = value.toLowerCase().replace(/^[/#]+/, '').replace(/\/$/, '');
-  return normalized === 'route' || normalized === 'routes';
+  return normalized === 'route' || normalized === 'routes' || normalized === 'jobs';
 }
 
 function redirectRetiredRouteDestination() {

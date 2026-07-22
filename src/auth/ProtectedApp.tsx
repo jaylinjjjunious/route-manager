@@ -13,7 +13,7 @@ type AuthView = "login" | "forgot-password" | "reset-password" | "app";
 
 function isRetiredRoutePath(pathname: string): boolean {
   const normalized = pathname.toLowerCase().replace(/^\/+/, "").replace(/\/+$/, "");
-  return normalized === "route" || normalized === "routes";
+  return normalized === "route" || normalized === "routes" || normalized === "jobs";
 }
 
 function redirectRetiredRoutePath() {
