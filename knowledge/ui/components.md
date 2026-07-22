@@ -143,8 +143,18 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 | Field | Value |
 |-------|-------|
 | **File** | `src/components/JobCard.tsx` |
-| **Props** | `job: Job`, `onClick: (job: Job) => void`, `jobAccessLocked: boolean` |
-| **Responsibility** | Individual Jobs-tab job display card. Dashboard Today's Route cards are inline in `src/App.tsx` and open a compact per-job detail panel from the main card surface while Navigate, Review, and Move controls stop event propagation. |
+| **Props** | `job: Job`, `isOutlier: boolean`, `onToggleComplete`, `onEdit`, `onDelete`, `onDuplicate`, `onToggleRoute`, `onUpdateStatus`, `jobAccessLocked` |
+| **Responsibility** | Shared job-detail card component. Single source of truth for visual design — used on both the Jobs tab list and the Dashboard detail sheet. Renders status badges, type badge, pay, deadline, notes, process-serve info, revision info, smart-merge explanation, quick status controls, and administrative actions (edit/duplicate/delete). |
+
+---
+
+### DashboardJobDetailSheet
+
+| Field | Value |
+|-------|-------|
+| **File** | `src/components/DashboardJobDetailSheet.tsx` |
+| **Props** | `job: Job`, `routeIndex: number \| null`, `legDistance: number`, `rideMinutes: number`, `navLink: string`, `isOutlier: boolean`, `jobAccessLocked: boolean`, `onToggleComplete`, `onEdit`, `onDelete`, `onDuplicate`, `onToggleRoute`, `onUpdateStatus`, `onOpenInJobs`, `onClose` |
+| **Responsibility** | Mobile-friendly bottom-sheet modal that opens when a Dashboard "Today's Route" card is tapped. Wraps `JobCard` as the shared detail component with a compact route-info header (stop number, leg distance, ride time) and footer actions (Navigate, Open in Jobs). Does not duplicate JobCard's design. |
 
 ---
 

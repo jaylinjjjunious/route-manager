@@ -30,7 +30,7 @@ Job-based field work management system with proof vault, multiple job types, and
 
 ### Dashboard Route Job Details
 
-Dashboard Today's Route cards open a compact read-only detail panel for the selected job when the main card surface is tapped or clicked. The panel resolves the selected job from current app state by job ID, so Job 1, Job 2, and later route stops each show their own live data. Existing card action controls such as Navigate, Review, and Move stop event propagation and do not open the detail panel.
+Dashboard Today's Route cards open a `DashboardJobDetailSheet` bottom-sheet modal when the card surface is tapped. The sheet renders the shared `JobCard` component — the same card used on the Jobs tab — so the detail view is visually identical to the full job card. A compact route-info header shows the stop number, leg distance, and ride time from the previous stop. Footer actions include a Navigate button (opens Google Maps) and an "Open in Jobs" button (navigates to the Jobs tab). The sheet resolves the selected job from current app state by job ID, so each route stop shows its own live data. Existing card action controls (Navigate, Review, Move) stop event propagation and do not open the detail panel.
 
 ### Job Interface (src/types.ts)
 
