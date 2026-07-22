@@ -31,6 +31,7 @@ import AssistantProvider from './assistant/AssistantProvider';
 import AssistantBubble from './assistant/AssistantBubble';
 import AmbientLiquidBackground from './components/backgrounds/AmbientLiquidBackground';
 import JobImportSystem from './components/JobImportSystem';
+import JobDetailModal from './components/JobDetailModal';
 import { EndOfDaySummary } from './components/EndOfDaySummary';
 import ShowerGatePanel from './components/ShowerGatePanel';
 import { getCurrentCycleId, getCycleLabel, getNextResetTime, getLocalDateKey } from './utils/showerCycle';
@@ -529,6 +530,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   
   // Modal configurations
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [routeDetailJobId, setRouteDetailJobId] = useState<string | null>(null);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [defaultJobType, setDefaultJobType] = useState<JobType>('retail_audit');
   const [isConfigExpanded, setIsConfigExpanded] = useState(false);
@@ -615,14 +617,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     }, 0);
   };
 
-  const navigateToJobDetail = useCallback((jobId: string) => {
-    try {
-      sessionStorage.setItem('route_optimizer_scroll_position', String(window.scrollY));
-    } catch { /* storage unavailable */ }
-    window.history.pushState(null, '', `/job/${jobId}`);
-    window.dispatchEvent(new PopStateEvent('popstate', { state: null }));
-  }, []);
-
   const activateTabFromTap = (tab: AppTab, event?: React.SyntheticEvent<HTMLElement>) => {
     event?.preventDefault();
     event?.stopPropagation();
@@ -656,17 +650,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     handleHashChange();
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
-
-  // Restore scroll position after returning from job detail page
-  useEffect(() => {
-    const saved = sessionStorage.getItem('route_optimizer_scroll_position');
-    if (saved) {
-      sessionStorage.removeItem('route_optimizer_scroll_position');
-      requestAnimationFrame(() => {
-        window.scrollTo(0, parseInt(saved, 10) || 0);
-      });
-    }
   }, []);
 
   useEffect(() => {
@@ -2592,6 +2575,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const routeListStops = remainingRouteAJobs;
   const proofRecords = (Object.values(proofVault) as ProofRecord[]).sort((a, b) => new Date(b.completionTime).getTime() - new Date(a.completionTime).getTime());
   const selectedProofRecord = selectedProofJobId ? proofVault[selectedProofJobId] : null;
+  const routeDetailJob = routeDetailJobId ? jobs.find(job => job.id === routeDetailJobId) || null : null;
   const getRouteStopNavLink = (job: Job, idx: number) => {
     const origin = idx === 0
       ? startCoord
@@ -2891,11 +2875,11 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                             <div
                               role="button"
                               tabIndex={0}
-                              onClick={() => navigateToJobDetail(job.id)}
+                              onClick={() => setRouteDetailJobId(job.id)}
                               onKeyDown={(event) => {
                                 if (event.key === 'Enter' || event.key === ' ') {
                                   event.preventDefault();
-                                  navigateToJobDetail(job.id);
+                                  setRouteDetailJobId(job.id);
                                 }
                               }}
                               className={`cursor-pointer rounded-[8px] border-2 p-2 transition-all duration-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-[#0A0A0A] ${completingJobIds.includes(job.id) ? 'scale-[0.98] border-emerald-500 bg-emerald-100 opacity-0 -translate-y-2 dark:bg-emerald-500/20' : ''} ${isCurrentStop ? 'border-blue-700 bg-blue-50 dark:bg-blue-500/10' : 'border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04]'}`}
@@ -3233,11 +3217,11 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                             key={job.id}
                             role="button"
                             tabIndex={0}
-                            onClick={() => navigateToJobDetail(job.id)}
+                            onClick={() => setRouteDetailJobId(job.id)}
                             onKeyDown={(event) => {
                               if (event.key === 'Enter' || event.key === ' ') {
                                 event.preventDefault();
-                                navigateToJobDetail(job.id);
+                                setRouteDetailJobId(job.id);
                               }
                             }}
                             className={`rounded-2xl border p-2.5 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-[#0A0A0A] ${
@@ -5343,6 +5327,36 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
             </div>
           </div>
         )}
+
+        {/* Job Detail Mini Page Modal */}
+        {routeDetailJob && (() => {
+          const routeIndex = routeAJobs.findIndex(job => job.id === routeDetailJob.id);
+          const previousStop = routeIndex <= 0 ? null : routeAJobs[routeIndex - 1];
+          const origin = previousStop?.coordinates || startCoord;
+          const legDistance = getDistanceInMiles(origin, routeDetailJob.coordinates);
+          const rideMinutes = Math.max(1, Math.round((legDistance / ebikeConfig.avgSpeedMph) * 60));
+          const routeIdx = routeIndex >= 0 ? routeIndex : null;
+          const navLink = `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${routeDetailJob.coordinates.lat},${routeDetailJob.coordinates.lng}&travelmode=bicycling`;
+
+          return (
+            <JobDetailModal
+              job={routeDetailJob}
+              routeIndex={routeIdx}
+              legDistance={legDistance}
+              rideMinutes={rideMinutes}
+              navLink={navLink}
+              isOutlier={outlierIds.includes(routeDetailJob.id)}
+              jobAccessLocked={!showerGateUnlocked}
+              onToggleComplete={handleToggleComplete}
+              onEdit={handleOpenEditModal}
+              onDelete={handleDeleteJob}
+              onDuplicate={handleDuplicateJob}
+              onToggleRoute={handleToggleRoute}
+              onUpdateStatus={handleUpdateJobStatus}
+              onClose={() => setRouteDetailJobId(null)}
+            />
+          );
+        })()}
 
         {/* Job Creator / Updater modal */}
         <JobModal
