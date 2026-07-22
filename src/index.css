@@ -252,42 +252,42 @@ select {
 @property --amb-color-1 {
   syntax: '<color>';
   inherits: false;
-  initial-value: rgba(0, 122, 255, 0.30);
+  initial-value: rgba(0, 122, 255, 0.55);
 }
 @property --amb-color-1b {
   syntax: '<color>';
   inherits: false;
-  initial-value: rgba(0, 90, 210, 0.12);
+  initial-value: rgba(0, 90, 210, 0.24);
 }
 @property --amb-color-2 {
   syntax: '<color>';
   inherits: false;
-  initial-value: rgba(10, 132, 255, 0.22);
+  initial-value: rgba(10, 132, 255, 0.38);
 }
 @property --amb-color-2b {
   syntax: '<color>';
   inherits: false;
-  initial-value: rgba(0, 80, 200, 0.09);
+  initial-value: rgba(0, 80, 200, 0.18);
 }
 @property --amb-color-3 {
   syntax: '<color>';
   inherits: false;
-  initial-value: rgba(200, 140, 40, 0.26);
+  initial-value: rgba(200, 140, 40, 0.50);
 }
 @property --amb-color-3b {
   syntax: '<color>';
   inherits: false;
-  initial-value: rgba(180, 110, 20, 0.11);
+  initial-value: rgba(180, 110, 20, 0.22);
 }
 @property --amb-color-4 {
   syntax: '<color>';
   inherits: false;
-  initial-value: rgba(180, 120, 30, 0.20);
+  initial-value: rgba(180, 120, 30, 0.35);
 }
 @property --amb-color-4b {
   syntax: '<color>';
   inherits: false;
-  initial-value: rgba(160, 100, 20, 0.08);
+  initial-value: rgba(160, 100, 20, 0.16);
 }
 
 /* --- Container --- */
@@ -307,13 +307,13 @@ select {
 
 /* --- Layer 1: Left primary — anchored upper-left corner --- */
 .ambient-blue-primary {
-  width: 58vw;
-  height: 52vh;
+  width: 60vw;
+  height: 55vh;
   top: -20vh;
   left: -18vw;
-  background: radial-gradient(ellipse at 12% 12%, var(--amb-color-1) 0%, var(--amb-color-1b) 35%, transparent 68%);
+  background: radial-gradient(ellipse at 12% 12%, var(--amb-color-1) 0%, var(--amb-color-1b) 30%, transparent 62%);
   border-radius: 42% 58% 63% 37% / 51% 39% 61% 49%;
-  filter: blur(55px);
+  filter: blur(50px);
   opacity: 1;
   animation:
     ambient-drift-blue-primary 28s ease-in-out infinite alternate,
@@ -322,14 +322,14 @@ select {
 
 /* --- Layer 2: Left secondary — offset within upper-left zone --- */
 .ambient-blue-secondary {
-  width: 44vw;
-  height: 40vh;
+  width: 48vw;
+  height: 44vh;
   top: -10vh;
   left: -8vw;
-  background: radial-gradient(ellipse at 18% 18%, var(--amb-color-2) 0%, var(--amb-color-2b) 32%, transparent 62%);
+  background: radial-gradient(ellipse at 18% 18%, var(--amb-color-2) 0%, var(--amb-color-2b) 28%, transparent 58%);
   border-radius: 50% 50% 45% 55% / 55% 45% 55% 45%;
-  filter: blur(70px);
-  opacity: 0.85;
+  filter: blur(60px);
+  opacity: 0.92;
   animation:
     ambient-drift-blue-secondary 36s ease-in-out infinite alternate,
     ambient-shift-2 160s ease-in-out infinite;
@@ -337,14 +337,14 @@ select {
 
 /* --- Layer 3: Right primary — anchored upper-right corner --- */
 .ambient-amber-primary {
-  width: 58vw;
-  height: 52vh;
+  width: 60vw;
+  height: 55vh;
   top: -20vh;
   right: -18vw;
   left: auto;
-  background: radial-gradient(ellipse at 88% 12%, var(--amb-color-3) 0%, var(--amb-color-3b) 35%, transparent 68%);
+  background: radial-gradient(ellipse at 88% 12%, var(--amb-color-3) 0%, var(--amb-color-3b) 30%, transparent 62%);
   border-radius: 55% 45% 50% 50% / 45% 55% 45% 55%;
-  filter: blur(55px);
+  filter: blur(50px);
   opacity: 1;
   animation:
     ambient-drift-amber-primary 32s ease-in-out infinite alternate,
@@ -353,15 +353,15 @@ select {
 
 /* --- Layer 4: Right secondary — offset within upper-right zone --- */
 .ambient-amber-secondary {
-  width: 44vw;
-  height: 40vh;
+  width: 48vw;
+  height: 44vh;
   top: -10vh;
   right: -8vw;
   left: auto;
-  background: radial-gradient(ellipse at 82% 18%, var(--amb-color-4) 0%, var(--amb-color-4b) 30%, transparent 60%);
+  background: radial-gradient(ellipse at 82% 18%, var(--amb-color-4) 0%, var(--amb-color-4b) 26%, transparent 55%);
   border-radius: 50% 50% 55% 45% / 48% 52% 48% 52%;
-  filter: blur(70px);
-  opacity: 0.8;
+  filter: blur(60px);
+  opacity: 0.90;
   animation:
     ambient-drift-amber-secondary 40s ease-in-out infinite alternate,
     ambient-shift-4 130s ease-in-out infinite;
@@ -374,8 +374,8 @@ select {
   height: 100%;
   border-radius: 0;
   background:
-    radial-gradient(ellipse at 50% 8%, transparent 8%, rgba(3, 3, 5, 0.50) 35%, rgba(3, 3, 5, 0.80) 65%, rgba(3, 3, 5, 0.92) 100%),
-    linear-gradient(180deg, transparent 0%, rgba(3, 3, 5, 0.35) 30%, rgba(3, 3, 5, 0.65) 60%, rgba(3, 3, 5, 0.85) 100%);
+    radial-gradient(ellipse at 50% 8%, transparent 10%, rgba(3, 3, 5, 0.45) 32%, rgba(3, 3, 5, 0.78) 60%, rgba(3, 3, 5, 0.92) 100%),
+    linear-gradient(180deg, transparent 0%, rgba(3, 3, 5, 0.30) 25%, rgba(3, 3, 5, 0.60) 55%, rgba(3, 3, 5, 0.82) 100%);
   filter: none;
   opacity: 1;
   animation: none;
@@ -505,36 +505,36 @@ select {
 
 /* Layer 1: Blue → Indigo → Emerald → Blue-deep → Blue */
 @keyframes ambient-shift-1 {
-  0%   { --amb-color-1: rgba(0, 122, 255, 0.30); --amb-color-1b: rgba(0, 90, 210, 0.12); }
-  25%  { --amb-color-1: rgba(99, 102, 241, 0.26); --amb-color-1b: rgba(79, 82, 200, 0.10); }
-  50%  { --amb-color-1: rgba(16, 185, 129, 0.22); --amb-color-1b: rgba(10, 150, 105, 0.09); }
-  75%  { --amb-color-1: rgba(29, 78, 216, 0.26); --amb-color-1b: rgba(20, 55, 180, 0.10); }
-  100% { --amb-color-1: rgba(0, 122, 255, 0.30); --amb-color-1b: rgba(0, 90, 210, 0.12); }
+  0%   { --amb-color-1: rgba(0, 122, 255, 0.55); --amb-color-1b: rgba(0, 90, 210, 0.24); }
+  25%  { --amb-color-1: rgba(99, 102, 241, 0.48); --amb-color-1b: rgba(79, 82, 200, 0.20); }
+  50%  { --amb-color-1: rgba(16, 185, 129, 0.42); --amb-color-1b: rgba(10, 150, 105, 0.18); }
+  75%  { --amb-color-1: rgba(29, 78, 216, 0.48); --amb-color-1b: rgba(20, 55, 180, 0.20); }
+  100% { --amb-color-1: rgba(0, 122, 255, 0.55); --amb-color-1b: rgba(0, 90, 210, 0.24); }
 }
 
 /* Layer 2: iOS blue → Emerald-deep → Blue → Indigo → iOS blue */
 @keyframes ambient-shift-2 {
-  0%   { --amb-color-2: rgba(10, 132, 255, 0.22); --amb-color-2b: rgba(0, 80, 200, 0.09); }
-  25%  { --amb-color-2: rgba(5, 150, 105, 0.20); --amb-color-2b: rgba(5, 120, 85, 0.08); }
-  50%  { --amb-color-2: rgba(0, 122, 255, 0.24); --amb-color-2b: rgba(0, 90, 210, 0.10); }
-  75%  { --amb-color-2: rgba(99, 102, 241, 0.22); --amb-color-2b: rgba(79, 82, 200, 0.09); }
-  100% { --amb-color-2: rgba(10, 132, 255, 0.22); --amb-color-2b: rgba(0, 80, 200, 0.09); }
+  0%   { --amb-color-2: rgba(10, 132, 255, 0.38); --amb-color-2b: rgba(0, 80, 200, 0.18); }
+  25%  { --amb-color-2: rgba(5, 150, 105, 0.35); --amb-color-2b: rgba(5, 120, 85, 0.16); }
+  50%  { --amb-color-2: rgba(0, 122, 255, 0.40); --amb-color-2b: rgba(0, 90, 210, 0.18); }
+  75%  { --amb-color-2: rgba(99, 102, 241, 0.38); --amb-color-2b: rgba(79, 82, 200, 0.16); }
+  100% { --amb-color-2: rgba(10, 132, 255, 0.38); --amb-color-2b: rgba(0, 80, 200, 0.18); }
 }
 
 /* Layer 3: Amber → Rose → Amber-warm → Amber */
 @keyframes ambient-shift-3 {
-  0%   { --amb-color-3: rgba(200, 140, 40, 0.26); --amb-color-3b: rgba(180, 110, 20, 0.11); }
-  33%  { --amb-color-3: rgba(200, 60, 80, 0.18); --amb-color-3b: rgba(180, 50, 65, 0.08); }
-  66%  { --amb-color-3: rgba(180, 120, 30, 0.22); --amb-color-3b: rgba(160, 100, 20, 0.09); }
-  100% { --amb-color-3: rgba(200, 140, 40, 0.26); --amb-color-3b: rgba(180, 110, 20, 0.11); }
+  0%   { --amb-color-3: rgba(200, 140, 40, 0.50); --amb-color-3b: rgba(180, 110, 20, 0.22); }
+  33%  { --amb-color-3: rgba(200, 60, 80, 0.38); --amb-color-3b: rgba(180, 50, 65, 0.16); }
+  66%  { --amb-color-3: rgba(180, 120, 30, 0.42); --amb-color-3b: rgba(160, 100, 20, 0.18); }
+  100% { --amb-color-3: rgba(200, 140, 40, 0.50); --amb-color-3b: rgba(180, 110, 20, 0.22); }
 }
 
 /* Layer 4: Amber-warm → Rose-muted → Amber → Amber-warm */
 @keyframes ambient-shift-4 {
-  0%   { --amb-color-4: rgba(180, 120, 30, 0.20); --amb-color-4b: rgba(160, 100, 20, 0.08); }
-  33%  { --amb-color-4: rgba(180, 50, 70, 0.16); --amb-color-4b: rgba(160, 40, 55, 0.07); }
-  66%  { --amb-color-4: rgba(200, 140, 40, 0.22); --amb-color-4b: rgba(180, 110, 20, 0.09); }
-  100% { --amb-color-4: rgba(180, 120, 30, 0.20); --amb-color-4b: rgba(160, 100, 20, 0.08); }
+  0%   { --amb-color-4: rgba(180, 120, 30, 0.35); --amb-color-4b: rgba(160, 100, 20, 0.16); }
+  33%  { --amb-color-4: rgba(180, 50, 70, 0.30); --amb-color-4b: rgba(160, 40, 55, 0.14); }
+  66%  { --amb-color-4: rgba(200, 140, 40, 0.38); --amb-color-4b: rgba(180, 110, 20, 0.16); }
+  100% { --amb-color-4: rgba(180, 120, 30, 0.35); --amb-color-4b: rgba(160, 100, 20, 0.16); }
 }
 
 /* ============================================
