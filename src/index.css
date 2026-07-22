@@ -289,7 +289,7 @@ select {
   height: 100%;
   background:
     radial-gradient(ellipse 85% 70% at 50% 35%, transparent 24%, rgba(3, 3, 5, 0.52) 56%, rgba(3, 3, 5, 0.88) 82%, rgba(3, 3, 5, 0.95) 100%),
-    linear-gradient(180deg, transparent 0%, rgba(3, 3, 5, 0.22) 22%, rgba(3, 3, 5, 0.55) 48%, rgba(3, 3, 5, 0.82) 72%, rgba(3, 3, 5, 0.92) 100%);
+    linear-gradient(180deg, transparent 0%, rgba(3, 3, 5, 0.20) 20%, rgba(3, 3, 5, 0.42) 40%, rgba(3, 3, 5, 0.52) 55%, rgba(3, 3, 5, 0.30) 70%, rgba(3, 3, 5, 0.06) 100%);
   opacity: 1;
   animation: none;
 }
@@ -413,6 +413,6 @@ select {
   .ambient-vignette {
     background:
       radial-gradient(ellipse 90% 65% at 50% 30%, transparent 18%, rgba(3, 3, 5, 0.48) 48%, rgba(3, 3, 5, 0.85) 76%, rgba(3, 3, 5, 0.95) 100%),
-      linear-gradient(180deg, transparent 0%, rgba(3, 3, 5, 0.18) 18%, rgba(3, 3, 5, 0.50) 42%, rgba(3, 3, 5, 0.80) 66%, rgba(3, 3, 5, 0.92) 100%);
+      linear-gradient(180deg, transparent 0%, rgba(3, 3, 5, 0.16) 18%, rgba(3, 3, 5, 0.38) 38%, rgba(3, 3, 5, 0.48) 52%, rgba(3, 3, 5, 0.25) 68%, rgba(3, 3, 5, 0.05) 100%);
   }
 }
