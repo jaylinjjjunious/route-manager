@@ -20,9 +20,9 @@ export default function AssistantMessageList({ messages, onConfirmAction, onDism
   if (messages.length === 0 && !isLoading) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center">
-        <Sparkles size={40} className="text-emerald-400/40" />
-        <p className="mt-4 text-lg font-black text-emerald-200/60">AI Operations Assistant</p>
-        <p className="mt-2 text-sm text-emerald-300/40">Ask me anything about your route, jobs, or settings.</p>
+        <Sparkles size={40} className="text-white/15" />
+        <p className="mt-4 text-lg font-black text-white/30">AI Operations Assistant</p>
+        <p className="mt-2 text-sm text-white/20">Ask me anything about your route, jobs, or settings.</p>
       </div>
     );
   }
@@ -53,7 +53,7 @@ export default function AssistantMessageList({ messages, onConfirmAction, onDism
                       ? 'bg-rose-600 text-white'
                       : msg.type === 'tool-progress'
                         ? 'bg-amber-400 text-slate-950'
-                        : 'bg-emerald-700/40 text-emerald-200'
+                        : 'bg-white/[0.08] text-white/70'
                 }`}
               >
                 {msg.type === 'user' ? (
@@ -74,7 +74,7 @@ export default function AssistantMessageList({ messages, onConfirmAction, onDism
                       ? 'border-rose-500/30 bg-rose-500/10 text-rose-100'
                       : msg.type === 'tool-progress'
                         ? 'border-amber-500/30 bg-amber-500/10 text-amber-100'
-                        : 'border-emerald-500/20 bg-emerald-900/40 text-emerald-50'
+                        : 'border-white/[0.08] bg-white/[0.04] text-white/90'
                 }`}
               >
                 {msg.isStreaming ? (
@@ -94,13 +94,13 @@ export default function AssistantMessageList({ messages, onConfirmAction, onDism
 
       {isLoading && (
         <div className="flex gap-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-700/40 text-emerald-200">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/[0.08] text-white/70">
             <Bot size={16} />
           </div>
-          <div className="max-w-[85%] rounded-[8px] border border-emerald-500/20 bg-emerald-900/40 p-3">
+          <div className="max-w-[85%] rounded-[8px] border border-white/[0.08] bg-white/[0.04] p-3">
             <div className="flex items-center gap-2">
-              <Loader2 size={14} className="animate-spin text-emerald-400" />
-              <p className="text-sm font-black text-emerald-300/70">Thinking...</p>
+              <Loader2 size={14} className="animate-spin text-white/40" />
+              <p className="text-sm font-black text-white/40">Thinking...</p>
             </div>
           </div>
         </div>

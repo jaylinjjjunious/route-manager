@@ -12,9 +12,9 @@ export default function AssistantBubble() {
         <div
           className="fixed inset-0 z-[100] flex h-dvh flex-col sm:bottom-24 sm:h-[600px] sm:left-auto sm:max-h-[80vh] sm:right-4 sm:top-auto sm:w-[400px] sm:rounded-[16px]"
           style={{
-            background: 'rgba(2, 12, 8, 0.55)',
-            WebkitBackdropFilter: 'blur(10px)',
-            backdropFilter: 'blur(10px)',
+            background: 'rgba(6, 10, 10, 0.40)',
+            WebkitBackdropFilter: 'blur(8px)',
+            backdropFilter: 'blur(8px)',
           }}
         >
           <AssistantPanel />

@@ -33,7 +33,7 @@ export default function AssistantActionCard({ message, onConfirm, onDismiss }: P
 
   if (message.actionStatus === 'rejected') {
     return (
-      <div className="rounded-[8px] border border-emerald-500/15 bg-emerald-900/30 p-3 text-emerald-200/70">
+      <div className="rounded-[8px] border border-white/[0.08] bg-white/[0.04] p-3 text-white/40">
         <p className="text-sm font-black">Action dismissed.</p>
       </div>
     );
@@ -65,7 +65,7 @@ export default function AssistantActionCard({ message, onConfirm, onDismiss }: P
         <button
           type="button"
           onClick={onDismiss}
-          className="flex min-h-9 items-center gap-1.5 rounded-[8px] border border-emerald-500/25 bg-emerald-950/50 px-4 text-xs font-black uppercase text-emerald-200 transition hover:bg-emerald-800/40"
+          className="flex min-h-9 items-center gap-1.5 rounded-[8px] border border-white/[0.10] bg-white/[0.06] px-4 text-xs font-black uppercase text-white/60 transition hover:bg-white/10"
         >
           <X size={14} />
           <span>Dismiss</span>

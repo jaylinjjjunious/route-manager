@@ -41,19 +41,19 @@ export default function AssistantComposer() {
 
   return (
     <div
-      className="shrink-0 border-t border-emerald-500/15 p-3 sm:p-3"
+      className="shrink-0 border-t border-white/[0.06] p-3 sm:p-3"
       style={{
-        background: 'rgba(4, 28, 22, 0.82)',
-        WebkitBackdropFilter: 'blur(16px)',
-        backdropFilter: 'blur(16px)',
+        background: 'rgba(10, 16, 14, 0.60)',
+        WebkitBackdropFilter: 'blur(14px)',
+        backdropFilter: 'blur(14px)',
         paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))',
       }}
     >
       {showQuickPrompts && (
         <div className="mb-3">
           <div className="flex items-center gap-1.5 mb-2">
-            <Sparkles size={12} className="text-emerald-400" />
-            <p className="text-[10px] font-black uppercase tracking-wider text-emerald-300/60">Quick prompts</p>
+            <Sparkles size={12} className="text-white/30" />
+            <p className="text-[10px] font-black uppercase tracking-wider text-white/30">Quick prompts</p>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {QUICK_PROMPTS.map(prompt => (
@@ -62,7 +62,7 @@ export default function AssistantComposer() {
                 type="button"
                 onClick={() => handleQuickPrompt(prompt)}
                 disabled={isLoading}
-                className="rounded-[8px] bg-emerald-800/30 px-2.5 py-1.5 text-[11px] font-black text-emerald-200 transition hover:bg-emerald-700/40 disabled:opacity-40"
+                className="rounded-[8px] bg-white/[0.06] px-2.5 py-1.5 text-[11px] font-black text-white/60 transition hover:bg-white/10 disabled:opacity-40"
               >
                 {prompt}
               </button>
@@ -79,14 +79,14 @@ export default function AssistantComposer() {
           onKeyDown={handleKeyDown}
           placeholder="Ask me anything..."
           disabled={isLoading}
-          className="min-h-11 flex-1 rounded-[8px] border border-emerald-500/25 bg-emerald-950/50 px-3 text-sm font-black text-emerald-50 outline-none transition focus:border-emerald-400/50 disabled:opacity-50"
+          className="min-h-11 flex-1 rounded-[8px] border border-white/[0.08] bg-white/[0.05] px-3 text-sm font-black text-white/90 outline-none transition focus:border-white/20 disabled:opacity-50"
           style={{ WebkitBackdropFilter: 'blur(8px)', backdropFilter: 'blur(8px)' }}
         />
         <button
           type="button"
           onClick={handleSubmit}
           disabled={!input.trim() || isLoading}
-          className="flex min-h-11 w-11 items-center justify-center rounded-[8px] bg-emerald-600 text-white transition hover:bg-emerald-500 disabled:opacity-50"
+          className="flex min-h-11 w-11 items-center justify-center rounded-[8px] bg-white/10 text-white transition hover:bg-white/15 disabled:opacity-50"
         >
           {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
         </button>
