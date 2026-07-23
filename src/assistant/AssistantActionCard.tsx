@@ -33,7 +33,7 @@ export default function AssistantActionCard({ message, onConfirm, onDismiss }: P
 
   if (message.actionStatus === 'rejected') {
     return (
-      <div className="rounded-[8px] border-2 border-slate-200 bg-slate-50 p-3 text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200">
+      <div className="rounded-[8px] border border-emerald-500/15 bg-emerald-900/30 p-3 text-emerald-200/70">
         <p className="text-sm font-black">Action dismissed.</p>
       </div>
     );
@@ -46,10 +46,10 @@ export default function AssistantActionCard({ message, onConfirm, onDismiss }: P
         <div className="min-w-0">
           <p className="text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-200">Action Required</p>
           {message.text && (
-            <p className="mt-1 text-sm font-black text-slate-950 dark:text-white">{message.text}</p>
+            <p className="mt-1 text-sm font-black text-amber-950 dark:text-amber-50">{message.text}</p>
           )}
           {message.action?.confirmationText && (
-            <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">{message.action.confirmationText}</p>
+            <p className="mt-1 text-sm text-amber-800 dark:text-amber-200/80">{message.action.confirmationText}</p>
           )}
         </div>
       </div>
@@ -65,7 +65,7 @@ export default function AssistantActionCard({ message, onConfirm, onDismiss }: P
         <button
           type="button"
           onClick={onDismiss}
-          className="flex min-h-9 items-center gap-1.5 rounded-[8px] border border-slate-300 bg-white px-4 text-xs font-black uppercase text-slate-700 transition hover:bg-slate-100 dark:border-white/20 dark:bg-black/30 dark:text-slate-200"
+          className="flex min-h-9 items-center gap-1.5 rounded-[8px] border border-emerald-500/25 bg-emerald-950/50 px-4 text-xs font-black uppercase text-emerald-200 transition hover:bg-emerald-800/40"
         >
           <X size={14} />
           <span>Dismiss</span>

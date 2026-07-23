@@ -20,9 +20,9 @@ export default function AssistantMessageList({ messages, onConfirmAction, onDism
   if (messages.length === 0 && !isLoading) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center">
-        <Sparkles size={40} className="text-slate-300 dark:text-slate-600" />
-        <p className="mt-4 text-lg font-black text-slate-400 dark:text-slate-500">AI Operations Assistant</p>
-        <p className="mt-2 text-sm text-slate-400 dark:text-slate-500">Ask me anything about your route, jobs, or settings.</p>
+        <Sparkles size={40} className="text-emerald-400/40" />
+        <p className="mt-4 text-lg font-black text-emerald-200/60">AI Operations Assistant</p>
+        <p className="mt-2 text-sm text-emerald-300/40">Ask me anything about your route, jobs, or settings.</p>
       </div>
     );
   }
@@ -53,7 +53,7 @@ export default function AssistantMessageList({ messages, onConfirmAction, onDism
                       ? 'bg-rose-600 text-white'
                       : msg.type === 'tool-progress'
                         ? 'bg-amber-400 text-slate-950'
-                        : 'bg-slate-200 text-slate-700 dark:bg-white/10 dark:text-slate-200'
+                        : 'bg-emerald-700/40 text-emerald-200'
                 }`}
               >
                 {msg.type === 'user' ? (
@@ -67,14 +67,14 @@ export default function AssistantMessageList({ messages, onConfirmAction, onDism
                 )}
               </div>
               <div
-                className={`max-w-[85%] rounded-[8px] border-2 p-3 ${
+                className={`max-w-[85%] rounded-[8px] border p-3 ${
                   msg.type === 'user'
-                    ? 'border-blue-700 bg-blue-700 text-white'
+                    ? 'border-blue-600 bg-blue-700 text-white'
                     : msg.type === 'error'
-                      ? 'border-rose-300 bg-rose-50 text-rose-950 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-100'
+                      ? 'border-rose-500/30 bg-rose-500/10 text-rose-100'
                       : msg.type === 'tool-progress'
-                        ? 'border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100'
-                        : 'border-slate-200 bg-slate-50 text-slate-950 dark:border-white/10 dark:bg-white/[0.04] dark:text-white'
+                        ? 'border-amber-500/30 bg-amber-500/10 text-amber-100'
+                        : 'border-emerald-500/20 bg-emerald-900/40 text-emerald-50'
                 }`}
               >
                 {msg.isStreaming ? (
@@ -94,13 +94,13 @@ export default function AssistantMessageList({ messages, onConfirmAction, onDism
 
       {isLoading && (
         <div className="flex gap-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-700 dark:bg-white/10 dark:text-slate-200">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-700/40 text-emerald-200">
             <Bot size={16} />
           </div>
-          <div className="max-w-[85%] rounded-[8px] border-2 border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/[0.04]">
+          <div className="max-w-[85%] rounded-[8px] border border-emerald-500/20 bg-emerald-900/40 p-3">
             <div className="flex items-center gap-2">
-              <Loader2 size={14} className="animate-spin text-slate-500" />
-              <p className="text-sm font-black text-slate-500 dark:text-slate-400">Thinking...</p>
+              <Loader2 size={14} className="animate-spin text-emerald-400" />
+              <p className="text-sm font-black text-emerald-300/70">Thinking...</p>
             </div>
           </div>
         </div>

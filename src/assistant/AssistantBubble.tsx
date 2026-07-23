@@ -10,7 +10,12 @@ export default function AssistantBubble() {
       {/* Panel overlay + drawer */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-[100] flex h-dvh flex-col sm:bottom-24 sm:h-[600px] sm:left-auto sm:max-h-[80vh] sm:right-4 sm:top-auto sm:w-[400px] sm:rounded-[16px] sm:border sm:border-slate-200 sm:shadow-2xl dark:sm:border-white/10"
+          className="fixed inset-0 z-[100] flex h-dvh flex-col sm:bottom-24 sm:h-[600px] sm:left-auto sm:max-h-[80vh] sm:right-4 sm:top-auto sm:w-[400px] sm:rounded-[16px]"
+          style={{
+            background: 'rgba(2, 12, 8, 0.55)',
+            WebkitBackdropFilter: 'blur(10px)',
+            backdropFilter: 'blur(10px)',
+          }}
         >
           <AssistantPanel />
         </div>
