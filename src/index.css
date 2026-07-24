@@ -228,29 +228,49 @@ select {
 }
 
 /* ============================================
-   Ambient Liquid Background — Single Floating Orb
+   Ambient Liquid Background — Three Floating Orbs
    ============================================
-   One orb drifting through negative space around panels.
-   Path favors left/right gutters, gaps between cards,
-   upper open area, and exposed background edges.
-   90-second color cycle. 140-second motion path.
-
-   Responsive sizing via CSS custom properties:
-   --orb-w / --orb-h use clamp() so the orb adapts to
-   any viewport — phones, tablets, laptops, desktops,
-   portrait or landscape — without device detection.
+   Three orbs drifting through negative space around panels.
+   Each orb has independent path, timing, color cycle, and size.
+   Orb 1: upper/middle zones, base size, 140s path / 90s color
+   Orb 2: middle/lower zones, smaller, 115s path / 75s color
+   Orb 3: wide roaming, larger, 165s path / 110s color
    ============================================ */
 
-/* --- Animatable color custom properties --- */
-@property --amb-in {
+/* --- Animatable color custom properties — Orb 1 --- */
+@property --amb1-in {
   syntax: '<color>';
   inherits: false;
   initial-value: rgba(0, 122, 255, 0.92);
 }
-@property --amb-out {
+@property --amb1-out {
   syntax: '<color>';
   inherits: false;
   initial-value: rgba(0, 90, 210, 0.18);
+}
+
+/* --- Animatable color custom properties — Orb 2 --- */
+@property --amb2-in {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: rgba(139, 92, 246, 0.88);
+}
+@property --amb2-out {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: rgba(109, 40, 217, 0.16);
+}
+
+/* --- Animatable color custom properties — Orb 3 --- */
+@property --amb3-in {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: rgba(16, 185, 129, 0.84);
+}
+@property --amb3-out {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: rgba(10, 150, 105, 0.14);
 }
 
 /* --- Container --- */
@@ -263,17 +283,9 @@ select {
   overflow: clip;
 }
 
-/* --- Single orb — responsive size via vmin/clamp --- */
+/* --- Shared orb base --- */
 .ambient-orb {
-  --orb-w: clamp(260px, 42vmin, 620px);
-  --orb-h: clamp(210px, 34vmin, 520px);
-  --orb-blur: clamp(40px, 5vmin, 60px);
-
   position: absolute;
-  top: 12vh;
-  left: 0;
-  width: var(--orb-w);
-  height: var(--orb-h);
   background:
     radial-gradient(
       ellipse 80% 100% at 50% 50%,
@@ -282,12 +294,62 @@ select {
       transparent 68%
     );
   border-radius: 42% 58% 55% 45% / 46% 54% 46% 54%;
-  filter: blur(var(--orb-blur));
-  opacity: 1;
   will-change: transform, opacity;
+  opacity: 1;
+}
+
+/* --- Orb 1 — upper/middle zones, base size --- */
+.ambient-orb--1 {
+  --orb-w: clamp(260px, 42vmin, 620px);
+  --orb-h: clamp(210px, 34vmin, 520px);
+  --orb-blur: clamp(40px, 5vmin, 60px);
+  --amb-in: var(--amb1-in);
+  --amb-out: var(--amb1-out);
+
+  top: 10vh;
+  left: 0;
+  width: var(--orb-w);
+  height: var(--orb-h);
+  filter: blur(var(--orb-blur));
   animation:
-    ambient-orb-path 140s cubic-bezier(0.37, 0, 0.63, 1) infinite,
-    ambient-orb-color 90s ease-in-out infinite;
+    ambient-orb1-path 140s cubic-bezier(0.37, 0, 0.63, 1) infinite,
+    ambient-orb1-color 90s ease-in-out infinite;
+}
+
+/* --- Orb 2 — middle/lower zones, smaller --- */
+.ambient-orb--2 {
+  --orb-w: clamp(200px, 32vmin, 480px);
+  --orb-h: clamp(170px, 28vmin, 400px);
+  --orb-blur: clamp(32px, 4vmin, 50px);
+  --amb-in: var(--amb2-in);
+  --amb-out: var(--amb2-out);
+
+  top: 28vh;
+  left: 10vw;
+  width: var(--orb-w);
+  height: var(--orb-h);
+  filter: blur(var(--orb-blur));
+  animation:
+    ambient-orb2-path 115s cubic-bezier(0.37, 0, 0.63, 1) infinite,
+    ambient-orb2-color 75s ease-in-out infinite;
+}
+
+/* --- Orb 3 — wide roaming, larger --- */
+.ambient-orb--3 {
+  --orb-w: clamp(300px, 48vmin, 700px);
+  --orb-h: clamp(250px, 40vmin, 580px);
+  --orb-blur: clamp(44px, 5.5vmin, 64px);
+  --amb-in: var(--amb3-in);
+  --amb-out: var(--amb3-out);
+
+  top: 5vh;
+  left: 20vw;
+  width: var(--orb-w);
+  height: var(--orb-h);
+  filter: blur(var(--orb-blur));
+  animation:
+    ambient-orb3-path 165s cubic-bezier(0.37, 0, 0.63, 1) infinite,
+    ambient-orb3-color 110s ease-in-out infinite;
 }
 
 /* --- Vignette overlay --- */
@@ -304,72 +366,58 @@ select {
 }
 
 /* ============================================
-   Motion path — 10 waypoints, 140 seconds
-   Path travels through negative space around panels:
-   - Left gutter (page margin)
-   - Upper open area above cards
-   - Gap between main panels and stat tiles
-   - Right gutter (page margin)
-   - Lower open area above bottom nav
-   Y stays within 4vh–58vh (above bottom nav at ~82vh).
+   Orb 1 Motion — upper/middle zones, 140s
+   Path: left gutter → upper panels → top center →
+   right gutter → mid gap → left mid → left lower →
+   lower center → back to start
    ============================================ */
 
-@keyframes ambient-orb-path {
-  /* Left gutter, upper area — fully visible */
+@keyframes ambient-orb1-path {
   0% {
     transform: translate(4vw, 0) scale(1) rotate(0deg);
     border-radius: 42% 58% 55% 45% / 46% 54% 46% 54%;
     opacity: 1;
   }
-  /* Upper-left open area above panels — fully visible */
   9% {
     transform: translate(8vw, -6vh) scale(1.06) rotate(1.2deg);
     border-radius: 38% 62% 50% 50% / 50% 50% 50% 50%;
     opacity: 0.96;
   }
-  /* Top center — partially behind Next Stop top edge, blur visible */
   19% {
     transform: translate(38vw, -2vh) scale(0.95) rotate(-1deg);
     border-radius: 50% 50% 42% 58% / 42% 58% 42% 58%;
     opacity: 0.92;
   }
-  /* Right gutter, upper — fully visible */
   31% {
     transform: translate(82vw, 2vh) scale(1.08) rotate(0.8deg);
     border-radius: 45% 55% 58% 42% / 52% 48% 52% 48%;
     opacity: 1;
   }
-  /* Right gutter, mid — fully visible */
   43% {
     transform: translate(80vw, 22vh) scale(0.96) rotate(-0.5deg);
     border-radius: 50% 50% 45% 55% / 48% 52% 48% 52%;
     opacity: 0.95;
   }
-  /* Gap between panels and stat tiles — between-row space */
   56% {
     transform: translate(42vw, 48vh) scale(1.04) rotate(1.2deg);
     border-radius: 46% 54% 52% 48% / 54% 46% 54% 46%;
     opacity: 1;
   }
-  /* Left gutter, mid — fully visible */
   68% {
     transform: translate(2vw, 32vh) scale(0.94) rotate(-1.2deg);
     border-radius: 52% 48% 48% 52% / 44% 56% 44% 56%;
     opacity: 0.96;
   }
-  /* Left gutter, lower — above bottom nav, fully visible */
   79% {
     transform: translate(6vw, 52vh) scale(1.06) rotate(0.6deg);
     border-radius: 46% 54% 55% 45% / 50% 50% 50% 50%;
     opacity: 1;
   }
-  /* Lower-center open area — above bottom nav, fully visible */
   90% {
     transform: translate(30vw, 56vh) scale(0.98) rotate(-0.8deg);
     border-radius: 55% 45% 50% 50% / 46% 54% 46% 54%;
     opacity: 0.94;
   }
-  /* Seamless return to left gutter start */
   100% {
     transform: translate(4vw, 0) scale(1) rotate(0deg);
     border-radius: 42% 58% 55% 45% / 46% 54% 46% 54%;
@@ -378,38 +426,189 @@ select {
 }
 
 /* ============================================
-   Color shift — 8-phase full palette, 90 seconds
-   Brighter core + outer glow for stronger visibility.
-   Blue → Teal → Emerald → Gold → Amber → Orange → Pink → Violet → Blue
+   Orb 2 Motion — middle/lower zones, 115s
+   Path: right lower → mid center → left mid →
+   upper right → lower left → right gutter →
+   center → back to start
    ============================================ */
 
-@keyframes ambient-orb-color {
-  0%   { --amb-in: rgba(0, 122, 255, 0.92);  --amb-out: rgba(0, 90, 210, 0.18); }    /* blue */
-  12%  { --amb-in: rgba(20, 184, 166, 0.88);  --amb-out: rgba(13, 148, 136, 0.16); }   /* teal */
-  25%  { --amb-in: rgba(16, 185, 129, 0.84);  --amb-out: rgba(10, 150, 105, 0.14); }   /* emerald */
-  37%  { --amb-in: rgba(234, 179, 8, 0.82);   --amb-out: rgba(202, 138, 4, 0.13); }    /* gold */
-  50%  { --amb-in: rgba(245, 158, 11, 0.86);  --amb-out: rgba(217, 119, 6, 0.15); }    /* amber */
-  62%  { --amb-in: rgba(249, 115, 22, 0.90);  --amb-out: rgba(234, 88, 12, 0.17); }    /* orange */
-  75%  { --amb-in: rgba(236, 72, 153, 0.84);  --amb-out: rgba(219, 39, 119, 0.14); }   /* pink */
-  87%  { --amb-in: rgba(139, 92, 246, 0.88);  --amb-out: rgba(109, 40, 217, 0.16); }   /* violet */
-  100% { --amb-in: rgba(0, 122, 255, 0.92);  --amb-out: rgba(0, 90, 210, 0.18); }     /* blue */
+@keyframes ambient-orb2-path {
+  0% {
+    transform: translate(70vw, 40vh) scale(1) rotate(0deg);
+    border-radius: 48% 52% 44% 56% / 50% 50% 50% 50%;
+    opacity: 0.95;
+  }
+  10% {
+    transform: translate(50vw, 30vh) scale(1.05) rotate(-1deg);
+    border-radius: 44% 56% 50% 50% / 46% 54% 46% 54%;
+    opacity: 1;
+  }
+  22% {
+    transform: translate(15vw, 24vh) scale(0.94) rotate(0.8deg);
+    border-radius: 52% 48% 46% 54% / 52% 48% 52% 48%;
+    opacity: 0.96;
+  }
+  35% {
+    transform: translate(75vw, 8vh) scale(1.07) rotate(-0.6deg);
+    border-radius: 46% 54% 52% 48% / 44% 56% 44% 56%;
+    opacity: 1;
+  }
+  48% {
+    transform: translate(10vw, 50vh) scale(0.96) rotate(1.1deg);
+    border-radius: 50% 50% 48% 52% / 50% 50% 50% 50%;
+    opacity: 0.94;
+  }
+  60% {
+    transform: translate(85vw, 42vh) scale(1.03) rotate(-0.8deg);
+    border-radius: 44% 56% 54% 46% / 48% 52% 48% 52%;
+    opacity: 1;
+  }
+  75% {
+    transform: translate(45vw, 54vh) scale(0.97) rotate(0.5deg);
+    border-radius: 50% 50% 46% 54% / 52% 48% 52% 48%;
+    opacity: 0.95;
+  }
+  88% {
+    transform: translate(25vw, 36vh) scale(1.04) rotate(-1.2deg);
+    border-radius: 46% 54% 50% 50% / 46% 54% 46% 54%;
+    opacity: 1;
+  }
+  100% {
+    transform: translate(70vw, 40vh) scale(1) rotate(0deg);
+    border-radius: 48% 52% 44% 56% / 50% 50% 50% 50%;
+    opacity: 0.95;
+  }
 }
 
 /* ============================================
-   Reduced Motion — visible, stationary in left gutter
+   Orb 3 Motion — wide roaming, 165s
+   Path: center → right gutter upper → left lower →
+   upper center → right mid → left upper →
+   lower center → right lower → center
    ============================================ */
 
-@media (prefers-reduced-motion: reduce) {
-  .ambient-orb {
-    animation: ambient-orb-color 360s ease-in-out infinite;
-    transform: translate(4vw, 16vh) scale(1.04);
+@keyframes ambient-orb3-path {
+  0% {
+    transform: translate(35vw, 18vh) scale(1) rotate(0deg);
+    border-radius: 44% 56% 48% 52% / 48% 52% 48% 52%;
+    opacity: 0.92;
+  }
+  11% {
+    transform: translate(80vw, 6vh) scale(1.08) rotate(0.9deg);
+    border-radius: 40% 60% 52% 48% / 50% 50% 50% 50%;
+    opacity: 1;
+  }
+  22% {
+    transform: translate(8vw, 46vh) scale(0.93) rotate(-1.1deg);
+    border-radius: 52% 48% 46% 54% / 44% 56% 44% 56%;
+    opacity: 0.95;
+  }
+  33% {
+    transform: translate(50vw, -2vh) scale(1.06) rotate(0.7deg);
+    border-radius: 46% 54% 50% 50% / 52% 48% 52% 48%;
+    opacity: 1;
+  }
+  44% {
+    transform: translate(88vw, 30vh) scale(0.95) rotate(-0.4deg);
+    border-radius: 50% 50% 44% 56% / 46% 54% 46% 54%;
+    opacity: 0.96;
+  }
+  55% {
+    transform: translate(12vw, 8vh) scale(1.05) rotate(1.3deg);
+    border-radius: 42% 58% 54% 46% / 50% 50% 50% 50%;
+    opacity: 1;
+  }
+  66% {
+    transform: translate(40vw, 52vh) scale(0.94) rotate(-0.9deg);
+    border-radius: 54% 46% 48% 52% / 48% 52% 48% 52%;
+    opacity: 0.93;
+  }
+  77% {
+    transform: translate(78vw, 48vh) scale(1.07) rotate(0.5deg);
+    border-radius: 48% 52% 50% 50% / 44% 56% 44% 56%;
+    opacity: 1;
+  }
+  88% {
+    transform: translate(20vw, 22vh) scale(0.96) rotate(-1.3deg);
+    border-radius: 46% 54% 52% 48% / 50% 50% 50% 50%;
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate(35vw, 18vh) scale(1) rotate(0deg);
+    border-radius: 44% 56% 48% 52% / 48% 52% 48% 52%;
     opacity: 0.92;
   }
 }
 
 /* ============================================
-   Mobile — tighten vignette only.
-   Orb size is fully handled by clamp() above.
+   Color cycles — offset phases
+   Blue → Teal → Emerald → Gold → Amber → Orange → Pink → Violet → Blue
+   Orb 2 starts shifted (~33% offset)
+   Orb 3 starts shifted (~66% offset)
+   ============================================ */
+
+@keyframes ambient-orb1-color {
+  0%   { --amb1-in: rgba(0, 122, 255, 0.92);   --amb1-out: rgba(0, 90, 210, 0.18); }
+  12%  { --amb1-in: rgba(20, 184, 166, 0.88);   --amb1-out: rgba(13, 148, 136, 0.16); }
+  25%  { --amb1-in: rgba(16, 185, 129, 0.84);   --amb1-out: rgba(10, 150, 105, 0.14); }
+  37%  { --amb1-in: rgba(234, 179, 8, 0.82);    --amb1-out: rgba(202, 138, 4, 0.13); }
+  50%  { --amb1-in: rgba(245, 158, 11, 0.86);   --amb1-out: rgba(217, 119, 6, 0.15); }
+  62%  { --amb1-in: rgba(249, 115, 22, 0.90);   --amb1-out: rgba(234, 88, 12, 0.17); }
+  75%  { --amb1-in: rgba(236, 72, 153, 0.84);   --amb1-out: rgba(219, 39, 119, 0.14); }
+  87%  { --amb1-in: rgba(139, 92, 246, 0.88);   --amb1-out: rgba(109, 40, 217, 0.16); }
+  100% { --amb1-in: rgba(0, 122, 255, 0.92);   --amb1-out: rgba(0, 90, 210, 0.18); }
+}
+
+@keyframes ambient-orb2-color {
+  0%   { --amb2-in: rgba(139, 92, 246, 0.88);  --amb2-out: rgba(109, 40, 217, 0.16); }
+  12%  { --amb2-in: rgba(236, 72, 153, 0.84);  --amb2-out: rgba(219, 39, 119, 0.14); }
+  25%  { --amb2-in: rgba(249, 115, 22, 0.90);  --amb2-out: rgba(234, 88, 12, 0.17); }
+  37%  { --amb2-in: rgba(245, 158, 11, 0.86);  --amb2-out: rgba(217, 119, 6, 0.15); }
+  50%  { --amb2-in: rgba(234, 179, 8, 0.82);   --amb2-out: rgba(202, 138, 4, 0.13); }
+  62%  { --amb2-in: rgba(16, 185, 129, 0.84);  --amb2-out: rgba(10, 150, 105, 0.14); }
+  75%  { --amb2-in: rgba(20, 184, 166, 0.88);  --amb2-out: rgba(13, 148, 136, 0.16); }
+  87%  { --amb2-in: rgba(0, 122, 255, 0.92);   --amb2-out: rgba(0, 90, 210, 0.18); }
+  100% { --amb2-in: rgba(139, 92, 246, 0.88);  --amb2-out: rgba(109, 40, 217, 0.16); }
+}
+
+@keyframes ambient-orb3-color {
+  0%   { --amb3-in: rgba(16, 185, 129, 0.84);  --amb3-out: rgba(10, 150, 105, 0.14); }
+  12%  { --amb3-in: rgba(234, 179, 8, 0.82);   --amb3-out: rgba(202, 138, 4, 0.13); }
+  25%  { --amb3-in: rgba(245, 158, 11, 0.86);  --amb3-out: rgba(217, 119, 6, 0.15); }
+  37%  { --amb3-in: rgba(249, 115, 22, 0.90);  --amb3-out: rgba(234, 88, 12, 0.17); }
+  50%  { --amb3-in: rgba(236, 72, 153, 0.84);  --amb3-out: rgba(219, 39, 119, 0.14); }
+  62%  { --amb3-in: rgba(139, 92, 246, 0.88);  --amb3-out: rgba(109, 40, 217, 0.16); }
+  75%  { --amb3-in: rgba(0, 122, 255, 0.92);   --amb3-out: rgba(0, 90, 210, 0.18); }
+  87%  { --amb3-in: rgba(20, 184, 166, 0.88);  --amb3-out: rgba(13, 148, 136, 0.16); }
+  100% { --amb3-in: rgba(16, 185, 129, 0.84);  --amb3-out: rgba(10, 150, 105, 0.14); }
+}
+
+/* ============================================
+   Reduced Motion — three stationary orbs with
+   slow color breathing, placed in separate zones
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-orb--1 {
+    animation: ambient-orb1-color 360s ease-in-out infinite;
+    transform: translate(4vw, 14vh) scale(1.04);
+    opacity: 0.88;
+  }
+  .ambient-orb--2 {
+    animation: ambient-orb2-color 360s ease-in-out infinite;
+    transform: translate(60vw, 38vh) scale(1);
+    opacity: 0.82;
+  }
+  .ambient-orb--3 {
+    animation: ambient-orb3-color 360s ease-in-out infinite;
+    transform: translate(30vw, 54vh) scale(1.06);
+    opacity: 0.85;
+  }
+}
+
+/* ============================================
+   Mobile — tighten vignette, constrain orb paths
+   to favor gutters and panel gaps
    ============================================ */
 
 @media (max-width: 640px) {
@@ -418,15 +617,65 @@ select {
       radial-gradient(ellipse 90% 65% at 50% 30%, transparent 18%, rgba(3, 3, 5, 0.48) 48%, rgba(3, 3, 5, 0.85) 76%, rgba(3, 3, 5, 0.95) 100%),
       linear-gradient(180deg, transparent 0%, rgba(3, 3, 5, 0.16) 18%, rgba(3, 3, 5, 0.38) 38%, rgba(3, 3, 5, 0.48) 52%, rgba(3, 3, 5, 0.25) 68%, rgba(3, 3, 5, 0.05) 100%);
   }
+
+  /* Orb 1 — tighter horizontal range, stays in upper/mid */
+  .ambient-orb--1 {
+    animation:
+      ambient-orb1-path 140s cubic-bezier(0.37, 0, 0.63, 1) infinite,
+      ambient-orb1-color 90s ease-in-out infinite;
+  }
+
+  /* Orb 2 — centered lower zone */
+  .ambient-orb--2 {
+    animation:
+      ambient-orb2-path 115s cubic-bezier(0.37, 0, 0.63, 1) infinite,
+      ambient-orb2-color 75s ease-in-out infinite;
+  }
+
+  /* Orb 3 — wider but still contained */
+  .ambient-orb--3 {
+    animation:
+      ambient-orb3-path 165s cubic-bezier(0.37, 0, 0.63, 1) infinite,
+      ambient-orb3-color 110s ease-in-out infinite;
+  }
 }
 
 /* ============================================
-   Landscape phones — prevent orb from dominating
-   the narrow vertical viewport.
+   Small phones (320–374px) — keep orbs more
+   centered, reduce side travel
+   ============================================ */
+
+@media (max-width: 374px) {
+  .ambient-orb--1 {
+    --orb-w: clamp(180px, 50vw, 300px);
+    --orb-h: clamp(150px, 42vw, 260px);
+    --orb-blur: clamp(28px, 4vmin, 40px);
+  }
+  .ambient-orb--2 {
+    --orb-w: clamp(150px, 42vw, 260px);
+    --orb-h: clamp(120px, 35vw, 220px);
+    --orb-blur: clamp(24px, 3.5vmin, 36px);
+  }
+  .ambient-orb--3 {
+    --orb-w: clamp(220px, 55vw, 340px);
+    --orb-h: clamp(180px, 46vw, 290px);
+    --orb-blur: clamp(30px, 4.5vmin, 44px);
+  }
+}
+
+/* ============================================
+   Landscape phones — prevent orbs from dominating
+   the narrow vertical viewport
    ============================================ */
 
 @media (max-height: 500px) and (orientation: landscape) {
-  .ambient-orb {
-    top: 6vh;
+  .ambient-orb--1 {
+    top: 4vh;
+  }
+  .ambient-orb--2 {
+    top: 18vh;
+  }
+  .ambient-orb--3 {
+    top: 2vh;
   }
 }
