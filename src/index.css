@@ -312,8 +312,8 @@ select {
   height: var(--orb-h);
   filter: blur(var(--orb-blur));
   animation:
-    ambient-orb1-path 140s cubic-bezier(0.37, 0, 0.63, 1) infinite,
-    ambient-orb1-color 90s ease-in-out infinite;
+    ambient-orb1-path 110s cubic-bezier(0.37, 0, 0.63, 1) infinite,
+    ambient-orb1-color 72s ease-in-out infinite;
 }
 
 /* --- Orb 2 — middle/lower zones, smaller --- */
@@ -330,8 +330,8 @@ select {
   height: var(--orb-h);
   filter: blur(var(--orb-blur));
   animation:
-    ambient-orb2-path 115s cubic-bezier(0.37, 0, 0.63, 1) infinite,
-    ambient-orb2-color 75s ease-in-out infinite;
+    ambient-orb2-path 90s cubic-bezier(0.37, 0, 0.63, 1) infinite,
+    ambient-orb2-color 60s ease-in-out infinite;
 }
 
 /* --- Orb 3 — wide roaming, larger --- */
@@ -348,8 +348,8 @@ select {
   height: var(--orb-h);
   filter: blur(var(--orb-blur));
   animation:
-    ambient-orb3-path 165s cubic-bezier(0.37, 0, 0.63, 1) infinite,
-    ambient-orb3-color 110s ease-in-out infinite;
+    ambient-orb3-path 130s cubic-bezier(0.37, 0, 0.63, 1) infinite,
+    ambient-orb3-color 88s ease-in-out infinite;
 }
 
 /* --- Vignette overlay --- */
@@ -621,22 +621,22 @@ select {
   /* Orb 1 — tighter horizontal range, stays in upper/mid */
   .ambient-orb--1 {
     animation:
-      ambient-orb1-path 140s cubic-bezier(0.37, 0, 0.63, 1) infinite,
-      ambient-orb1-color 90s ease-in-out infinite;
+      ambient-orb1-path 110s cubic-bezier(0.37, 0, 0.63, 1) infinite,
+      ambient-orb1-color 72s ease-in-out infinite;
   }
 
   /* Orb 2 — centered lower zone */
   .ambient-orb--2 {
     animation:
-      ambient-orb2-path 115s cubic-bezier(0.37, 0, 0.63, 1) infinite,
-      ambient-orb2-color 75s ease-in-out infinite;
+      ambient-orb2-path 90s cubic-bezier(0.37, 0, 0.63, 1) infinite,
+      ambient-orb2-color 60s ease-in-out infinite;
   }
 
   /* Orb 3 — wider but still contained */
   .ambient-orb--3 {
     animation:
-      ambient-orb3-path 165s cubic-bezier(0.37, 0, 0.63, 1) infinite,
-      ambient-orb3-color 110s ease-in-out infinite;
+      ambient-orb3-path 130s cubic-bezier(0.37, 0, 0.63, 1) infinite,
+      ambient-orb3-color 88s ease-in-out infinite;
   }
 }
 
