@@ -130,3 +130,44 @@ export interface ChatMessage {
   undone?: boolean;
 }
 
+export interface ExtractedJob {
+  temporaryId: string;
+  sourceImageIds: string[];
+  companyName: string | null;
+  title: string | null;
+  address: {
+    street: string | null;
+    city: string | null;
+    state: string | null;
+    postalCode: string | null;
+    formatted: string | null;
+  };
+  pay: {
+    amount: number | null;
+    currency: 'USD' | null;
+  };
+  dueAt: string | null;
+  estimatedDurationMinutes: number | null;
+  jobType: string | null;
+  instructions: string | null;
+  notes: string | null;
+  status: string | null;
+  assignmentId: string | null;
+  sourcePlatform: string | null;
+  confidence: {
+    overall: number;
+    fields: Record<string, number>;
+  };
+  warnings: string[];
+  selected: boolean;
+  duplicateOf?: string;
+}
+
+export interface ScreenshotImage {
+  id: string;
+  file: File;
+  previewUrl: string;
+  status: 'pending' | 'processing' | 'done' | 'error';
+  error?: string;
+}
+

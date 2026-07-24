@@ -10,7 +10,8 @@
  * Features backdrop blur, scroll lock, and Escape key support.
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Navigation, Clock, MapPin, CheckSquare, Edit2, Trash2, Copy, ArrowRightLeft, ShieldAlert, Calendar, AlertCircle, Sparkles, Hourglass } from 'lucide-react';
 import type { Job, JobType } from '../types';
 import { isJobCompleted, isRevisionJob } from '../utils/jobState';
@@ -100,37 +101,27 @@ export default function JobDetailModal({
   onClose,
 }: JobDetailModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const scrollPositionRef = useRef<number>(0);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const [isOpen, setIsOpen] = useState(false);
 
   const category = getCategory(job, isOutlier);
   const isDone = isJobCompleted(job);
   const needsRevision = isRevisionJob(job);
 
-  // Lock body scroll while modal is open
+  // Lock body scroll while modal is open — no position:fixed trick
   useEffect(() => {
-    scrollPositionRef.current = window.scrollY;
     const body = document.body;
     const html = document.documentElement;
     const prevBodyOverflow = body.style.overflow;
     const prevHtmlOverflow = html.style.overflow;
-    const prevBodyPosition = body.style.position;
-    const prevBodyTop = body.style.top;
-    const prevBodyWidth = body.style.width;
-
     body.style.overflow = 'hidden';
     html.style.overflow = 'hidden';
-    body.style.position = 'fixed';
-    body.style.top = `-${scrollPositionRef.current}px`;
-    body.style.width = '100%';
-
+    // Trigger open animation on next frame
+    requestAnimationFrame(() => setIsOpen(true));
     return () => {
       body.style.overflow = prevBodyOverflow;
       html.style.overflow = prevHtmlOverflow;
-      body.style.position = prevBodyPosition;
-      body.style.top = prevBodyTop;
-      body.style.width = prevBodyWidth;
-      window.scrollTo(0, scrollPositionRef.current);
+      setIsOpen(false);
     };
   }, []);
 
@@ -181,9 +172,9 @@ export default function JobDetailModal({
     }
   };
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 z-[60] flex items-end justify-center bg-black/45 p-3 backdrop-blur-[10px] [-webkit-backdrop-filter:blur(10px)] sm:items-center sm:p-4"
+      className={`fixed inset-0 z-[60] flex items-center justify-center bg-black/45 p-3 backdrop-blur-[10px] [-webkit-backdrop-filter:blur(10px)] transition-opacity duration-200 ease-out ${isOpen ? 'opacity-100' : 'opacity-0'}`}
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
@@ -191,8 +182,8 @@ export default function JobDetailModal({
     >
       <div
         onClick={handlePanelClick}
-        className="flex w-full max-w-[430px] flex-col overflow-hidden rounded-t-2xl border border-white/10 bg-[#111214] shadow-2xl sm:rounded-2xl"
-        style={{ maxHeight: 'min(84dvh, 600px)' }}
+        className={`flex w-full max-w-[430px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#111214] shadow-2xl transition-all duration-200 ease-out ${isOpen ? 'scale-100 opacity-100' : 'scale-[0.97] opacity-0'}`}
+        style={{ maxHeight: 'min(82dvh, 560px)' }}
       >
         {/* Compact sticky header */}
         <div className="flex shrink-0 items-center gap-3 border-b border-white/10 px-4 py-3">
@@ -494,4 +485,6 @@ export default function JobDetailModal({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }

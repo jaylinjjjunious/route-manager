@@ -33,6 +33,7 @@ import AmbientLiquidBackground from './components/backgrounds/AmbientLiquidBackg
 import JobDetailModal from './components/JobDetailModal';
 import { EndOfDaySummary } from './components/EndOfDaySummary';
 import ShowerGatePanel from './components/ShowerGatePanel';
+import ScreenshotImportModal from './components/ScreenshotImportModal';
 import { getCurrentCycleId, getCycleLabel, getNextResetTime, getLocalDateKey } from './utils/showerCycle';
 import { useTextToSpeech } from './hooks/useTextToSpeech';
 import type { ShowerProofRecord } from './services/showerProofApi';
@@ -528,6 +529,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   
   // Modal configurations
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isScreenshotImportOpen, setIsScreenshotImportOpen] = useState(false);
   const [routeDetailJobId, setRouteDetailJobId] = useState<string | null>(null);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [defaultJobType, setDefaultJobType] = useState<JobType>('retail_audit');
@@ -2870,7 +2872,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                           <span>Add</span>
                         </button>
                         {addMenuOpen && (
-                          <div className="absolute right-0 top-full z-50 mt-1 w-48 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-white/10 dark:bg-[#17181b]">
+                          <div className="absolute right-0 top-full z-50 mt-1 w-52 overflow-y-auto overflow-x-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-white/10 dark:bg-[#17181b]" style={{ maxHeight: 'min(80dvh, 340px)' }}>
                             <button
                               type="button"
                               onClick={() => { setAddMenuOpen(false); handleOpenAddModal(); }}
@@ -2886,6 +2888,18 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                             >
                               <Briefcase size={14} className="text-red-500" />
                               Add Process Serve
+                            </button>
+                            <div className="border-t border-slate-200 dark:border-white/10" />
+                            <button
+                              type="button"
+                              onClick={() => { setAddMenuOpen(false); setIsScreenshotImportOpen(true); }}
+                              className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-white/5"
+                            >
+                              <FileImage size={14} className="text-violet-500" />
+                              <span className="flex flex-col">
+                                <span>Import Job Screenshots</span>
+                                <span className="text-[9px] font-bold text-slate-400">Upload screenshots of assignments</span>
+                              </span>
                             </button>
                           </div>
                         )}
@@ -3238,7 +3252,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                           <span>Add</span>
                         </button>
                         {addMenuOpen && (
-                          <div className="absolute right-0 top-full z-50 mt-1 w-48 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-white/10 dark:bg-[#17181b]">
+                          <div className="absolute right-0 top-full z-50 mt-1 w-52 overflow-y-auto overflow-x-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-white/10 dark:bg-[#17181b]" style={{ maxHeight: 'min(80dvh, 340px)' }}>
                             <button
                               type="button"
                               onClick={() => { setAddMenuOpen(false); handleOpenAddModal(); }}
@@ -3254,6 +3268,18 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                             >
                               <Briefcase size={14} className="text-red-500" />
                               Add Process Serve
+                            </button>
+                            <div className="border-t border-slate-200 dark:border-white/10" />
+                            <button
+                              type="button"
+                              onClick={() => { setAddMenuOpen(false); setIsScreenshotImportOpen(true); }}
+                              className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-white/5"
+                            >
+                              <FileImage size={14} className="text-violet-500" />
+                              <span className="flex flex-col">
+                                <span>Import Job Screenshots</span>
+                                <span className="text-[9px] font-bold text-slate-400">Upload screenshots of assignments</span>
+                              </span>
                             </button>
                           </div>
                         )}
@@ -5241,6 +5267,14 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           editingJob={editingJob}
           defaultRouteId={activeTab === 'all' ? 'A' : activeTab}
           defaultJobType={defaultJobType}
+        />
+
+        {/* Screenshot Import modal */}
+        <ScreenshotImportModal
+          isOpen={isScreenshotImportOpen}
+          onClose={() => setIsScreenshotImportOpen(false)}
+          onImportJobs={handleImportJobs}
+          existingJobs={jobs}
         />
 
         {/* Portable Footer */}
