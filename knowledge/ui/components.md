@@ -1,6 +1,6 @@
 # UI Components
 
-**Last Updated:** 2026-07-22 (green-frosted-glass-chatbox)
+**Last Updated:** 2026-07-26 (smart-aisle-scan-integration)
 **Related Source Files:** `src/components/*.tsx`, `src/assistant/*.tsx`
 
 ---
@@ -215,3 +215,19 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 | **File** | `src/components/DebugCenter.tsx` |
 | **Props** | None (internal state only) |
 | **Responsibility** | System diagnostics panel. Displays app version, auth state, API connectivity, storage status, and other debug information. Uses internal state to fetch and display diagnostic data. |
+
+---
+
+### SmartAisleScan
+
+| Field | Value |
+|-------|-------|
+| **File** | `src/components/SmartAisleScan.tsx` |
+| **Props** | `jobId: string`, `jobName: string`, `isOpen: boolean`, `onClose: () => void`, `onComplete: (sessionId: string) => void` |
+| **Responsibility** | Camera-guided retail aisle photography system. Full capture workflow: setup (direction/side selection), camera capture with alignment overlay and hold-to-capture, beginning/ending/context photo roles, coverage review with quality indicators, canvas panorama stitching, stitch review, final checklist, manual override, and submission. Uses localStorage for session persistence with resume-on-reopen. |
+
+**Phases:** setup → capturing → ending → context → coverage_review → stitching → stitch_review → final_checklist → submitting
+
+**Compatible job types:** `retail_audit`, `mystery_shop`, `merchandising`
+
+**Entry point:** `JobDetailModal` — "Smart Aisle Scan" button appears above admin row for compatible job types.

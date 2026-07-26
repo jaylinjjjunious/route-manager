@@ -4,6 +4,12 @@
 
 | SHA | Description |
 |-----|-------------|
+| 369fc73 | Smart Aisle Scan: camera-guided retail photography system |
+| b7d0908 | Job workflow status system (Today/Under Review/Revisions/Finished) |
+| 4ab18a0 | Import Job Screenshots (5-step OCR modal) |
+| b6a7689 | Bus Mode (transit trip planning) |
+| fe2e779 | Jobs/Routes page removal |
+| afe66f9 | AI chatbox styling (green frosted glass) |
 | ac44277 | Add dashboard route job detail panel |
 | 5389fd3 | Replace header bike icon with custom app logo |
 | 1c03658 | Add official app icon assets |

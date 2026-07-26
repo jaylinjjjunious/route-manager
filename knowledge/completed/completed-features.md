@@ -58,10 +58,24 @@
 ## Documentation
 - Knowledge system (this directory).
 
+## Smart Aisle Scan
+- Camera-guided retail aisle photography system.
+- Full capture workflow: setup, camera capture with alignment overlay, hold-to-capture auto-capture, beginning/ending/context photo roles, coverage review, canvas panorama stitching, stitch review, final checklist, manual override.
+- Compatible job types: retail_audit, mystery_shop, merchandising.
+- Entry point: JobDetailModal "Smart Aisle Scan" button.
+- Session persistence: localStorage with resume-on-reopen.
+- Quality analysis: brightness, motion, level detection.
+- Coverage analysis: pairwise overlap estimation with gap/duplicate warnings.
+- Canvas stitching: scaled panorama with overlap.
+
 ---
 
-**Last Updated:** 2026-07-22 (dashboard-route-job-details)
+**Last Updated:** 2026-07-26 (smart-aisle-scan-integration)
 
+
+## 2026-07-26
+
+- Smart Aisle Scan: camera-guided retail photography system integrated into JobDetailModal for compatible job types. Types, session service, and main component added.
 
 ## 2026-07-22
 
