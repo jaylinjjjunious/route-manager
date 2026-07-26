@@ -224,7 +224,7 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 |-------|-------|
 | **File** | `src/components/SmartAisleScan.tsx` |
 | **Props** | `jobId: string`, `jobName: string`, `isOpen: boolean`, `onClose: () => void`, `onComplete: (sessionId: string) => void` |
-| **Responsibility** | Camera-guided retail aisle photography system. Full capture workflow: setup (direction/side selection), camera capture with alignment overlay and hold-to-capture, beginning/ending/context photo roles, coverage review with quality indicators, canvas panorama stitching, stitch review, final checklist, manual override, and submission. Uses localStorage for session persistence with resume-on-reopen. |
+| **Responsibility** | Camera-guided retail aisle photography system. Full capture workflow: setup (direction/side selection), full-screen camera capture with alignment overlay and hold-to-capture, 0.5x/1x zoom toggle (native applyConstraints + CSS fallback), beginning/ending/context photo roles, coverage review with quality indicators, canvas panorama stitching, stitch review, final checklist, manual override, and submission. Uses localStorage for session persistence with resume-on-reopen. |
 
 **Phases:** setup → capturing → ending → context → coverage_review → stitching → stitch_review → final_checklist → submitting
 

@@ -62,7 +62,9 @@
 - Camera-guided retail aisle photography system.
 - Full capture workflow: setup, camera capture with alignment overlay, hold-to-capture auto-capture, beginning/ending/context photo roles, coverage review, canvas panorama stitching, stitch review, final checklist, manual override.
 - Compatible job types: retail_audit, mystery_shop, merchandising.
-- Entry point: JobDetailModal "Smart Aisle Scan" button.
+- Entry point: JobDetailModal "Smart Aisle Scan" button + Tools tab job picker.
+- Full-screen camera: modal goes edge-to-edge during capture/ending/context phases with overlay controls.
+- 0.5x/1x zoom toggle with native track.applyConstraints + CSS scale fallback.
 - Session persistence: localStorage with resume-on-reopen.
 - Quality analysis: brightness, motion, level detection.
 - Coverage analysis: pairwise overlap estimation with gap/duplicate warnings.

@@ -4,6 +4,8 @@
 
 | SHA | Description |
 |-----|-------------|
+| c9edcac | Smart Aisle Scan full-screen camera with 0.5x zoom toggle |
+| 5e79999 | Tools tab (Smart Aisle Scan, Import Screenshots, Bus Mode) |
 | 369fc73 | Smart Aisle Scan: camera-guided retail photography system |
 | b7d0908 | Job workflow status system (Today/Under Review/Revisions/Finished) |
 | 4ab18a0 | Import Job Screenshots (5-step OCR modal) |

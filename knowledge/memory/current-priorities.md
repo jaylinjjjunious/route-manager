@@ -8,7 +8,7 @@ No current high-priority items.
 
 - Monitor Shower Gate cycle reset behavior in production.
 - Gather user feedback on barcode scanning reliability.
-- Test Smart Aisle Scan camera flow on actual mobile device.
+- Test Smart Aisle Scan full-screen camera + 0.5x zoom on actual mobile device (critical: camera fills screen, zoom works, overlay controls are usable).
 - Consider image compression before localStorage upload for scan photos.
 
 ## Low
