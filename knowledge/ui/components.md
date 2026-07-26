@@ -124,7 +124,7 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 | **Props** | `currentTab: string`, `onTabChange: (tab: string) => void`, `isUnlocked: boolean` |
 | **Responsibility** | Floating pill navigation bar with 6 tabs. Locked tabs are visually indicated when `isUnlocked` is false. Touch-friendly horizontal scrolling. |
 
-**Tabs:** Dashboard, Jobs, Battery, Tracker, Habits, Settings
+**Tabs:** Dashboard, Battery, Tracker, Habits, Tools, Settings
 
 ---
 

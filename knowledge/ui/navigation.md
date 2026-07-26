@@ -1,7 +1,7 @@
 # Navigation System
 
-**Last Updated:** 2026-07-22 (dashboard-route-job-details)
-**Related Source Files:** `src/components/BottomNav.tsx`, `src/App.tsx`
+**Last Updated:** 2026-07-26 (tools-tab)
+**Related Source Files:** `src/App.tsx`
 
 ---
 
@@ -13,12 +13,12 @@ The All in One 667 uses a **floating pill-shaped bottom navigation bar** pinned 
 
 | # | Tab | Icon | Protected |
 |---|-----|------|-----------|
-| 1 | Dashboard | — | No |
-| 2 | Jobs | — | **Yes** |
-| 3 | Battery | — | **Yes** |
-| 4 | Tracker | — | **Yes** |
-| 5 | Habits | — | No |
-| 6 | Settings | — | No |
+| 1 | Dashboard | LayoutDashboard | No |
+| 2 | Battery | Battery | **Yes** |
+| 3 | Tracker | Timer | **Yes** |
+| 4 | Habits | Award | No |
+| 5 | Tools | Camera | No |
+| 6 | Settings | Settings | No |
 
 ### Protected Tabs
 
