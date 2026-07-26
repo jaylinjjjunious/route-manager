@@ -54,11 +54,13 @@ export default function JobCard({
   };
 
   // Determine color coding category
-  let category: 'ready' | 'revisit' | 'under_review' | 'outlier' | 'completed' | 'postponed' = 'ready';
+  let category: 'ready' | 'revisit' | 'under_review' | 'outlier' | 'completed' | 'postponed' | 'finished' = 'ready';
   const isDone = isJobCompleted(job);
   const needsRevision = isRevisionJob(job);
 
-  if (isDone) {
+  if (job.status === 'finished') {
+    category = 'finished';
+  } else if (isDone) {
     category = 'completed';
   } else if (job.status === 'under_review') {
     category = 'under_review';
@@ -80,7 +82,8 @@ export default function JobCard({
     under_review: 'border-indigo-300 bg-indigo-500/[0.04] hover:bg-indigo-500/[0.07] dark:border-indigo-500/20 dark:bg-indigo-500/[0.04] hover:border-indigo-400 dark:hover:border-indigo-500/50 hover:shadow-md text-slate-900 dark:text-white',
     outlier: 'border-amber-400/80 bg-amber-500/[0.03] hover:bg-amber-500/[0.06] dark:border-amber-500/20 dark:bg-amber-500/[0.03] hover:border-amber-400 dark:hover:border-amber-500/50 hover:shadow-md text-slate-900 dark:text-white',
     completed: 'border-blue-300 bg-blue-50/5 opacity-75 hover:opacity-90 dark:border-blue-500/20 dark:bg-blue-500/[0.01] text-slate-600 dark:text-slate-400',
-    postponed: 'border-slate-300 bg-slate-500/[0.02] hover:bg-slate-500/[0.05] dark:border-slate-800/40 dark:bg-slate-900/[0.02] hover:border-slate-400 dark:hover:border-slate-700 text-slate-500 dark:text-slate-400'
+    postponed: 'border-slate-300 bg-slate-500/[0.02] hover:bg-slate-500/[0.05] dark:border-slate-800/40 dark:bg-slate-900/[0.02] hover:border-slate-400 dark:hover:border-slate-700 text-slate-500 dark:text-slate-400',
+    finished: 'border-gray-300 bg-gray-50/5 opacity-60 dark:border-gray-600/20 dark:bg-gray-500/[0.01] text-slate-500 dark:text-slate-500'
   };
 
   const badgeStyles = {
@@ -89,7 +92,8 @@ export default function JobCard({
     under_review: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-500/10',
     outlier: 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200/50 dark:border-amber-500/10',
     completed: 'bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-200/50 dark:border-blue-500/10',
-    postponed: 'bg-slate-100 text-slate-800 dark:bg-slate-950/40 dark:text-slate-400 border border-slate-200/50 dark:border-slate-500/10'
+    postponed: 'bg-slate-100 text-slate-800 dark:bg-slate-950/40 dark:text-slate-400 border border-slate-200/50 dark:border-slate-500/10',
+    finished: 'bg-gray-100 text-gray-600 dark:bg-gray-900/40 dark:text-gray-500 border border-gray-200/50 dark:border-gray-600/10'
   };
 
   const badgeLabels = {
@@ -98,7 +102,8 @@ export default function JobCard({
     under_review: 'UNDER REVIEW',
     outlier: 'RISK',
     completed: 'DONE',
-    postponed: 'TOMORROW'
+    postponed: 'TOMORROW',
+    finished: 'FINISHED'
   };
 
   const getPriorityStyle = (p?: 'high' | 'medium' | 'low') => {
@@ -113,8 +118,8 @@ export default function JobCard({
     }
   };
 
-  const handleQuickStatusChange = (statusType: 'completed' | 'revisit' | 'under_review' | 'postponed' | 'ready') => {
-    if (jobAccessLocked && (statusType === 'completed' || statusType === 'under_review' || statusType === 'revisit')) {
+  const handleQuickStatusChange = (statusType: 'completed' | 'revisit' | 'under_review' | 'postponed' | 'ready' | 'finished') => {
+    if (jobAccessLocked && (statusType === 'completed' || statusType === 'under_review' || statusType === 'revisit' || statusType === 'finished')) {
       return;
     }
     if (onUpdateStatus) {
@@ -122,6 +127,14 @@ export default function JobCard({
         case 'completed':
           onUpdateStatus(job.id, {
             status: 'completed',
+            isCompleted: true,
+            isRevisionRequired: false,
+            revisionStatus: 'Approved'
+          });
+          break;
+        case 'finished':
+          onUpdateStatus(job.id, {
+            status: 'finished',
             isCompleted: true,
             isRevisionRequired: false,
             revisionStatus: 'Approved'

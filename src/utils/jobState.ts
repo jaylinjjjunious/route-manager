@@ -1,8 +1,8 @@
-import { Job, JobStatus } from '../types';
+import { Job, JobStatus, StatusEvent } from '../types';
 
-export const JOB_STATE_SCHEMA_VERSION = '2';
+export const JOB_STATE_SCHEMA_VERSION = '3';
 
-const VALID_JOB_STATUSES: JobStatus[] = ['ready', 'revisit', 'under_review', 'completed', 'pending', 'postponed', 'outlier'];
+const VALID_JOB_STATUSES: JobStatus[] = ['ready', 'revisit', 'under_review', 'completed', 'pending', 'postponed', 'outlier', 'finished'];
 
 export function normalizeJobStatus(status: unknown): JobStatus {
   if (status === 'pending') return 'ready';
@@ -16,12 +16,45 @@ export function isJobCompleted(job: Pick<Job, 'status' | 'isCompleted'>): boolea
   return job.status === 'completed' || job.isCompleted === true;
 }
 
+export function isJobFinished(job: Pick<Job, 'status'>): boolean {
+  return job.status === 'finished';
+}
+
+export function isJobActive(job: Pick<Job, 'status'>): boolean {
+  return !isJobCompleted(job) && !isJobFinished(job);
+}
+
 export function isRevisionJob(job: Pick<Job, 'status' | 'isRevisionRequired'>): boolean {
   return job.status === 'revisit' || job.isRevisionRequired === true;
 }
 
+export function isUnderReview(job: Pick<Job, 'status'>): boolean {
+  return job.status === 'under_review';
+}
+
+export function recordStatusTransition(job: Job, newStatus: JobStatus, note?: string): Job {
+  const history = job.statusHistory ? [...job.statusHistory] : [];
+  const event: StatusEvent = {
+    timestamp: new Date().toISOString(),
+    from: job.status,
+    to: newStatus,
+    note,
+  };
+  history.push(event);
+  return { ...job, statusHistory: history };
+}
+
 export function normalizeJobState(job: Job): Job {
   const status = normalizeJobStatus(job.status);
+
+  if (status === 'finished') {
+    return {
+      ...job,
+      status: 'finished',
+      isCompleted: true,
+      isRevisionRequired: false,
+    };
+  }
 
   if (status === 'completed' || job.isCompleted === true) {
     return {

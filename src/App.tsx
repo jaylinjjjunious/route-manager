@@ -22,7 +22,10 @@ import {
   isJobCompleted,
   isRevisionJob,
   normalizeJobState,
-  normalizeJobsForStorage
+  normalizeJobsForStorage,
+  isJobFinished,
+  isUnderReview,
+  recordStatusTransition
 } from './utils/jobState';
 import Header from './components/Header';
 import JobCard from './components/JobCard';
@@ -34,6 +37,8 @@ import JobDetailModal from './components/JobDetailModal';
 import { EndOfDaySummary } from './components/EndOfDaySummary';
 import ShowerGatePanel from './components/ShowerGatePanel';
 import ScreenshotImportModal from './components/ScreenshotImportModal';
+import { RouteFilter, filterJobsByType } from './components/RouteFilter';
+import type { RouteFilterType } from './components/RouteFilter';
 import { BusModeToggle } from './components/BusModeToggle';
 import { TransitTripCard } from './components/TransitTripCard';
 import { useTransitTrip } from './hooks/useTransitTrip';
@@ -537,6 +542,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   // Modal configurations
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isScreenshotImportOpen, setIsScreenshotImportOpen] = useState(false);
+  const [routeFilter, setRouteFilter] = useState<RouteFilterType>('today');
   const [routeDetailJobId, setRouteDetailJobId] = useState<string | null>(null);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [defaultJobType, setDefaultJobType] = useState<JobType>('retail_audit');
@@ -962,8 +968,9 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     return 'Ready';
   };
   const completedRouteAJobs = routeAJobs.filter(isJobDone);
-  const remainingRouteAJobs = routeAJobs.filter(job => !isJobDone(job));
-  const nextRouteAJob = remainingRouteAJobs[0] || null;
+  const remainingRouteAJobs = routeAJobs.filter(job => !isJobDone(job) && !isJobFinished(job));
+  const activeRouteAJobs = remainingRouteAJobs.filter(job => !isUnderReview(job));
+  const nextRouteAJob = activeRouteAJobs[0] || null;
   const liveEarnedToday = completedRouteAJobs.reduce((sum, job) => sum + job.pay, 0);
   const isWorkSessionActive = trackerStatus === 'riding' || trackerStatus === 'at_store';
   const allRouteAJobsCompleted = routeAJobs.length > 0 && completedRouteAJobs.length === routeAJobs.length;
@@ -976,6 +983,16 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const earningsTileFooter = showLiveEarnings
     ? `$${Math.max(0, activeMetrics.totalPay - liveEarnedToday).toFixed(2)} still on route`
     : `$${activeMetrics.earningsPerHour.toFixed(2)}/h expected`;
+
+  // Filter counts
+  const routeFilterCounts = {
+    today: routeAJobs.filter(j => j.status !== 'finished' && j.status !== 'completed').length,
+    under_review: routeAJobs.filter(j => j.status === 'under_review').length,
+    revisions: routeAJobs.filter(j => j.status === 'revisit').length,
+    finished: routeAJobs.filter(j => j.status === 'finished' || j.status === 'completed').length,
+  };
+
+  const filteredRouteJobs = filterJobsByType(routeAJobs, routeFilter);
 
   const transitOrigin = { latitude: startCoord.lat, longitude: startCoord.lng };
   const transitDest = nextRouteAJob ? { latitude: nextRouteAJob.coordinates.lat, longitude: nextRouteAJob.coordinates.lng } : null;
@@ -991,12 +1008,13 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   // Save changes to local storage
   const saveJobsToStorage = (updatedJobs: Job[]) => {
     const normalizedJobs = normalizeJobsForStorage(updatedJobs);
-    const routeAJobs = normalizedJobs.filter(j => j.routeId === 'A');
+    const routeAJobs = normalizedJobs.filter(j => j.routeId === 'A' && j.status !== 'finished');
+    const finishedRouteAJobs = normalizedJobs.filter(j => j.routeId === 'A' && j.status === 'finished');
     const restJobs = normalizedJobs.filter(j => j.routeId !== 'A');
     
-    // Automatically apply Smart Revision Merge & Continuous Route Optimization
+    // Automatically apply Smart Revision Merge & Continuous Route Optimization (exclude finished)
     const optimizedRouteA = optimizeRouteWithSmartMerge(startCoord, routeAJobs, ebikeConfig);
-    const finalized = normalizeJobsForStorage([...optimizedRouteA, ...restJobs]);
+    const finalized = normalizeJobsForStorage([...optimizedRouteA, ...finishedRouteAJobs, ...restJobs]);
 
     setJobs(finalized);
     safeStorage.setItem('route_optimizer_jobs', JSON.stringify(finalized));
@@ -1329,17 +1347,25 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
 
   // Job Actions
   const handleUpdateJobStatus = (id: string, updates: Partial<Job>) => {
-    if ((updates.status === 'completed' || updates.status === 'under_review' || updates.isCompleted === true) && blockJobAccess('job status changes')) {
+    if ((updates.status === 'completed' || updates.status === 'under_review' || updates.status === 'finished' || updates.isCompleted === true) && blockJobAccess('job status changes')) {
       return;
     }
     const targetJob = jobs.find(job => job.id === id);
-    const updated = jobs.map(job =>
-      job.id === id ? normalizeJobState({ ...job, ...updates }) : job
-    );
+    const updated = jobs.map(job => {
+      if (job.id !== id) return job;
+      let patched = { ...job, ...updates };
+      if (updates.status && updates.status !== job.status) {
+        patched = recordStatusTransition(patched, updates.status);
+      }
+      return normalizeJobState(patched);
+    });
     const updatedTarget = updated.find(job => job.id === id);
     if (targetJob && updatedTarget && isJobCompleted(updatedTarget) && !isJobCompleted(targetJob)) {
       createProofFolder(updatedTarget);
       setDispatcherMessage(buildCompletionReadback(updatedTarget, updated));
+    }
+    if (targetJob && updatedTarget && updatedTarget.status === 'finished' && targetJob.status !== 'finished') {
+      setDispatcherMessage(`${updatedTarget.storeName} finished and removed from active route.`);
     }
     saveJobsToStorage(updated);
   };
@@ -3267,13 +3293,10 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                       <h3 className="mt-1 text-2xl font-black leading-tight text-slate-950 dark:text-white">
                         What&apos;s Left After This
                       </h3>
-                      <div className="mt-2">
-                        <BusModeToggle travelMode={travelMode} onModeChange={setTravelMode} />
-                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-black text-slate-600 dark:bg-white/10 dark:text-slate-200">
-                        {remainingRouteAJobs.length} left
+                        {filteredRouteJobs.length} left
                       </span>
                       <div className="relative" data-add-menu>
                         <button
@@ -3320,15 +3343,31 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                     </div>
                   </div>
 
-                  {remainingRouteAJobs.length === 0 ? (
+                  <div className="flex items-center gap-2">
+                    <BusModeToggle travelMode={travelMode} onModeChange={setTravelMode} />
+                  </div>
+
+                  <RouteFilter activeFilter={routeFilter} onFilterChange={setRouteFilter} counts={routeFilterCounts} />
+
+                  {filteredRouteJobs.length === 0 ? (
                     <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-emerald-200/70 bg-emerald-50 p-6 text-center dark:border-emerald-500/20 dark:bg-emerald-500/10">
                       <CheckCircle2 size={28} className="text-emerald-600 dark:text-emerald-400" />
-                      <p className="mt-3 text-xl font-black text-slate-900 dark:text-white">Route Clear</p>
-                      <p className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-300">All Route A jobs are complete.</p>
+                      <p className="mt-3 text-xl font-black text-slate-900 dark:text-white">
+                        {routeFilter === 'today' && 'Route Clear'}
+                        {routeFilter === 'under_review' && 'No Under Review'}
+                        {routeFilter === 'revisions' && 'No Revisions'}
+                        {routeFilter === 'finished' && 'No Finished Jobs'}
+                      </p>
+                      <p className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-300">
+                        {routeFilter === 'today' && 'All Route A jobs are complete.'}
+                        {routeFilter === 'under_review' && 'No jobs are currently under review.'}
+                        {routeFilter === 'revisions' && 'No jobs require revisions.'}
+                        {routeFilter === 'finished' && 'No jobs have been finished yet.'}
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-2 overflow-y-auto pr-1 lg:max-h-[430px]">
-                      {remainingRouteAJobs.map((job, idx) => {
+                      {filteredRouteJobs.map((job, idx) => {
                         const isNext = job.id === nextRouteAJob?.id;
                         const prevJob = idx === 0 ? null : remainingRouteAJobs[idx - 1];
                         const origin = idx === 0

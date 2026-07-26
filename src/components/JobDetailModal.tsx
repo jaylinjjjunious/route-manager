@@ -12,7 +12,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Navigation, Clock, MapPin, CheckSquare, Edit2, Trash2, Copy, ArrowRightLeft, ShieldAlert, Calendar, AlertCircle, Sparkles, Hourglass } from 'lucide-react';
+import { X, Navigation, Clock, MapPin, CheckSquare, Edit2, Trash2, Copy, ArrowRightLeft, ShieldAlert, Calendar, AlertCircle, Sparkles, Hourglass, RefreshCw, CheckCircle2, RotateCcw } from 'lucide-react';
 import type { Job, JobType } from '../types';
 import { isJobCompleted, isRevisionJob } from '../utils/jobState';
 
@@ -147,8 +147,8 @@ export default function JobDetailModal({
     event.stopPropagation();
   };
 
-  const handleQuickStatusChange = (statusType: 'completed' | 'revisit' | 'under_review' | 'postponed' | 'ready') => {
-    if (jobAccessLocked && (statusType === 'completed' || statusType === 'under_review' || statusType === 'revisit')) return;
+  const handleQuickStatusChange = (statusType: 'completed' | 'revisit' | 'under_review' | 'postponed' | 'ready' | 'finished') => {
+    if (jobAccessLocked && (statusType === 'completed' || statusType === 'under_review' || statusType === 'revisit' || statusType === 'finished')) return;
     if (!onUpdateStatus) {
       if (statusType === 'completed') onToggleComplete(job.id);
       return;
@@ -156,6 +156,9 @@ export default function JobDetailModal({
     switch (statusType) {
       case 'completed':
         onUpdateStatus(job.id, { status: 'completed', isCompleted: true, isRevisionRequired: false, revisionStatus: 'Approved' });
+        break;
+      case 'finished':
+        onUpdateStatus(job.id, { status: 'finished', isCompleted: true, isRevisionRequired: false, revisionStatus: 'Approved' });
         break;
       case 'revisit':
         onUpdateStatus(job.id, { status: 'revisit', isCompleted: false, isRevisionRequired: true });
@@ -363,72 +366,137 @@ export default function JobDetailModal({
               </div>
             )}
 
-            {/* Quick status controls */}
+            {/* Quick status controls — context-aware */}
             <div>
-              <p className="mb-2 text-[9px] font-black uppercase tracking-wider text-slate-500">Quick Status</p>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => handleQuickStatusChange(isDone ? 'ready' : job.status === 'under_review' ? 'completed' : 'under_review')}
-                  disabled={jobAccessLocked && !isDone}
-                  className={`flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-[11px] font-black transition disabled:cursor-not-allowed disabled:opacity-45 ${
-                    isDone
-                      ? 'border-blue-600 bg-blue-600 text-white'
-                      : job.status === 'under_review'
-                      ? 'border-indigo-600 bg-indigo-600 text-white'
-                      : 'border-white/10 bg-white/5 text-slate-300 hover:bg-white/10'
-                  }`}
-                >
-                  {isDone || job.status === 'under_review' ? <CheckSquare size={14} /> : <Hourglass size={14} />}
-                  <span>{isDone ? 'Done' : job.status === 'under_review' ? 'Complete' : 'Review'}</span>
-                </button>
-                <button
-                  onClick={() => handleQuickStatusChange(needsRevision ? 'ready' : 'revisit')}
-                  disabled={jobAccessLocked && !needsRevision}
-                  className={`flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-[11px] font-black transition disabled:cursor-not-allowed disabled:opacity-45 ${
-                    needsRevision
-                      ? 'border-rose-600 bg-rose-600 text-white'
-                      : 'border-white/10 bg-white/5 text-slate-300 hover:bg-white/10'
-                  }`}
-                >
-                  <AlertCircle size={14} />
-                  <span>{needsRevision ? 'Needs Fix' : 'Revision'}</span>
-                </button>
-                <button
-                  onClick={() => handleQuickStatusChange(job.status === 'under_review' ? 'ready' : 'under_review')}
-                  disabled={jobAccessLocked && job.status !== 'under_review'}
-                  className={`flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-[11px] font-black transition disabled:cursor-not-allowed disabled:opacity-45 ${
-                    job.status === 'under_review'
-                      ? 'border-indigo-600 bg-indigo-600 text-white'
-                      : 'border-white/10 bg-white/5 text-slate-300 hover:bg-white/10'
-                  }`}
-                >
-                  <Hourglass size={14} />
-                  <span>{job.status === 'under_review' ? 'Reviewing' : 'Under Review'}</span>
-                </button>
-                <button
-                  onClick={() => handleQuickStatusChange(job.status === 'postponed' ? 'ready' : 'postponed')}
-                  className={`flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-[11px] font-black transition ${
-                    job.status === 'postponed'
-                      ? 'border-slate-700 bg-slate-700 text-white'
-                      : 'border-white/10 bg-white/5 text-slate-300 hover:bg-white/10'
-                  }`}
-                >
-                  <Calendar size={14} />
-                  <span>Tomorrow</span>
-                </button>
-                <button
-                  onClick={() => onToggleRoute(job.id)}
-                  className={`flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-[11px] font-black transition ${
-                    job.routeId === 'B'
-                      ? 'border-amber-600 bg-amber-600 text-white'
-                      : 'border-white/10 bg-white/5 text-slate-300 hover:bg-white/10'
-                  }`}
-                >
-                  <ArrowRightLeft size={14} />
-                  <span>{job.routeId === 'B' ? 'Route A' : 'Route B'}</span>
-                </button>
-              </div>
+              <p className="mb-2 text-[9px] font-black uppercase tracking-wider text-slate-500">
+                {job.status === 'finished' ? 'Job Finished' : 'Quick Status'}
+              </p>
+              {job.status === 'finished' ? (
+                <div className="rounded-xl border border-gray-600/20 bg-gray-500/5 p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle2 size={14} className="text-gray-400" />
+                    <span className="text-xs font-bold text-gray-400">This job has been finished and removed from active route.</span>
+                  </div>
+                  <button
+                    onClick={() => handleQuickStatusChange('ready')}
+                    disabled={jobAccessLocked}
+                    className="flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-bold text-slate-300 hover:bg-white/10 transition disabled:opacity-45"
+                  >
+                    <RotateCcw size={12} />
+                    <span>Restore to Today</span>
+                  </button>
+                </div>
+              ) : job.status === 'under_review' ? (
+                /* Under Review actions */
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      if (window.confirm('Mark this review as complete and remove the job from Today\'s Route?')) {
+                        handleQuickStatusChange('finished');
+                      }
+                    }}
+                    disabled={jobAccessLocked}
+                    className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-emerald-600 bg-emerald-600 px-2 py-2 text-[11px] font-black text-white transition hover:bg-emerald-500 disabled:opacity-45"
+                  >
+                    <CheckSquare size={14} />
+                    <span>Review Complete</span>
+                  </button>
+                  <button
+                    onClick={() => handleQuickStatusChange('revisit')}
+                    disabled={jobAccessLocked}
+                    className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-rose-500 bg-rose-500/20 px-2 py-2 text-[11px] font-black text-rose-300 transition hover:bg-rose-500/30 disabled:opacity-45"
+                  >
+                    <AlertCircle size={14} />
+                    <span>Revision Required</span>
+                  </button>
+                </div>
+              ) : needsRevision ? (
+                /* Revision actions */
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => handleQuickStatusChange('under_review')}
+                    disabled={jobAccessLocked}
+                    className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-indigo-600 bg-indigo-600 px-2 py-2 text-[11px] font-black text-white transition hover:bg-indigo-500 disabled:opacity-45"
+                  >
+                    <RefreshCw size={14} />
+                    <span>Resubmitted</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm('Mark this revision as finished and remove from active route?')) {
+                        handleQuickStatusChange('finished');
+                      }
+                    }}
+                    disabled={jobAccessLocked}
+                    className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2 py-2 text-[11px] font-black text-slate-300 transition hover:bg-white/10 disabled:opacity-45"
+                  >
+                    <CheckCircle2 size={14} />
+                    <span>Mark Finished</span>
+                  </button>
+                </div>
+              ) : (
+                /* Default Today actions */
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => handleQuickStatusChange('under_review')}
+                    disabled={jobAccessLocked}
+                    className={`flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-[11px] font-black transition disabled:cursor-not-allowed disabled:opacity-45 ${
+                      'border-white/10 bg-white/5 text-slate-300 hover:bg-white/10'
+                    }`}
+                  >
+                    <Hourglass size={14} />
+                    <span>Under Review</span>
+                  </button>
+                  <button
+                    onClick={() => handleQuickStatusChange('revisit')}
+                    disabled={jobAccessLocked}
+                    className={`flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-[11px] font-black transition disabled:cursor-not-allowed disabled:opacity-45 ${
+                      'border-white/10 bg-white/5 text-slate-300 hover:bg-white/10'
+                    }`}
+                  >
+                    <AlertCircle size={14} />
+                    <span>Revision</span>
+                  </button>
+                  <button
+                    onClick={() => handleQuickStatusChange('postponed')}
+                    className={`flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-[11px] font-black transition ${
+                      'border-white/10 bg-white/5 text-slate-300 hover:bg-white/10'
+                    }`}
+                  >
+                    <Calendar size={14} />
+                    <span>Tomorrow</span>
+                  </button>
+                  <button
+                    onClick={() => onToggleRoute(job.id)}
+                    className={`flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-[11px] font-black transition ${
+                      job.routeId === 'B'
+                        ? 'border-amber-600 bg-amber-600 text-white'
+                        : 'border-white/10 bg-white/5 text-slate-300 hover:bg-white/10'
+                    }`}
+                  >
+                    <ArrowRightLeft size={14} />
+                    <span>{job.routeId === 'B' ? 'Route A' : 'Route B'}</span>
+                  </button>
+                </div>
+              )}
             </div>
+
+            {/* Status History */}
+            {job.statusHistory && job.statusHistory.length > 0 && (
+              <div>
+                <p className="mb-2 text-[9px] font-black uppercase tracking-wider text-slate-500">Status History</p>
+                <div className="space-y-1 max-h-32 overflow-y-auto">
+                  {job.statusHistory.slice(-6).reverse().map((event, i) => (
+                    <div key={i} className="flex items-center gap-2 text-[10px] text-slate-400">
+                      <span className="text-slate-600">{new Date(event.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                      <span className="text-white/30">→</span>
+                      <span className="font-bold text-white/60">{event.to.replace('_', ' ')}</span>
+                      {event.note && <span className="text-white/30 italic">({event.note})</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Admin row */}
             <div className="flex items-center justify-between border-t border-dashed border-white/10 pt-3">

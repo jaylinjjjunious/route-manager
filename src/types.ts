@@ -5,7 +5,14 @@
 
 export type JobType = 'retail_audit' | 'merchandising' | 'mystery_shop' | 'field_task' | 'process_serve';
 
-export type JobStatus = 'ready' | 'revisit' | 'under_review' | 'completed' | 'pending' | 'postponed' | 'outlier';
+export type JobStatus = 'ready' | 'revisit' | 'under_review' | 'completed' | 'pending' | 'postponed' | 'outlier' | 'finished';
+
+export interface StatusEvent {
+  timestamp: string;
+  from: JobStatus;
+  to: JobStatus;
+  note?: string;
+}
 
 export interface Coordinates {
   lat: number;
@@ -54,6 +61,7 @@ export interface Job {
   isCompleted?: boolean;
   deadline?: string;
   revisionStatus?: string; // e.g. "Draft", "Approved", "Needs Revision", "Under Review"
+  statusHistory?: StatusEvent[];
   processServe?: ProcessServeDetails;
 }
 
