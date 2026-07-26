@@ -13,7 +13,7 @@ Assistant route navigation now opens Dashboard and focuses Today's Route when po
 
 - **Model**: Gemini 2
 - **Capabilities**: Route advice, job management suggestions, natural language interface
-- **Component**: AI Operations Assistant bubble. The legacy AIDispatcher component remains in source but is no longer mounted by a standalone Route tab.
+- **Component**: AI Operations Assistant bubble with dark frosted green-glass styling. The legacy AIDispatcher component remains in source but is no longer mounted by a standalone Route tab.
 - **Integration**: Chat interface with message history
 
 **Use cases:**

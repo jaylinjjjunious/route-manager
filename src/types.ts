@@ -63,6 +63,8 @@ export interface Job {
   revisionStatus?: string; // e.g. "Draft", "Approved", "Needs Revision", "Under Review"
   statusHistory?: StatusEvent[];
   processServe?: ProcessServeDetails;
+  captureMode?: 'single_photo' | 'manual_multiple' | 'smart_aisle_scan';
+  scanSessionId?: string;
 }
 
 export interface RouteMetrics {
@@ -263,4 +265,124 @@ export interface TransitTripRequest {
 }
 
 export type BusModeStatus = 'idle' | 'loading' | 'active' | 'error' | 'stale';
+
+// ─── Smart Aisle Scan Types ───────────────────────────────────────────
+
+export type CaptureDirection = 'left_to_right' | 'right_to_left';
+export type AisleSide = 'left' | 'right' | 'both' | 'endcap';
+export type PhotoRole = 'beginning' | 'section' | 'ending' | 'context' | 'retake';
+
+export type ScanSessionStatus =
+  | 'setup'
+  | 'capturing'
+  | 'coverage_review'
+  | 'stitching'
+  | 'stitch_review'
+  | 'ready_to_submit'
+  | 'submitted'
+  | 'paused'
+  | 'failed';
+
+export type ValidationStatus = 'not_checked' | 'ready' | 'review_required' | 'blocked';
+export type StitchStatus = 'not_started' | 'processing' | 'successful' | 'review_recommended' | 'failed';
+
+export interface PhotoValidation {
+  focusScore: number | null;
+  brightnessScore: number | null;
+  motionScore: number | null;
+  levelScore: number | null;
+  obstructionScore: number | null;
+  topShelfVisible: boolean | null;
+  bottomShelfVisible: boolean | null;
+  meaningfulCoverage: boolean | null;
+  passed: boolean;
+  warnings: string[];
+}
+
+export interface OverlapInfo {
+  score: number | null;
+  estimatedPercent: number | null;
+  confidence: number | null;
+}
+
+export interface AisleScanPhoto {
+  id: string;
+  sessionId: string;
+  sequenceNumber: number;
+  role: PhotoRole;
+  dataUrl: string;
+  analysisDataUrl: string;
+  capturedAt: string;
+  captureDirection: CaptureDirection;
+  aisleSide: AisleSide;
+  captureMethod: 'automatic' | 'manual';
+  width: number;
+  height: number;
+  validation: PhotoValidation;
+  overlapWithPrevious: OverlapInfo | null;
+  retakeOfPhotoId: string | null;
+  isActive: boolean;
+}
+
+export interface AisleScanWarning {
+  id: string;
+  photoId: string;
+  type: 'gap' | 'weak_overlap' | 'duplicate' | 'blur' | 'dark' | 'cutoff' | 'low_confidence' | 'obstruction';
+  message: string;
+  severity: 'info' | 'warning' | 'critical';
+  resolved: boolean;
+}
+
+export interface AisleScanSession {
+  id: string;
+  jobId: string;
+  status: ScanSessionStatus;
+  captureDirection: CaptureDirection;
+  aisleSide: AisleSide;
+  startedAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+  photoSequence: string[];
+  warnings: AisleScanWarning[];
+  validationStatus: ValidationStatus;
+  stitchStatus: StitchStatus;
+  stitchedPreviewDataUrl: string | null;
+  stitchVersion: number;
+  reviewConfirmedAt: string | null;
+  override: {
+    reason: string;
+    note: string | null;
+    confirmedAt: string;
+  } | null;
+  checklist: ScanChecklist;
+}
+
+export interface ScanChecklist {
+  beginningCaptured: boolean;
+  endingCaptured: boolean;
+  continuousSequence: boolean;
+  overlapPresent: boolean;
+  topShelvesVisible: boolean;
+  bottomShelvesVisible: boolean;
+  noMajorSkips: boolean;
+  photosClear: boolean;
+  contextPhotoCaptured: boolean;
+  warningsReviewed: boolean;
+  stitchReviewed: boolean;
+  criticalFailuresResolved: boolean;
+}
+
+export type SmartAisleScanPhase =
+  | 'setup'
+  | 'beginning'
+  | 'capturing'
+  | 'ending'
+  | 'context'
+  | 'coverage_review'
+  | 'stitching'
+  | 'stitch_review'
+  | 'final_checklist'
+  | 'submitting'
+  | 'complete';
+
 

@@ -1,6 +1,6 @@
 # UI Components
 
-**Last Updated:** 2026-07-22 (dashboard-route-job-details)
+**Last Updated:** 2026-07-22 (green-frosted-glass-chatbox)
 **Related Source Files:** `src/components/*.tsx`, `src/assistant/*.tsx`
 
 ---
@@ -28,8 +28,8 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 
 | Component | File | Responsibility |
 |-----------|------|----------------|
-| **AssistantBubble** | `src/assistant/AssistantBubble.tsx` | Floating chat button + full-screen panel wrapper. On mobile: fills entire viewport (`h-dvh`). On desktop (≥640px): 400×600px floating drawer in bottom-right. |
-| **AssistantPanel** | `src/assistant/AssistantPanel.tsx` | Expandable chat panel with header, messages, composer |
+| **AssistantBubble** | `src/assistant/AssistantBubble.tsx` | Floating chat button + full-screen panel wrapper. On mobile: fills entire viewport (`h-dvh`). On desktop (≥640px): 400×600px floating drawer in bottom-right. When open, renders a dark translucent green backdrop with `backdrop-filter: blur(10px)` behind the panel. |
+| **AssistantPanel** | `src/assistant/AssistantPanel.tsx` | Expandable chat panel with header, messages, composer. Uses dark frosted green-glass surface (`linear-gradient(145deg, rgba(8,48,34,0.84), rgba(4,28,22,0.72))` with `backdrop-filter: blur(22px) saturate(135%)`). Header and composer use slightly more opaque green surfaces. |
 | **AssistantMessageList** | `src/assistant/AssistantMessageList.tsx` | Message display with typing indicators |
 | **AssistantComposer** | `src/assistant/AssistantComposer.tsx` | Text input + quick prompts + send |
 | **AssistantActionCard** | `src/assistant/AssistantActionCard.tsx` | Action confirmation/rejection card |

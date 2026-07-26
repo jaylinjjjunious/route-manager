@@ -37,6 +37,7 @@ import JobDetailModal from './components/JobDetailModal';
 import { EndOfDaySummary } from './components/EndOfDaySummary';
 import ShowerGatePanel from './components/ShowerGatePanel';
 import ScreenshotImportModal from './components/ScreenshotImportModal';
+import SmartAisleScan from './components/SmartAisleScan';
 import { RouteFilter, filterJobsByType } from './components/RouteFilter';
 import type { RouteFilterType } from './components/RouteFilter';
 import { BusModeToggle } from './components/BusModeToggle';
@@ -542,6 +543,8 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   // Modal configurations
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isScreenshotImportOpen, setIsScreenshotImportOpen] = useState(false);
+  const [isScanOpen, setIsScanOpen] = useState(false);
+  const [scanJobId, setScanJobId] = useState<string | null>(null);
   const [routeFilter, setRouteFilter] = useState<RouteFilterType>('today');
   const [routeDetailJobId, setRouteDetailJobId] = useState<string | null>(null);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
@@ -5326,6 +5329,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
               onDuplicate={handleDuplicateJob}
               onToggleRoute={handleToggleRoute}
               onUpdateStatus={handleUpdateJobStatus}
+              onOpenScan={(jobId) => { setScanJobId(jobId); setIsScanOpen(true); }}
               onClose={() => setRouteDetailJobId(null)}
             />
           );
@@ -5348,6 +5352,27 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           onImportJobs={handleImportJobs}
           existingJobs={jobs}
         />
+
+        {/* Smart Aisle Scan */}
+        {scanJobId && (
+          <SmartAisleScan
+            jobId={scanJobId}
+            jobName={jobs.find(j => j.id === scanJobId)?.storeName || ''}
+            isOpen={isScanOpen}
+            onClose={() => { setIsScanOpen(false); setScanJobId(null); }}
+            onComplete={(sessionId) => {
+              const updated = jobs.map(j =>
+                j.id === scanJobId
+                  ? { ...j, captureMode: 'smart_aisle_scan' as const, scanSessionId: sessionId }
+                  : j
+              );
+              saveJobsToStorage(updated);
+              setIsScanOpen(false);
+              setScanJobId(null);
+              setDispatcherMessage('Smart Aisle Scan submitted. Session saved locally.');
+            }}
+          />
+        )}
 
         {/* Portable Footer */}
         {currentTab !== 'dashboard' && (

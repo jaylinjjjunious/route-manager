@@ -12,9 +12,11 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Navigation, Clock, MapPin, CheckSquare, Edit2, Trash2, Copy, ArrowRightLeft, ShieldAlert, Calendar, AlertCircle, Sparkles, Hourglass, RefreshCw, CheckCircle2, RotateCcw } from 'lucide-react';
+import { X, Navigation, Clock, MapPin, CheckSquare, Edit2, Trash2, Copy, ArrowRightLeft, ShieldAlert, Calendar, AlertCircle, Sparkles, Hourglass, RefreshCw, CheckCircle2, RotateCcw, Camera } from 'lucide-react';
 import type { Job, JobType } from '../types';
 import { isJobCompleted, isRevisionJob } from '../utils/jobState';
+
+const SCAN_COMPATIBLE_TYPES: JobType[] = ['retail_audit', 'mystery_shop', 'merchandising'];
 
 interface JobDetailModalProps {
   job: Job;
@@ -30,6 +32,7 @@ interface JobDetailModalProps {
   onDuplicate: (job: Job) => void;
   onToggleRoute: (id: string) => void;
   onUpdateStatus?: (id: string, updates: Partial<Job>) => void;
+  onOpenScan?: (jobId: string) => void;
   onClose: () => void;
 }
 
@@ -98,6 +101,7 @@ export default function JobDetailModal({
   onDuplicate,
   onToggleRoute,
   onUpdateStatus,
+  onOpenScan,
   onClose,
 }: JobDetailModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -496,6 +500,17 @@ export default function JobDetailModal({
                   ))}
                 </div>
               </div>
+            )}
+
+            {/* Smart Aisle Scan */}
+            {onOpenScan && SCAN_COMPATIBLE_TYPES.includes(job.jobType) && !isDone && job.status !== 'finished' && (
+              <button
+                onClick={() => onOpenScan(job.id)}
+                className="w-full flex items-center justify-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 py-3 text-xs font-black text-cyan-300 hover:bg-cyan-500/20 transition"
+              >
+                <Camera size={14} />
+                <span>Smart Aisle Scan</span>
+              </button>
             )}
 
             {/* Admin row */}
