@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import {
   X, Camera, ArrowRight, ArrowLeft, CheckCircle2, AlertTriangle,
   RefreshCw, Eye, Upload, ChevronRight,
-  MapPin, ShieldCheck, Info,
+  MapPin, ShieldCheck, Info, ZoomIn,
 } from 'lucide-react';
 import type {
   AisleScanSession,
@@ -47,6 +47,7 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
   const [overrideReason, setOverrideReason] = useState('');
   const [overrideNote, setOverrideNote] = useState('');
   const [showOverride, setShowOverride] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState<'1' | '0.5'>('1');
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -80,8 +81,9 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
   }, [isOpen, jobId]);
 
   // Camera
-  const startCamera = useCallback(async () => {
+  const startCamera = useCallback(async (zoom?: '1' | '0.5') => {
     setCameraError(null);
+    const z = zoom || zoomLevel;
     try {
       const s = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
@@ -93,6 +95,31 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
         videoRef.current.srcObject = s;
         await videoRef.current.play();
       }
+      // Apply zoom
+      const track = s.getVideoTracks()[0];
+      if (track) {
+        const capabilities = typeof track.getCapabilities === 'function' ? (track.getCapabilities() as any) : null;
+        if (capabilities?.zoom) {
+          const maxZoom = capabilities.zoom.max || 1;
+          const minZoom = capabilities.zoom.min || 1;
+          const targetZoom = z === '0.5' ? Math.max(minZoom, 0.5) : Math.min(maxZoom, 1);
+          try {
+            await track.applyConstraints({ advanced: [{ zoom: targetZoom } as any] });
+          } catch {
+            // Fallback: CSS scale on the video element
+            if (videoRef.current) {
+              videoRef.current.style.transform = z === '0.5' ? 'scale(1.8)' : 'scale(1)';
+              videoRef.current.style.transformOrigin = 'center center';
+            }
+          }
+        } else {
+          // No zoom capability — use CSS scale fallback
+          if (videoRef.current) {
+            videoRef.current.style.transform = z === '0.5' ? 'scale(1.8)' : 'scale(1)';
+            videoRef.current.style.transformOrigin = 'center center';
+          }
+        }
+      }
     } catch (err: any) {
       if (err.name === 'NotAllowedError') {
         setCameraError('Camera permission denied. Please allow camera access in your browser settings.');
@@ -102,12 +129,46 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
         setCameraError(`Camera error: ${err.message}`);
       }
     }
-  }, []);
+  }, [zoomLevel]);
+
+  const toggleZoom = useCallback(async () => {
+    const next = zoomLevel === '1' ? '0.5' : '1';
+    setZoomLevel(next);
+    // Apply zoom to existing stream
+    if (streamRef.current) {
+      const track = streamRef.current.getVideoTracks()[0];
+      if (track) {
+        const capabilities = typeof track.getCapabilities === 'function' ? (track.getCapabilities() as any) : null;
+        if (capabilities?.zoom) {
+          const maxZoom = capabilities.zoom.max || 1;
+          const minZoom = capabilities.zoom.min || 1;
+          const targetZoom = next === '0.5' ? Math.max(minZoom, 0.5) : Math.min(maxZoom, 1);
+          try {
+            await track.applyConstraints({ advanced: [{ zoom: targetZoom } as any] });
+          } catch {
+            if (videoRef.current) {
+              videoRef.current.style.transform = next === '0.5' ? 'scale(1.8)' : 'scale(1)';
+              videoRef.current.style.transformOrigin = 'center center';
+            }
+          }
+        } else {
+          if (videoRef.current) {
+            videoRef.current.style.transform = next === '0.5' ? 'scale(1.8)' : 'scale(1)';
+            videoRef.current.style.transformOrigin = 'center center';
+          }
+        }
+      }
+    }
+  }, [zoomLevel]);
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(t => t.stop());
       streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.style.transform = '';
+      videoRef.current.style.transformOrigin = '';
     }
     setStream(null);
     if (holdIntervalRef.current) clearInterval(holdIntervalRef.current);
@@ -278,14 +339,21 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
   // Modal
   if (!isOpen) return null;
 
+  const isCapturing = phase === 'capturing' || phase === 'ending' || phase === 'context';
+
   const modal = (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-md p-2" onClick={onClose}>
+    <div className={`fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-md ${isCapturing ? 'p-0' : 'p-2'}`} onClick={onClose}>
       <div
         onClick={e => e.stopPropagation()}
-        className="relative flex w-full max-w-[430px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#111214] shadow-2xl"
-        style={{ maxHeight: 'min(92dvh, 700px)' }}
+        className={`relative flex flex-col overflow-hidden border border-white/10 bg-[#111214] shadow-2xl ${
+          isCapturing
+            ? 'w-full h-full rounded-none max-w-none'
+            : 'w-full max-w-[430px] rounded-2xl'
+        }`}
+        style={isCapturing ? { maxHeight: '100dvh' } : { maxHeight: 'min(92dvh, 700px)' }}
       >
-        {/* Header */}
+        {/* Header — hidden during full-screen capture */}
+        {!isCapturing && (
         <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
           <div>
             <h2 className="text-sm font-black text-white">Smart Aisle Scan</h2>
@@ -295,6 +363,7 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
             <X size={16} />
           </button>
         </div>
+        )}
 
         {/* Body */}
         <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-4">
@@ -351,62 +420,77 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
             </div>
           )}
 
-          {/* ─── CAPTURING ─── */}
+          {/* ─── CAPTURING (full-screen camera) ─── */}
           {phase === 'capturing' && (
-            <div className="space-y-3">
+            <div className="relative flex-1 min-h-0 bg-black">
               {cameraError ? (
-                <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4">
-                  <p className="text-xs text-red-300">{cameraError}</p>
-                  <button onClick={startCamera} className="mt-2 text-xs text-cyan-400 hover:text-cyan-300">Retry</button>
+                <div className="flex flex-col items-center justify-center h-full p-6">
+                  <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4 max-w-sm text-center">
+                    <p className="text-xs text-red-300">{cameraError}</p>
+                    <button onClick={() => startCamera()} className="mt-3 text-xs text-cyan-400 hover:text-cyan-300">Retry</button>
+                  </div>
                 </div>
               ) : (
                 <>
-                  <div className="relative rounded-xl overflow-hidden bg-black" style={{ aspectRatio: '16/10' }}>
-                    <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-                    <canvas ref={canvasRef} className="hidden" />
+                  {/* Camera feed fills entire area */}
+                  <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover" />
+                  <canvas ref={canvasRef} className="hidden" />
 
-                    {/* Direction indicator */}
-                    <div className="absolute top-2 left-2 flex items-center gap-1 rounded-lg bg-black/60 px-2 py-1 text-[10px] font-bold text-white/80">
-                      {direction === 'left_to_right' ? <ArrowRight size={10} /> : <ArrowLeft size={10} />}
+                  {/* Gradient overlays for readability */}
+                  <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/70 to-transparent pointer-events-none" />
+                  <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
+
+                  {/* Top-left: Close + direction */}
+                  <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
+                    <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white/80 hover:text-white transition">
+                      <X size={18} />
+                    </button>
+                    <div className="flex items-center gap-1.5 rounded-lg bg-black/50 px-2.5 py-1.5 text-[11px] font-bold text-white/90">
+                      {direction === 'left_to_right' ? <ArrowRight size={12} /> : <ArrowLeft size={12} />}
                       {photos.length} sections
                     </div>
-
-                    {/* Quality indicators */}
-                    <div className="absolute top-2 right-2 flex flex-col gap-1">
-                      {currentWarnings.map((w, i) => (
-                        <div key={i} className="flex items-center gap-1 rounded-lg bg-amber-500/80 px-2 py-0.5 text-[9px] font-bold text-black">
-                          <AlertTriangle size={8} />{w}
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Alignment guide lines */}
-                    <div className="absolute inset-0 pointer-events-none">
-                      <div className="absolute left-1/4 top-0 bottom-0 w-px bg-cyan-400/20" />
-                      <div className="absolute right-1/4 top-0 bottom-0 w-px bg-cyan-400/20" />
-                      <div className="absolute top-1/3 left-0 right-0 h-px bg-cyan-400/20" />
-                      <div className="absolute bottom-1/3 left-0 right-0 h-px bg-cyan-400/20" />
-                    </div>
-
-                    {/* Hold indicator */}
-                    {isHolding && (
-                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
-                        <div className="h-1.5 w-32 rounded-full bg-black/60 overflow-hidden">
-                          <div className="h-full bg-cyan-400 transition-all" style={{ width: `${(holdTimer / SCAN_CONFIG.steadyHoldMs) * 100}%` }} />
-                        </div>
-                      </div>
-                    )}
                   </div>
 
-                  {/* Capture controls */}
-                  <div className="flex items-center gap-2">
+                  {/* Top-right: Zoom toggle + quality warnings */}
+                  <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-2">
+                    <button onClick={toggleZoom}
+                      className="flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white/80 hover:text-white transition">
+                      <span className="text-[11px] font-black">{zoomLevel === '0.5' ? '0.5' : '1x'}</span>
+                    </button>
+                    {currentWarnings.map((w, i) => (
+                      <div key={i} className="flex items-center gap-1 rounded-lg bg-amber-500/90 px-2 py-1 text-[10px] font-bold text-black">
+                        <AlertTriangle size={10} />{w}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Alignment guide lines */}
+                  <div className="absolute inset-0 pointer-events-none z-[5]">
+                    <div className="absolute left-1/4 top-0 bottom-0 w-px bg-cyan-400/25" />
+                    <div className="absolute right-1/4 top-0 bottom-0 w-px bg-cyan-400/25" />
+                    <div className="absolute top-1/3 left-0 right-0 h-px bg-cyan-400/25" />
+                    <div className="absolute bottom-1/3 left-0 right-0 h-px bg-cyan-400/25" />
+                  </div>
+
+                  {/* Hold progress indicator */}
+                  {isHolding && (
+                    <div className="absolute bottom-36 left-1/2 -translate-x-1/2 z-10">
+                      <div className="h-2 w-40 rounded-full bg-black/60 overflow-hidden">
+                        <div className="h-full bg-cyan-400 transition-all" style={{ width: `${(holdTimer / SCAN_CONFIG.steadyHoldMs) * 100}%` }} />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Bottom controls */}
+                  <div className="absolute inset-x-0 bottom-0 z-10 px-4 pb-4 pt-2 space-y-2">
+                    {/* Capture buttons */}
                     {photos.length === 0 ? (
                       <button onClick={() => handleCapture('beginning')}
-                        className="flex-1 rounded-xl bg-emerald-600 py-3.5 text-xs font-black text-white hover:bg-emerald-500 transition flex items-center justify-center gap-2">
-                        <Camera size={14} /> Capture Beginning
+                        className="w-full rounded-2xl bg-emerald-600 py-4 text-sm font-black text-white hover:bg-emerald-500 transition flex items-center justify-center gap-2">
+                        <Camera size={18} /> Capture Beginning
                       </button>
                     ) : (
-                      <>
+                      <div className="flex items-center gap-2">
                         <button
                           onMouseDown={() => setIsHolding(true)}
                           onMouseUp={() => setIsHolding(false)}
@@ -414,75 +498,96 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
                           onTouchStart={() => setIsHolding(true)}
                           onTouchEnd={() => setIsHolding(false)}
                           disabled={captureCooldown}
-                          className="flex-1 rounded-xl bg-cyan-600 py-3.5 text-xs font-black text-white hover:bg-cyan-500 transition flex items-center justify-center gap-2 disabled:opacity-50">
-                          <Camera size={14} /> Hold to Capture
+                          className="flex-1 rounded-2xl bg-cyan-600 py-4 text-sm font-black text-white hover:bg-cyan-500 transition flex items-center justify-center gap-2 disabled:opacity-50">
+                          <Camera size={18} /> Hold to Capture
                         </button>
                         <button onClick={() => handleCapture('section')}
                           disabled={captureCooldown}
-                          className="rounded-xl border border-white/10 bg-white/5 px-4 py-3.5 text-xs font-bold text-white/60 hover:text-white/80 transition disabled:opacity-50">
+                          className="rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-sm font-bold text-white/80 hover:text-white transition disabled:opacity-50">
                           Snap
                         </button>
-                      </>
-                    )}
-                  </div>
-
-                  {photos.length > 0 && (
-                    <button onClick={() => { setPhase('ending'); }}
-                      className="w-full rounded-xl border border-amber-500/30 bg-amber-500/10 py-2.5 text-xs font-bold text-amber-300 hover:bg-amber-500/20 transition flex items-center justify-center gap-2">
-                      <CheckCircle2 size={14} /> I Reached the End
-                    </button>
-                  )}
-
-                  {/* Progress strip */}
-                  <div className="flex items-center gap-1 overflow-x-auto py-1">
-                    {photos.map((p, i) => (
-                      <div key={p.id} className={`shrink-0 rounded-lg px-2 py-1 text-[9px] font-bold ${
-                        p.role === 'beginning' ? 'bg-emerald-500/20 text-emerald-300' :
-                        p.role === 'ending' ? 'bg-amber-500/20 text-amber-300' :
-                        'bg-white/10 text-white/50'
-                      }`}>
-                        {p.role === 'beginning' ? 'Start' : `S${p.sequenceNumber}`}
                       </div>
-                    ))}
+                    )}
+
+                    {/* I Reached the End */}
+                    {photos.length > 0 && (
+                      <button onClick={() => { setPhase('ending'); }}
+                        className="w-full rounded-2xl border border-amber-500/30 bg-amber-500/15 py-3 text-xs font-bold text-amber-300 hover:bg-amber-500/25 transition flex items-center justify-center gap-2">
+                        <CheckCircle2 size={14} /> I Reached the End
+                      </button>
+                    )}
+
+                    {/* Progress strip */}
+                    <div className="flex items-center gap-1 overflow-x-auto py-1 justify-center">
+                      {photos.map((p) => (
+                        <div key={p.id} className={`shrink-0 rounded-lg px-2 py-1 text-[9px] font-bold ${
+                          p.role === 'beginning' ? 'bg-emerald-500/30 text-emerald-300' :
+                          p.role === 'ending' ? 'bg-amber-500/30 text-amber-300' :
+                          'bg-white/15 text-white/60'
+                        }`}>
+                          {p.role === 'beginning' ? 'Start' : `S${p.sequenceNumber}`}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </>
               )}
             </div>
           )}
 
-          {/* ─── ENDING ─── */}
+          {/* ─── ENDING (full-screen camera) ─── */}
           {phase === 'ending' && (
-            <div className="space-y-3">
-              <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3">
-                <p className="text-[11px] text-amber-300/80">
-                  Capture the far end of the category. Include some neighboring shelving, the top shelf, bottom shelf, and enough context to prove the ending boundary.
+            <div className="relative flex-1 min-h-0 bg-black">
+              <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover" />
+              <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/70 to-transparent pointer-events-none" />
+              <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
+
+              <div className="absolute top-3 left-3 z-10">
+                <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white/80 hover:text-white transition">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="absolute top-3 left-16 z-10 max-w-xs rounded-xl border border-amber-500/30 bg-black/50 px-3 py-2">
+                <p className="text-[11px] text-amber-200/90">
+                  Capture the far end of the category. Include neighboring shelving, top shelf, bottom shelf, and ending boundary.
                 </p>
               </div>
-              <div className="relative rounded-xl overflow-hidden bg-black" style={{ aspectRatio: '16/10' }}>
-                <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+
+              <div className="absolute inset-x-0 bottom-0 z-10 px-4 pb-4">
+                <button onClick={() => handleCapture('ending')}
+                  className="w-full rounded-2xl bg-amber-600 py-4 text-sm font-black text-white hover:bg-amber-500 transition flex items-center justify-center gap-2">
+                  <Camera size={18} /> Capture Ending
+                </button>
               </div>
-              <button onClick={() => handleCapture('ending')}
-                className="w-full rounded-xl bg-amber-600 py-3.5 text-xs font-black text-white hover:bg-amber-500 transition flex items-center justify-center gap-2">
-                <Camera size={14} /> Capture Ending
-              </button>
             </div>
           )}
 
-          {/* ─── CONTEXT ─── */}
+          {/* ─── CONTEXT (full-screen camera) ─── */}
           {phase === 'context' && (
-            <div className="space-y-3">
-              <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-3">
-                <p className="text-[11px] text-blue-300/80">
-                  Take a wide context photo showing the aisle, which side the category is on, and approximate length. This helps establish layout but does not replace the detailed sequence.
+            <div className="relative flex-1 min-h-0 bg-black">
+              <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover" />
+              <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/70 to-transparent pointer-events-none" />
+              <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
+
+              <div className="absolute top-3 left-3 z-10">
+                <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white/80 hover:text-white transition">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="absolute top-3 left-16 z-10 max-w-xs rounded-xl border border-blue-500/30 bg-black/50 px-3 py-2">
+                <p className="text-[11px] text-blue-200/90">
+                  Take a wide context photo showing the aisle, which side the category is on, and approximate length.
                 </p>
               </div>
-              <div className="relative rounded-xl overflow-hidden bg-black" style={{ aspectRatio: '16/10' }}>
-                <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+
+              <div className="absolute inset-x-0 bottom-0 z-10 px-4 pb-4">
+                <button onClick={() => handleCapture('context')}
+                  className="w-full rounded-2xl bg-blue-600 py-4 text-sm font-black text-white hover:bg-blue-500 transition flex items-center justify-center gap-2">
+                  <MapPin size={18} /> Capture Context Photo
+                </button>
               </div>
-              <button onClick={() => handleCapture('context')}
-                className="w-full rounded-xl bg-blue-600 py-3.5 text-xs font-black text-white hover:bg-blue-500 transition flex items-center justify-center gap-2">
-                <MapPin size={14} /> Capture Context Photo
-              </button>
             </div>
           )}
 
