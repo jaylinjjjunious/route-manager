@@ -177,7 +177,8 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
 
   // Begin scan
   const handleBeginScan = async () => {
-    const s = createSession(jobId, direction, aisleSide);
+    const mode = jobId.startsWith('test_lab_') ? 'test_lab' : 'audit';
+    const s = createSession(jobId, direction, aisleSide, mode);
     setSession(s);
     setPhase('capturing');
     await startCamera();

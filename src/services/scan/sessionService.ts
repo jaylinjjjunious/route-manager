@@ -10,6 +10,7 @@ import type {
   ValidationStatus,
   StitchStatus,
   ScanChecklist,
+  AisleScanSessionMode,
 } from '../../types';
 
 const STORAGE_KEY = 'smart_aisle_scan_sessions';
@@ -80,10 +81,12 @@ export function createSession(
   jobId: string,
   captureDirection: CaptureDirection,
   aisleSide: AisleSide,
+  mode: AisleScanSessionMode = 'audit',
 ): AisleScanSession {
   const session: AisleScanSession = {
     id: uid(),
     jobId,
+    mode,
     status: 'capturing',
     captureDirection,
     aisleSide,
@@ -498,4 +501,71 @@ export function defaultChecklist(): ScanChecklist {
     stitchReviewed: false,
     criticalFailuresResolved: false,
   };
+}
+
+// ─── Test Lab Helpers ──────────────────────────────────────────────
+
+export function getTestLabSessions(): AisleScanSession[] {
+  return Object.values(readSessions()).filter(s => s.mode === 'test_lab');
+}
+
+export function getTestLabPhotos(sessionId: string): AisleScanPhoto[] {
+  return getActivePhotos(sessionId);
+}
+
+export function deleteTestLabSession(sessionId: string): void {
+  deleteSession(sessionId);
+}
+
+export function deleteAllTestLabData(): { sessionsDeleted: number; photosDeleted: number } {
+  const allSessions = readSessions();
+  const allPhotos = readPhotos();
+  let sessionsDeleted = 0;
+  let photosDeleted = 0;
+
+  for (const [id, session] of Object.entries(allSessions)) {
+    if (session.mode === 'test_lab') {
+      for (const photoId of session.photoSequence) {
+        if (allPhotos[photoId]) {
+          delete allPhotos[photoId];
+          photosDeleted++;
+        }
+      }
+      delete allSessions[id];
+      sessionsDeleted++;
+    }
+  }
+
+  writeSessions(allSessions);
+  writePhotos(allPhotos);
+  return { sessionsDeleted, photosDeleted };
+}
+
+export function getTestLabStorageUsage(): { sessionBytes: number; photoBytes: number } {
+  let sessionBytes = 0;
+  let photoBytes = 0;
+
+  for (const [key, value] of Object.entries(localStorage)) {
+    if (key === STORAGE_KEY) {
+      sessionBytes = value.length * 2;
+    } else if (key === PHOTOS_KEY) {
+      const photos = readPhotos();
+      for (const photo of Object.values(photos)) {
+        const session = readSessions()[photo.sessionId];
+        if (session?.mode === 'test_lab') {
+          photoBytes += (photo.dataUrl?.length || 0) * 2 + (photo.analysisDataUrl?.length || 0) * 2;
+        }
+      }
+    }
+  }
+
+  return { sessionBytes, photoBytes };
+}
+
+export function isTestLabEnabled(): boolean {
+  try {
+    return import.meta.env.VITE_ENABLE_SMART_AISLE_TEST_LAB === 'true';
+  } catch {
+    return false;
+  }
 }

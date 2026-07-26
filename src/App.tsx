@@ -38,6 +38,7 @@ import { EndOfDaySummary } from './components/EndOfDaySummary';
 import ShowerGatePanel from './components/ShowerGatePanel';
 import ScreenshotImportModal from './components/ScreenshotImportModal';
 import SmartAisleScan from './components/SmartAisleScan';
+import SmartAisleScanTestLab from './components/SmartAisleScanTestLab';
 import { RouteFilter, filterJobsByType } from './components/RouteFilter';
 import type { RouteFilterType } from './components/RouteFilter';
 import { BusModeToggle } from './components/BusModeToggle';
@@ -53,8 +54,8 @@ import {
   Plus, Sliders, Play, RotateCcw, Moon, Sun, Layers, ShieldCheck, MapPin, CheckSquare,
   LayoutDashboard, Briefcase, Battery, Settings, AlertTriangle, ArrowRightLeft,
   TrendingUp, HelpCircle, ShieldAlert, Sparkles, Compass, ExternalLink, Navigation, CheckCircle2,
-  Pause, Square, Timer, Clock, ChevronDown, ChevronUp, DollarSign, Zap, Award, Volume2, VolumeX,
-  FolderOpen, Camera, FileImage, ReceiptText, StickyNote, X, Hourglass, Bug
+  Pause, Square, Timer, Clock, ChevronDown, ChevronUp, ChevronRight, DollarSign, Zap, Award, Volume2, VolumeX,
+  FolderOpen, Camera, FileImage, ReceiptText, StickyNote, X, Hourglass, Bug, FlaskConical
 } from 'lucide-react';
 
 type ProofAssetKind = 'photos' | 'screenshots' | 'receipts';
@@ -545,6 +546,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const [isScreenshotImportOpen, setIsScreenshotImportOpen] = useState(false);
   const [isScanOpen, setIsScanOpen] = useState(false);
   const [scanJobId, setScanJobId] = useState<string | null>(null);
+  const [isTestLabOpen, setIsTestLabOpen] = useState(false);
   const [routeFilter, setRouteFilter] = useState<RouteFilterType>('today');
   const [routeDetailJobId, setRouteDetailJobId] = useState<string | null>(null);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
@@ -5210,6 +5212,26 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                     </button>
                   </div>
 
+                  {/* Developer Tools */}
+                  {import.meta.env.VITE_ENABLE_SMART_AISLE_TEST_LAB === 'true' && (
+                    <div className="rounded-2xl border border-amber-200 bg-white p-5 space-y-3 dark:border-amber-500/20 dark:bg-[#17181b]">
+                      <h3 className="text-xs font-black uppercase text-amber-500 tracking-widest flex items-center gap-2">
+                        <FlaskConical size={14} /> Developer Tools
+                      </h3>
+                      <button
+                        onClick={() => setIsTestLabOpen(true)}
+                        className="w-full flex items-center gap-3 p-3 rounded-xl border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 transition-colors"
+                      >
+                        <FlaskConical size={16} className="text-amber-500" />
+                        <div>
+                          <p className="text-xs font-black uppercase text-amber-400 tracking-wider">Smart Aisle Scan Test Lab</p>
+                          <p className="text-[10px] text-amber-400/60 mt-0.5">Practice camera, test imports, run controlled scenarios</p>
+                        </div>
+                        <ChevronRight size={14} className="text-amber-400/40 ml-auto" />
+                      </button>
+                    </div>
+                  )}
+
                   {/* Debug Center */}
                   {debugCenterOpen && (
                     <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3 dark:bg-slate-900 dark:border-white/10">
@@ -5478,6 +5500,14 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
               setScanJobId(null);
               setDispatcherMessage('Smart Aisle Scan submitted. Session saved locally.');
             }}
+          />
+        )}
+
+        {/* Smart Aisle Scan Test Lab */}
+        {import.meta.env.VITE_ENABLE_SMART_AISLE_TEST_LAB === 'true' && (
+          <SmartAisleScanTestLab
+            isOpen={isTestLabOpen}
+            onClose={() => setIsTestLabOpen(false)}
           />
         )}
 

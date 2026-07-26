@@ -315,7 +315,7 @@ export interface AisleScanPhoto {
   capturedAt: string;
   captureDirection: CaptureDirection;
   aisleSide: AisleSide;
-  captureMethod: 'automatic' | 'manual';
+  captureMethod: 'automatic' | 'manual' | 'test_import';
   width: number;
   height: number;
   validation: PhotoValidation;
@@ -336,6 +336,7 @@ export interface AisleScanWarning {
 export interface AisleScanSession {
   id: string;
   jobId: string;
+  mode: AisleScanSessionMode;
   status: ScanSessionStatus;
   captureDirection: CaptureDirection;
   aisleSide: AisleSide;
@@ -384,5 +385,88 @@ export type SmartAisleScanPhase =
   | 'final_checklist'
   | 'submitting'
   | 'complete';
+
+// ─── Smart Aisle Scan Test Lab Types ────────────────────────────────
+
+export type AisleScanSessionMode = 'audit' | 'test_lab';
+
+export type TestLabScreen =
+  | 'home'
+  | 'live_practice'
+  | 'live_practice_instructions'
+  | 'import_sequence'
+  | 'import_defects'
+  | 'controlled_scenarios'
+  | 'scenario_run'
+  | 'markers'
+  | 'diagnostics'
+  | 'results'
+  | 'cleanup';
+
+export type TestDifficulty = 'basic' | 'standard' | 'stress';
+export type PracticeSubject = 'bookshelf' | 'cabinets' | 'product_row' | 'wall' | 'custom';
+export type TestExpectedResult = 'successful' | 'review_recommended' | 'failed';
+
+export interface SmartAisleTestScenario {
+  id: string;
+  name: string;
+  description: string;
+  captureDirection: CaptureDirection;
+  expectedResult: TestExpectedResult;
+  expectedWarnings: string[];
+  forbiddenWarnings?: string[];
+  imageCount: number;
+  difficulty: TestDifficulty;
+}
+
+export interface TestLabDiagnostics {
+  deviceOrientation: string | null;
+  levelDeviation: number | null;
+  motionMagnitude: number | null;
+  cameraReady: boolean;
+  detectedLens: string | null;
+  frameDimensions: string | null;
+  focusAvailable: boolean;
+  brightnessScore: number | null;
+  steadyHoldProgress: number;
+  overlapScore: number | null;
+  matchConfidence: number | null;
+  meaningfulNewCoverage: boolean | null;
+  autoCaptureCooldown: boolean;
+  captureLocked: boolean;
+  activeWorker: boolean;
+  memoryWarnings: string[];
+  processingQueueLength: number;
+}
+
+export interface TestLabResult {
+  sessionId: string;
+  appVersion: string;
+  processingVersion: string;
+  deviceClass: string;
+  captureMode: string;
+  photoCount: number;
+  activeSequenceCount: number;
+  direction: CaptureDirection;
+  averageOverlapScore: number | null;
+  weakestPair: string | null;
+  duplicateDetections: number;
+  imageQualityWarnings: string[];
+  stitchStatus: StitchStatus;
+  stitchDurationMs: number | null;
+  coverageStatus: string;
+  reviewConfirmed: boolean;
+  interruptionRecoveryStatus: string;
+  offlineSyncStatus: string;
+  passedChecks: string[];
+  failedChecks: string[];
+  notSupportedChecks: string[];
+  manualNotes: string[];
+}
+
+export interface TestLabScorecardItem {
+  label: string;
+  status: 'passed' | 'failed' | 'not_tested' | 'not_supported';
+}
 
 
