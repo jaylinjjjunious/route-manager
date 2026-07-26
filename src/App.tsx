@@ -34,6 +34,10 @@ import JobDetailModal from './components/JobDetailModal';
 import { EndOfDaySummary } from './components/EndOfDaySummary';
 import ShowerGatePanel from './components/ShowerGatePanel';
 import ScreenshotImportModal from './components/ScreenshotImportModal';
+import { BusModeToggle } from './components/BusModeToggle';
+import { TransitTripCard } from './components/TransitTripCard';
+import { useTransitTrip } from './hooks/useTransitTrip';
+import type { TravelMode } from './types';
 import { getCurrentCycleId, getCycleLabel, getNextResetTime, getLocalDateKey } from './utils/showerCycle';
 import { useTextToSpeech } from './hooks/useTextToSpeech';
 import type { ShowerProofRecord } from './services/showerProofApi';
@@ -361,6 +365,9 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const [cargoWeight, setCargoWeight] = useState<number>(15);
   const [weatherWind, setWeatherWind] = useState<string>('none');
   const [terrain, setTerrain] = useState<string>('flat');
+  const [travelMode, setTravelMode] = useState<TravelMode>(() => {
+    return (safeStorage.getItem('travel_mode') as TravelMode) || 'bicycling';
+  });
   const [learnedBatteryPercentPerMile, setLearnedBatteryPercentPerMile] = useState<number>(() => {
     return Number(safeStorage.getItem('battery_tracker_learned_percent_per_mile') || DEFAULT_EBIKE_CONFIG.batteryPercentPerMile);
   });
@@ -693,6 +700,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     safeStorage.setItem('ebike_cargo_weight', cargoWeight.toString());
     safeStorage.setItem('ebike_weather_wind', weatherWind);
     safeStorage.setItem('ebike_terrain', terrain);
+    safeStorage.setItem('travel_mode', travelMode);
   }, [currentBattery, assistLevel, riderWeight, cargoWeight, weatherWind, terrain]);
 
   useEffect(() => {
@@ -968,6 +976,17 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const earningsTileFooter = showLiveEarnings
     ? `$${Math.max(0, activeMetrics.totalPay - liveEarnedToday).toFixed(2)} still on route`
     : `$${activeMetrics.earningsPerHour.toFixed(2)}/h expected`;
+
+  const transitOrigin = { latitude: startCoord.lat, longitude: startCoord.lng };
+  const transitDest = nextRouteAJob ? { latitude: nextRouteAJob.coordinates.lat, longitude: nextRouteAJob.coordinates.lng } : null;
+  const transit = useTransitTrip(transitOrigin, transitDest, nextRouteAJob || undefined);
+
+  // Auto-fetch transit trip when Bus Mode is on and destination changes
+  useEffect(() => {
+    if (travelMode === 'transit' && transitDest) {
+      transit.fetchTrip(transitOrigin, transitDest, nextRouteAJob || undefined);
+    }
+  }, [travelMode, transitDest?.latitude, transitDest?.longitude, nextRouteAJob?.id]);
 
   // Save changes to local storage
   const saveJobsToStorage = (updatedJobs: Job[]) => {
@@ -2571,7 +2590,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const nextStopDistance = nextRouteAJob ? getDistanceInMiles(nextStopOrigin, nextRouteAJob.coordinates) : 0;
   const nextStopRideMinutes = nextRouteAJob ? Math.max(1, Math.round((nextStopDistance / ebikeConfig.avgSpeedMph) * 60)) : 0;
   const nextStopNavLink = nextRouteAJob
-    ? `https://www.google.com/maps/dir/?api=1&origin=${nextStopOrigin.lat},${nextStopOrigin.lng}&destination=${nextRouteAJob.coordinates.lat},${nextRouteAJob.coordinates.lng}&travelmode=bicycling`
+    ? `https://www.google.com/maps/dir/?api=1&origin=${nextStopOrigin.lat},${nextStopOrigin.lng}&destination=${nextRouteAJob.coordinates.lat},${nextRouteAJob.coordinates.lng}&travelmode=${travelMode}`
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(startAddress)}`;
   const revisionAlertJobs = remainingRouteAJobs.filter(isRevisionJob);
   const routeProgressPct = routeAJobs.length > 0 ? Math.round((completedRouteAJobs.length / routeAJobs.length) * 100) : 100;
@@ -2584,7 +2603,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
       ? startCoord
       : routeListStops[idx - 1]?.coordinates || startCoord;
 
-    return `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${job.coordinates.lat},${job.coordinates.lng}&travelmode=bicycling`;
+    return `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${job.coordinates.lat},${job.coordinates.lng}&travelmode=${travelMode}`;
   };
   const dispatcherBrief = dispatcherMessage.length > 118 ? `${dispatcherMessage.slice(0, 115).trim()}...` : dispatcherMessage;
   const rideDistance = getRideDistance();
@@ -3144,7 +3163,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                       const prevCoordForNextStop = nextStopIdx <= 0 ? startCoord : routeAJobs[nextStopIdx - 1].coordinates;
                       const nextStopDist = getDistanceInMiles(prevCoordForNextStop, nextStop.coordinates);
                       const nextStopRideMin = (nextStopDist / ebikeConfig.avgSpeedMph) * 60;
-                      const nextStopNavLink = `https://www.google.com/maps/dir/?api=1&origin=${prevCoordForNextStop.lat},${prevCoordForNextStop.lng}&destination=${nextStop.coordinates.lat},${nextStop.coordinates.lng}&travelmode=bicycling`;
+                      const nextStopNavLink = `https://www.google.com/maps/dir/?api=1&origin=${prevCoordForNextStop.lat},${prevCoordForNextStop.lng}&destination=${nextStop.coordinates.lat},${nextStop.coordinates.lng}&travelmode=${travelMode}`;
 
                       return (
                         <div className="space-y-4">
@@ -3227,6 +3246,17 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                   </div>
                 </div>
 
+                {travelMode === 'transit' && nextRouteAJob && (
+                  <div className="col-span-2 lg:col-span-2 road-card p-5 sm:p-6 transition-all">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-green-600 dark:text-green-400">
+                      Transit to Next Job
+                    </span>
+                    <div className="mt-2">
+                      <TransitTripCard transit={transit} currentJob={nextRouteAJob} onRefresh={transit.refreshTrip} />
+                    </div>
+                  </div>
+                )}
+
                 {/* 2. Today's Route — compact remaining route in work order */}
                 <div id="bento-tile-todays-route" className="col-span-2 lg:col-span-2 road-card p-5 sm:p-6 flex flex-col gap-4 transition-all">
                   <div className="flex items-start justify-between gap-3">
@@ -3237,6 +3267,9 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                       <h3 className="mt-1 text-2xl font-black leading-tight text-slate-950 dark:text-white">
                         What&apos;s Left After This
                       </h3>
+                      <div className="mt-2">
+                        <BusModeToggle travelMode={travelMode} onModeChange={setTravelMode} />
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-black text-slate-600 dark:bg-white/10 dark:text-slate-200">
@@ -3301,7 +3334,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                         const origin = idx === 0
                           ? startCoord
                           : prevJob?.coordinates || startCoord;
-                        const navLink = `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${job.coordinates.lat},${job.coordinates.lng}&travelmode=bicycling`;
+                        const navLink = `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${job.coordinates.lat},${job.coordinates.lng}&travelmode=${travelMode}`;
 
                         return (
                           <div
@@ -5237,7 +5270,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           const legDistance = getDistanceInMiles(origin, routeDetailJob.coordinates);
           const rideMinutes = Math.max(1, Math.round((legDistance / ebikeConfig.avgSpeedMph) * 60));
           const routeIdx = routeIndex >= 0 ? routeIndex : null;
-          const navLink = `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${routeDetailJob.coordinates.lat},${routeDetailJob.coordinates.lng}&travelmode=bicycling`;
+          const navLink = `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${routeDetailJob.coordinates.lat},${routeDetailJob.coordinates.lng}&travelmode=${travelMode}`;
 
           return (
             <JobDetailModal

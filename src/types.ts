@@ -171,3 +171,88 @@ export interface ScreenshotImage {
   error?: string;
 }
 
+export type TravelMode = 'bicycling' | 'driving' | 'walking' | 'transit';
+
+export interface TransitPoint {
+  latitude: number;
+  longitude: number;
+  name?: string;
+  address?: string;
+}
+
+export interface TransitStop {
+  stopId: string;
+  stopName: string;
+  latitude: number;
+  longitude: number;
+}
+
+export interface TransitInstruction {
+  text: string;
+  distanceMeters?: number;
+}
+
+export interface TransitAlert {
+  id: string;
+  title: string;
+  description: string;
+  severity: 'info' | 'warning' | 'critical';
+}
+
+export interface TransitWalkLeg {
+  type: 'walk';
+  from: TransitPoint;
+  to: TransitPoint;
+  durationMinutes: number;
+  distanceMeters: number;
+  instructions: TransitInstruction[];
+  polyline?: string;
+}
+
+export interface TransitRideLeg {
+  type: 'transit';
+  routeShortName?: string;
+  routeLongName?: string;
+  headsign?: string;
+  agencyName?: string;
+  boardingStop: TransitStop;
+  exitStop: TransitStop;
+  departureTime: string;
+  predictedDepartureTime?: string;
+  arrivalTime: string;
+  predictedArrivalTime?: string;
+  stopCount?: number;
+}
+
+export type TransitLeg = TransitWalkLeg | TransitRideLeg;
+
+export type OnTimeStatus = 'early' | 'on-time' | 'late' | 'unknown';
+
+export interface TransitTrip {
+  tripId: string;
+  origin: TransitPoint;
+  destination: TransitPoint;
+  departureTime: string;
+  arrivalTime: string;
+  totalDurationMinutes: number;
+  totalWalkingMinutes: number;
+  totalWalkingDistanceMeters: number;
+  transferCount: number;
+  onTimeStatus: OnTimeStatus;
+  deadlineDifferenceMinutes: number | null;
+  legs: TransitLeg[];
+  alerts: TransitAlert[];
+  provider: string;
+  fetchedAt: string;
+}
+
+export interface TransitTripRequest {
+  origin: { latitude: number; longitude: number };
+  destination: { latitude?: number; longitude?: number; address?: string };
+  departureTime?: string;
+  arrivalTime?: string;
+  preferredMode: 'transit';
+}
+
+export type BusModeStatus = 'idle' | 'loading' | 'active' | 'error' | 'stale';
+
