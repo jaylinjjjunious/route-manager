@@ -70,14 +70,28 @@
 - Coverage analysis: pairwise overlap estimation with gap/duplicate warnings.
 - Canvas stitching: scaled panorama with overlap.
 
+## Smart Aisle Scan Test Lab
+- Development/testing feature for Smart Aisle Scan quality assurance.
+- Feature flag: `VITE_ENABLE_SMART_AISLE_TEST_LAB` (hidden in production by default).
+- Entry point: Settings > Developer Tools > Smart Aisle Scan Test Lab.
+- Live Camera Practice: opens real SmartAisleScan in test_lab mode with setup instructions.
+- Imported Test Sequence: select images from device, process through real pipeline.
+- Controlled Test Scenarios: 8 predefined scenarios with expected outcomes validated against real pipeline.
+- Test Markers: displayable high-contrast markers for overlap/direction testing.
+- Sensor Diagnostics: live camera and sensor values panel.
+- Test Results: scorecard, pass/fail, exportable JSON report.
+- Test Data Cleanup: delete test sessions without affecting real audit data.
+- Data isolation: test sessions use `mode: 'test_lab'`, excluded from all production views.
+- Types: `AisleScanSessionMode`, `TestLabScreen`, `SmartAisleTestScenario`, `TestLabResult`, `TestLabScorecardItem`.
+
 ---
 
-**Last Updated:** 2026-07-26 (smart-aisle-scan-integration)
+**Last Updated:** 2026-07-26 (smart-aisle-scan-test-lab)
 
 
 ## 2026-07-26
 
-- Smart Aisle Scan: camera-guided retail photography system integrated into JobDetailModal for compatible job types. Types, session service, and main component added.
+- Smart Aisle Scan Test Lab: development/testing feature with Live Camera Practice, Imported Test Sequence, Controlled Test Scenarios, Test Markers, Sensor Diagnostics, Test Results, and Cleanup. Feature flag `VITE_ENABLE_SMART_AISLE_TEST_LAB`.
 
 ## 2026-07-22
 

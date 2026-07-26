@@ -4,6 +4,7 @@
 
 | SHA | Description |
 |-----|-------------|
+| 6a45049 | Smart Aisle Scan Test Lab (feature flag, live camera, import, scenarios, markers, diagnostics, results, cleanup) |
 | c9edcac | Smart Aisle Scan full-screen camera with 0.5x zoom toggle |
 | 5e79999 | Tools tab (Smart Aisle Scan, Import Screenshots, Bus Mode) |
 | 369fc73 | Smart Aisle Scan: camera-guided retail photography system |

@@ -231,3 +231,12 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 **Compatible job types:** `retail_audit`, `mystery_shop`, `merchandising`
 
 **Entry point:** `JobDetailModal` — "Smart Aisle Scan" button appears above admin row for compatible job types.
+
+### SmartAisleScanTestLab
+
+| Field | Value |
+|-------|-------|
+| **File** | `src/components/SmartAisleScanTestLab.tsx` |
+| **Props** | `isOpen: boolean`, `onClose: () => void` |
+| **Responsibility** | Development/testing feature for Smart Aisle Scan. Home screen with Live Camera Practice, Imported Test Sequence, Controlled Test Scenarios, Test Markers, Sensor Diagnostics, Test Results/Scorecard, and Test Data Cleanup. Wraps real SmartAisleScan in test_lab mode. Feature-gated via `VITE_ENABLE_SMART_AISLE_TEST_LAB`. |
+| **Entry** | Settings > Developer Tools (only when flag enabled) |
