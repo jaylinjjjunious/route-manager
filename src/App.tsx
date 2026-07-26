@@ -134,9 +134,9 @@ const SHOWER_PROOF_JPEG_QUALITY = 0.58;
 const SHOWER_BACKEND_TIMEOUT_MS = 15000;
 
 type BarcodePermissionStatus = 'idle' | 'requesting' | 'granted' | 'denied' | 'unsupported' | 'error';
-type AppTab = 'dashboard' | 'battery' | 'tracker' | 'habits' | 'settings';
+type AppTab = 'dashboard' | 'battery' | 'tracker' | 'habits' | 'tools' | 'settings';
 
-const APP_TABS: AppTab[] = ['dashboard', 'battery', 'tracker', 'habits', 'settings'];
+const APP_TABS: AppTab[] = ['dashboard', 'battery', 'tracker', 'habits', 'tools', 'settings'];
 const SHOWER_PROTECTED_TABS: AppTab[] = ['battery', 'tracker'];
 
 const RETIRED_ROUTE_DESTINATIONS = new Set(['route', 'routes', 'jobs']);
@@ -3346,10 +3346,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <BusModeToggle travelMode={travelMode} onModeChange={setTravelMode} />
-                  </div>
-
                   <RouteFilter activeFilter={routeFilter} onFilterChange={setRouteFilter} counts={routeFilterCounts} />
 
                   {filteredRouteJobs.length === 0 ? (
@@ -5017,6 +5013,116 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
             </div>
           )}
 
+          {/* Tab 5.5: Tools */}
+          {currentTab === 'tools' && (
+            <div className="space-y-6 animate-fade-in" id="tab-view-tools">
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-white/10 dark:bg-[#17181b] space-y-2">
+                <h2 className="text-lg font-black text-slate-900 dark:text-white">Field Tools</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Camera capture, screenshot import, and transit mode controls.
+                </p>
+              </div>
+
+              {/* Smart Aisle Scan */}
+              <div className="rounded-2xl border border-cyan-200 bg-white p-6 dark:border-cyan-500/20 dark:bg-[#17181b] space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-xl bg-cyan-500/10 p-3">
+                    <Camera size={22} className="text-cyan-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 dark:text-white">Smart Aisle Scan</h3>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      Camera-guided aisle photography with alignment, auto-capture, coverage review, and panorama stitching.
+                    </p>
+                  </div>
+                </div>
+
+                {(() => {
+                  const compatibleJobs = jobs.filter(j =>
+                    ['retail_audit', 'mystery_shop', 'merchandising'].includes(j.jobType) &&
+                    !isJobCompleted(j) && j.status !== 'finished'
+                  );
+                  if (compatibleJobs.length === 0) {
+                    return (
+                      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-center dark:border-white/10 dark:bg-white/5">
+                        <p className="text-xs font-bold text-slate-400">No compatible jobs available</p>
+                        <p className="text-[10px] text-slate-400 mt-1">Add a retail audit, mystery shop, or merchandising job to use Smart Aisle Scan.</p>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Select a job to scan</p>
+                      <div className="space-y-2">
+                        {compatibleJobs.map(job => (
+                          <button
+                            key={job.id}
+                            onClick={() => { setScanJobId(job.id); setIsScanOpen(true); }}
+                            className="w-full flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition hover:border-cyan-300 hover:bg-cyan-50 dark:border-white/10 dark:bg-white/5 dark:hover:border-cyan-500/30 dark:hover:bg-cyan-500/5"
+                          >
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-500">
+                              <Camera size={16} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-black text-slate-900 dark:text-white truncate">{job.storeName}</p>
+                              <p className="text-[10px] text-slate-400 truncate">{job.address}</p>
+                            </div>
+                            <span className="text-[10px] font-bold text-cyan-500">Open →</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Import Job Screenshots */}
+              <div className="rounded-2xl border border-violet-200 bg-white p-6 dark:border-violet-500/20 dark:bg-[#17181b] space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-xl bg-violet-500/10 p-3">
+                    <FileImage size={22} className="text-violet-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 dark:text-white">Import Job Screenshots</h3>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      Upload screenshots of job assignments to auto-extract store names, addresses, pay, and notes.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsScreenshotImportOpen(true)}
+                  className="w-full rounded-xl bg-violet-600 py-3 text-xs font-black text-white hover:bg-violet-500 transition flex items-center justify-center gap-2"
+                >
+                  <FileImage size={14} />
+                  Open Screenshot Import
+                </button>
+              </div>
+
+              {/* Bus / Transit Mode */}
+              <div className="rounded-2xl border border-amber-200 bg-white p-6 dark:border-amber-500/20 dark:bg-[#17181b] space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-xl bg-amber-500/10 p-3">
+                    <ArrowRightLeft size={22} className="text-amber-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 dark:text-white">Transit Mode</h3>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      Switch between bike and bus transit. When bus mode is active, trip planning uses public transit routes.
+                    </p>
+                  </div>
+                </div>
+                <BusModeToggle travelMode={travelMode} onModeChange={setTravelMode} />
+                {travelMode === 'transit' && (
+                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3">
+                    <p className="text-[11px] text-amber-300/80">
+                      Transit mode active. The next stop card on the Dashboard will show bus trip details when available.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Tab 6: Settings and Instructions */}
           {currentTab === 'settings' && (
             <div className="space-y-6 animate-fade-in" id="tab-view-settings">
@@ -5169,6 +5275,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
               { id: 'battery', label: 'Battery', icon: Battery, color: 'text-lime-600' },
               { id: 'tracker', label: 'Tracker', icon: Timer, color: 'text-indigo-500' },
               { id: 'habits', label: 'Habits', icon: Award, color: 'text-amber-500' },
+              { id: 'tools', label: 'Tools', icon: Camera, color: 'text-cyan-500' },
               { id: 'settings', label: 'Settings', icon: Settings, color: 'text-slate-500' },
             ].map((tab) => {
               const IconComponent = tab.icon;
