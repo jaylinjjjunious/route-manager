@@ -366,7 +366,9 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
         )}
 
         {/* Body */}
-        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-4">
+        <div className={`min-h-0 flex-1 overflow-x-hidden ${
+          isCapturing ? 'flex flex-col p-0' : 'overflow-y-auto px-4 py-4'
+        }`}>
           {/* ─── SETUP ─── */}
           {phase === 'setup' && (
             <div className="space-y-4">
