@@ -4,6 +4,7 @@
 
 | SHA | Description |
 |-----|-------------|
+| a46fd6a | Smart Aisle Scan Test Lab dev-only production guard |
 | 9e2e763 | Smart Aisle Scan Test Lab import validation fix and browser harness check |
 | 6a45049 | Smart Aisle Scan Test Lab (feature flag, live camera, import, scenarios, markers, diagnostics, results, cleanup) |
 | c9edcac | Smart Aisle Scan full-screen camera with 0.5x zoom toggle |
@@ -49,4 +50,4 @@ Plus approximately 45 earlier commits covering the full feature progression: hab
 
 ---
 
-**Last Updated:** 2026-07-26 (9e2e763)
+**Last Updated:** 2026-07-26 (a46fd6a)
