@@ -58,6 +58,8 @@ import {
   FolderOpen, Camera, FileImage, ReceiptText, StickyNote, X, Hourglass, Bug, FlaskConical
 } from 'lucide-react';
 
+const isSmartAisleTestLabEnabled = import.meta.env.DEV && import.meta.env.VITE_ENABLE_SMART_AISLE_TEST_LAB === 'true';
+
 type ProofAssetKind = 'photos' | 'screenshots' | 'receipts';
 
 interface ProofAsset {
@@ -5213,7 +5215,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                   </div>
 
                   {/* Developer Tools */}
-                  {import.meta.env.VITE_ENABLE_SMART_AISLE_TEST_LAB === 'true' && (
+                  {isSmartAisleTestLabEnabled && (
                     <div className="rounded-2xl border border-amber-200 bg-white p-5 space-y-3 dark:border-amber-500/20 dark:bg-[#17181b]">
                       <h3 className="text-xs font-black uppercase text-amber-500 tracking-widest flex items-center gap-2">
                         <FlaskConical size={14} /> Developer Tools
@@ -5504,7 +5506,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
         )}
 
         {/* Smart Aisle Scan Test Lab */}
-        {import.meta.env.VITE_ENABLE_SMART_AISLE_TEST_LAB === 'true' && (
+        {isSmartAisleTestLabEnabled && (
           <SmartAisleScanTestLab
             isOpen={isTestLabOpen}
             onClose={() => setIsTestLabOpen(false)}

@@ -1,6 +1,6 @@
 # Navigation System
 
-**Last Updated:** 2026-07-26 (protected-tab-doc-fix)
+**Last Updated:** 2026-07-26 (inline-bottom-nav-doc-fix)
 **Related Source Files:** `src/App.tsx`
 
 ---
@@ -26,7 +26,7 @@ Tabs 2-3 (Battery and Tracker) are **locked** until the shower gate is verified.
 
 - The tab buttons are visually dimmed or show an amber lock indicator.
 - Clicking a locked tab does not navigate — it may prompt the user to verify their shower proof.
-- The `isUnlocked` prop on `BottomNav` controls this behavior.
+- `showerGateUnlocked` and `activateTabFromTap` in `App.tsx` control this behavior.
 
 ### State Management
 

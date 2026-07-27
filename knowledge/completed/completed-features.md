@@ -72,7 +72,7 @@
 
 ## Smart Aisle Scan Test Lab
 - Development/testing feature for Smart Aisle Scan quality assurance.
-- Feature flag: `VITE_ENABLE_SMART_AISLE_TEST_LAB` (hidden in production by default).
+- Feature flag: `VITE_ENABLE_SMART_AISLE_TEST_LAB` enables the Test Lab only in local dev builds; production builds ignore the flag and remove Test Lab UI from the client bundle.
 - Entry point: Settings > Developer Tools > Smart Aisle Scan Test Lab.
 - Live Camera Practice: opens real SmartAisleScan in test_lab mode with setup instructions.
 - Imported Test Sequence: select images from device, process through real pipeline.
@@ -81,7 +81,7 @@
 - Sensor Diagnostics: live camera and sensor values panel.
 - Test Results: scorecard, pass/fail, exportable JSON report.
 - Test Data Cleanup: delete test sessions without affecting real audit data.
-- Browser validation: local Playwright harness covers practice setup, imported image processing, controlled scenario results, markers, diagnostics, cleanup, and test/audit data isolation.
+- Browser validation: local Playwright harness covers practice setup, imported image processing, controlled scenario results, markers, diagnostics, cleanup, test/audit data isolation, and production build hiding.
 - Data isolation: test sessions use `mode: 'test_lab'`, excluded from all production views.
 - Types: `AisleScanSessionMode`, `TestLabScreen`, `SmartAisleTestScenario`, `TestLabResult`, `TestLabScorecardItem`.
 
@@ -92,7 +92,7 @@
 
 ## 2026-07-26
 
-- Smart Aisle Scan Test Lab: development/testing feature with Live Camera Practice, Imported Test Sequence, Controlled Test Scenarios, Test Markers, Sensor Diagnostics, Test Results, and Cleanup. Feature flag `VITE_ENABLE_SMART_AISLE_TEST_LAB`. Added browser harness validation and fixed imported sequence result generation when first photo has no overlap score.
+- Smart Aisle Scan Test Lab: development/testing feature with Live Camera Practice, Imported Test Sequence, Controlled Test Scenarios, Test Markers, Sensor Diagnostics, Test Results, and Cleanup. Feature flag `VITE_ENABLE_SMART_AISLE_TEST_LAB` is dev-build only. Added browser harness validation, fixed imported sequence result generation when first photo has no overlap score, and guarded production builds from exposing Test Lab UI.
 
 ## 2026-07-22
 

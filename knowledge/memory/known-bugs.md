@@ -23,7 +23,8 @@ No currently reported bugs are blocking development or production use.
 | R002 | iPhone Safari camera lifecycle issues | Fixed in fed2945 |
 | R003 | Shower Gate proof upload authorization failure | Fixed in b56c690 |
 | R004 | Smart Aisle Scan Test Lab imported sequence crashed when the first photo had no overlap score | Fixed by filtering only numeric overlap scores before result averaging |
+| R005 | Railway had `VITE_ENABLE_SMART_AISLE_TEST_LAB=true`, which could expose Developer Tools in production | Fixed with a dev-build-only production guard and production bundle verification |
 
 ---
 
-**Last Updated:** 2026-07-26 (smart-aisle-test-lab-import-fix)
+**Last Updated:** 2026-07-26 (smart-aisle-test-lab-prod-guard)

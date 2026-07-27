@@ -158,7 +158,7 @@ export default function SmartAisleScanTestLab({ isOpen, onClose }: SmartAisleSca
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const isTestLabEnabled = import.meta.env.VITE_ENABLE_SMART_AISLE_TEST_LAB === 'true';
+  const isTestLabEnabled = import.meta.env.DEV && import.meta.env.VITE_ENABLE_SMART_AISLE_TEST_LAB === 'true';
 
   // Load storage usage on mount
   useEffect(() => {

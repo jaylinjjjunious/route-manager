@@ -1,6 +1,6 @@
 # UI Components
 
-**Last Updated:** 2026-07-26 (smart-aisle-scan-integration)
+**Last Updated:** 2026-07-26 (smart-aisle-test-lab-prod-guard)
 **Related Source Files:** `src/components/*.tsx`, `src/assistant/*.tsx`
 
 ---
@@ -116,13 +116,13 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 
 ---
 
-### BottomNav
+### Bottom Navigation
 
 | Field | Value |
 |-------|-------|
-| **File** | `src/components/BottomNav.tsx` |
-| **Props** | `currentTab: string`, `onTabChange: (tab: string) => void`, `isUnlocked: boolean` |
-| **Responsibility** | Floating pill navigation bar with 6 tabs. Locked tabs are visually indicated when `isUnlocked` is false. Touch-friendly horizontal scrolling. |
+| **File** | `src/App.tsx` |
+| **State** | `currentTab`, `activateTabFromTap`, `showerGateUnlocked` |
+| **Responsibility** | Inline floating pill navigation bar with 6 tabs. Battery and Tracker are locked until shower verification. Touch-friendly horizontal scrolling. |
 
 **Tabs:** Dashboard, Battery, Tracker, Habits, Tools, Settings
 
@@ -238,5 +238,5 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 |-------|-------|
 | **File** | `src/components/SmartAisleScanTestLab.tsx` |
 | **Props** | `isOpen: boolean`, `onClose: () => void` |
-| **Responsibility** | Development/testing feature for Smart Aisle Scan. Home screen with Live Camera Practice, Imported Test Sequence, Controlled Test Scenarios, Test Markers, Sensor Diagnostics, Test Results/Scorecard, and Test Data Cleanup. Wraps real SmartAisleScan in test_lab mode. Feature-gated via `VITE_ENABLE_SMART_AISLE_TEST_LAB`. |
+| **Responsibility** | Development/testing feature for Smart Aisle Scan. Home screen with Live Camera Practice, Imported Test Sequence, Controlled Test Scenarios, Test Markers, Sensor Diagnostics, Test Results/Scorecard, and Test Data Cleanup. Wraps real SmartAisleScan in test_lab mode. Feature-gated via `VITE_ENABLE_SMART_AISLE_TEST_LAB` in dev builds only; production builds ignore the flag. |
 | **Entry** | Settings > Developer Tools (only when flag enabled) |

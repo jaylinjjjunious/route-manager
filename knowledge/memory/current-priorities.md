@@ -4,7 +4,7 @@
 
 - Test Smart Aisle Scan Test Lab on actual mobile device: Live Camera Practice with household objects, verify real camera workflow, overlay, auto-capture, stitching.
 - Verify Test Lab data isolation in the authenticated full app: local harness confirms cleanup preserves audit sessions, but production views still need a signed-in app pass.
-- Verify feature flag `VITE_ENABLE_SMART_AISLE_TEST_LAB` hidden in production build.
+- Verify deployed production remains free of Smart Aisle Scan Test Lab UI after dev-only flag guard deploys.
 
 ## Medium
 
@@ -20,4 +20,4 @@
 
 ---
 
-**Last Updated:** 2026-07-26 (smart-aisle-test-lab-validation)
+**Last Updated:** 2026-07-26 (smart-aisle-test-lab-prod-guard)

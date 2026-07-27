@@ -564,7 +564,7 @@ export function getTestLabStorageUsage(): { sessionBytes: number; photoBytes: nu
 
 export function isTestLabEnabled(): boolean {
   try {
-    return import.meta.env.VITE_ENABLE_SMART_AISLE_TEST_LAB === 'true';
+    return import.meta.env.DEV && import.meta.env.VITE_ENABLE_SMART_AISLE_TEST_LAB === 'true';
   } catch {
     return false;
   }
