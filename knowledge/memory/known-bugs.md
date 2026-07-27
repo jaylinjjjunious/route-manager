@@ -22,7 +22,8 @@ No currently reported bugs are blocking development or production use.
 | R001 | Stale Supabase token handling for proof uploads | Fixed in c00bef0 |
 | R002 | iPhone Safari camera lifecycle issues | Fixed in fed2945 |
 | R003 | Shower Gate proof upload authorization failure | Fixed in b56c690 |
+| R004 | Smart Aisle Scan Test Lab imported sequence crashed when the first photo had no overlap score | Fixed by filtering only numeric overlap scores before result averaging |
 
 ---
 
-**Last Updated:** 2026-07-20 (c12bd44)
+**Last Updated:** 2026-07-26 (smart-aisle-test-lab-import-fix)

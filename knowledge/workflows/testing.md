@@ -8,6 +8,7 @@
 | `npm run build` | Build frontend and server | vite build + esbuild bundle |
 | `npm run verify` | Lint + build combined | scripts/verify.cjs |
 | `npm run test:habits` | Run habit UI check | node tests/habit-ui-check.cjs |
+| `npm run test:smart-aisle-lab` | Run Smart Aisle Scan Test Lab browser check against local Vite harness | node tests/smart-aisle-test-lab-ui-check.cjs |
 | `npm run checkpoint` | Annotated tag + lint + build | scripts/checkpoint.cjs |
 | `npm run release` | Verify + commit + push | scripts/release.cjs |
 
@@ -15,13 +16,14 @@
 
 - **No unit test framework** — Jest, Vitest, or similar is not configured.
 - **No integration tests** — API endpoints are not tested programmatically.
-- **No end-to-end tests** — Playwright or similar is not set up.
+- **Limited browser checks** — Playwright is available for focused checks, but broad end-to-end coverage is not set up.
 - Manual testing is required for camera, barcode scanning, and upload flows.
 - The Railway healthcheck at `GET /api/health` is the only automated runtime check.
 
 ## What Is Tested
 
 - Habit tracker: `tests/habit-ui-check.cjs` validates UI state and rendering.
+- Smart Aisle Scan Test Lab: `tests/smart-aisle-test-lab-ui-check.cjs` opens a local harness, clicks through practice setup, import processing, controlled scenarios, markers, diagnostics, cleanup, and verifies test cleanup preserves seeded audit data.
 - TypeScript compilation: lint catches type errors across all source files.
 - Build: vite and esbuild confirm that the bundle produces valid output.
 
@@ -47,4 +49,4 @@ Returns 200 OK if the server is running.
 
 ---
 
-**Last Updated:** 2026-07-20 (c12bd44)
+**Last Updated:** 2026-07-26 (smart-aisle-test-lab-validation)

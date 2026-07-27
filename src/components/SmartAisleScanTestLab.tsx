@@ -360,7 +360,7 @@ export default function SmartAisleScanTestLab({ isOpen, onClose }: SmartAisleSca
 
     const photos = getActivePhotos(sessionId);
     const overlapScores = photos
-      .filter(p => p.overlapWithPrevious?.score !== null)
+      .filter(p => p.overlapWithPrevious?.score != null)
       .map(p => p.overlapWithPrevious!.score!);
     const avgOverlap = overlapScores.length > 0
       ? overlapScores.reduce((a, b) => a + b, 0) / overlapScores.length

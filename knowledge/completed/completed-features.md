@@ -81,6 +81,7 @@
 - Sensor Diagnostics: live camera and sensor values panel.
 - Test Results: scorecard, pass/fail, exportable JSON report.
 - Test Data Cleanup: delete test sessions without affecting real audit data.
+- Browser validation: local Playwright harness covers practice setup, imported image processing, controlled scenario results, markers, diagnostics, cleanup, and test/audit data isolation.
 - Data isolation: test sessions use `mode: 'test_lab'`, excluded from all production views.
 - Types: `AisleScanSessionMode`, `TestLabScreen`, `SmartAisleTestScenario`, `TestLabResult`, `TestLabScorecardItem`.
 
@@ -91,7 +92,7 @@
 
 ## 2026-07-26
 
-- Smart Aisle Scan Test Lab: development/testing feature with Live Camera Practice, Imported Test Sequence, Controlled Test Scenarios, Test Markers, Sensor Diagnostics, Test Results, and Cleanup. Feature flag `VITE_ENABLE_SMART_AISLE_TEST_LAB`.
+- Smart Aisle Scan Test Lab: development/testing feature with Live Camera Practice, Imported Test Sequence, Controlled Test Scenarios, Test Markers, Sensor Diagnostics, Test Results, and Cleanup. Feature flag `VITE_ENABLE_SMART_AISLE_TEST_LAB`. Added browser harness validation and fixed imported sequence result generation when first photo has no overlap score.
 
 ## 2026-07-22
 

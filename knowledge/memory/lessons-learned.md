@@ -20,6 +20,7 @@
 - Shower gate cycle boundary at exactly 6:00:00 requires careful comparison — use `< boundary`, not `<=`.
 - Bottom navigation on mobile needs `overflow-x-auto` for small screens to prevent tab overflow.
 - Focus trapping improves accessibility for modal-like components.
+- Optional chaining filters must check `!= null` when a missing parent object should be excluded; `obj?.value !== null` still allows `undefined` through.
 
 ## CSS / Dark Mode
 
@@ -33,4 +34,4 @@
 
 ---
 
-**Last Updated:** 2026-07-21 (20913a6)
+**Last Updated:** 2026-07-26 (smart-aisle-test-lab-import-fix)
