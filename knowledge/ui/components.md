@@ -1,6 +1,6 @@
 # UI Components
 
-**Last Updated:** 2026-07-28 (smart-aisle-real-device-verification)
+**Last Updated:** 2026-07-28 (smart-aisle-thumbnail-removal-quality-level)
 **Related Source Files:** `src/components/*.tsx`, `src/assistant/*.tsx`
 
 ---
@@ -224,7 +224,7 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 |-------|-------|
 | **File** | `src/components/SmartAisleScan.tsx` |
 | **Props** | `jobId: string`, `jobName: string`, `isOpen: boolean`, `onClose: () => void`, `onComplete: (sessionId: string) => void` |
-| **Responsibility** | Camera-guided retail aisle photography system. Full capture workflow: setup (direction/side selection), full-screen camera capture with alignment overlay, camera-readiness guarded capture controls, 0.5x/1x zoom toggle (native applyConstraints + CSS fallback), animated start photo into a numbered top-left proof tray, press-and-hold burst section capture, release-to-pause Burst Complete feedback, separate Reached the End action, ending capture, immediate canvas panorama stitching, stitched review, and stitched-photo submission. Capture buttons disable text selection and touch callout behavior during long press. Uses localStorage for session persistence with resume-on-reopen. |
+| **Responsibility** | Camera-guided retail aisle photography system. Full capture workflow: setup (direction/side selection), full-screen camera capture with alignment overlay, camera-readiness guarded capture controls, 0.5x/1x zoom toggle (native applyConstraints + CSS fallback), animated start photo into a top-left proof tray, removable active-photo thumbnails with translucent X controls, thumbnail review viewer, press-and-hold burst section capture, release-to-pause Burst Complete feedback, separate Reached the End action, ending capture, automatic sequence recalculation/restitch after removal, immediate canvas panorama stitching, stitched review, and stitched-photo submission. Capture buttons disable text selection and touch callout behavior during long press. The shared quality gate rejects dark, blurry, moving, or tilted frames before active-sequence acceptance, and the visual level guide can be shown/hidden without disabling level validation. Uses localStorage for session persistence with resume-on-reopen. |
 
 **Primary phases:** setup → capturing → stitching → stitch_review → submitting. Legacy review/checklist phases remain typed for persisted-session compatibility, and the normal camera path now stitches only after the user taps Reached the End.
 
@@ -239,7 +239,7 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 |-------|-------|
 | **File** | `src/components/RealDeviceVerification.tsx` |
 | **Route** | `/real-device-verification?access=smart-aisle-iphone` |
-| **Responsibility** | Protected tester-assisted real-iPhone verification panel for Smart Aisle Scan. Bypasses auth, uses the existing `SmartAisleScan` component with isolated `test_lab_real_device_iphone_verification` data, records privacy-safe event evidence, displays build commit/deployment info, provides the exact Safari/PWA test script, captures manual checklist results, and exports a report without photo contents. |
+| **Responsibility** | Protected tester-assisted real-iPhone verification panel for Smart Aisle Scan. Bypasses auth, uses the existing `SmartAisleScan` component with isolated `test_lab_real_device_iphone_verification` data, records privacy-safe event evidence, displays build commit/deployment info, provides the exact Safari/PWA test script, supports repeated hold/removal/stitch checks without clearing the whole session, captures manual checklist results, and exports a report without photo contents. |
 ### SmartAisleScanTestLab
 
 | Field | Value |

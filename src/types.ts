@@ -169,6 +169,14 @@ export interface ExtractedJob {
     fields: Record<string, number>;
   };
   warnings: string[];
+  guidance?: string[];
+  sharpnessStatus?: 'pass' | 'fail' | 'uncertain' | 'unsupported';
+  brightnessStatus?: 'pass' | 'fail' | 'uncertain';
+  motionStatus?: 'pass' | 'fail' | 'unsupported';
+  levelStatus?: 'pass' | 'fail' | 'uncertain' | 'unsupported';
+  deviceLevelDegrees?: number | null;
+  sceneLevelDegrees?: number | null;
+  levelToleranceDegrees?: number | null;
   selected: boolean;
   duplicateOf?: string;
 }
@@ -297,6 +305,14 @@ export interface PhotoValidation {
   meaningfulCoverage: boolean | null;
   passed: boolean;
   warnings: string[];
+  guidance?: string[];
+  sharpnessStatus?: 'pass' | 'fail' | 'uncertain' | 'unsupported';
+  brightnessStatus?: 'pass' | 'fail' | 'uncertain';
+  motionStatus?: 'pass' | 'fail' | 'unsupported';
+  levelStatus?: 'pass' | 'fail' | 'uncertain' | 'unsupported';
+  deviceLevelDegrees?: number | null;
+  sceneLevelDegrees?: number | null;
+  levelToleranceDegrees?: number | null;
 }
 
 export interface OverlapInfo {
@@ -322,6 +338,13 @@ export interface AisleScanPhoto {
   overlapWithPrevious: OverlapInfo | null;
   retakeOfPhotoId: string | null;
   isActive: boolean;
+  previousSequenceNumber?: number | null;
+  removedAt?: string | null;
+  removalSource?: 'thumbnail_x' | 'viewer' | 'retake' | 'cleanup' | null;
+  inactiveReason?: string | null;
+  replacedByPhotoId?: string | null;
+  includedInStitch?: boolean;
+  exclusionReason?: string | null;
 }
 
 export interface AisleScanWarning {
@@ -349,6 +372,7 @@ export interface AisleScanSession {
   stitchStatus: StitchStatus;
   stitchedPreviewDataUrl: string | null;
   stitchVersion: number;
+  sequenceVersion?: number;
   reviewConfirmedAt: string | null;
   override: {
     reason: string;

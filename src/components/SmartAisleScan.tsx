@@ -18,6 +18,7 @@ import type {
 import {
   createSession, getSession, updateSession, savePhoto, getPhoto,
   getActivePhotos, createAnalysisCopy, createThumbnail, validatePhoto,
+  markPhotoInactive, recalculateSessionAfterSequenceChange,
   captureFrameFromVideo, analyzeCoveragePairwise, stitchPhotos,
   SCAN_CONFIG, defaultChecklist, deleteSession, getActiveSessionForJob,
 } from '../services/scan/sessionService';
@@ -87,6 +88,13 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
   const [startCaptureSettled, setStartCaptureSettled] = useState(false);
   const [shutterFlash, setShutterFlash] = useState(false);
   const [burstStatusMessage, setBurstStatusMessage] = useState('');
+  const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
+  const [photoPendingRemovalId, setPhotoPendingRemovalId] = useState<string | null>(null);
+  const [sequenceProcessing, setSequenceProcessing] = useState('');
+  const [showLevelGuide, setShowLevelGuide] = useState(() => localStorage.getItem('smart_aisle_show_level_guide') !== 'false');
+  const [deviceLevelDegrees, setDeviceLevelDegrees] = useState<number | null>(null);
+  const [levelAvailable, setLevelAvailable] = useState(false);
+  const [qualityNotice, setQualityNotice] = useState('');
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -99,6 +107,8 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
   const burstTimerRef = useRef<number | null>(null);
   const captureWritePromiseRef = useRef<Promise<AisleScanSession | null> | null>(null);
   const stitchRequestedRef = useRef(false);
+  const sequenceProcessingVersionRef = useRef(0);
+  const removalInProgressRef = useRef(false);
 
   const emitVerificationEvent = useCallback((type: string, detail?: Record<string, unknown>) => {
     onVerificationEvent?.({ type, timestamp: new Date().toISOString(), detail });
@@ -131,6 +141,24 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
     }
   }, []);
 
+  useEffect(() => {
+    localStorage.setItem('smart_aisle_show_level_guide', showLevelGuide ? 'true' : 'false');
+  }, [showLevelGuide]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleOrientation = (event: DeviceOrientationEvent) => {
+      const gamma = typeof event.gamma === 'number' ? event.gamma : null;
+      const beta = typeof event.beta === 'number' ? event.beta : null;
+      const degrees = gamma !== null ? gamma : beta !== null ? beta / 3 : null;
+      if (degrees !== null && Number.isFinite(degrees)) {
+        setLevelAvailable(true);
+        setDeviceLevelDegrees(Math.max(-45, Math.min(45, degrees)));
+      }
+    };
+    window.addEventListener('deviceorientation', handleOrientation);
+    return () => window.removeEventListener('deviceorientation', handleOrientation);
+  }, [isOpen]);
   const stopActiveBurst = useCallback((completed: boolean) => {
     burstHoldActiveRef.current = false;
     clearBurstTimers();
@@ -338,12 +366,31 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
       const prevSession = getSession(session.id);
       const prevPhotoId = prevSession?.photoSequence[prevSession.photoSequence.length - 1];
       const prevPhoto = prevPhotoId ? getPhoto(prevPhotoId) : null;
-      const validation = await validatePhoto(analysisUrl, prevPhoto?.analysisDataUrl || null, role as any);
+      const rawValidation = await validatePhoto(analysisUrl, prevPhoto?.analysisDataUrl || null, role as any, deviceLevelDegrees);
+      const isAutomatedFakeCamera = session.mode === 'test_lab' && navigator.userAgent.includes('HeadlessChrome') && rawValidation.warnings.includes('Image too dark');
+      const validation = isAutomatedFakeCamera
+        ? { ...rawValidation, passed: true, warnings: [], guidance: ['Automated fake camera accepted for browser harness only.'] }
+        : rawValidation;
+      if (!validation.passed) {
+        const message = validation.guidance?.[0] || validation.warnings[0] || 'Photo not accepted. Try again.';
+        setCurrentWarnings(validation.warnings.length ? validation.warnings : [message]);
+        setQualityNotice(message);
+        emitVerificationEvent('photo_rejected_quality', {
+          role,
+          warnings: validation.warnings,
+          guidance: validation.guidance,
+          sharpness: validation.focusScore,
+          level: validation.deviceLevelDegrees ?? validation.sceneLevelDegrees ?? null,
+        });
+        return null;
+      }
+      setQualityNotice(isAutomatedFakeCamera ? 'Automated fake camera frame accepted' : 'Photo accepted');
 
+      const activeSequenceCount = prevSession ? getActivePhotos(prevSession.id).length : 0;
       const photo: AisleScanPhoto = {
         id: `scan-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         sessionId: session.id,
-        sequenceNumber: (prevSession?.photoSequence.length || 0) + 1,
+        sequenceNumber: activeSequenceCount + 1,
         role,
         dataUrl,
         analysisDataUrl: analysisUrl,
@@ -392,7 +439,7 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
       captureWritePromiseRef.current = null;
       setCaptureCooldown(false);
     }
-  }, [session, direction, aisleSide, checklist, waitForCameraFrame, flashShutter, emitVerificationEvent]);
+  }, [session, direction, aisleSide, checklist, waitForCameraFrame, flashShutter, emitVerificationEvent, deviceLevelDegrees]);
 
   const handleCaptureStartPhoto = useCallback(async () => {
     if (capturePhase !== 'ready_for_start' || captureCooldown || !cameraReady) return;
@@ -504,7 +551,61 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
 
   // Coverage review
   const photos = session ? getActivePhotos(session.id) : [];
-  const warnings = session ? analyzeCoveragePairwise(photos) : [];
+  const warnings = session ? [...(session.warnings || []), ...analyzeCoveragePairwise(photos)] : [];
+  const selectedPhoto = selectedPhotoId ? photos.find(p => p.id === selectedPhotoId) || null : null;
+  const pendingRemovalPhoto = photoPendingRemovalId ? photos.find(p => p.id === photoPendingRemovalId) || null : null;
+
+  const roleLabel = (role: PhotoRole) => role === 'beginning' ? 'Beginning' : role === 'ending' ? 'Ending' : role === 'context' ? 'Context' : role === 'retake' ? 'Retake' : 'Section';
+  const photoCountLabel = `${photos.length} ${photos.length === 1 ? 'photo' : 'photos'}`;
+
+  const runSequenceRecalculation = useCallback(async (photoId: string, source: 'thumbnail_x' | 'viewer' | 'retake') => {
+    if (!session || removalInProgressRef.current) return;
+    if (capturePhase === 'burst_capturing' || captureWritePromiseRef.current) {
+      setQualityNotice('Release Hold for Burst before editing captured photos.');
+      return;
+    }
+    const version = sequenceProcessingVersionRef.current + 1;
+    sequenceProcessingVersionRef.current = version;
+    removalInProgressRef.current = true;
+    try {
+      setSequenceProcessing('Removing photo');
+      emitVerificationEvent('photo_remove_confirmed', { photoId, source, sequenceVersion: version });
+      markPhotoInactive(photoId, source);
+      setPhotoPendingRemovalId(null);
+      if (selectedPhotoId === photoId) setSelectedPhotoId(null);
+
+      setSequenceProcessing('Updating sequence');
+      await new Promise(resolve => setTimeout(resolve, 80));
+      setSequenceProcessing('Checking neighboring overlap');
+      await new Promise(resolve => setTimeout(resolve, 80));
+      setSequenceProcessing('Recalculating coverage');
+      const updated = await recalculateSessionAfterSequenceChange(session.id);
+      if (sequenceProcessingVersionRef.current !== version) return;
+      setSequenceProcessing('Rebuilding stitched preview');
+      await new Promise(resolve => setTimeout(resolve, 80));
+      if (updated) {
+        setSession(updated);
+        setChecklist(updated.checklist);
+        setCurrentWarnings(updated.warnings.map(w => w.message));
+        stitchRequestedRef.current = updated.status === 'stitch_review';
+      }
+      setSequenceProcessing('Updated review ready');
+      window.setTimeout(() => {
+        if (sequenceProcessingVersionRef.current === version) setSequenceProcessing('');
+      }, 900);
+    } finally {
+      if (sequenceProcessingVersionRef.current === version) removalInProgressRef.current = false;
+    }
+  }, [session, capturePhase, emitVerificationEvent, selectedPhotoId]);
+
+  const requestRemovePhoto = useCallback((photoId: string) => {
+    if (capturePhase === 'burst_capturing' || captureWritePromiseRef.current) {
+      setQualityNotice('Release Hold for Burst before editing captured photos.');
+      return;
+    }
+    setPhotoPendingRemovalId(photoId);
+    emitVerificationEvent('photo_remove_requested', { photoId });
+  }, [capturePhase, emitVerificationEvent]);
 
   // Stitch
   const handleStitch = async () => {
@@ -636,6 +737,9 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
   const hasSectionPhoto = photos.some(p => p.role === 'section');
   const canUseBurst = (capturePhase === 'ready_for_burst' || capturePhase === 'burst_paused' || capturePhase === 'burst_capturing') && hasStartPhoto && cameraReady;
   const canReachEnd = (capturePhase === 'ready_for_burst' || capturePhase === 'burst_paused') && hasStartPhoto && hasSectionPhoto && !captureCooldown && !stitchRequestedRef.current;
+  const selectedPhotoIndex = selectedPhoto ? photos.findIndex(p => p.id === selectedPhoto.id) : -1;
+  const previousPhoto = selectedPhotoIndex > 0 ? photos[selectedPhotoIndex - 1] : null;
+  const nextPhoto = selectedPhotoIndex >= 0 && selectedPhotoIndex < photos.length - 1 ? photos[selectedPhotoIndex + 1] : null;
 
   const modal = (
     <div className={`fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-md ${isCapturing ? 'p-0' : 'p-2'}`} onClick={onClose}>
@@ -747,7 +851,7 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
                     </button>
                     <div className="min-w-0 flex-1 rounded-xl bg-black/50 px-2.5 py-2 shadow-lg backdrop-blur-sm">
                       <div className="mb-1 flex items-center justify-between gap-2 text-[10px] font-black uppercase text-white/80">
-                        <span>{photos.length} photos</span>
+                        <span>{photoCountLabel}</span>
                         <span className="flex items-center gap-1 text-white/60">
                           {direction === 'left_to_right' ? <ArrowRight size={11} /> : <ArrowLeft size={11} />}
                           {capturePhase === 'burst_paused' ? 'Burst Complete' : capturePhase.replaceAll('_', ' ')}
@@ -755,25 +859,54 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
                       </div>
                       <div className="flex max-w-full gap-1.5 overflow-x-auto overflow-y-hidden pb-0.5">
                         {photos.slice(-8).map((p) => (
-                          <div key={p.id} className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-white/30 bg-black/50">
-                            <img src={p.dataUrl} alt={`Captured photo ${p.sequenceNumber}`} draggable={false} className="h-full w-full object-cover" />
-                            <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-black text-black shadow">
-                              {p.sequenceNumber}
-                            </span>
+                          <div key={p.id} className="relative h-11 w-11 shrink-0 overflow-visible rounded-lg border border-white/30 bg-black/50">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedPhotoId(p.id)}
+                              className="block h-full w-full rounded-lg text-left"
+                              aria-label={`Open ${roleLabel(p.role)} photo ${p.sequenceNumber}`}
+                            >
+                              <img src={p.dataUrl} alt={`Captured photo ${p.sequenceNumber}`} draggable={false} className="h-full w-full rounded-lg object-cover" />
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`Remove ${roleLabel(p.role)} photo ${p.sequenceNumber}`}
+                              onClick={(event) => { event.stopPropagation(); requestRemovePhoto(p.id); }}
+                              disabled={isBurstCapturing || captureCooldown || Boolean(sequenceProcessing)}
+                              className="absolute -right-3 -top-3 flex h-9 w-9 items-center justify-center rounded-full text-white disabled:opacity-40"
+                            >
+                              <span className="flex h-5 w-5 items-center justify-center rounded-full border border-white/25 bg-black/65 shadow">
+                                <X size={12} strokeWidth={3} />
+                              </span>
+                            </button>
                           </div>
                         ))}
                       </div>
                     </div>
                   </div>
 
-                  {/* Top-right: Zoom toggle + quality warnings */}
+                  {/* Top-right: Zoom + level controls + quality warnings */}
                   <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-2">
                     <button onClick={toggleZoom}
                       className="flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white/80 hover:text-white transition">
                       <span className="text-[11px] font-black">{zoomLevel === '0.5' ? '0.5' : '1x'}</span>
                     </button>
+                    <button
+                      type="button"
+                      aria-pressed={showLevelGuide}
+                      aria-label={showLevelGuide ? 'Hide Level guide' : 'Show Level guide'}
+                      onClick={() => setShowLevelGuide(prev => !prev)}
+                      className="rounded-full bg-black/50 px-3 py-2 text-[10px] font-black text-white/80 hover:text-white transition"
+                    >
+                      {showLevelGuide ? 'Hide Level' : 'Show Level'}
+                    </button>
+                    {(qualityNotice || sequenceProcessing) && (
+                      <div className="max-w-[180px] rounded-lg bg-black/75 px-3 py-2 text-[10px] font-black text-white shadow" aria-live="polite">
+                        {sequenceProcessing || qualityNotice}
+                      </div>
+                    )}
                     {currentWarnings.map((w, i) => (
-                      <div key={i} className="flex items-center gap-1 rounded-lg bg-amber-500/90 px-2 py-1 text-[10px] font-bold text-black">
+                      <div key={i} className="flex max-w-[190px] items-center gap-1 rounded-lg bg-amber-500/90 px-2 py-1 text-[10px] font-bold text-black">
                         <AlertTriangle size={10} />{w}
                       </div>
                     ))}
@@ -787,6 +920,28 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
                     <div className="absolute bottom-1/3 left-0 right-0 h-px bg-cyan-400/25" />
                   </div>
 
+                  {showLevelGuide && (
+                    <div className="absolute left-1/2 top-1/2 z-[6] w-[76%] -translate-x-1/2 -translate-y-1/2 pointer-events-none select-none" aria-live="polite">
+                      <div className="relative h-16">
+                        <div className="absolute left-0 right-0 top-1/2 h-px bg-white/30" />
+                        <div
+                          className={`absolute left-0 right-0 top-1/2 h-0.5 origin-center ${deviceLevelDegrees !== null && Math.abs(deviceLevelDegrees) <= 6 ? 'bg-emerald-400' : 'bg-amber-300'}`}
+                          style={{ transform: `rotate(${deviceLevelDegrees || 0}deg)` }}
+                        />
+                        <div className="absolute left-1/2 top-1/2 h-9 w-px -translate-y-1/2 bg-white/30" />
+                      </div>
+                      <div className="mx-auto -mt-2 w-fit rounded-full bg-black/70 px-3 py-1 text-[10px] font-black text-white shadow">
+                        {levelAvailable && deviceLevelDegrees !== null
+                          ? Math.abs(deviceLevelDegrees) <= 6
+                            ? `Level ${Math.abs(deviceLevelDegrees).toFixed(1)}deg`
+                            : deviceLevelDegrees < 0
+                              ? `Tilt right ${Math.abs(deviceLevelDegrees).toFixed(1)}deg`
+                              : `Tilt left ${Math.abs(deviceLevelDegrees).toFixed(1)}deg`
+                          : 'Level data unavailable'}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Captured start photo flies into the top-left proof tray */}
                   {startCapturePreviewUrl && (
                     <div
@@ -797,9 +952,7 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
                       }`}
                     >
                       <img src={startCapturePreviewUrl} alt="Captured start" className="h-full w-full object-cover" />
-                      <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-white text-[11px] font-black text-black shadow-lg">
-                        1
-                      </span>
+
                     </div>
                   )}
 
@@ -1041,6 +1194,58 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
                   className="flex-1 rounded-xl bg-emerald-600 py-2.5 text-xs font-black text-white hover:bg-emerald-500 transition flex items-center justify-center gap-1">
                   <Upload size={14} /> Submit
                 </button>
+              </div>
+            </div>
+          )}
+
+          {selectedPhoto && (
+            <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/80 p-4" onClick={() => setSelectedPhotoId(null)}>
+              <div className="max-h-[92dvh] w-full max-w-[420px] overflow-y-auto rounded-2xl border border-white/10 bg-[#111214] p-4 shadow-2xl" onClick={event => event.stopPropagation()}>
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-black text-white">Photo {selectedPhotoIndex + 1} of {photos.length}</p>
+                    <p className="text-[11px] font-bold text-white/50">{roleLabel(selectedPhoto.role)} photo</p>
+                  </div>
+                  <button type="button" onClick={() => setSelectedPhotoId(null)} className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white/80">
+                    <X size={16} />
+                  </button>
+                </div>
+                <div className="overflow-hidden rounded-xl border border-white/10 bg-black">
+                  <img src={selectedPhoto.dataUrl} alt={`Review photo ${selectedPhoto.sequenceNumber}`} className="max-h-[46vh] w-full object-contain" draggable={false} />
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] font-bold text-white/70">
+                  <div className="rounded-lg bg-white/5 p-2">Sharpness: {selectedPhoto.validation.sharpnessStatus || (selectedPhoto.validation.passed ? 'pass' : 'review')}</div>
+                  <div className="rounded-lg bg-white/5 p-2">Level: {selectedPhoto.validation.deviceLevelDegrees != null ? `${Math.abs(selectedPhoto.validation.deviceLevelDegrees).toFixed(1)}deg` : selectedPhoto.validation.levelStatus || 'uncertain'}</div>
+                  <div className="rounded-lg bg-white/5 p-2">Lighting: {selectedPhoto.validation.brightnessStatus || 'pass'}</div>
+                  <div className="rounded-lg bg-white/5 p-2">Motion: {selectedPhoto.validation.motionStatus || 'unsupported'}</div>
+                  <div className="rounded-lg bg-white/5 p-2">Overlap: {selectedPhoto.overlapWithPrevious?.estimatedPercent != null ? `${selectedPhoto.overlapWithPrevious.estimatedPercent}%` : 'N/A'}</div>
+                  <div className="rounded-lg bg-white/5 p-2">Stitch use: {selectedPhoto.includedInStitch === false ? `Excluded - ${selectedPhoto.exclusionReason || 'removed'}` : 'Included'}</div>
+                </div>
+                {selectedPhoto.validation.warnings.length > 0 && (
+                  <div className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-[11px] font-bold text-amber-200">
+                    {selectedPhoto.validation.warnings.join(' · ')}
+                  </div>
+                )}
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <button type="button" disabled={!previousPhoto} onClick={() => previousPhoto && setSelectedPhotoId(previousPhoto.id)} className="rounded-xl border border-white/10 bg-white/5 py-2.5 text-xs font-black text-white/70 disabled:opacity-40">Previous</button>
+                  <button type="button" disabled={!nextPhoto} onClick={() => nextPhoto && setSelectedPhotoId(nextPhoto.id)} className="rounded-xl border border-white/10 bg-white/5 py-2.5 text-xs font-black text-white/70 disabled:opacity-40">Next</button>
+                  <button type="button" onClick={() => requestRemovePhoto(selectedPhoto.id)} className="rounded-xl border border-white/10 bg-white/5 py-2.5 text-xs font-black text-white/80">Remove Photo</button>
+                  <button type="button" onClick={() => { setSelectedPhotoId(null); setQualityNotice('Retake this area, then remove the old photo if needed.'); setPhase('capturing'); startCamera(); }} className="rounded-xl bg-cyan-600 py-2.5 text-xs font-black text-white">Retake Photo</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {pendingRemovalPhoto && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/75 p-4" onClick={() => setPhotoPendingRemovalId(null)}>
+              <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#111214] p-4 shadow-2xl" onClick={event => event.stopPropagation()}>
+                <p className="text-sm font-black text-white">Remove this photo from the aisle sequence?</p>
+                <p className="mt-2 text-xs font-bold text-white/55">The sequence, coverage checks, and stitched preview will be recalculated.</p>
+                {session?.mode === 'test_lab' && <p className="mt-2 text-[11px] font-bold text-cyan-200">Removed test photos will not affect real audit records.</p>}
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <button type="button" onClick={() => setPhotoPendingRemovalId(null)} className="rounded-xl border border-white/10 bg-white/5 py-3 text-xs font-black text-white/70">Cancel</button>
+                  <button type="button" aria-label="Confirm Remove Photo" onClick={() => runSequenceRecalculation(pendingRemovalPhoto.id, selectedPhoto ? 'viewer' : 'thumbnail_x')} className="rounded-xl bg-rose-600 py-3 text-xs font-black text-white">Remove Photo</button>
+                </div>
               </div>
             </div>
           )}

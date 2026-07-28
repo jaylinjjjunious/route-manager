@@ -42,6 +42,11 @@ const CHECKS: ManualCheck[] = [
   { id: 'stitching', label: 'A real stitched preview was created from captured photos', passed: false },
   { id: 'originals', label: 'Original photos remained separately available after stitching', passed: false },
   { id: 'safe_area', label: 'Controls were not covered by iPhone safe areas or Safari/PWA chrome', passed: false },
+  { id: 'thumbnail_x', label: 'Thumbnail number badges are replaced by translucent black X controls', passed: false },
+  { id: 'thumbnail_open', label: 'Tapping thumbnail image opens review and tapping X does not', passed: false },
+  { id: 'remove_recalc', label: 'Removing a photo updates count, sequence, warnings, and stitched preview', passed: false },
+  { id: 'quality_gate', label: 'Blur, motion, dark, or tilted photos are rejected instead of accepted with only a warning', passed: false },
+  { id: 'level_toggle', label: 'Level guide can be hidden and validation still blocks tilted capture', passed: false },
 ];
 
 function readStoredEvents(): EvidenceEvent[] {
@@ -229,6 +234,11 @@ export default function RealDeviceVerification() {
     window.setTimeout(() => setCopied(false), 1800);
   };
 
+  const resetChecks = (ids: string[], eventType: string) => {
+    setChecks(prev => prev.map(check => ids.includes(check.id) ? { ...check, passed: false } : check));
+    appendEvent(eventType, { resetCheckIds: ids });
+  };
+
   const clearEvidence = () => {
     localStorage.removeItem(REPORT_STORAGE_KEY);
     deleteAllTestLabData();
@@ -291,6 +301,15 @@ export default function RealDeviceVerification() {
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={() => { appendEvent('real_camera_test_started'); setScanOpen(true); }} className="inline-flex h-12 items-center gap-2 rounded-lg bg-cyan-600 px-4 text-sm font-black text-white">
               <Camera size={16} /> Start Real Camera Test
+            </button>
+            <button type="button" onClick={() => resetChecks(['short_tap', 'no_selection', 'release', 'release_outside'], 'repeat_hold_test_requested')} className="inline-flex h-12 items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 text-sm font-black text-slate-200">
+              Repeat Hold Test
+            </button>
+            <button type="button" onClick={() => resetChecks(['thumbnail_x', 'thumbnail_open', 'remove_recalc'], 'reset_current_correction_step')} className="inline-flex h-12 items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 text-sm font-black text-slate-200">
+              Reset Current Test Step
+            </button>
+            <button type="button" onClick={() => resetChecks(['reached_end', 'stitching', 'originals'], 'repeat_stitch_test_requested')} className="inline-flex h-12 items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 text-sm font-black text-slate-200">
+              Repeat Stitch Test
             </button>
             <button type="button" onClick={clearEvidence} className="inline-flex h-12 items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 text-sm font-black text-slate-200">
               <Trash2 size={16} /> Clear Evidence

@@ -23,7 +23,7 @@
 ## What Is Tested
 
 - Habit tracker: `tests/habit-ui-check.cjs` validates UI state and rendering.
-- Smart Aisle Scan Test Lab: `tests/smart-aisle-test-lab-ui-check.cjs` opens a local harness, clicks through practice setup, start capture, hold-for-burst, short tap, pointer cancel/lost-capture interruption, Reached the End stitching, the real-device verification report route, import processing, controlled scenarios, markers, diagnostics, cleanup, and verifies test cleanup preserves seeded audit data.
+- Smart Aisle Scan Test Lab: `tests/smart-aisle-test-lab-ui-check.cjs` opens a local harness, clicks through practice setup, start capture, hold-for-burst, short tap, pointer cancel/lost-capture interruption, thumbnail review, remove confirmation, stable-ID removal, sequence recalculation, Reached the End stitching, the real-device verification report route, import processing, controlled scenarios, markers, diagnostics, cleanup, and verifies test cleanup preserves seeded audit data.
 - TypeScript compilation: lint catches type errors across all source files.
 - Build: vite and esbuild confirm that the bundle produces valid output.
 
@@ -49,4 +49,4 @@ Returns 200 OK if the server is running.
 
 ---
 
-**Last Updated:** 2026-07-28 (smart-aisle-real-device-verification)
+**Last Updated:** 2026-07-28 (smart-aisle-thumbnail-removal-quality-level)

@@ -11,6 +11,7 @@ import type {
   StitchStatus,
   ScanChecklist,
   AisleScanSessionMode,
+  OverlapInfo,
 } from '../../types';
 
 const STORAGE_KEY = 'smart_aisle_scan_sessions';
@@ -33,6 +34,10 @@ export const SCAN_CONFIG = {
   minOverlapPercent: 15,
   maxDuplicateOverlapPercent: 75,
   thumbnailWidth: 120,
+  minSharpnessScore: 18,
+  minEdgeDensity: 0.015,
+  levelToleranceDegrees: 6,
+  maxSceneTiltDegrees: 7,
 } as const;
 
 // ─── ID Generation ────────────────────────────────────────────────
@@ -99,6 +104,7 @@ export function createSession(
     stitchStatus: 'not_started',
     stitchedPreviewDataUrl: null,
     stitchVersion: 0,
+    sequenceVersion: 0,
     reviewConfirmedAt: null,
     override: null,
     checklist: {
@@ -162,6 +168,51 @@ export function savePhoto(photo: AisleScanPhoto): void {
   const photos = readPhotos();
   photos[photo.id] = photo;
   writePhotos(photos);
+}
+
+export function updatePhoto(photoId: string, updates: Partial<AisleScanPhoto>): AisleScanPhoto | null {
+  const photos = readPhotos();
+  const photo = photos[photoId];
+  if (!photo) return null;
+  const updated = { ...photo, ...updates };
+  photos[photoId] = updated;
+  writePhotos(photos);
+  return updated;
+}
+
+export function markPhotoInactive(photoId: string, source: AisleScanPhoto['removalSource'] = 'thumbnail_x'): AisleScanPhoto | null {
+  const photo = getPhoto(photoId);
+  if (!photo || !photo.isActive) return photo;
+  return updatePhoto(photoId, {
+    isActive: false,
+    previousSequenceNumber: photo.sequenceNumber,
+    removedAt: new Date().toISOString(),
+    removalSource: source,
+    inactiveReason: source === 'retake' ? 'Replaced by retake' : 'Removed from active aisle sequence',
+    includedInStitch: false,
+    exclusionReason: 'Removed from active sequence',
+  });
+}
+
+export function resequenceActivePhotos(sessionId: string): AisleScanPhoto[] {
+  const session = getSession(sessionId);
+  if (!session) return [];
+  const allPhotos = readPhotos();
+  const active = session.photoSequence
+    .map(id => allPhotos[id])
+    .filter((p): p is AisleScanPhoto => !!p && p.isActive);
+
+  active.forEach((photo, index) => {
+    allPhotos[photo.id] = {
+      ...photo,
+      sequenceNumber: index + 1,
+      overlapWithPrevious: index === 0 ? null : photo.overlapWithPrevious,
+      includedInStitch: true,
+      exclusionReason: null,
+    };
+  });
+  writePhotos(allPhotos);
+  return active.map(photo => allPhotos[photo.id]);
 }
 
 export function getPhoto(photoId: string): AisleScanPhoto | null {
@@ -267,10 +318,67 @@ function rowSimilarity(sums: number[], i: number): number {
   return sums[i] - sums[i - 1];
 }
 
+function analyzeSharpness(imageData: ImageData): { score: number; edgeDensity: number } {
+  const { width, height, data } = imageData;
+  let laplacianSum = 0;
+  let laplacianSq = 0;
+  let edgeCount = 0;
+  let samples = 0;
+
+  const grayAt = (x: number, y: number) => {
+    const idx = (y * width + x) * 4;
+    return (data[idx] * 0.299) + (data[idx + 1] * 0.587) + (data[idx + 2] * 0.114);
+  };
+
+  for (let y = 1; y < height - 1; y += 2) {
+    for (let x = 1; x < width - 1; x += 2) {
+      const center = grayAt(x, y) * 4;
+      const laplacian = center - grayAt(x - 1, y) - grayAt(x + 1, y) - grayAt(x, y - 1) - grayAt(x, y + 1);
+      const gradient = Math.abs(grayAt(x + 1, y) - grayAt(x - 1, y)) + Math.abs(grayAt(x, y + 1) - grayAt(x, y - 1));
+      laplacianSum += laplacian;
+      laplacianSq += laplacian * laplacian;
+      if (gradient > 28) edgeCount++;
+      samples++;
+    }
+  }
+
+  const mean = samples ? laplacianSum / samples : 0;
+  const variance = samples ? Math.max(0, (laplacianSq / samples) - mean * mean) : 0;
+  return { score: variance, edgeDensity: samples ? edgeCount / samples : 0 };
+}
+
+function estimateSceneTiltDegrees(imageData: ImageData): number | null {
+  const { width, height, data } = imageData;
+  const candidates: number[] = [];
+  const grayAt = (x: number, y: number) => {
+    const idx = (y * width + x) * 4;
+    return (data[idx] * 0.299) + (data[idx + 1] * 0.587) + (data[idx + 2] * 0.114);
+  };
+
+  for (let y = 3; y < height - 3; y += 4) {
+    for (let x = 3; x < width - 3; x += 4) {
+      const gx = grayAt(x + 2, y) - grayAt(x - 2, y);
+      const gy = grayAt(x, y + 2) - grayAt(x, y - 2);
+      const mag = Math.abs(gx) + Math.abs(gy);
+      if (mag < 42) continue;
+      const angle = Math.atan2(gy, gx) * 180 / Math.PI;
+      const lineAngle = angle + 90;
+      const normalized = ((lineAngle + 90) % 180) - 90;
+      const nearHorizontal = Math.abs(normalized) <= 20;
+      if (nearHorizontal) candidates.push(normalized);
+    }
+  }
+
+  if (candidates.length < 18) return null;
+  candidates.sort((a, b) => a - b);
+  return candidates[Math.floor(candidates.length / 2)];
+}
+
 export function validatePhoto(
   analysisDataUrl: string,
   previousAnalysisDataUrl: string | null,
   photoRole: 'beginning' | 'section' | 'ending',
+  deviceLevelDegrees: number | null = null,
 ): Promise<PhotoValidation> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -280,21 +388,71 @@ export function validatePhoto(
       canvas.height = img.height;
       const ctx = canvas.getContext('2d');
       if (!ctx) {
-        resolve(makeValidation(false, ['Unable to analyze image']));
+        resolve(makeValidation(false, ['Unable to analyze image'], ['Try again.']));
         return;
       }
       ctx.drawImage(img, 0, 0);
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
       const brightness = analyzeBrightness(imageData);
-      const level = analyzeLevel(imageData, canvas.width);
+      const legacyLevel = analyzeLevel(imageData, canvas.width);
+      const sharpness = analyzeSharpness(imageData);
+      const sceneTilt = estimateSceneTiltDegrees(imageData);
       const warnings: string[] = [];
+      const guidance: string[] = [];
 
-      if (brightness < SCAN_CONFIG.minBrightness) warnings.push('Image too dark');
-      if (brightness > SCAN_CONFIG.maxBrightness) warnings.push('Image too bright');
-      if (level < 0.7) warnings.push('Phone not level');
+      let sharpnessStatus: PhotoValidation['sharpnessStatus'] = 'pass';
+      if (sharpness.score < SCAN_CONFIG.minSharpnessScore && sharpness.edgeDensity >= SCAN_CONFIG.minEdgeDensity) {
+        sharpnessStatus = 'fail';
+        warnings.push('Image is blurry');
+        guidance.push('Hold steady and wait for focus.');
+      } else if (sharpness.edgeDensity < SCAN_CONFIG.minEdgeDensity) {
+        sharpnessStatus = 'uncertain';
+      }
+
+      let brightnessStatus: PhotoValidation['brightnessStatus'] = 'pass';
+      if (brightness < SCAN_CONFIG.minBrightness) {
+        brightnessStatus = 'fail';
+        warnings.push('Image too dark');
+        guidance.push('Improve lighting.');
+      }
+      if (brightness > SCAN_CONFIG.maxBrightness) {
+        brightnessStatus = 'fail';
+        warnings.push('Image too bright');
+        guidance.push('Reduce glare or move slightly.');
+      }
+
+      let levelStatus: PhotoValidation['levelStatus'] = 'pass';
+      const deviceTilt = deviceLevelDegrees !== null ? Math.abs(deviceLevelDegrees) : null;
+      const sceneTiltAbs = sceneTilt !== null ? Math.abs(sceneTilt) : null;
+      if (deviceTilt !== null && deviceTilt > SCAN_CONFIG.levelToleranceDegrees) {
+        levelStatus = 'fail';
+        warnings.push('Photo not level');
+        guidance.push('Level the phone.');
+      } else if (sceneTiltAbs !== null && sceneTiltAbs > SCAN_CONFIG.maxSceneTiltDegrees) {
+        levelStatus = 'fail';
+        warnings.push('Photo not level');
+        guidance.push('Straighten shelves in the frame.');
+      } else if (deviceTilt === null && sceneTilt === null) {
+        levelStatus = 'uncertain';
+        if (photoRole === 'beginning' || photoRole === 'ending') guidance.push('Level could not be automatically verified; review alignment.');
+      }
 
       let motionScore: number | null = null;
+      const finish = () => {
+        const motionStatus: PhotoValidation['motionStatus'] = motionScore !== null && motionScore > SCAN_CONFIG.maxMotionPercent ? 'fail' : motionScore === null ? 'unsupported' : 'pass';
+        const passed = !warnings.length;
+        resolve(makeValidation(passed, warnings, guidance, brightness, legacyLevel, motionScore, sharpness.score, {
+          sharpnessStatus,
+          brightnessStatus,
+          motionStatus,
+          levelStatus,
+          deviceLevelDegrees,
+          sceneLevelDegrees: sceneTilt,
+          levelToleranceDegrees: SCAN_CONFIG.levelToleranceDegrees,
+        }));
+      };
+
       if (previousAnalysisDataUrl) {
         const prevImg = new Image();
         prevImg.onload = () => {
@@ -306,17 +464,20 @@ export function validatePhoto(
             prevCtx.drawImage(prevImg, 0, 0);
             const prevData = prevCtx.getImageData(0, 0, prevCanvas.width, prevCanvas.height);
             motionScore = analyzeMotion(imageData, prevData);
-            if (motionScore > SCAN_CONFIG.maxMotionPercent) warnings.push('Too much movement');
+            if (motionScore > SCAN_CONFIG.maxMotionPercent) {
+              warnings.push('Too much movement');
+              guidance.push('Move more slowly.');
+            }
           }
-          resolve(makeValidation(warnings.length === 0, warnings, brightness, level, motionScore));
+          finish();
         };
-        prevImg.onerror = () => resolve(makeValidation(warnings.length === 0, warnings, brightness, level, null));
+        prevImg.onerror = finish;
         prevImg.src = previousAnalysisDataUrl;
         return;
       }
-      resolve(makeValidation(warnings.length === 0, warnings, brightness, level, null));
+      finish();
     };
-    img.onerror = () => resolve(makeValidation(false, ['Failed to analyze image']));
+    img.onerror = () => resolve(makeValidation(false, ['Failed to analyze image'], ['Try again.']));
     img.src = analysisDataUrl;
   });
 }
@@ -324,12 +485,15 @@ export function validatePhoto(
 function makeValidation(
   passed: boolean,
   warnings: string[],
+  guidance: string[] = [],
   brightness: number | null = null,
   level: number | null = null,
   motion: number | null = null,
+  sharpness: number | null = null,
+  statuses: Partial<PhotoValidation> = {},
 ): PhotoValidation {
   return {
-    focusScore: null,
+    focusScore: sharpness,
     brightnessScore: brightness,
     motionScore: motion,
     levelScore: level,
@@ -339,6 +503,8 @@ function makeValidation(
     meaningfulCoverage: null,
     passed,
     warnings,
+    guidance,
+    ...statuses,
   };
 }
 
@@ -422,6 +588,92 @@ export function analyzeCoveragePairwise(
   return warnings;
 }
 
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+async function estimateOverlap(prev: AisleScanPhoto, curr: AisleScanPhoto): Promise<OverlapInfo> {
+  try {
+    const prevCanvas = await dataUrlToCanvas(prev.analysisDataUrl);
+    const currCanvas = await dataUrlToCanvas(curr.analysisDataUrl);
+    const width = Math.min(prevCanvas.width, currCanvas.width, 160);
+    const height = Math.min(prevCanvas.height, currCanvas.height, 120);
+    const prevSample = document.createElement('canvas');
+    const currSample = document.createElement('canvas');
+    prevSample.width = currSample.width = width;
+    prevSample.height = currSample.height = height;
+    const prevCtx = prevSample.getContext('2d')!;
+    const currCtx = currSample.getContext('2d')!;
+    prevCtx.drawImage(prevCanvas, prevCanvas.width - width, 0, width, height, 0, 0, width, height);
+    currCtx.drawImage(currCanvas, 0, 0, width, height, 0, 0, width, height);
+    const diff = analyzeMotion(currCtx.getImageData(0, 0, width, height), prevCtx.getImageData(0, 0, width, height));
+    const score = clamp(1 - diff, 0, 1);
+    return {
+      score,
+      estimatedPercent: Math.round(clamp(score * 55, 0, 55)),
+      confidence: clamp(score, 0.05, 0.95),
+    };
+  } catch {
+    return { score: null, estimatedPercent: null, confidence: null };
+  }
+}
+
+export async function recalculateSessionAfterSequenceChange(sessionId: string): Promise<AisleScanSession | null> {
+  const session = getSession(sessionId);
+  if (!session) return null;
+  const active = resequenceActivePhotos(sessionId);
+  const allPhotos = readPhotos();
+
+  for (let i = 0; i < active.length; i++) {
+    const photo = allPhotos[active[i].id];
+    if (!photo) continue;
+    allPhotos[photo.id] = {
+      ...photo,
+      sequenceNumber: i + 1,
+      overlapWithPrevious: i === 0 ? null : await estimateOverlap(active[i - 1], photo),
+      includedInStitch: true,
+      exclusionReason: null,
+    };
+  }
+  writePhotos(allPhotos);
+
+  const recalculatedPhotos = getActivePhotos(sessionId);
+  const warnings = analyzeCoveragePairwise(recalculatedPhotos);
+  const hasBeginning = recalculatedPhotos.some(p => p.role === 'beginning');
+  const hasEnding = recalculatedPhotos.some(p => p.role === 'ending');
+  const hasSection = recalculatedPhotos.some(p => p.role === 'section');
+  if (!hasBeginning) {
+    warnings.push({ id: uid(), photoId: sessionId, type: 'gap', message: 'A beginning boundary photo is required.', severity: 'critical', resolved: false });
+  }
+  if (!hasEnding && session.status === 'stitch_review') {
+    warnings.push({ id: uid(), photoId: sessionId, type: 'gap', message: 'An ending boundary photo is required.', severity: 'critical', resolved: false });
+  }
+  if (!hasSection) {
+    warnings.push({ id: uid(), photoId: sessionId, type: 'gap', message: 'More aisle coverage is required before stitching.', severity: 'critical', resolved: false });
+  }
+
+  const preview = recalculatedPhotos.length >= 2 && hasBeginning && hasSection ? await stitchPhotos(recalculatedPhotos) : null;
+  return updateSession(sessionId, {
+    warnings,
+    validationStatus: warnings.some(w => w.severity === 'critical') ? 'blocked' : warnings.length ? 'review_required' : 'ready',
+    stitchedPreviewDataUrl: preview,
+    stitchStatus: preview ? (warnings.length ? 'review_recommended' : 'successful') : 'failed',
+    stitchVersion: (session.stitchVersion || 0) + 1,
+    sequenceVersion: (session.sequenceVersion || 0) + 1,
+    checklist: {
+      ...session.checklist,
+      beginningCaptured: hasBeginning,
+      endingCaptured: hasEnding,
+      continuousSequence: warnings.every(w => w.type !== 'gap' && w.type !== 'weak_overlap'),
+      overlapPresent: recalculatedPhotos.length > 1 && warnings.every(w => w.type !== 'weak_overlap'),
+      contextPhotoCaptured: recalculatedPhotos.some(p => p.role === 'context') || hasBeginning,
+      photosClear: recalculatedPhotos.every(p => p.validation.passed),
+      warningsReviewed: false,
+      stitchReviewed: false,
+      criticalFailuresResolved: !warnings.some(w => w.severity === 'critical'),
+    },
+  });
+}
 // ─── Simple Stitching (Canvas Panorama) ───────────────────────────
 
 export async function stitchPhotos(photos: AisleScanPhoto[]): Promise<string | null> {

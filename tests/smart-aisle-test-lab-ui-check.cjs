@@ -182,6 +182,43 @@ async function expectText(page, text) {
     await page.mouse.up();
     await expectText(page, 'Burst Complete');
 
+    const removalBefore = await page.evaluate(() => {
+      const sessions = JSON.parse(localStorage.getItem('smart_aisle_scan_sessions') || '{}');
+      const photos = JSON.parse(localStorage.getItem('smart_aisle_scan_photos') || '{}');
+      const session = Object.values(sessions).find((item) => item.mode === 'test_lab' && item.status === 'capturing');
+      const active = session ? session.photoSequence.map((id) => photos[id]).filter((photo) => photo && photo.isActive) : [];
+      return { count: active.length, hasVisibleNumberBadge: Boolean(Array.from(document.querySelectorAll('span')).find((node) => /^\d+$/.test(node.textContent?.trim() || '') && node.className.includes('bg-white') && node.className.includes('text-black'))) };
+    });
+    if (removalBefore.count < 2) throw new Error(`Expected at least two active photos before removal test: ${JSON.stringify(removalBefore)}`);
+    if (removalBefore.hasVisibleNumberBadge) throw new Error('Visible numeric thumbnail badge still rendered');
+
+    await page.getByLabel(/Open Beginning photo 1/i).click();
+    await expectText(page, 'Photo 1 of');
+    await expectText(page, 'Sharpness:');
+    await page.getByRole('button', { name: /^Next$/i }).click();
+    await expectText(page, 'Section photo');
+    await page.getByRole('button', { name: /Remove Photo/i }).click();
+    await expectText(page, 'Remove this photo from the aisle sequence?');
+    await page.getByRole('button', { name: /^Cancel$/i }).click();
+    await expectText(page, 'Section photo');
+    await page.getByRole('button', { name: /Remove Photo/i }).click();
+    await page.getByRole('button', { name: /Confirm Remove Photo/i }).click();
+    await expectText(page, 'Updated review ready');
+    const removalAfter = await page.evaluate(() => {
+      const sessions = JSON.parse(localStorage.getItem('smart_aisle_scan_sessions') || '{}');
+      const photos = JSON.parse(localStorage.getItem('smart_aisle_scan_photos') || '{}');
+      const session = Object.values(sessions).find((item) => item.mode === 'test_lab' && item.status === 'capturing');
+      const active = session ? session.photoSequence.map((id) => photos[id]).filter((photo) => photo && photo.isActive) : [];
+      const inactive = session ? session.photoSequence.map((id) => photos[id]).filter((photo) => photo && !photo.isActive) : [];
+      return { activeCount: active.length, inactiveCount: inactive.length, stitchVersion: session?.stitchVersion, sequenceVersion: session?.sequenceVersion };
+    });
+    if (removalAfter.activeCount !== removalBefore.count - 1 || removalAfter.inactiveCount < 1 || !removalAfter.sequenceVersion) {
+      throw new Error(`Photo removal did not preserve/recalculate sequence: ${JSON.stringify({ removalBefore, removalAfter })}`);
+    }
+
+    await page.getByRole('button', { name: /Capture Next Photo/i }).click();
+    await expectText(page, 'Burst Complete');
+
     await page.getByRole('button', { name: /Reached the End/i }).click();
     await expectText(page, 'Aisle Stitch Review');
     await page.getByRole('button', { name: /Use Stitched Photo/i }).click();

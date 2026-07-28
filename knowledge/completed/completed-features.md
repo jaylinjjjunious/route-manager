@@ -91,7 +91,7 @@
 
 ## 2026-07-28
 
-- Smart Aisle Scan camera flow: added animated start-photo proof tray, changed burst capture to press-and-hold while moving across the aisle, release-to-pause burst completion plus Reached the End stitching, disabled text selection/callout on capture controls, kept camera-readiness guards plus browser harness coverage for the live practice flow, and added a protected real-device verification panel for iPhone Safari/Home Screen PWA evidence collection.
+- Smart Aisle Scan camera flow: added animated start-photo proof tray, changed burst capture to press-and-hold while moving across the aisle, release-to-pause burst completion plus Reached the End stitching, disabled text selection/callout on capture controls, kept camera-readiness guards plus browser harness coverage for the live practice flow, added a protected real-device verification panel for iPhone Safari/Home Screen PWA evidence collection, replaced visible thumbnail number badges with removable-photo X controls, added photo review/removal/recalculation, and added pre-save quality and level validation.
 
 ## 2026-07-26
 
