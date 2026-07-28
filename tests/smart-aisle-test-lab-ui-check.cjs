@@ -155,14 +155,34 @@ async function expectText(page, text) {
       const button = buttons.find((node) => node.textContent?.includes('Hold for Burst'));
       return button && !button.hasAttribute('disabled');
     }, null, { timeout: 10000 });
-    const burstBox = await burstButton.boundingBox();
+    let burstBox = await burstButton.boundingBox();
     if (!burstBox) throw new Error('Hold for Burst button was not measurable');
     await page.mouse.move(burstBox.x + burstBox.width / 2, burstBox.y + burstBox.height / 2);
     await page.mouse.down();
-    await page.waitForTimeout(900);
+    await page.waitForTimeout(80);
+    await page.mouse.up();
+    await expectText(page, 'Hold for Burst');
+
+    burstBox = await burstButton.boundingBox();
+    if (!burstBox) throw new Error('Hold for Burst button was not measurable after short tap');
+    await page.mouse.move(burstBox.x + burstBox.width / 2, burstBox.y + burstBox.height / 2);
+    await page.mouse.down();
+    await page.waitForTimeout(1200);
     const selectedText = await page.evaluate(() => window.getSelection()?.toString() || '');
     await page.mouse.up();
     if (selectedText.trim()) throw new Error(`Long-press selected text: ${selectedText}`);
+    await expectText(page, 'Burst Complete');
+
+    const burstCompleteButton = page.getByRole('button', { name: /Burst Complete/i });
+    burstBox = await burstCompleteButton.boundingBox();
+    if (!burstBox) throw new Error('Burst Complete button was not measurable');
+    await page.mouse.move(burstBox.x + burstBox.width / 2, burstBox.y + burstBox.height / 2);
+    await page.mouse.down();
+    await page.waitForTimeout(900);
+    await page.mouse.up();
+    await expectText(page, 'Burst Complete');
+
+    await page.getByRole('button', { name: /Reached the End/i }).click();
     await expectText(page, 'Aisle Stitch Review');
     await page.getByRole('button', { name: /Use Stitched Photo/i }).click();
     await expectText(page, 'Test Scorecard');

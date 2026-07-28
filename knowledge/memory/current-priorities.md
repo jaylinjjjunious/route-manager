@@ -2,9 +2,9 @@
 
 ## High
 
-- Test Smart Aisle Scan Test Lab on an actual mobile device: Live Camera Practice with household objects, verify real camera workflow, overlay, animated start capture, hold-for-burst capture while moving, release-to-complete stitching, and long-press capture controls.
+- Test Smart Aisle Scan Test Lab on an actual mobile device: Live Camera Practice with household objects, verify real camera workflow, overlay, animated start capture, hold-for-burst capture while moving, release-to-pause Burst Complete feedback and Reached the End stitching, and long-press capture controls.
 - Verify Test Lab data isolation in the authenticated full app: local harness confirms cleanup preserves audit sessions, but production views still need a signed-in app pass.
-- Verify deployed production reflects the Smart Aisle animated start capture and hold-for-burst release-to-stitch update, and remains free of Smart Aisle Scan Test Lab UI.
+- Verify deployed production reflects the Smart Aisle animated start capture and hold-for-burst release-to-pause and Reached the End stitch update, and remains free of Smart Aisle Scan Test Lab UI.
 
 ## Medium
 

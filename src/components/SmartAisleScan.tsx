@@ -22,6 +22,32 @@ import {
   SCAN_CONFIG, defaultChecklist, deleteSession, getActiveSessionForJob,
 } from '../services/scan/sessionService';
 
+type CameraCapturePhase =
+  | 'ready_for_start'
+  | 'capturing_start'
+  | 'ready_for_burst'
+  | 'burst_capturing'
+  | 'burst_paused'
+  | 'ending'
+  | 'stitching'
+  | 'stitch_review'
+  | 'error';
+
+const CAPTURE_TRANSITIONS: Record<CameraCapturePhase, CameraCapturePhase[]> = {
+  ready_for_start: ['capturing_start', 'error'],
+  capturing_start: ['ready_for_burst', 'ready_for_start', 'error'],
+  ready_for_burst: ['burst_capturing', 'ending', 'error'],
+  burst_capturing: ['burst_paused', 'ending', 'error'],
+  burst_paused: ['burst_capturing', 'ending', 'error'],
+  ending: ['stitching', 'burst_paused', 'error'],
+  stitching: ['stitch_review', 'burst_paused', 'error'],
+  stitch_review: ['burst_paused', 'error'],
+  error: ['ready_for_start', 'ready_for_burst', 'burst_paused'],
+};
+
+const HOLD_TO_BURST_THRESHOLD_MS = 220;
+const BURST_CAPTURE_INTERVAL_MS = 650;
+const MAX_BURST_PHOTOS = 36;
 interface SmartAisleScanProps {
   jobId: string;
   jobName: string;
@@ -32,6 +58,7 @@ interface SmartAisleScanProps {
 
 export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComplete }: SmartAisleScanProps) {
   const [phase, setPhase] = useState<SmartAisleScanPhase>('setup');
+  const [capturePhase, setCapturePhase] = useState<CameraCapturePhase>('ready_for_start');
   const [session, setSession] = useState<AisleScanSession | null>(null);
   const [direction, setDirection] = useState<CaptureDirection>('left_to_right');
   const [aisleSide, setAisleSide] = useState<AisleSide>('both');
@@ -40,7 +67,6 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
   const [cameraReady, setCameraReady] = useState(false);
   const [lastAnalysisUrl, setLastAnalysisUrl] = useState<string | null>(null);
   const [burstProgress, setBurstProgress] = useState(0);
-  const [isBursting, setIsBursting] = useState(false);
   const [captureCooldown, setCaptureCooldown] = useState(false);
   const [currentWarnings, setCurrentWarnings] = useState<string[]>([]);
   const [stitchProgress, setStitchProgress] = useState('');
@@ -52,16 +78,53 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
   const [zoomLevel, setZoomLevel] = useState<'1' | '0.5'>('1');
   const [startCapturePreviewUrl, setStartCapturePreviewUrl] = useState<string | null>(null);
   const [startCaptureSettled, setStartCaptureSettled] = useState(false);
-  const [isCompletingBurst, setIsCompletingBurst] = useState(false);
+  const [shutterFlash, setShutterFlash] = useState(false);
+  const [burstStatusMessage, setBurstStatusMessage] = useState('');
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const scanLoopRef = useRef<number>(0);
   const burstHoldActiveRef = useRef(false);
-  const burstLoopPromiseRef = useRef<Promise<void> | null>(null);
-  const burstCompletingRef = useRef(false);
+  const burstStartedRef = useRef(false);
+  const burstSavedThisHoldRef = useRef(0);
+  const holdThresholdTimerRef = useRef<number | null>(null);
+  const burstTimerRef = useRef<number | null>(null);
+  const captureWritePromiseRef = useRef<Promise<AisleScanSession | null> | null>(null);
+  const stitchRequestedRef = useRef(false);
 
+  const transitionCapturePhase = useCallback((next: CameraCapturePhase) => {
+    setCapturePhase(prev => CAPTURE_TRANSITIONS[prev].includes(next) ? next : prev);
+  }, []);
+
+  const flashShutter = useCallback(() => {
+    setShutterFlash(true);
+    window.setTimeout(() => setShutterFlash(false), 160);
+  }, []);
+
+  const clearBurstTimers = useCallback(() => {
+    if (holdThresholdTimerRef.current) {
+      clearTimeout(holdThresholdTimerRef.current);
+      holdThresholdTimerRef.current = null;
+    }
+    if (burstTimerRef.current) {
+      clearTimeout(burstTimerRef.current);
+      burstTimerRef.current = null;
+    }
+  }, []);
+
+  const stopActiveBurst = useCallback((completed: boolean) => {
+    burstHoldActiveRef.current = false;
+    clearBurstTimers();
+    if (capturePhase === 'burst_capturing') {
+      transitionCapturePhase(completed ? 'burst_paused' : 'ready_for_burst');
+    }
+    if (completed) {
+      setBurstStatusMessage('Burst Complete');
+    } else if (capturePhase === 'ready_for_burst' || capturePhase === 'burst_capturing') {
+      setBurstStatusMessage('Hold the button to capture continuously.');
+    }
+  }, [capturePhase, clearBurstTimers, transitionCapturePhase]);
   // Restore existing session
   useEffect(() => {
     if (!isOpen) return;
@@ -71,21 +134,35 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
       setDirection(existing.captureDirection);
       setAisleSide(existing.aisleSide);
       setChecklist(existing.checklist);
+      const activePhotos = getActivePhotos(existing.id);
+      const beginningPhoto = activePhotos.find(p => p.role === 'beginning');
+      if (beginningPhoto) {
+        setStartCapturePreviewUrl(beginningPhoto.dataUrl);
+        setStartCaptureSettled(true);
+      }
       if (existing.status === 'capturing') {
         setPhase('capturing');
+        setCapturePhase(beginningPhoto ? 'ready_for_burst' : 'ready_for_start');
         startCamera();
       } else if (existing.status === 'coverage_review') {
         setPhase('coverage_review');
+        setCapturePhase('burst_paused');
       } else if (existing.status === 'stitch_review') {
         setPhase('stitch_review');
+        setCapturePhase('stitch_review');
       } else if (existing.status === 'ready_to_submit') {
         setPhase('final_checklist');
+        setCapturePhase('stitch_review');
       } else {
         setPhase('setup');
+        setCapturePhase('ready_for_start');
       }
     }
-    return () => stopCamera();
-  }, [isOpen, jobId]);
+    return () => {
+      clearBurstTimers();
+      stopCamera();
+    };
+  }, [isOpen, jobId, clearBurstTimers]);
 
   // Camera
   const startCamera = useCallback(async (zoom?: '1' | '0.5') => {
@@ -190,8 +267,9 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
     setStartCapturePreviewUrl(null);
     setStartCaptureSettled(false);
     setBurstProgress(0);
-    setIsBursting(false);
-    setIsCompletingBurst(false);
+    setBurstStatusMessage('');
+    stitchRequestedRef.current = false;
+    setCapturePhase('ready_for_start');
     const s = createSession(jobId, direction, aisleSide, mode);
     setSession(s);
     setPhase('capturing');
@@ -213,58 +291,72 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
 
   // Capture photo
   const capturePhoto = useCallback(async (role: PhotoRole): Promise<AisleScanSession | null> => {
-    if (!videoRef.current || !session) return null;
-    const ready = await waitForCameraFrame();
-    if (!ready) {
-      setCameraError('Camera is still warming up. Try again in a moment.');
-      return null;
+    if (!videoRef.current || !session || captureWritePromiseRef.current) return null;
+
+    const task = (async () => {
+      setCaptureCooldown(true);
+      const ready = await waitForCameraFrame();
+      if (!ready) {
+        setCameraError('Camera is still warming up. Try again in a moment.');
+        return null;
+      }
+
+      const dataUrl = captureFrameFromVideo(videoRef.current!);
+      const { dataUrl: analysisUrl, width, height } = await createAnalysisCopy(dataUrl);
+      const prevSession = getSession(session.id);
+      const prevPhotoId = prevSession?.photoSequence[prevSession.photoSequence.length - 1];
+      const prevPhoto = prevPhotoId ? getPhoto(prevPhotoId) : null;
+      const validation = await validatePhoto(analysisUrl, prevPhoto?.analysisDataUrl || null, role as any);
+
+      const photo: AisleScanPhoto = {
+        id: `scan-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        sessionId: session.id,
+        sequenceNumber: (prevSession?.photoSequence.length || 0) + 1,
+        role,
+        dataUrl,
+        analysisDataUrl: analysisUrl,
+        capturedAt: new Date().toISOString(),
+        captureDirection: direction,
+        aisleSide,
+        captureMethod: role === 'section' ? 'automatic' : 'manual',
+        width,
+        height,
+        validation,
+        overlapWithPrevious: null,
+        retakeOfPhotoId: null,
+        isActive: true,
+      };
+
+      savePhoto(photo);
+      flashShutter();
+      const updated = updateSession(session.id, {
+        photoSequence: [...(prevSession?.photoSequence || []), photo.id],
+        checklist: {
+          ...checklist,
+          beginningCaptured: checklist.beginningCaptured || role === 'beginning',
+          endingCaptured: checklist.endingCaptured || role === 'ending',
+          contextPhotoCaptured: true,
+        },
+      });
+      if (updated) setSession(updated);
+      setLastAnalysisUrl(analysisUrl);
+      setCurrentWarnings(validation.warnings);
+      return updated;
+    })();
+
+    captureWritePromiseRef.current = task;
+    try {
+      return await task;
+    } finally {
+      captureWritePromiseRef.current = null;
+      setCaptureCooldown(false);
     }
-
-    const dataUrl = captureFrameFromVideo(videoRef.current);
-    const { dataUrl: analysisUrl, width, height } = await createAnalysisCopy(dataUrl);
-    const prevSession = getSession(session.id);
-    const prevPhotoId = prevSession?.photoSequence[prevSession.photoSequence.length - 1];
-    const prevPhoto = prevPhotoId ? getPhoto(prevPhotoId) : null;
-    const validation = await validatePhoto(analysisUrl, prevPhoto?.analysisDataUrl || null, role as any);
-
-    const photo: AisleScanPhoto = {
-      id: `scan-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      sessionId: session.id,
-      sequenceNumber: (prevSession?.photoSequence.length || 0) + 1,
-      role,
-      dataUrl,
-      analysisDataUrl: analysisUrl,
-      capturedAt: new Date().toISOString(),
-      captureDirection: direction,
-      aisleSide,
-      captureMethod: 'automatic',
-      width,
-      height,
-      validation,
-      overlapWithPrevious: null,
-      retakeOfPhotoId: null,
-      isActive: true,
-    };
-
-    savePhoto(photo);
-    const updated = updateSession(session.id, {
-      photoSequence: [...(prevSession?.photoSequence || []), photo.id],
-      checklist: {
-        ...checklist,
-        beginningCaptured: checklist.beginningCaptured || role === 'beginning',
-        endingCaptured: checklist.endingCaptured || role === 'ending',
-        contextPhotoCaptured: true,
-      },
-    });
-    if (updated) setSession(updated);
-    setLastAnalysisUrl(analysisUrl);
-    setCurrentWarnings(validation.warnings);
-    return updated;
-  }, [session, direction, aisleSide, checklist, waitForCameraFrame]);
+  }, [session, direction, aisleSide, checklist, waitForCameraFrame, flashShutter]);
 
   const handleCaptureStartPhoto = useCallback(async () => {
-    if (captureCooldown || !cameraReady) return;
-    setCaptureCooldown(true);
+    if (capturePhase !== 'ready_for_start' || captureCooldown || !cameraReady) return;
+    transitionCapturePhase('capturing_start');
+    setBurstStatusMessage('');
     const updated = await capturePhoto('beginning');
     if (updated) {
       const startPhoto = getActivePhotos(updated.id).find(p => p.role === 'beginning');
@@ -273,50 +365,69 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
         setStartCaptureSettled(false);
         window.setTimeout(() => setStartCaptureSettled(true), 80);
       }
+      transitionCapturePhase('ready_for_burst');
+    } else {
+      transitionCapturePhase('ready_for_start');
     }
-    window.setTimeout(() => setCaptureCooldown(false), SCAN_CONFIG.autoCaptureCooldownMs);
-  }, [captureCooldown, cameraReady, capturePhoto]);
+  }, [capturePhase, captureCooldown, cameraReady, capturePhoto, transitionCapturePhase]);
+
+  const captureBurstFrame = useCallback(async () => {
+    if (!session || !burstHoldActiveRef.current || captureWritePromiseRef.current) return;
+    const beforeCount = getActivePhotos(session.id).length;
+    const updated = await capturePhoto('section');
+    const afterCount = updated ? getActivePhotos(updated.id).length : beforeCount;
+    if (afterCount > beforeCount) {
+      burstSavedThisHoldRef.current += 1;
+      setBurstProgress(prev => prev + 1);
+      setBurstStatusMessage('Saving photos - hold steady');
+    }
+    if (burstHoldActiveRef.current && burstProgress + burstSavedThisHoldRef.current < MAX_BURST_PHOTOS) {
+      burstTimerRef.current = window.setTimeout(() => {
+        void captureBurstFrame();
+      }, BURST_CAPTURE_INTERVAL_MS);
+    }
+  }, [session, capturePhoto, burstProgress]);
 
   const handleBurstHoldStart = useCallback((event: ReactPointerEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.currentTarget.setPointerCapture?.(event.pointerId);
-    if (!session || captureCooldown || isBursting || isCompletingBurst || !cameraReady) return;
+    if (!session || !cameraReady || captureWritePromiseRef.current) return;
+    if (capturePhase !== 'ready_for_burst' && capturePhase !== 'burst_paused') return;
 
     burstHoldActiveRef.current = true;
-    burstCompletingRef.current = false;
-    setIsBursting(true);
-    setIsCompletingBurst(false);
-    setCaptureCooldown(true);
-    setBurstProgress(0);
+    burstStartedRef.current = false;
+    burstSavedThisHoldRef.current = 0;
+    clearBurstTimers();
+    setBurstStatusMessage('Hold the button to capture continuously.');
 
-    burstLoopPromiseRef.current = (async () => {
-      let count = 0;
-      while (burstHoldActiveRef.current && count < 24) {
-        const updated = await capturePhoto('section');
-        if (!updated) break;
-        count += 1;
-        setBurstProgress(count);
-        await new Promise(r => window.setTimeout(r, 260));
-      }
-    })();
-  }, [session, captureCooldown, isBursting, isCompletingBurst, cameraReady, capturePhoto]);
+    holdThresholdTimerRef.current = window.setTimeout(() => {
+      if (!burstHoldActiveRef.current) return;
+      burstStartedRef.current = true;
+      setBurstProgress(0);
+      transitionCapturePhase('burst_capturing');
+      void captureBurstFrame();
+    }, HOLD_TO_BURST_THRESHOLD_MS);
+  }, [session, cameraReady, capturePhase, clearBurstTimers, transitionCapturePhase, captureBurstFrame]);
 
-  const handleBurstHoldEnd = useCallback(async () => {
-    if (!session || burstCompletingRef.current || (!burstHoldActiveRef.current && !isBursting)) return;
+  const handleBurstHoldEnd = useCallback(() => {
+    const savedCount = burstSavedThisHoldRef.current;
+    const started = burstStartedRef.current;
+    stopActiveBurst(started && savedCount > 0);
+    if (!started || savedCount === 0) {
+      setBurstStatusMessage('Hold the button to capture continuously.');
+    }
+  }, [stopActiveBurst]);
 
-    burstHoldActiveRef.current = false;
-    burstCompletingRef.current = true;
-    setIsBursting(false);
-    setIsCompletingBurst(true);
-    await burstLoopPromiseRef.current;
-    await new Promise(r => window.setTimeout(r, 250));
-    await capturePhoto('ending');
-    stopCamera();
-    await handleStitch();
-    setCaptureCooldown(false);
-    setIsCompletingBurst(false);
-    burstCompletingRef.current = false;
-  }, [session, isBursting, capturePhoto, stopCamera]);
+  const handleManualSectionCapture = useCallback(async () => {
+    if (!session || captureCooldown || !cameraReady) return;
+    if (capturePhase !== 'ready_for_burst' && capturePhase !== 'burst_paused') return;
+    setBurstStatusMessage('');
+    const updated = await capturePhoto('section');
+    if (updated) {
+      transitionCapturePhase('burst_paused');
+      setBurstStatusMessage('Burst Complete');
+    }
+  }, [session, captureCooldown, cameraReady, capturePhase, capturePhoto, transitionCapturePhase]);
 
   // Auto-capture loop
   useEffect(() => {
@@ -341,6 +452,7 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
   // Stitch
   const handleStitch = async () => {
     if (!session) return;
+    transitionCapturePhase('stitching');
     setPhase('stitching');
     setStitchProgress('Preparing burst photos...');
     await new Promise(r => setTimeout(r, 200));
@@ -380,6 +492,24 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
     setStitchProgress('');
   };
 
+  const handleReachedEnd = useCallback(async () => {
+    if (!session || stitchRequestedRef.current || captureWritePromiseRef.current) return;
+    const activePhotos = getActivePhotos(session.id);
+    const hasBeginning = activePhotos.some(p => p.role === 'beginning');
+    const hasSection = activePhotos.some(p => p.role === 'section');
+    if (!hasBeginning || !hasSection) return;
+
+    stitchRequestedRef.current = true;
+    burstHoldActiveRef.current = false;
+    clearBurstTimers();
+    transitionCapturePhase('ending');
+    setBurstStatusMessage('');
+    await captureWritePromiseRef.current;
+    await capturePhoto('ending');
+    stopCamera();
+    transitionCapturePhase('stitching');
+    await handleStitch();
+  }, [session, capturePhoto, clearBurstTimers, stopCamera, transitionCapturePhase]);
 
   const handleUseStitchedPhoto = () => {
     if (!session) return;
@@ -432,6 +562,12 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
   if (!isOpen) return null;
 
   const isCapturing = phase === 'capturing';
+  const isBurstCapturing = capturePhase === 'burst_capturing';
+  const isProcessingCapture = capturePhase === 'capturing_start' || capturePhase === 'ending' || capturePhase === 'stitching';
+  const hasStartPhoto = photos.some(p => p.role === 'beginning');
+  const hasSectionPhoto = photos.some(p => p.role === 'section');
+  const canUseBurst = (capturePhase === 'ready_for_burst' || capturePhase === 'burst_paused' || capturePhase === 'burst_capturing') && hasStartPhoto && cameraReady;
+  const canReachEnd = (capturePhase === 'ready_for_burst' || capturePhase === 'burst_paused') && hasStartPhoto && hasSectionPhoto && !captureCooldown && !stitchRequestedRef.current;
 
   const modal = (
     <div className={`fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-md ${isCapturing ? 'p-0' : 'p-2'}`} onClick={onClose}>
@@ -534,14 +670,31 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
                   <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/70 to-transparent pointer-events-none" />
                   <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
 
-                  {/* Top-left: Close + direction */}
-                  <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
-                    <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white/80 hover:text-white transition">
+                  {shutterFlash && <div className="absolute inset-0 z-30 bg-white/70 opacity-0 animate-ping pointer-events-none motion-reduce:animate-none motion-reduce:opacity-40" />}
+
+                  {/* Top-left: Close + ordered capture tray */}
+                  <div className="absolute top-3 left-3 right-3 z-10 flex items-start gap-3 select-none" style={{ userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}>
+                    <button onClick={onClose} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-black/50 text-white/80 hover:text-white transition">
                       <X size={18} />
                     </button>
-                    <div className="flex items-center gap-1.5 rounded-lg bg-black/50 px-2.5 py-1.5 text-[11px] font-bold text-white/90">
-                      {direction === 'left_to_right' ? <ArrowRight size={12} /> : <ArrowLeft size={12} />}
-                      {photos.length} sections
+                    <div className="min-w-0 flex-1 rounded-xl bg-black/50 px-2.5 py-2 shadow-lg backdrop-blur-sm">
+                      <div className="mb-1 flex items-center justify-between gap-2 text-[10px] font-black uppercase text-white/80">
+                        <span>{photos.length} photos</span>
+                        <span className="flex items-center gap-1 text-white/60">
+                          {direction === 'left_to_right' ? <ArrowRight size={11} /> : <ArrowLeft size={11} />}
+                          {capturePhase === 'burst_paused' ? 'Burst Complete' : capturePhase.replaceAll('_', ' ')}
+                        </span>
+                      </div>
+                      <div className="flex max-w-full gap-1.5 overflow-x-auto overflow-y-hidden pb-0.5">
+                        {photos.slice(-8).map((p) => (
+                          <div key={p.id} className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-white/30 bg-black/50">
+                            <img src={p.dataUrl} alt={`Captured photo ${p.sequenceNumber}`} draggable={false} className="h-full w-full object-cover" />
+                            <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-black text-black shadow">
+                              {p.sequenceNumber}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
@@ -571,7 +724,7 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
                     <div
                       className={`absolute z-20 overflow-hidden rounded-xl border-2 border-white bg-black shadow-2xl transition-all duration-700 ease-out ${
                         startCaptureSettled
-                          ? 'left-3 top-24 h-14 w-14 translate-x-0 translate-y-0 scale-100'
+                          ? 'left-16 top-16 h-11 w-11 translate-x-0 translate-y-0 scale-100'
                           : 'left-1/2 top-1/2 h-32 w-32 -translate-x-1/2 -translate-y-1/2 scale-125'
                       }`}
                     >
@@ -583,10 +736,10 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
                   )}
 
                   {/* Burst progress indicator */}
-                  {(isBursting || isCompletingBurst) && (
-                    <div className="absolute bottom-36 left-1/2 -translate-x-1/2 z-10 select-none">
+                  {(isBurstCapturing || burstStatusMessage) && (
+                    <div className="absolute bottom-44 left-1/2 -translate-x-1/2 z-10 select-none" aria-live="polite">
                       <div className="rounded-full bg-black/70 px-4 py-2 text-xs font-black text-cyan-200 shadow-lg">
-                        {isCompletingBurst ? 'Complete - stitching photos' : `Capturing burst ${burstProgress}`}
+                        {isBurstCapturing ? `Capturing burst ${burstProgress}` : burstStatusMessage}
                       </div>
                     </div>
                   )}
@@ -594,25 +747,48 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
                   {/* Bottom controls */}
                   <div className="absolute inset-x-0 bottom-0 z-10 px-4 pb-4 pt-2 space-y-2">
                     {/* Capture buttons */}
-                    {photos.length === 0 ? (
+                    {!hasStartPhoto ? (
                       <button onClick={handleCaptureStartPhoto}
-                        disabled={captureCooldown || !cameraReady}
+                        disabled={capturePhase !== 'ready_for_start' || captureCooldown || !cameraReady}
                         className="w-full rounded-2xl bg-emerald-600 py-4 text-sm font-black text-white hover:bg-emerald-500 transition flex items-center justify-center gap-2 disabled:opacity-50 select-none touch-manipulation"
-                        style={{ userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}>
+                        style={{ userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none', touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}>
                         <Camera size={18} /> {cameraReady ? 'Capture Start Photo' : 'Camera Warming Up'}
                       </button>
                     ) : (
-                      <button
-                        type="button"
-                        onPointerDown={handleBurstHoldStart}
-                        onPointerUp={handleBurstHoldEnd}
-                        onPointerCancel={handleBurstHoldEnd}
-                        onContextMenu={(event) => event.preventDefault()}
-                        disabled={captureCooldown && !isBursting || isCompletingBurst || !cameraReady}
-                        className="w-full rounded-2xl bg-cyan-600 py-4 text-sm font-black text-white hover:bg-cyan-500 transition flex items-center justify-center gap-2 disabled:opacity-50 select-none touch-manipulation"
-                        style={{ userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}>
-                        <Camera size={18} /> {isCompletingBurst ? 'Complete' : isBursting ? `Capturing ${burstProgress}` : 'Hold for Burst'}
-                      </button>
+                      <div className="space-y-2">
+                        <button
+                          type="button"
+                          aria-describedby="smart-aisle-hold-help"
+                          aria-pressed={isBurstCapturing}
+                          onPointerDown={handleBurstHoldStart}
+                          onPointerUp={handleBurstHoldEnd}
+                          onPointerCancel={handleBurstHoldEnd}
+                          onLostPointerCapture={handleBurstHoldEnd}
+                          onContextMenu={(event) => event.preventDefault()}
+                          disabled={!canUseBurst || isProcessingCapture}
+                          className="w-full rounded-2xl bg-cyan-600 py-4 text-sm font-black text-white hover:bg-cyan-500 transition flex flex-col items-center justify-center gap-1 disabled:opacity-50 select-none"
+                          style={{ userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none', touchAction: 'none', WebkitTapHighlightColor: 'transparent' }}>
+                          <span className="flex items-center justify-center gap-2">
+                            <Camera size={18} /> {isBurstCapturing ? 'Capturing Burst...' : capturePhase === 'burst_paused' ? 'Burst Complete' : 'Hold for Burst'}
+                          </span>
+                          {capturePhase === 'burst_paused' && <span className="text-[10px] font-bold text-white/75">Hold again to add more photos</span>}
+                        </button>
+                        <p id="smart-aisle-hold-help" className="sr-only">
+                          Press and hold to continuously capture overlapping aisle photos. Release to pause.
+                        </p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button type="button" onClick={handleManualSectionCapture}
+                            disabled={!canUseBurst || isProcessingCapture || captureCooldown}
+                            className="rounded-xl border border-white/15 bg-white/10 py-2.5 text-[11px] font-bold text-white/80 disabled:opacity-40">
+                            Capture Next Photo
+                          </button>
+                          <button type="button" onClick={handleReachedEnd}
+                            disabled={!canReachEnd}
+                            className="rounded-xl border border-amber-500/30 bg-amber-500/15 py-2.5 text-[11px] font-black text-amber-300 disabled:opacity-40">
+                            Reached the End
+                          </button>
+                        </div>
+                      </div>
                     )}
 
                     {/* Progress strip */}
