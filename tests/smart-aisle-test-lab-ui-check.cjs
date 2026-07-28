@@ -148,19 +148,21 @@ async function expectText(page, text) {
     await expectText(page, 'Smart Aisle Scan');
     await page.getByRole('button', { name: /Begin Capture/i }).click();
     await page.getByRole('button', { name: /Capture Start Photo/i }).click();
-    const burstButton = page.getByRole('button', { name: /Capture Burst/i });
+    const burstButton = page.getByRole('button', { name: /Hold for Burst/i });
     await burstButton.waitFor({ state: 'visible', timeout: 10000 });
+    await page.waitForFunction(() => {
+      const buttons = Array.from(document.querySelectorAll('button'));
+      const button = buttons.find((node) => node.textContent?.includes('Hold for Burst'));
+      return button && !button.hasAttribute('disabled');
+    }, null, { timeout: 10000 });
     const burstBox = await burstButton.boundingBox();
-    if (!burstBox) throw new Error('Capture Burst button was not measurable');
+    if (!burstBox) throw new Error('Hold for Burst button was not measurable');
     await page.mouse.move(burstBox.x + burstBox.width / 2, burstBox.y + burstBox.height / 2);
     await page.mouse.down();
-    await page.waitForTimeout(650);
+    await page.waitForTimeout(900);
     const selectedText = await page.evaluate(() => window.getSelection()?.toString() || '');
     await page.mouse.up();
     if (selectedText.trim()) throw new Error(`Long-press selected text: ${selectedText}`);
-    await burstButton.click();
-    await page.waitForTimeout(1500);
-    await page.getByRole('button', { name: /I Reached the End - Stitch Photo/i }).click();
     await expectText(page, 'Aisle Stitch Review');
     await page.getByRole('button', { name: /Use Stitched Photo/i }).click();
     await expectText(page, 'Test Scorecard');

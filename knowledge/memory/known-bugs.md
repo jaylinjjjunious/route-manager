@@ -28,5 +28,5 @@ No currently reported bugs are blocking development or production use.
 
 ---
 
-**Last Updated:** 2026-07-28 (smart-aisle-burst-stitch-flow)
+**Last Updated:** 2026-07-28 (smart-aisle-hold-burst-release-flow)
 

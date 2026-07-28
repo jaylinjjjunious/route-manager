@@ -1,6 +1,6 @@
 # Responsive Behavior
 
-**Last Updated:** 2026-07-28 (smart-aisle-burst-stitch-flow)
+**Last Updated:** 2026-07-28 (smart-aisle-hold-burst-release-flow)
 **Related Source Files:** `src/components/*.tsx`, `src/index.css`
 
 ---

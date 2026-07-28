@@ -10,6 +10,7 @@
 - Camera lifecycle management must account for Safari's aggressive tab recycling.
 - Camera capture buttons should wait for a readable video frame before capturing; zero-size video frames can produce invalid data URLs in automated and real startup timing.
 - Long-press camera controls need CSS and pointer/context-menu guards (`select-none`, `touch-manipulation`, `user-select: none`, `-webkit-touch-callout: none`) to prevent mobile text selection while holding capture actions.
+- Press-and-hold camera flows should wait for the visible button to be enabled in browser tests because capture cooldown can leave the next button visible before it is interactive.
 
 ## Build and Deployment
 
@@ -36,5 +37,5 @@
 
 ---
 
-**Last Updated:** 2026-07-28 (smart-aisle-burst-stitch-flow)
+**Last Updated:** 2026-07-28 (smart-aisle-hold-burst-release-flow)
 

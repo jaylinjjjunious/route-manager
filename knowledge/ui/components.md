@@ -1,6 +1,6 @@
 # UI Components
 
-**Last Updated:** 2026-07-28 (smart-aisle-burst-stitch-flow)
+**Last Updated:** 2026-07-28 (smart-aisle-hold-burst-release-flow)
 **Related Source Files:** `src/components/*.tsx`, `src/assistant/*.tsx`
 
 ---
@@ -224,9 +224,9 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 |-------|-------|
 | **File** | `src/components/SmartAisleScan.tsx` |
 | **Props** | `jobId: string`, `jobName: string`, `isOpen: boolean`, `onClose: () => void`, `onComplete: (sessionId: string) => void` |
-| **Responsibility** | Camera-guided retail aisle photography system. Full capture workflow: setup (direction/side selection), full-screen camera capture with alignment overlay, camera-readiness guarded capture controls, 0.5x/1x zoom toggle (native applyConstraints + CSS fallback), start photo, burst section capture, reached-end ending capture, immediate canvas panorama stitching, stitched review, and stitched-photo submission. Capture buttons disable text selection and touch callout behavior during long press. Uses localStorage for session persistence with resume-on-reopen. |
+| **Responsibility** | Camera-guided retail aisle photography system. Full capture workflow: setup (direction/side selection), full-screen camera capture with alignment overlay, camera-readiness guarded capture controls, 0.5x/1x zoom toggle (native applyConstraints + CSS fallback), animated start photo into a numbered top-left proof tray, press-and-hold burst section capture, release-to-complete ending capture, immediate canvas panorama stitching, stitched review, and stitched-photo submission. Capture buttons disable text selection and touch callout behavior during long press. Uses localStorage for session persistence with resume-on-reopen. |
 
-**Primary phases:** setup → capturing → stitching → stitch_review → submitting. Legacy review/checklist phases remain typed for persisted-session compatibility, but the normal camera path now stitches directly from the reached-end button.
+**Primary phases:** setup → capturing → stitching → stitch_review → submitting. Legacy review/checklist phases remain typed for persisted-session compatibility, but the normal camera path now stitches directly when the user releases the hold-for-burst button.
 
 **Compatible job types:** `retail_audit`, `mystery_shop`, `merchandising`
 
@@ -238,6 +238,6 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 |-------|-------|
 | **File** | `src/components/SmartAisleScanTestLab.tsx` |
 | **Props** | `isOpen: boolean`, `onClose: () => void` |
-| **Responsibility** | Development/testing feature for Smart Aisle Scan. Home screen with Live Camera Practice, Imported Test Sequence, Controlled Test Scenarios, Test Markers, Sensor Diagnostics, Test Results/Scorecard, and Test Data Cleanup. Wraps real SmartAisleScan in test_lab mode, and the browser harness validates start capture, burst capture long-press no-selection behavior, reached-end stitching, and stitched-photo acceptance. Feature-gated via `VITE_ENABLE_SMART_AISLE_TEST_LAB` in dev builds only; production builds ignore the flag. |
+| **Responsibility** | Development/testing feature for Smart Aisle Scan. Home screen with Live Camera Practice, Imported Test Sequence, Controlled Test Scenarios, Test Markers, Sensor Diagnostics, Test Results/Scorecard, and Test Data Cleanup. Wraps real SmartAisleScan in test_lab mode, and the browser harness validates start capture, hold-for-burst long-press no-selection behavior, release-to-complete stitching, and stitched-photo acceptance. Feature-gated via `VITE_ENABLE_SMART_AISLE_TEST_LAB` in dev builds only; production builds ignore the flag. |
 | **Entry** | Settings > Developer Tools (only when flag enabled) |
 

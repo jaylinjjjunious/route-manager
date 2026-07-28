@@ -60,7 +60,7 @@
 
 ## Smart Aisle Scan
 - Camera-guided retail aisle photography system.
-- Full capture workflow: setup, full-screen camera with alignment overlay, start photo, burst section capture, reached-end ending capture, immediate canvas panorama stitching, stitched review, and stitched-photo submission.
+- Full capture workflow: setup, full-screen camera with alignment overlay, animated start-photo capture into a numbered top-left proof tray, hold-for-burst section capture while moving across the aisle, release-to-complete ending capture, immediate canvas panorama stitching, stitched review, and stitched-photo submission.
 - Compatible job types: retail_audit, mystery_shop, merchandising.
 - Entry point: JobDetailModal "Smart Aisle Scan" button + Tools tab job picker.
 - Full-screen camera: modal goes edge-to-edge during capture with overlay controls and camera-readiness guarded capture buttons.
@@ -81,17 +81,17 @@
 - Sensor Diagnostics: live camera and sensor values panel.
 - Test Results: scorecard, pass/fail, exportable JSON report.
 - Test Data Cleanup: delete test sessions without affecting real audit data.
-- Browser validation: local Playwright harness covers live camera practice through start photo, long-press burst button no-selection behavior, burst capture, reached-end stitching, stitched-photo acceptance, imported image processing, controlled scenario results, markers, diagnostics, cleanup, test/audit data isolation, and production build hiding.
+- Browser validation: local Playwright harness covers live camera practice through start photo, long-press hold-for-burst no-selection behavior, release-to-complete stitching, stitched-photo acceptance, imported image processing, controlled scenario results, markers, diagnostics, cleanup, test/audit data isolation, and production build hiding.
 - Data isolation: test sessions use `mode: 'test_lab'`, excluded from all production views.
 - Types: `AisleScanSessionMode`, `TestLabScreen`, `SmartAisleTestScenario`, `TestLabResult`, `TestLabScorecardItem`.
 
 ---
 
-**Last Updated:** 2026-07-28 (smart-aisle-burst-stitch-flow)
+**Last Updated:** 2026-07-28 (smart-aisle-hold-burst-release-flow)
 
 ## 2026-07-28
 
-- Smart Aisle Scan camera flow: replaced hold-to-capture with burst section capture, disabled text selection/callout on capture controls, made reached-end capture immediately stitch the full sequence, and added camera-readiness guards plus browser harness coverage for the live practice flow.
+- Smart Aisle Scan camera flow: added animated start-photo proof tray, changed burst capture to press-and-hold while moving across the aisle, release-to-complete stitching, disabled text selection/callout on capture controls, and kept camera-readiness guards plus browser harness coverage for the live practice flow.
 
 ## 2026-07-26
 
