@@ -4,6 +4,7 @@
 
 | SHA | Description |
 |-----|-------------|
+| 19df97a | Smart Aisle hold burst state machine with separate Reached End stitching |
 | 9735873 | Smart Aisle animated start photo and hold-burst release stitching |
 | c780c83 | Smart Aisle Scan burst capture and reached-end stitching flow |
 | a46fd6a | Smart Aisle Scan Test Lab dev-only production guard |
@@ -52,5 +53,5 @@ Plus approximately 45 earlier commits covering the full feature progression: hab
 
 ---
 
-**Last Updated:** 2026-07-28 (9735873)
+**Last Updated:** 2026-07-28 (19df97a)
 
