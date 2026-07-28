@@ -54,6 +54,16 @@ async function bootApp() {
   const root = createRoot(rootElement);
   root.render(<StartupScreen />);
 
+  if (window.location.pathname === '/real-device-verification') {
+    const { default: RealDeviceVerification } = await import('./components/RealDeviceVerification.tsx');
+    root.render(
+      <StrictMode>
+        <RealDeviceVerification />
+      </StrictMode>,
+    );
+    return;
+  }
+
   try {
     // Validate Supabase config is available before rendering
     await import('./lib/supabase.ts');
@@ -72,4 +82,12 @@ async function bootApp() {
 }
 
 bootApp();
+
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then(registration => {
+      registration.update().catch(() => {});
+    }).catch(() => {});
+  });
+}
 

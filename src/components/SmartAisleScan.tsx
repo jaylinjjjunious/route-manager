@@ -54,9 +54,16 @@ interface SmartAisleScanProps {
   isOpen: boolean;
   onClose: () => void;
   onComplete: (sessionId: string) => void;
+  onVerificationEvent?: (event: SmartAisleScanVerificationEvent) => void;
 }
 
-export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComplete }: SmartAisleScanProps) {
+export interface SmartAisleScanVerificationEvent {
+  type: string;
+  timestamp: string;
+  detail?: Record<string, unknown>;
+}
+
+export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComplete, onVerificationEvent }: SmartAisleScanProps) {
   const [phase, setPhase] = useState<SmartAisleScanPhase>('setup');
   const [capturePhase, setCapturePhase] = useState<CameraCapturePhase>('ready_for_start');
   const [session, setSession] = useState<AisleScanSession | null>(null);
@@ -93,9 +100,20 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
   const captureWritePromiseRef = useRef<Promise<AisleScanSession | null> | null>(null);
   const stitchRequestedRef = useRef(false);
 
+  const emitVerificationEvent = useCallback((type: string, detail?: Record<string, unknown>) => {
+    onVerificationEvent?.({ type, timestamp: new Date().toISOString(), detail });
+  }, [onVerificationEvent]);
+
   const transitionCapturePhase = useCallback((next: CameraCapturePhase) => {
-    setCapturePhase(prev => CAPTURE_TRANSITIONS[prev].includes(next) ? next : prev);
-  }, []);
+    setCapturePhase(prev => {
+      if (!CAPTURE_TRANSITIONS[prev].includes(next)) {
+        emitVerificationEvent('capture_phase_transition_blocked', { from: prev, to: next });
+        return prev;
+      }
+      emitVerificationEvent('capture_phase_transition', { from: prev, to: next });
+      return next;
+    });
+  }, [emitVerificationEvent]);
 
   const flashShutter = useCallback(() => {
     setShutterFlash(true);
@@ -116,6 +134,7 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
   const stopActiveBurst = useCallback((completed: boolean) => {
     burstHoldActiveRef.current = false;
     clearBurstTimers();
+    emitVerificationEvent('burst_stop_requested', { completed, capturePhase });
     if (capturePhase === 'burst_capturing') {
       transitionCapturePhase(completed ? 'burst_paused' : 'ready_for_burst');
     }
@@ -124,7 +143,7 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
     } else if (capturePhase === 'ready_for_burst' || capturePhase === 'burst_capturing') {
       setBurstStatusMessage('Hold the button to capture continuously.');
     }
-  }, [capturePhase, clearBurstTimers, transitionCapturePhase]);
+  }, [capturePhase, clearBurstTimers, emitVerificationEvent, transitionCapturePhase]);
   // Restore existing session
   useEffect(() => {
     if (!isOpen) return;
@@ -180,6 +199,17 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
         videoRef.current.srcObject = s;
         await videoRef.current.play();
         setCameraReady(videoRef.current.videoWidth > 0 && videoRef.current.videoHeight > 0);
+        emitVerificationEvent('camera_stream_ready', {
+          videoWidth: videoRef.current.videoWidth,
+          videoHeight: videoRef.current.videoHeight,
+          tracks: s.getVideoTracks().map(track => ({
+            label: track.label,
+            readyState: track.readyState,
+            facingMode: track.getSettings?.().facingMode,
+            width: track.getSettings?.().width,
+            height: track.getSettings?.().height,
+          })),
+        });
       }
       // Apply zoom
       const track = s.getVideoTracks()[0];
@@ -207,6 +237,7 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
         }
       }
     } catch (err: any) {
+      emitVerificationEvent('camera_stream_error', { name: err.name, message: err.message });
       if (err.name === 'NotAllowedError') {
         setCameraError('Camera permission denied. Please allow camera access in your browser settings.');
       } else if (err.name === 'NotFoundError') {
@@ -215,7 +246,7 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
         setCameraError(`Camera error: ${err.message}`);
       }
     }
-  }, [zoomLevel]);
+  }, [zoomLevel, emitVerificationEvent]);
 
   const toggleZoom = useCallback(async () => {
     const next = zoomLevel === '1' ? '0.5' : '1';
@@ -245,7 +276,7 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
         }
       }
     }
-  }, [zoomLevel]);
+  }, [zoomLevel, emitVerificationEvent]);
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
@@ -294,6 +325,7 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
     if (!videoRef.current || !session || captureWritePromiseRef.current) return null;
 
     const task = (async () => {
+      emitVerificationEvent('photo_capture_write_started', { role });
       setCaptureCooldown(true);
       const ready = await waitForCameraFrame();
       if (!ready) {
@@ -328,6 +360,15 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
       };
 
       savePhoto(photo);
+      emitVerificationEvent('photo_saved', {
+        id: photo.id,
+        sequenceNumber: photo.sequenceNumber,
+        role: photo.role,
+        captureMethod: photo.captureMethod,
+        warningCount: validation.warnings.length,
+        width,
+        height,
+      });
       flashShutter();
       const updated = updateSession(session.id, {
         photoSequence: [...(prevSession?.photoSequence || []), photo.id],
@@ -351,10 +392,11 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
       captureWritePromiseRef.current = null;
       setCaptureCooldown(false);
     }
-  }, [session, direction, aisleSide, checklist, waitForCameraFrame, flashShutter]);
+  }, [session, direction, aisleSide, checklist, waitForCameraFrame, flashShutter, emitVerificationEvent]);
 
   const handleCaptureStartPhoto = useCallback(async () => {
     if (capturePhase !== 'ready_for_start' || captureCooldown || !cameraReady) return;
+    emitVerificationEvent('start_photo_tap', { capturePhase, cameraReady });
     transitionCapturePhase('capturing_start');
     setBurstStatusMessage('');
     const updated = await capturePhoto('beginning');
@@ -369,7 +411,7 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
     } else {
       transitionCapturePhase('ready_for_start');
     }
-  }, [capturePhase, captureCooldown, cameraReady, capturePhoto, transitionCapturePhase]);
+  }, [capturePhase, captureCooldown, cameraReady, capturePhoto, transitionCapturePhase, emitVerificationEvent]);
 
   const captureBurstFrame = useCallback(async () => {
     if (!session || !burstHoldActiveRef.current || captureWritePromiseRef.current) return;
@@ -391,6 +433,12 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
   const handleBurstHoldStart = useCallback((event: ReactPointerEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.currentTarget.setPointerCapture?.(event.pointerId);
+    emitVerificationEvent('burst_pointer_down', {
+      pointerType: event.pointerType,
+      pointerId: event.pointerId,
+      capturePhase,
+      cameraReady,
+    });
     if (!session || !cameraReady || captureWritePromiseRef.current) return;
     if (capturePhase !== 'ready_for_burst' && capturePhase !== 'burst_paused') return;
 
@@ -404,19 +452,27 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
       if (!burstHoldActiveRef.current) return;
       burstStartedRef.current = true;
       setBurstProgress(0);
+      emitVerificationEvent('burst_threshold_met', { thresholdMs: HOLD_TO_BURST_THRESHOLD_MS });
       transitionCapturePhase('burst_capturing');
       void captureBurstFrame();
     }, HOLD_TO_BURST_THRESHOLD_MS);
-  }, [session, cameraReady, capturePhase, clearBurstTimers, transitionCapturePhase, captureBurstFrame]);
+  }, [session, cameraReady, capturePhase, clearBurstTimers, transitionCapturePhase, captureBurstFrame, emitVerificationEvent]);
 
-  const handleBurstHoldEnd = useCallback(() => {
+  const handleBurstHoldEnd = useCallback((event?: ReactPointerEvent<HTMLButtonElement>) => {
+    emitVerificationEvent('burst_pointer_end', {
+      eventType: event?.type || 'unknown',
+      pointerType: event?.pointerType,
+      pointerId: event?.pointerId,
+      started: burstStartedRef.current,
+      savedThisHold: burstSavedThisHoldRef.current,
+    });
     const savedCount = burstSavedThisHoldRef.current;
     const started = burstStartedRef.current;
     stopActiveBurst(started && savedCount > 0);
     if (!started || savedCount === 0) {
       setBurstStatusMessage('Hold the button to capture continuously.');
     }
-  }, [stopActiveBurst]);
+  }, [stopActiveBurst, emitVerificationEvent]);
 
   const handleManualSectionCapture = useCallback(async () => {
     if (!session || captureCooldown || !cameraReady) return;
@@ -424,10 +480,11 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
     setBurstStatusMessage('');
     const updated = await capturePhoto('section');
     if (updated) {
+      emitVerificationEvent('manual_section_photo_saved');
       transitionCapturePhase('burst_paused');
       setBurstStatusMessage('Burst Complete');
     }
-  }, [session, captureCooldown, cameraReady, capturePhase, capturePhoto, transitionCapturePhase]);
+  }, [session, captureCooldown, cameraReady, capturePhase, capturePhoto, transitionCapturePhase, emitVerificationEvent]);
 
   // Auto-capture loop
   useEffect(() => {
@@ -452,6 +509,7 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
   // Stitch
   const handleStitch = async () => {
     if (!session) return;
+    emitVerificationEvent('stitch_started', { sessionId: session.id });
     transitionCapturePhase('stitching');
     setPhase('stitching');
     setStitchProgress('Preparing burst photos...');
@@ -462,6 +520,11 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
     await new Promise(r => setTimeout(r, 150));
 
     const preview = await stitchPhotos(activePhotos);
+    emitVerificationEvent('stitch_finished', {
+      sessionId: session.id,
+      photoCount: activePhotos.length,
+      hasPreview: Boolean(preview),
+    });
     setStitchProgress('Building stitched photo...');
     await new Promise(r => setTimeout(r, 150));
 
@@ -500,6 +563,10 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
     if (!hasBeginning || !hasSection) return;
 
     stitchRequestedRef.current = true;
+    emitVerificationEvent('reached_end_tapped', {
+      sessionId: session.id,
+      photoCount: activePhotos.length,
+    });
     burstHoldActiveRef.current = false;
     clearBurstTimers();
     transitionCapturePhase('ending');
@@ -509,7 +576,7 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
     stopCamera();
     transitionCapturePhase('stitching');
     await handleStitch();
-  }, [session, capturePhoto, clearBurstTimers, stopCamera, transitionCapturePhase]);
+  }, [session, capturePhoto, clearBurstTimers, stopCamera, transitionCapturePhase, emitVerificationEvent]);
 
   const handleUseStitchedPhoto = () => {
     if (!session) return;
@@ -525,6 +592,7 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
       },
       override: null,
     });
+    emitVerificationEvent('stitched_photo_accepted', { sessionId: session.id });
     onComplete(session.id);
   };
 

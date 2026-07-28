@@ -152,6 +152,17 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", time: new Date().toISOString() });
 });
 
+app.get("/api/build-info", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.json({
+    app: "All in One 667",
+    version: process.env.npm_package_version || "0.0.0",
+    commitSha: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT_SHA || "local",
+    railwayDeploymentId: process.env.RAILWAY_DEPLOYMENT_ID || null,
+    builtAt: process.env.RAILWAY_DEPLOYMENT_CREATED_AT || new Date().toISOString(),
+    environment: process.env.NODE_ENV || "development",
+  });
+});
 // Debug auth check endpoint
 app.get("/api/debug/auth-check", async (req, res) => {
   const authHeader = req.headers.authorization;

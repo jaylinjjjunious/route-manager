@@ -9,11 +9,9 @@
 | P003 | High | No per-user data isolation — all proofs in single namespace | Open |
 | P004 | Medium | No multi-user support — single-user localStorage bound | Open |
 | P005 | Low | No automated tests for camera/barcode/upload flows | Open |
+| P007 | Medium | Smart Aisle iPhone Safari/PWA real-device evidence is pending; direct automation is blocked until a controllable iPhone or provider credentials are available, and tester-assisted verification report is the current path | Open |
 | P006 | Low | No error monitoring or alerting | Open |
 
-## No Active Bugs
-
-No currently reported bugs are blocking development or production use.
 
 ## Resolved Bugs
 
@@ -28,5 +26,5 @@ No currently reported bugs are blocking development or production use.
 
 ---
 
-**Last Updated:** 2026-07-28 (smart-aisle-hold-burst-release-flow)
+**Last Updated:** 2026-07-28 (smart-aisle-real-device-verification)
 

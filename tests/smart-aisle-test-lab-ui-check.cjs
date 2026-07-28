@@ -188,6 +188,18 @@ async function expectText(page, text) {
     await expectText(page, 'Test Scorecard');
     await page.getByRole('button', { name: /Back/i }).click();
 
+    const verificationUrl = new URL('/real-device-verification?access=smart-aisle-iphone', APP_URL).toString();
+    await page.goto(verificationUrl, { waitUntil: 'networkidle' });
+    await expectText(page, 'Smart Aisle Real iPhone Verification');
+    await expectText(page, 'Privacy-Safe Report');
+    const reportText = await page.locator('textarea').inputValue();
+    const report = JSON.parse(reportText);
+    if (!report.device || !Array.isArray(report.manualChecks) || report.events.some((event) => JSON.stringify(event).includes('data:image'))) {
+      throw new Error('Real-device verification report shape failed: ' + reportText.slice(0, 500));
+    }
+
+    await page.goto(APP_URL, { waitUntil: 'networkidle' });
+
     await page.getByRole('button', { name: /Import a Test Photo Sequence/i }).click();
     await expectText(page, 'Import Test Sequence');
     await page.locator('input[type="file"]').setInputFiles([

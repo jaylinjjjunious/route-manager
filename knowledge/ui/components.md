@@ -1,6 +1,6 @@
 # UI Components
 
-**Last Updated:** 2026-07-28 (smart-aisle-hold-burst-release-flow)
+**Last Updated:** 2026-07-28 (smart-aisle-real-device-verification)
 **Related Source Files:** `src/components/*.tsx`, `src/assistant/*.tsx`
 
 ---
@@ -232,12 +232,20 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 
 **Entry point:** `JobDetailModal` — "Smart Aisle Scan" button appears above admin row for compatible job types.
 
+
+### RealDeviceVerification
+
+| Field | Value |
+|-------|-------|
+| **File** | `src/components/RealDeviceVerification.tsx` |
+| **Route** | `/real-device-verification?access=smart-aisle-iphone` |
+| **Responsibility** | Protected tester-assisted real-iPhone verification panel for Smart Aisle Scan. Bypasses auth, uses the existing `SmartAisleScan` component with isolated `test_lab_real_device_iphone_verification` data, records privacy-safe event evidence, displays build commit/deployment info, provides the exact Safari/PWA test script, captures manual checklist results, and exports a report without photo contents. |
 ### SmartAisleScanTestLab
 
 | Field | Value |
 |-------|-------|
 | **File** | `src/components/SmartAisleScanTestLab.tsx` |
 | **Props** | `isOpen: boolean`, `onClose: () => void` |
-| **Responsibility** | Development/testing feature for Smart Aisle Scan. Home screen with Live Camera Practice, Imported Test Sequence, Controlled Test Scenarios, Test Markers, Sensor Diagnostics, Test Results/Scorecard, and Test Data Cleanup. Wraps real SmartAisleScan in test_lab mode, and the browser harness validates start capture, hold-for-burst long-press no-selection behavior, release-to-pause Burst Complete feedback plus Reached the End stitching, and stitched-photo acceptance. Feature-gated via `VITE_ENABLE_SMART_AISLE_TEST_LAB` in dev builds only; production builds ignore the flag. |
+| **Responsibility** | Development/testing feature for Smart Aisle Scan. Home screen with Live Camera Practice, Imported Test Sequence, Controlled Test Scenarios, Test Markers, Sensor Diagnostics, Test Results/Scorecard, and Test Data Cleanup. Wraps real SmartAisleScan in test_lab mode, and the browser harness validates start capture, hold-for-burst long-press no-selection behavior, pointer cancel/lost-capture interruption paths, release-to-pause Burst Complete feedback plus Reached the End stitching, and stitched-photo acceptance. Feature-gated via `VITE_ENABLE_SMART_AISLE_TEST_LAB` in dev builds only; production builds ignore the flag. |
 | **Entry** | Settings > Developer Tools (only when flag enabled) |
 

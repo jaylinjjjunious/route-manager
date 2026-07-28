@@ -81,7 +81,7 @@ Key state groups:
 
 ### App Icons
 
-The official application icon source is preserved at `public/branding/all-in-one-667-source-icon.png`. Safari iPhone home-screen installation uses `public/apple-touch-icon.png` through the `<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />` tag in `index.html`. The app header reuses `public/icons/icon-192.png` for the small logo next to the `All in One 667` title.
+The official application icon source is preserved at `public/branding/all-in-one-667-source-icon.png`. Safari iPhone home-screen installation uses `public/apple-touch-icon.png` through the `<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />` tag in `index.html`. The app also ships `public/manifest.webmanifest` and a no-stale `public/sw.js` service worker for installed Home Screen PWA verification. The app header reuses `public/icons/icon-192.png` for the small logo next to the `All in One 667` title.
 
 Generated icon outputs:
 - `public/apple-touch-icon.png` - 180x180 for iPhone Safari Add to Home Screen
@@ -110,12 +110,13 @@ Targets modern mobile browsers (iOS Safari, Android Chrome) and desktop (Chrome,
 ## Related Source Files
 
 - `src/App.tsx` — Main application shell, Dashboard route cards, compact route job detail panel
-- `src/main.tsx` — Entry point (62 lines)
+- `src/main.tsx` — Entry point, auth bootstrap, real-device verification route bypass, and production service-worker registration
 - `src/index.css` — Styles (249 lines)
 - `src/types.ts` — Shared types (132 lines)
-- `index.html` - Vite HTML shell and app icon link tags
+- `index.html` - Vite HTML shell, app icon, manifest, and iPhone PWA meta tags
 - `public/branding/all-in-one-667-source-icon.png` - preserved official app icon source
-- `public/apple-touch-icon.png`, `public/icons/`, `public/favicon-*.png` - generated icon outputs
+- public/apple-touch-icon.png, public/icons/, public/favicon-*.png - generated icon outputs
+- public/manifest.webmanifest, public/sw.js - installed-PWA manifest and no-stale service worker
 
 ## Related Knowledge
 
@@ -126,4 +127,4 @@ Targets modern mobile browsers (iOS Safari, Android Chrome) and desktop (Chrome,
 
 ## Last Updated
 
-2026-07-22 (dashboard-route-job-details)
+2026-07-28 (smart-aisle-real-device-verification)
