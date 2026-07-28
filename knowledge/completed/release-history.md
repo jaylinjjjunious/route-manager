@@ -4,6 +4,7 @@
 
 | SHA | Description |
 |-----|-------------|
+| 9735873 | Smart Aisle animated start photo and hold-burst release stitching |
 | c780c83 | Smart Aisle Scan burst capture and reached-end stitching flow |
 | a46fd6a | Smart Aisle Scan Test Lab dev-only production guard |
 | 9e2e763 | Smart Aisle Scan Test Lab import validation fix and browser harness check |
@@ -51,5 +52,5 @@ Plus approximately 45 earlier commits covering the full feature progression: hab
 
 ---
 
-**Last Updated:** 2026-07-28 (c780c83)
+**Last Updated:** 2026-07-28 (9735873)
 
