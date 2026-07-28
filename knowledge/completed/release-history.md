@@ -4,6 +4,7 @@
 
 | SHA | Description |
 |-----|-------------|
+| c780c83 | Smart Aisle Scan burst capture and reached-end stitching flow |
 | a46fd6a | Smart Aisle Scan Test Lab dev-only production guard |
 | 9e2e763 | Smart Aisle Scan Test Lab import validation fix and browser harness check |
 | 6a45049 | Smart Aisle Scan Test Lab (feature flag, live camera, import, scenarios, markers, diagnostics, results, cleanup) |
@@ -50,4 +51,5 @@ Plus approximately 45 earlier commits covering the full feature progression: hab
 
 ---
 
-**Last Updated:** 2026-07-26 (a46fd6a)
+**Last Updated:** 2026-07-28 (c780c83)
+
