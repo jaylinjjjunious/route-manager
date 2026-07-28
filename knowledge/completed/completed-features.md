@@ -60,10 +60,10 @@
 
 ## Smart Aisle Scan
 - Camera-guided retail aisle photography system.
-- Full capture workflow: setup, camera capture with alignment overlay, hold-to-capture auto-capture, beginning/ending/context photo roles, coverage review, canvas panorama stitching, stitch review, final checklist, manual override.
+- Full capture workflow: setup, full-screen camera with alignment overlay, start photo, burst section capture, reached-end ending capture, immediate canvas panorama stitching, stitched review, and stitched-photo submission.
 - Compatible job types: retail_audit, mystery_shop, merchandising.
 - Entry point: JobDetailModal "Smart Aisle Scan" button + Tools tab job picker.
-- Full-screen camera: modal goes edge-to-edge during capture/ending/context phases with overlay controls.
+- Full-screen camera: modal goes edge-to-edge during capture with overlay controls and camera-readiness guarded capture buttons.
 - 0.5x/1x zoom toggle with native track.applyConstraints + CSS scale fallback.
 - Session persistence: localStorage with resume-on-reopen.
 - Quality analysis: brightness, motion, level detection.
@@ -81,14 +81,17 @@
 - Sensor Diagnostics: live camera and sensor values panel.
 - Test Results: scorecard, pass/fail, exportable JSON report.
 - Test Data Cleanup: delete test sessions without affecting real audit data.
-- Browser validation: local Playwright harness covers practice setup, imported image processing, controlled scenario results, markers, diagnostics, cleanup, test/audit data isolation, and production build hiding.
+- Browser validation: local Playwright harness covers live camera practice through start photo, long-press burst button no-selection behavior, burst capture, reached-end stitching, stitched-photo acceptance, imported image processing, controlled scenario results, markers, diagnostics, cleanup, test/audit data isolation, and production build hiding.
 - Data isolation: test sessions use `mode: 'test_lab'`, excluded from all production views.
 - Types: `AisleScanSessionMode`, `TestLabScreen`, `SmartAisleTestScenario`, `TestLabResult`, `TestLabScorecardItem`.
 
 ---
 
-**Last Updated:** 2026-07-26 (smart-aisle-scan-test-lab)
+**Last Updated:** 2026-07-28 (smart-aisle-burst-stitch-flow)
 
+## 2026-07-28
+
+- Smart Aisle Scan camera flow: replaced hold-to-capture with burst section capture, disabled text selection/callout on capture controls, made reached-end capture immediately stitch the full sequence, and added camera-readiness guards plus browser harness coverage for the live practice flow.
 
 ## 2026-07-26
 
@@ -97,3 +100,4 @@
 ## 2026-07-22
 
 - Dashboard authoritative route interface: standalone Route page and navigation destination retired; shared route calculations and Dashboard route controls preserved.
+

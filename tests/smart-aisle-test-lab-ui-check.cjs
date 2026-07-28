@@ -72,7 +72,10 @@ async function expectText(page, text) {
 }
 
 (async () => {
-  const launchOptions = { headless: true };
+  const launchOptions = {
+    headless: true,
+    args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'],
+  };
   if (fs.existsSync(CHROME_PATH)) launchOptions.executablePath = CHROME_PATH;
 
   const browser = await chromium.launch(launchOptions);
@@ -141,6 +144,26 @@ async function expectText(page, text) {
     await page.getByRole('button', { name: /Start Live Camera Practice/i }).click();
     await expectText(page, 'Practice Setup');
     await expectText(page, 'Recommended Setup');
+    await page.getByRole('button', { name: /Begin Live Practice/i }).click();
+    await expectText(page, 'Smart Aisle Scan');
+    await page.getByRole('button', { name: /Begin Capture/i }).click();
+    await page.getByRole('button', { name: /Capture Start Photo/i }).click();
+    const burstButton = page.getByRole('button', { name: /Capture Burst/i });
+    await burstButton.waitFor({ state: 'visible', timeout: 10000 });
+    const burstBox = await burstButton.boundingBox();
+    if (!burstBox) throw new Error('Capture Burst button was not measurable');
+    await page.mouse.move(burstBox.x + burstBox.width / 2, burstBox.y + burstBox.height / 2);
+    await page.mouse.down();
+    await page.waitForTimeout(650);
+    const selectedText = await page.evaluate(() => window.getSelection()?.toString() || '');
+    await page.mouse.up();
+    if (selectedText.trim()) throw new Error(`Long-press selected text: ${selectedText}`);
+    await burstButton.click();
+    await page.waitForTimeout(1500);
+    await page.getByRole('button', { name: /I Reached the End - Stitch Photo/i }).click();
+    await expectText(page, 'Aisle Stitch Review');
+    await page.getByRole('button', { name: /Use Stitched Photo/i }).click();
+    await expectText(page, 'Test Scorecard');
     await page.getByRole('button', { name: /Back/i }).click();
 
     await page.getByRole('button', { name: /Import a Test Photo Sequence/i }).click();
@@ -222,3 +245,4 @@ async function expectText(page, text) {
   console.error(error);
   process.exit(1);
 });
+

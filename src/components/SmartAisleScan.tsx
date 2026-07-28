@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import {
   X, Camera, ArrowRight, ArrowLeft, CheckCircle2, AlertTriangle,
   RefreshCw, Eye, Upload, ChevronRight,
-  MapPin, ShieldCheck, Info, ZoomIn,
+  ShieldCheck, Info,
 } from 'lucide-react';
 import type {
   AisleScanSession,
@@ -36,9 +36,10 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
   const [aisleSide, setAisleSide] = useState<AisleSide>('both');
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [cameraReady, setCameraReady] = useState(false);
   const [lastAnalysisUrl, setLastAnalysisUrl] = useState<string | null>(null);
-  const [holdTimer, setHoldTimer] = useState(0);
-  const [isHolding, setIsHolding] = useState(false);
+  const [burstProgress, setBurstProgress] = useState(0);
+  const [isBursting, setIsBursting] = useState(false);
   const [captureCooldown, setCaptureCooldown] = useState(false);
   const [currentWarnings, setCurrentWarnings] = useState<string[]>([]);
   const [stitchProgress, setStitchProgress] = useState('');
@@ -52,7 +53,6 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const holdIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scanLoopRef = useRef<number>(0);
 
   // Restore existing session
@@ -83,6 +83,7 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
   // Camera
   const startCamera = useCallback(async (zoom?: '1' | '0.5') => {
     setCameraError(null);
+    setCameraReady(false);
     const z = zoom || zoomLevel;
     try {
       const s = await navigator.mediaDevices.getUserMedia({
@@ -94,6 +95,7 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
       if (videoRef.current) {
         videoRef.current.srcObject = s;
         await videoRef.current.play();
+        setCameraReady(videoRef.current.videoWidth > 0 && videoRef.current.videoHeight > 0);
       }
       // Apply zoom
       const track = s.getVideoTracks()[0];
@@ -171,7 +173,7 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
       videoRef.current.style.transformOrigin = '';
     }
     setStream(null);
-    if (holdIntervalRef.current) clearInterval(holdIntervalRef.current);
+    setCameraReady(false);
     if (scanLoopRef.current) cancelAnimationFrame(scanLoopRef.current);
   }, []);
 
@@ -184,10 +186,27 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
     await startCamera();
   };
 
+  const waitForCameraFrame = useCallback(async () => {
+    const video = videoRef.current;
+    if (!video) return false;
+    for (let i = 0; i < 40; i++) {
+      if (video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
+        setCameraReady(true);
+        return true;
+      }
+      await new Promise(r => setTimeout(r, 50));
+    }
+    return false;
+  }, []);
+
   // Capture photo
-  const handleCapture = useCallback(async (role: PhotoRole) => {
-    if (!videoRef.current || !session) return;
-    setCaptureCooldown(true);
+  const capturePhoto = useCallback(async (role: PhotoRole): Promise<AisleScanSession | null> => {
+    if (!videoRef.current || !session) return null;
+    const ready = await waitForCameraFrame();
+    if (!ready) {
+      setCameraError('Camera is still warming up. Try again in a moment.');
+      return null;
+    }
 
     const dataUrl = captureFrameFromVideo(videoRef.current);
     const { dataUrl: analysisUrl, width, height } = await createAnalysisCopy(dataUrl);
@@ -222,24 +241,42 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
         ...checklist,
         beginningCaptured: checklist.beginningCaptured || role === 'beginning',
         endingCaptured: checklist.endingCaptured || role === 'ending',
-        contextPhotoCaptured: checklist.contextPhotoCaptured || role === 'context',
+        contextPhotoCaptured: true,
       },
     });
     if (updated) setSession(updated);
     setLastAnalysisUrl(analysisUrl);
     setCurrentWarnings(validation.warnings);
+    return updated;
+  }, [session, direction, aisleSide, checklist, waitForCameraFrame]);
 
-    if (role === 'beginning') {
-      // nothing special
-    } else if (role === 'ending') {
-      setPhase('context');
-    } else if (role === 'context') {
-      setPhase('coverage_review');
-      stopCamera();
+  const handleCapture = useCallback(async (role: PhotoRole) => {
+    setCaptureCooldown(true);
+    await capturePhoto(role);
+    setTimeout(() => setCaptureCooldown(false), SCAN_CONFIG.autoCaptureCooldownMs);
+  }, [capturePhoto]);
+
+  const handleBurstCapture = useCallback(async () => {
+    if (captureCooldown || isBursting) return;
+    setIsBursting(true);
+    setCaptureCooldown(true);
+    setBurstProgress(0);
+
+    const burstCount = 3;
+    for (let i = 0; i < burstCount; i++) {
+      await capturePhoto('section');
+      setBurstProgress(i + 1);
+      if (i < burstCount - 1) {
+        await new Promise(r => setTimeout(r, 220));
+      }
     }
 
-    setTimeout(() => setCaptureCooldown(false), SCAN_CONFIG.autoCaptureCooldownMs);
-  }, [session, direction, aisleSide, checklist, stopCamera]);
+    setIsBursting(false);
+    setTimeout(() => {
+      setCaptureCooldown(false);
+      setBurstProgress(0);
+    }, 450);
+  }, [captureCooldown, isBursting, capturePhoto]);
 
   // Auto-capture loop
   useEffect(() => {
@@ -256,24 +293,6 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
     return () => { if (scanLoopRef.current) cancelAnimationFrame(scanLoopRef.current); };
   }, [phase, stream, captureCooldown, session]);
 
-  // Hold timer for auto-capture
-  useEffect(() => {
-    if (!isHolding || captureCooldown) {
-      if (holdIntervalRef.current) clearInterval(holdIntervalRef.current);
-      setHoldTimer(0);
-      return;
-    }
-    let elapsed = 0;
-    holdIntervalRef.current = setInterval(() => {
-      elapsed += 100;
-      setHoldTimer(elapsed);
-      if (elapsed >= SCAN_CONFIG.steadyHoldMs) {
-        handleCapture('section');
-        setIsHolding(false);
-      }
-    }, 100);
-    return () => { if (holdIntervalRef.current) clearInterval(holdIntervalRef.current); };
-  }, [isHolding, captureCooldown, handleCapture]);
 
   // Coverage review
   const photos = session ? getActivePhotos(session.id) : [];
@@ -283,27 +302,68 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
   const handleStitch = async () => {
     if (!session) return;
     setPhase('stitching');
-    setStitchProgress('Preparing images...');
-    await new Promise(r => setTimeout(r, 300));
+    setStitchProgress('Preparing burst photos...');
+    await new Promise(r => setTimeout(r, 200));
 
     const activePhotos = getActivePhotos(session.id);
-    setStitchProgress(`Matching ${activePhotos.length} sections...`);
-    await new Promise(r => setTimeout(r, 200));
+    setStitchProgress(`Stitching ${activePhotos.length} photos...`);
+    await new Promise(r => setTimeout(r, 150));
 
-    setStitchProgress('Aligning photos...');
     const preview = await stitchPhotos(activePhotos);
-    setStitchProgress('Building aisle preview...');
-    await new Promise(r => setTimeout(r, 200));
+    setStitchProgress('Building stitched photo...');
+    await new Promise(r => setTimeout(r, 150));
 
     const updated = updateSession(session.id, {
       stitchStatus: preview ? 'successful' : 'failed',
       stitchedPreviewDataUrl: preview,
       stitchVersion: (session.stitchVersion || 0) + 1,
       status: 'stitch_review',
+      reviewConfirmedAt: preview ? new Date().toISOString() : null,
+      checklist: {
+        ...session.checklist,
+        beginningCaptured: activePhotos.some(p => p.role === 'beginning'),
+        endingCaptured: activePhotos.some(p => p.role === 'ending'),
+        continuousSequence: true,
+        overlapPresent: activePhotos.length > 1,
+        contextPhotoCaptured: true,
+        warningsReviewed: true,
+        stitchReviewed: !!preview,
+        criticalFailuresResolved: true,
+      },
     });
-    if (updated) setSession(updated);
+    if (updated) {
+      setSession(updated);
+      setChecklist(updated.checklist);
+      setConfirmStitch(!!preview);
+    }
     setPhase('stitch_review');
     setStitchProgress('');
+  };
+
+  const handleReachedEnd = useCallback(async () => {
+    if (!session || captureCooldown || isBursting) return;
+    setCaptureCooldown(true);
+    await capturePhoto('ending');
+    stopCamera();
+    await handleStitch();
+    setCaptureCooldown(false);
+  }, [session, captureCooldown, isBursting, capturePhoto, stopCamera]);
+
+  const handleUseStitchedPhoto = () => {
+    if (!session) return;
+    updateSession(session.id, {
+      status: 'submitted',
+      completedAt: new Date().toISOString(),
+      reviewConfirmedAt: session.reviewConfirmedAt || new Date().toISOString(),
+      checklist: {
+        ...session.checklist,
+        stitchReviewed: true,
+        warningsReviewed: true,
+        criticalFailuresResolved: true,
+      },
+      override: null,
+    });
+    onComplete(session.id);
   };
 
   // Final submit
@@ -329,7 +389,6 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
       } : null,
     });
     onComplete(session.id);
-    onClose();
   };
 
   // Toggle checklist
@@ -340,7 +399,7 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
   // Modal
   if (!isOpen) return null;
 
-  const isCapturing = phase === 'capturing' || phase === 'ending' || phase === 'context';
+  const isCapturing = phase === 'capturing';
 
   const modal = (
     <div className={`fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-md ${isCapturing ? 'p-0' : 'p-2'}`} onClick={onClose}>
@@ -436,7 +495,7 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
               ) : (
                 <>
                   {/* Camera feed fills entire area */}
-                  <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover" />
+                  <video ref={videoRef} autoPlay playsInline muted onLoadedMetadata={() => setCameraReady(true)} onCanPlay={() => setCameraReady(true)} className="absolute inset-0 w-full h-full object-cover" />
                   <canvas ref={canvasRef} className="hidden" />
 
                   {/* Gradient overlays for readability */}
@@ -475,11 +534,11 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
                     <div className="absolute bottom-1/3 left-0 right-0 h-px bg-cyan-400/25" />
                   </div>
 
-                  {/* Hold progress indicator */}
-                  {isHolding && (
-                    <div className="absolute bottom-36 left-1/2 -translate-x-1/2 z-10">
-                      <div className="h-2 w-40 rounded-full bg-black/60 overflow-hidden">
-                        <div className="h-full bg-cyan-400 transition-all" style={{ width: `${(holdTimer / SCAN_CONFIG.steadyHoldMs) * 100}%` }} />
+                  {/* Burst progress indicator */}
+                  {isBursting && (
+                    <div className="absolute bottom-36 left-1/2 -translate-x-1/2 z-10 select-none">
+                      <div className="rounded-full bg-black/70 px-4 py-2 text-xs font-black text-cyan-200 shadow-lg">
+                        Capturing burst {burstProgress}/3
                       </div>
                     </div>
                   )}
@@ -489,34 +548,31 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
                     {/* Capture buttons */}
                     {photos.length === 0 ? (
                       <button onClick={() => handleCapture('beginning')}
-                        className="w-full rounded-2xl bg-emerald-600 py-4 text-sm font-black text-white hover:bg-emerald-500 transition flex items-center justify-center gap-2">
-                        <Camera size={18} /> Capture Beginning
+                        disabled={captureCooldown || !cameraReady}
+                        className="w-full rounded-2xl bg-emerald-600 py-4 text-sm font-black text-white hover:bg-emerald-500 transition flex items-center justify-center gap-2 disabled:opacity-50 select-none touch-manipulation"
+                        style={{ userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}>
+                        <Camera size={18} /> {cameraReady ? 'Capture Start Photo' : 'Camera Warming Up'}
                       </button>
                     ) : (
-                      <div className="flex items-center gap-2">
-                        <button
-                          onMouseDown={() => setIsHolding(true)}
-                          onMouseUp={() => setIsHolding(false)}
-                          onMouseLeave={() => setIsHolding(false)}
-                          onTouchStart={() => setIsHolding(true)}
-                          onTouchEnd={() => setIsHolding(false)}
-                          disabled={captureCooldown}
-                          className="flex-1 rounded-2xl bg-cyan-600 py-4 text-sm font-black text-white hover:bg-cyan-500 transition flex items-center justify-center gap-2 disabled:opacity-50">
-                          <Camera size={18} /> Hold to Capture
-                        </button>
-                        <button onClick={() => handleCapture('section')}
-                          disabled={captureCooldown}
-                          className="rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-sm font-bold text-white/80 hover:text-white transition disabled:opacity-50">
-                          Snap
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onPointerDown={(event) => event.preventDefault()}
+                        onContextMenu={(event) => event.preventDefault()}
+                        onClick={handleBurstCapture}
+                        disabled={captureCooldown || isBursting || !cameraReady}
+                        className="w-full rounded-2xl bg-cyan-600 py-4 text-sm font-black text-white hover:bg-cyan-500 transition flex items-center justify-center gap-2 disabled:opacity-50 select-none touch-manipulation"
+                        style={{ userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}>
+                        <Camera size={18} /> {isBursting ? `Capturing ${burstProgress}/3` : 'Capture Burst'}
+                      </button>
                     )}
 
                     {/* I Reached the End */}
                     {photos.length > 0 && (
-                      <button onClick={() => { setPhase('ending'); }}
-                        className="w-full rounded-2xl border border-amber-500/30 bg-amber-500/15 py-3 text-xs font-bold text-amber-300 hover:bg-amber-500/25 transition flex items-center justify-center gap-2">
-                        <CheckCircle2 size={14} /> I Reached the End
+                      <button onClick={handleReachedEnd}
+                        disabled={captureCooldown || isBursting || !cameraReady}
+                        className="w-full rounded-2xl border border-amber-500/30 bg-amber-500/15 py-3 text-xs font-bold text-amber-300 hover:bg-amber-500/25 transition flex items-center justify-center gap-2 disabled:opacity-50 select-none touch-manipulation"
+                        style={{ userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}>
+                        <CheckCircle2 size={14} /> I Reached the End - Stitch Photo
                       </button>
                     )}
 
@@ -537,63 +593,6 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
               )}
             </div>
           )}
-
-          {/* ─── ENDING (full-screen camera) ─── */}
-          {phase === 'ending' && (
-            <div className="relative flex-1 min-h-0 bg-black">
-              <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover" />
-              <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/70 to-transparent pointer-events-none" />
-              <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
-
-              <div className="absolute top-3 left-3 z-10">
-                <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white/80 hover:text-white transition">
-                  <X size={18} />
-                </button>
-              </div>
-
-              <div className="absolute top-3 left-16 z-10 max-w-xs rounded-xl border border-amber-500/30 bg-black/50 px-3 py-2">
-                <p className="text-[11px] text-amber-200/90">
-                  Capture the far end of the category. Include neighboring shelving, top shelf, bottom shelf, and ending boundary.
-                </p>
-              </div>
-
-              <div className="absolute inset-x-0 bottom-0 z-10 px-4 pb-4">
-                <button onClick={() => handleCapture('ending')}
-                  className="w-full rounded-2xl bg-amber-600 py-4 text-sm font-black text-white hover:bg-amber-500 transition flex items-center justify-center gap-2">
-                  <Camera size={18} /> Capture Ending
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ─── CONTEXT (full-screen camera) ─── */}
-          {phase === 'context' && (
-            <div className="relative flex-1 min-h-0 bg-black">
-              <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover" />
-              <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/70 to-transparent pointer-events-none" />
-              <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
-
-              <div className="absolute top-3 left-3 z-10">
-                <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white/80 hover:text-white transition">
-                  <X size={18} />
-                </button>
-              </div>
-
-              <div className="absolute top-3 left-16 z-10 max-w-xs rounded-xl border border-blue-500/30 bg-black/50 px-3 py-2">
-                <p className="text-[11px] text-blue-200/90">
-                  Take a wide context photo showing the aisle, which side the category is on, and approximate length.
-                </p>
-              </div>
-
-              <div className="absolute inset-x-0 bottom-0 z-10 px-4 pb-4">
-                <button onClick={() => handleCapture('context')}
-                  className="w-full rounded-2xl bg-blue-600 py-4 text-sm font-black text-white hover:bg-blue-500 transition flex items-center justify-center gap-2">
-                  <MapPin size={18} /> Capture Context Photo
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* ─── COVERAGE REVIEW ─── */}
           {phase === 'coverage_review' && (
             <div className="space-y-3">
@@ -692,23 +691,14 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
                 </div>
               )}
 
-              <label className="flex items-start gap-2 rounded-xl border border-white/10 bg-white/5 p-3 cursor-pointer">
-                <input type="checkbox" checked={confirmStitch} onChange={e => setConfirmStitch(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-white/20 bg-white/5 text-cyan-500 focus:ring-cyan-500" />
-                <span className="text-[11px] text-white/70">
-                  I reviewed the stitched aisle and confirmed the full category is visible from beginning to end.
-                </span>
-              </label>
-
               <div className="flex gap-2">
-                <button onClick={() => { setPhase('coverage_review'); }}
-                  className="flex-1 rounded-xl border border-white/10 bg-white/5 py-2.5 text-xs font-bold text-white/60 hover:text-white/80 transition">
-                  Back
+                <button onClick={() => { setPhase('capturing'); startCamera(); }}
+                  className="flex-1 rounded-xl border border-white/10 bg-white/5 py-2.5 text-xs font-bold text-white/60 hover:text-white/80 transition flex items-center justify-center gap-1">
+                  <RefreshCw size={12} /> Retake
                 </button>
-                <button onClick={() => { setChecklist(prev => ({ ...prev, stitchReviewed: confirmStitch })); setPhase('final_checklist'); }}
-                  disabled={!confirmStitch}
-                  className="flex-1 rounded-xl bg-cyan-600 py-2.5 text-xs font-black text-white hover:bg-cyan-500 transition disabled:opacity-40 flex items-center justify-center gap-1">
-                  <CheckCircle2 size={14} /> Continue
+                <button onClick={handleUseStitchedPhoto}
+                  className="flex-1 rounded-xl bg-emerald-600 py-2.5 text-xs font-black text-white hover:bg-emerald-500 transition flex items-center justify-center gap-1">
+                  <CheckCircle2 size={14} /> Use Stitched Photo
                 </button>
               </div>
             </div>
@@ -778,3 +768,4 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
 
   return createPortal(modal, document.body);
 }
+

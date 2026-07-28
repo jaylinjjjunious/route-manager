@@ -24,7 +24,9 @@ No currently reported bugs are blocking development or production use.
 | R003 | Shower Gate proof upload authorization failure | Fixed in b56c690 |
 | R004 | Smart Aisle Scan Test Lab imported sequence crashed when the first photo had no overlap score | Fixed by filtering only numeric overlap scores before result averaging |
 | R005 | Railway had `VITE_ENABLE_SMART_AISLE_TEST_LAB=true`, which could expose Developer Tools in production | Fixed with a dev-build-only production guard and production bundle verification |
+| R006 | Smart Aisle capture button could enter text selection on long press and capture before the camera frame was ready | Fixed with burst capture controls that disable selection/touch callout behavior plus camera-readiness guards and live-practice harness coverage |
 
 ---
 
-**Last Updated:** 2026-07-26 (smart-aisle-test-lab-prod-guard)
+**Last Updated:** 2026-07-28 (smart-aisle-burst-stitch-flow)
+
