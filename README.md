@@ -11,11 +11,11 @@ Route Manager is a mobile-first field-work application for route planning, deliv
 - Last verified Railway deployment: `3d47e332-e3c1-4770-8850-cd4e578f9d05` (SUCCESS)
 - Production build endpoint: `https://route-optimizer-app-production.up.railway.app/api/build-info`
 - Real-device verification route: `/real-device-verification?access=smart-aisle-iphone`
-- The working tree currently contains uncommitted Smart Aisle changes. They are not in production yet.
+- The working tree currently contains uncommitted Smart Aisle and inventory-custody changes. They are not in production yet.
 
-The current local work adds immediate photo removal with undo and Recently Removed recovery, sequence restoration and restitching, rolling lens-cleanliness analysis, setup and in-capture lens checks, high-confidence capture blocking, privacy-safe verification events, and unit tests for image analysis and photo storage. The related knowledge files are already updated in the working tree.
+The current local work adds immediate photo removal with undo and Recently Removed recovery, sequence restoration and restitching, rolling lens-cleanliness analysis, setup and in-capture lens checks, high-confidence capture blocking, privacy-safe verification events, a job-detail inventory custody panel, offline receive/install/removal/return ledgering, event evidence links, GPS/time capture, and unit tests. The related knowledge files are already updated in the working tree.
 
-Open verification items are real iPhone Safari/Home Screen PWA evidence for deletion, undo, restitching, lens checks, and capture blocking, plus an authenticated production pass confirming Test Lab data isolation. Lens thresholds also need controlled smudge-sample calibration on a real device.
+Open verification items are real iPhone Safari/Home Screen PWA evidence for Smart Aisle, an authenticated production pass confirming Test Lab data isolation, and the durable authenticated inventory sync slice. Lens thresholds also need controlled smudge-sample calibration on a real device.
 
 ## Architecture
 
@@ -29,6 +29,7 @@ Open verification items are real iPhone Safari/Home Screen PWA evidence for dele
 - Smart Aisle verification panel: `src/components/RealDeviceVerification.tsx`
 - Scan services: `src/services/scan/`
 - Browser harness: `tests/smart-aisle-test-lab-ui-check.cjs`
+- Inventory custody: `src/components/InventoryCustodyPanel.tsx` and `src/services/inventory/chainOfCustody.ts`
 
 ## Local Development
 

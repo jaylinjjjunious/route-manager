@@ -18,6 +18,7 @@ These decisions are documented in the legacy `docs/DECISIONS.md` file. New ADRs 
 | D010 | Mounted client guard | Accepted |
 | D011 | Separate GitHub/Sites remotes | Accepted |
 | D012 | No Phase 0 behavior changes | Accepted |
+| D013 | Start inventory custody with a job-scoped offline ledger | Accepted |
 
 ## Creating New ADRs
 
@@ -29,4 +30,4 @@ Place new files in `knowledge/decisions/` with the format `adr-XXX-kebab-case-ti
 
 ---
 
-**Last Updated:** 2026-07-20 (c12bd44)
+**Last Updated:** 2026-07-29 (inventory-custody-first-slice)

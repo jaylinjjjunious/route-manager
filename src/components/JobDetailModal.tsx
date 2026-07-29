@@ -15,6 +15,7 @@ import { createPortal } from 'react-dom';
 import { X, Navigation, Clock, MapPin, CheckSquare, Edit2, Trash2, Copy, ArrowRightLeft, ShieldAlert, Calendar, AlertCircle, Sparkles, Hourglass, RefreshCw, CheckCircle2, RotateCcw, Camera } from 'lucide-react';
 import type { Job, JobType } from '../types';
 import { isJobCompleted, isRevisionJob } from '../utils/jobState';
+import InventoryCustodyPanel from './InventoryCustodyPanel';
 
 const SCAN_COMPATIBLE_TYPES: JobType[] = ['retail_audit', 'mystery_shop', 'merchandising'];
 
@@ -501,6 +502,8 @@ export default function JobDetailModal({
                 </div>
               </div>
             )}
+
+            <InventoryCustodyPanel job={job} />
 
             {/* Smart Aisle Scan */}
             {onOpenScan && SCAN_COMPATIBLE_TYPES.includes(job.jobType) && !isDone && job.status !== 'finished' && (

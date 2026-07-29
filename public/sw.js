@@ -23,3 +23,10 @@ self.addEventListener('fetch', event => {
   }
   event.respondWith(fetch(request));
 });
+
+self.addEventListener('sync', event => {
+  if (event.tag !== 'inventory-custody-sync') return;
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
+    clients.forEach(client => client.postMessage({ type: 'inventory-custody-sync' }));
+  }));
+});

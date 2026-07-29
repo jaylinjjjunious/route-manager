@@ -25,6 +25,7 @@
 - **Checkpoint and release scripts:** `scripts/checkpoint.cjs`, `scripts/release.cjs`.
 - **Knowledge system:** This documentation directory.
 - **Official app icon:** Preserved source artwork and generated iPhone Safari/Home Screen plus favicon PNG assets.
+- **Inventory custody first slice:** Job-detail camera-first receive-in with part/serial/photo/document capture, automatic time/GPS, receive/install/removal/return event chain, receipt/tracking return linkage, local offline queue, and Background Sync wake-up.
 
 ## Infrastructure
 
@@ -37,4 +38,4 @@
 
 ---
 
-**Last Updated:** 2026-07-22 (dashboard-route-job-details)
+**Last Updated:** 2026-07-29 (inventory-custody-first-slice)
