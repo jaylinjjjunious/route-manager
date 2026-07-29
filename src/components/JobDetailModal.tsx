@@ -334,6 +334,8 @@ export default function JobDetailModal({
               ) : null}
             </div>
 
+            <InventoryCustodyPanel job={job} />
+
             {/* Notes */}
             {job.notes && (
               <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
@@ -502,8 +504,6 @@ export default function JobDetailModal({
                 </div>
               </div>
             )}
-
-            <InventoryCustodyPanel job={job} />
 
             {/* Smart Aisle Scan */}
             {onOpenScan && SCAN_COMPATIBLE_TYPES.includes(job.jobType) && !isDone && job.status !== 'finished' && (
