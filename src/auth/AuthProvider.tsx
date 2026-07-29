@@ -15,6 +15,7 @@ interface AuthContextValue {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  verificationMode: boolean;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error?: string }>;
@@ -32,6 +33,7 @@ export function useAuth(): AuthContextValue {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [verificationMode, setVerificationMode] = useState(false);
   const mountedRef = useRef(true);
   const initIdRef = useRef(0);
   const userSignedOutRef = useRef(false);
@@ -41,6 +43,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     authDebugMount();
     authDebugLoading(true);
     const id = ++initIdRef.current;
+
+    const enableLocalVerification = import.meta.env.DEV && import.meta.env.VITE_INVENTORY_VERIFICATION_MODE === "true";
+    if (enableLocalVerification) {
+      fetch("/api/verification/inventory-session", { headers: { Accept: "application/json" } })
+        .then(response => response.ok ? response.json() : null)
+        .then(result => {
+          if (mountedRef.current && result?.enabled === true) {
+            setVerificationMode(true);
+            setLoading(false);
+            authDebugRaw("Local inventory verification mode enabled");
+          }
+        })
+        .catch(() => undefined);
+    }
 
     supabase.auth.getSession().then(({ data: { session: s }, error }) => {
       if (error) authDebugRaw(`getSession error: ${error.message}`);
@@ -105,6 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     userSignedOutRef.current = true;
+    setVerificationMode(false);
     authDebugSignOut("AuthProvider.signOut (user-initiated)");
     await supabase.auth.signOut();
   }, []);
@@ -131,6 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     session,
     user: session?.user ?? null,
     loading,
+    verificationMode,
     signIn,
     signOut,
     resetPassword,

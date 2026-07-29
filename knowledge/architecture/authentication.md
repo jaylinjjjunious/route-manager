@@ -42,6 +42,17 @@ Supabase email/password authentication managed by `AuthProvider.tsx`.
 - Attaches `req.user` with user metadata.
 - Returns 401 JSON response on failure.
 
+### Local Inventory Verification Mode
+
+For end-to-end UI verification without using credentials, the server exposes a
+loopback-only `/api/verification/inventory-session` handshake only when
+`NODE_ENV` is not `production` and the server-only
+`ENABLE_INVENTORY_VERIFICATION_MODE=true` flag is set. The Vite client also
+requires `VITE_INVENTORY_VERIFICATION_MODE=true`. The response is a synthetic
+local technician identity, not a Supabase session, and contains no records.
+This mode is not compiled into production behavior, does not mint tokens, and
+does not relax `requireAuth()` for protected APIs.
+
 **Worker (`worker/index.ts`):**
 - Shower proof endpoints use the same Bearer token pattern.
 - Token is verified via Supabase `getUser()`.

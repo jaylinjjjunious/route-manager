@@ -43,6 +43,7 @@ This is tamper-evident local history, not tamper-proof storage. A user who contr
 - Background Sync can notify an open controlled client, but cannot complete authenticated upload while no client has access to the Supabase session.
 - Barcode detection is supported when the browser exposes BarcodeDetector; low-confidence, unsupported, and unmatched scans fall back to manual part-number correction. Full text OCR remains a follow-up enhancement.
 - The initial offline reference catalog is sourced from the Drive contract PDF `1099 CE TJX AGREEMENT - Jaylin Junious - Sole Proprietor - Review.pdf` and contains only `24173-02-R`, `CBL445-040-02-A`, `MSC445-032-01-A`, and `M379-122-21-WWA-5-DN-0001027`. Receiving checks supported barcodes against this catalog and keeps manual correction when there is no match.
+- End-to-end UI verification can use the loopback-only development verification handshake when both explicit development flags are enabled; it uses local seeded jobs and local custody storage, not production records or Supabase credentials.
 - Large photo/document data URLs can approach browser storage limits.
 
 ---

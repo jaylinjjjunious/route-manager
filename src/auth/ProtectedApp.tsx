@@ -38,7 +38,7 @@ export function triggerOpenDebugCenter() {
 
 export default function ProtectedApp() {
   redirectRetiredRoutePath();
-  const { session, loading } = useAuth();
+  const { session, loading, verificationMode } = useAuth();
   const [view, setView] = useState<AuthView>(() => getInitialView(window.location.pathname));
   const [debugCenterOpen, setDebugCenterOpen] = useState(false);
 
@@ -75,7 +75,7 @@ export default function ProtectedApp() {
   }
 
   // Not authenticated — only show login / forgot-password / reset-password
-  if (!session) {
+  if (!session && !verificationMode) {
     authDebugLoginPageRendered();
     if (view === "forgot-password") {
       return <ForgotPasswordPage onBack={() => navigate("login")} />;
@@ -88,7 +88,7 @@ export default function ProtectedApp() {
 
   authDebugProtectedAppRendered();
 
-  // Authenticated — reset-password can still be reached via recovery link
+  // Authenticated or explicitly server-approved local verification mode.
   if (view === "reset-password") {
     return <ResetPasswordPage onDone={() => navigate("app")} />;
   }

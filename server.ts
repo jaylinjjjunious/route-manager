@@ -15,8 +15,8 @@ dotenv.config();
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
 const REQUIRED_SHOWER_BARCODE = "075371003233";
-const SUPABASE_URL = process.env.SUPABASE_URL || "";
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
 const showerProofRoot = path.join(process.cwd(), ".local-shower-proofs");
 const showerProofImageRoot = path.join(showerProofRoot, "images");
 const showerProofMetadataPath = path.join(showerProofRoot, "proofs.json");
@@ -161,6 +161,23 @@ app.get("/api/build-info", (_req, res) => {
     railwayDeploymentId: process.env.RAILWAY_DEPLOYMENT_ID || null,
     builtAt: process.env.RAILWAY_DEPLOYMENT_CREATED_AT || new Date().toISOString(),
     environment: process.env.NODE_ENV || "development",
+  });
+});
+
+// Development-only verification handshake. It never runs in production, never
+// accepts a client secret, and returns no application or user records.
+app.get("/api/verification/inventory-session", (req, res) => {
+  const remoteAddress = req.socket.remoteAddress || "";
+  const isLoopback = remoteAddress === "127.0.0.1" || remoteAddress === "::1" || remoteAddress === "::ffff:127.0.0.1";
+  const enabled = process.env.NODE_ENV !== "production" && process.env.ENABLE_INVENTORY_VERIFICATION_MODE === "true" && isLoopback;
+
+  if (!enabled) {
+    return res.status(404).json({ error: "Verification mode is unavailable." });
+  }
+
+  return res.json({
+    enabled: true,
+    user: { id: "local-verification-technician", email: "verification-technician@local.invalid", role: "technician" },
   });
 });
 // Debug auth check endpoint
