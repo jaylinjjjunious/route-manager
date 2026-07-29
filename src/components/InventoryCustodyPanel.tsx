@@ -225,6 +225,7 @@ export default function InventoryCustodyPanel({ job }: InventoryCustodyPanelProp
     setReceiveNotes('');
     setReceivePhoto(null);
     setReceiveDocuments([]);
+    setCatalogMatch(null);
     setMessage(`Item received ${coordinates ? 'with GPS' : 'without GPS'} and queued for sync.`);
     setIsSaving(false);
   };
@@ -289,6 +290,7 @@ export default function InventoryCustodyPanel({ job }: InventoryCustodyPanelProp
               <button type="button" onClick={() => setActiveItemId(item.id)} className="flex w-full items-start justify-between gap-2 text-left">
                 <span className="min-w-0">
                   <span className="block truncate text-xs font-black text-white">{item.partNumber}</span>
+                  {findInventoryCatalogMatch(item.partNumber) && <span className="block truncate text-[10px] font-bold text-cyan-200">{findInventoryCatalogMatch(item.partNumber)!.description}</span>}
                   <span className="block truncate text-[10px] text-slate-400">S/N {item.serialNumber} · {item.eventIds.length} events</span>
                 </span>
                 <span className="shrink-0 rounded-md border border-cyan-500/20 px-2 py-1 text-[10px] font-black text-cyan-200">{statusLabel(item.status)}</span>
