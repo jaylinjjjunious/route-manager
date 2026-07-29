@@ -39,6 +39,7 @@ import ShowerGatePanel from './components/ShowerGatePanel';
 import ScreenshotImportModal from './components/ScreenshotImportModal';
 import SmartAisleScan from './components/SmartAisleScan';
 import InventoryCustodyPanel from './components/InventoryCustodyPanel';
+import { getInventoryDomain, inventoryDomainLabel } from './services/inventory/domain';
 import SmartAisleScanTestLab from './components/SmartAisleScanTestLab';
 import { RouteFilter, filterJobsByType } from './components/RouteFilter';
 import type { RouteFilterType } from './components/RouteFilter';
@@ -555,6 +556,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const [routeFilter, setRouteFilter] = useState<RouteFilterType>('today');
   const [routeDetailJobId, setRouteDetailJobId] = useState<string | null>(null);
   const [inventoryJobId, setInventoryJobId] = useState<string | null>(null);
+  const [inventoryDomain, setInventoryDomain] = useState<'merchandising' | 'contract_parts'>('merchandising');
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [defaultJobType, setDefaultJobType] = useState<JobType>('retail_audit');
   const [isConfigExpanded, setIsConfigExpanded] = useState(false);
@@ -2636,7 +2638,8 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const proofRecords = (Object.values(proofVault) as ProofRecord[]).sort((a, b) => new Date(b.completionTime).getTime() - new Date(a.completionTime).getTime());
   const selectedProofRecord = selectedProofJobId ? proofVault[selectedProofJobId] : null;
   const routeDetailJob = routeDetailJobId ? jobs.find(job => job.id === routeDetailJobId) || null : null;
-  const inventoryJob = jobs.find(job => job.id === inventoryJobId) || routeAJobs[0] || jobs[0] || null;
+  const inventoryJobs = jobs.filter(job => getInventoryDomain(job) === inventoryDomain);
+  const inventoryJob = inventoryJobs.find(job => job.id === inventoryJobId) || inventoryJobs.find(job => job.routeId === 'A') || inventoryJobs[0] || null;
   const getRouteStopNavLink = (job: Job, idx: number) => {
     const origin = idx === 0
       ? startCoord
@@ -3647,12 +3650,17 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                     <p className='mt-2 max-w-2xl text-sm font-bold text-slate-500 dark:text-slate-300'>Receive, install, remove, and return equipment while preserving its evidence trail.</p>
                   </div>
                 </div>
-                <label className='mt-5 block text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400'>Job</label>
+                <label className='mt-5 block text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400'>Company inventory domain</label>
+                <select value={inventoryDomain} onChange={event => { setInventoryDomain(event.target.value as 'merchandising' | 'contract_parts'); setInventoryJobId(null); }} className='mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-900 outline-none focus:border-cyan-500 dark:border-white/10 dark:bg-white/5 dark:text-white'>
+                  <option value='merchandising'>{inventoryDomainLabel('merchandising')}</option>
+                  <option value='contract_parts'>{inventoryDomainLabel('contract_parts')}</option>
+                </select>
+                <label className='mt-4 block text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400'>Store job</label>
                 <select value={inventoryJob?.id || ''} onChange={event => setInventoryJobId(event.target.value)} className='mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-900 outline-none focus:border-cyan-500 dark:border-white/10 dark:bg-white/5 dark:text-white'>
-                  {jobs.length === 0 ? <option value=''>No jobs available</option> : jobs.map(job => <option key={job.id} value={job.id}>{job.storeName} - {job.address}</option>)}
+                  {inventoryJobs.length === 0 ? <option value=''>No jobs in this company domain</option> : inventoryJobs.map(job => <option key={job.id} value={job.id}>{job.storeName} - {job.address}</option>)}
                 </select>
               </div>
-              {inventoryJob ? <InventoryCustodyPanel job={inventoryJob} /> : <div className='road-card p-6 text-sm font-bold text-slate-500'>Add or import a job to begin inventory custody.</div>}
+              {inventoryJob ? <InventoryCustodyPanel job={inventoryJob} /> : <div className='road-card p-6 text-sm font-bold text-slate-500'>{inventoryDomain === 'contract_parts' ? 'No contract-parts job is explicitly assigned to this company domain yet.' : 'Add or import a store job to begin package custody.'}</div>}
             </section>
           )}
 

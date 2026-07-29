@@ -92,6 +92,14 @@ The Express server does not use a database. Instead it uses:
 
 This means the Express server is single-device only and data does not persist across deployments or device changes.
 
+### Inventory Local Storage
+
+Inventory custody is currently browser-local. New keys use
+`inventory_custody_ledger_v2:<domain>:<jobId>` and
+`inventory_custody_sync_queue_v2:<domain>`. The supported domains are
+`merchandising` and `contract_parts`; missing job metadata resolves to
+`merchandising`. Legacy v1 merchandising keys are migrated on read.
+
 ---
 
 ## Drizzle Migrations

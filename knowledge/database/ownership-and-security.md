@@ -7,10 +7,12 @@
 
 ## Single-User Architecture
 
-The All in One 667 is designed as a **single-user application**. There is no multi-tenant data isolation in the current implementation.
+The All in One 667 remains a single-user application, but inventory custody now has two explicit company domains inside that account. This is domain isolation, not multi-user authentication.
 
 - One user account manages all routes, jobs, and shower proofs.
 - There is no concept of "organizations" or "teams."
+- Existing jobs default to the merchandising / secret-shopping inventory domain. Contract-parts inventory requires explicit `inventoryDomain: "contract_parts"` metadata.
+- Inventory ledger, evidence references, catalog matching, return details, and offline queues are namespaced by domain in local storage.
 - All data belongs to the authenticated Supabase user.
 
 ---

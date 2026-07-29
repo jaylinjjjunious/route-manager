@@ -56,6 +56,7 @@ All state lives in `App.tsx` using `useState` hooks. No Redux, Zustand, or Conte
 
 Key state groups:
 - **Jobs**: `jobs`, `routeOrder`, `routeAJobs`, `archivedJobs`
+- **Inventory**: `inventoryDomain`, `inventoryJobId`, domain-filtered job selection
 - **Route**: `routeMetrics`, `routingProvider`, `nextRouteAJob`
 - **Ride Mode**: `rideModeActive`, `currentStopIndex`, `rideSession`
 - **Shower Gate**: `showerProofs`, `showerGateUnlocked`, `barcodeScanSuccess`

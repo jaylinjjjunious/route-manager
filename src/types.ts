@@ -65,6 +65,8 @@ export interface Job {
   processServe?: ProcessServeDetails;
   captureMode?: 'single_photo' | 'manual_multiple' | 'smart_aisle_scan';
   scanSessionId?: string;
+  /** Existing jobs default to merchandising; contract-parts jobs must opt in explicitly. */
+  inventoryDomain?: 'merchandising' | 'contract_parts';
 }
 
 export interface RouteMetrics {

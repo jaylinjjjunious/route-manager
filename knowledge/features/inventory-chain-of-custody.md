@@ -6,8 +6,12 @@ Job-scoped inventory tracking for receiving, installation, removal, and return o
 
 ## Current Implementation
 
-- `InventoryCustodyPanel` is rendered inside `JobDetailModal` for every job.
-- Receive-in requires a part number, serial number, and item photo; optional receiving documents can be attached.
+- `InventoryCustodyPanel` is rendered inside `JobDetailModal` for every job and on the dedicated Inventory page.
+- Inventory uses two explicit domains: existing jobs default to `merchandising` (the merchandising / secret-shopping company); only jobs with `inventoryDomain: 'contract_parts'` use the contract-parts company. The dedicated page displays and selects one domain at a time.
+- Merchandising jobs use package custody: receive a package identifier and contents for the selected store job, capture delivery evidence before recording delivery, then record an exception or package return with receipt/tracking when applicable.
+- Contract-parts jobs retain serialized part-number, serial-number, photo, and contract catalog matching; package fields and package events are not used in that domain.
+- The domain-scoped Evidence photos control opens an offline calendar/timeline. Photos are grouped by captured event date with week, month, and year navigation, date counts, thumbnails, and event/job/item context.
+- Contract-parts receive-in requires a part number, serial number, and item photo; merchandising package receive requires a package identifier and may omit serialized part matching. Optional receiving documents can be attached.
 - Receive-in, install, removal, and return events are linked to the original job and item.
 - Every event records an ISO timestamp, GPS coordinates when permission and signal are available, evidence IDs, and a SHA-256 predecessor hash.
 - Return requires both a receipt number and tracking number and retains the original item identity.
@@ -25,7 +29,7 @@ Job-scoped inventory tracking for receiving, installation, removal, and return o
 
 ## Data And Integrity
 
-The local ledger key is `inventory_custody_ledger_v1:<jobId>`. The shared queue key is `inventory_custody_sync_queue_v1`. Each event includes `previousHash` and `hash`; the UI verifies the local chain and shows a review state if event contents or ordering are changed.
+The local ledger key is `inventory_custody_ledger_v2:<domain>:<jobId>`. Sync queues are also domain-specific. Legacy v1 merchandising ledgers and queues migrate into the merchandising namespace without deleting records; legacy hashes retain their original canonical format, while new domain-aware events use the v2 format. Each event includes `previousHash` and `hash`; the UI verifies the local chain and shows a review state if event contents or ordering are changed.
 
 This is tamper-evident local history, not tamper-proof storage. A user who controls browser storage can alter both records and hashes. Durable server verification, user identity, conflict handling, and append-only server persistence are the next required vertical slice.
 
@@ -45,7 +49,9 @@ This is tamper-evident local history, not tamper-proof storage. A user who contr
 - The initial offline reference catalog is sourced from the Drive contract PDF `1099 CE TJX AGREEMENT - Jaylin Junious - Sole Proprietor - Review.pdf` and contains only `24173-02-R`, `CBL445-040-02-A`, `MSC445-032-01-A`, and `M379-122-21-WWA-5-DN-0001027`. Receiving checks supported barcodes against this catalog and keeps manual correction when there is no match.
 - End-to-end UI verification can use the loopback-only development verification handshake when both explicit development flags are enabled; it uses local seeded jobs and local custody storage, not production records or Supabase credentials.
 - Large photo/document data URLs can approach browser storage limits.
+- Contract-parts jobs must still be explicitly marked in imported or edited job metadata; no current seeded job is assigned to that domain.
+- Evidence calendar data is derived only from the active domain ledger; the current server sync endpoint remains unavailable, so the calendar is local/offline-first.
 
 ---
 
-**Last Updated:** 2026-07-29 (inventory-custody-first-slice)
+**Last Updated:** 2026-07-29 (inventory-domains-and-package-flow)

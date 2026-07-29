@@ -1,3 +1,5 @@
+import type { InventoryDomain } from './domain';
+
 export type CustodyEventType = 'receive_in' | 'install' | 'removal' | 'return';
 export type CustodyItemStatus = 'received' | 'installed' | 'removed' | 'returned';
 export type CustodyEvidenceKind = 'photo' | 'document' | 'receipt';
@@ -18,6 +20,8 @@ export interface CustodyEvidence {
 }
 
 export interface CustodyEvent {
+  domain: InventoryDomain;
+  integrityVersion?: 1 | 2 | 3;
   id: string;
   jobId: string;
   itemId: string;
@@ -30,16 +34,25 @@ export interface CustodyEvent {
   receiptNumber?: string;
   trackingNumber?: string;
   notes?: string;
+  packageId?: string;
+  packageContents?: string;
+  equipmentLabel?: string;
+  sourceContext?: string;
   previousHash: string;
   hash: string;
   syncStatus: CustodySyncStatus;
 }
 
 export interface CustodyItem {
+  domain: InventoryDomain;
   id: string;
   jobId: string;
   partNumber: string;
   serialNumber: string;
+  packageId?: string;
+  packageContents?: string;
+  equipmentLabel?: string;
+  sourceContext?: string;
   status: CustodyItemStatus;
   evidence: CustodyEvidence[];
   eventIds: string[];
@@ -49,16 +62,19 @@ export interface CustodyItem {
 export interface CustodyLedger {
   version: 1;
   jobId: string;
+  domain: InventoryDomain;
   items: CustodyItem[];
   events: CustodyEvent[];
 }
 
-const LEDGER_PREFIX = 'inventory_custody_ledger_v1:';
-const QUEUE_KEY = 'inventory_custody_sync_queue_v1';
+const LEDGER_PREFIX = 'inventory_custody_ledger_v2:';
+const LEGACY_LEDGER_PREFIX = 'inventory_custody_ledger_v1:';
+const QUEUE_PREFIX = 'inventory_custody_sync_queue_v2:';
+const LEGACY_QUEUE_KEY = 'inventory_custody_sync_queue_v1';
 const GENESIS_HASH = 'GENESIS';
 
-function getLedgerKey(jobId: string): string {
-  return `${LEDGER_PREFIX}${jobId}`;
+function getLedgerKey(jobId: string, domain: InventoryDomain): string {
+  return `${LEDGER_PREFIX}${domain}:${jobId}`;
 }
 
 function randomId(prefix: string): string {
@@ -85,7 +101,7 @@ function writeJson(key: string, value: unknown): void {
 }
 
 function canonicalEvent(event: Omit<CustodyEvent, 'hash'>): string {
-  return JSON.stringify({
+  const legacyFields = {
     id: event.id,
     jobId: event.jobId,
     itemId: event.itemId,
@@ -99,7 +115,16 @@ function canonicalEvent(event: Omit<CustodyEvent, 'hash'>): string {
     trackingNumber: event.trackingNumber || null,
     notes: event.notes || null,
     previousHash: event.previousHash,
-  });
+  };
+  if (event.integrityVersion === 1) return JSON.stringify(legacyFields);
+  const domainFields = {
+    ...legacyFields,
+    domain: event.domain,
+    packageId: event.packageId || null,
+    packageContents: event.packageContents || null,
+  };
+  if (event.integrityVersion === 2) return JSON.stringify(domainFields);
+  return JSON.stringify({ ...domainFields, equipmentLabel: event.equipmentLabel || null, sourceContext: event.sourceContext || null });
 }
 
 async function digest(value: string): Promise<string> {
@@ -117,31 +142,51 @@ async function digest(value: string): Promise<string> {
   return `fallback-${(hash >>> 0).toString(16).padStart(8, '0')}`;
 }
 
-export function emptyCustodyLedger(jobId: string): CustodyLedger {
-  return { version: 1, jobId, items: [], events: [] };
+export function emptyCustodyLedger(jobId: string, domain: InventoryDomain = 'merchandising'): CustodyLedger {
+  return { version: 1, jobId, domain, items: [], events: [] };
 }
 
-export function loadCustodyLedger(jobId: string): CustodyLedger {
-  const ledger = readJson<CustodyLedger | null>(getLedgerKey(jobId), null);
-  if (!ledger || ledger.version !== 1 || ledger.jobId !== jobId) return emptyCustodyLedger(jobId);
+export function loadCustodyLedger(jobId: string, domain: InventoryDomain = 'merchandising'): CustodyLedger {
+  const currentLedger = readJson<CustodyLedger | null>(getLedgerKey(jobId, domain), null);
+  const legacyLedger = domain === 'merchandising' ? readJson<CustodyLedger | null>(`${LEGACY_LEDGER_PREFIX}${jobId}`, null) : null;
+  const ledger = currentLedger || legacyLedger;
+  if (!ledger || ledger.version !== 1 || ledger.jobId !== jobId) return emptyCustodyLedger(jobId, domain);
+  const items = Array.isArray(ledger.items) ? ledger.items.map(item => ({ ...item, domain })) : [];
+  const events = Array.isArray(ledger.events) ? ledger.events.map(event => ({ ...event, domain, integrityVersion: event.integrityVersion || (currentLedger ? 2 : 1) })) : [];
+  const migrated = { version: 1 as const, jobId, domain, items, events };
+  saveCustodyLedger(migrated);
   return {
     version: 1,
     jobId,
-    items: Array.isArray(ledger.items) ? ledger.items : [],
-    events: Array.isArray(ledger.events) ? ledger.events : [],
+    domain,
+    items,
+    events,
   };
 }
 
 export function saveCustodyLedger(ledger: CustodyLedger): void {
-  writeJson(getLedgerKey(ledger.jobId), ledger);
+  writeJson(getLedgerKey(ledger.jobId, ledger.domain), ledger);
 }
 
-export function loadSyncQueue(): CustodyEvent[] {
-  return readJson<CustodyEvent[]>(QUEUE_KEY, []).filter(Boolean);
+function getQueueKey(domain: InventoryDomain): string {
+  return `${QUEUE_PREFIX}${domain}`;
 }
 
-function saveSyncQueue(queue: CustodyEvent[]): void {
-  writeJson(QUEUE_KEY, queue);
+export function loadSyncQueue(domain: InventoryDomain = 'merchandising'): CustodyEvent[] {
+  const current = readJson<CustodyEvent[]>(getQueueKey(domain), []).filter(Boolean).map(event => ({ ...event, domain }));
+  if (domain !== 'merchandising') return current;
+  const legacy = readJson<CustodyEvent[]>(LEGACY_QUEUE_KEY, []).filter(Boolean).map(event => ({ ...event, domain }));
+  if (legacy.length > 0) {
+    const migrated = [...legacy, ...current];
+    writeJson(getQueueKey(domain), migrated);
+    try { localStorage.removeItem(LEGACY_QUEUE_KEY); } catch { /* storage is best effort */ }
+    return migrated;
+  }
+  return current;
+}
+
+function saveSyncQueue(queue: CustodyEvent[], domain: InventoryDomain): void {
+  writeJson(getQueueKey(domain), queue);
 }
 
 export function requestInventoryBackgroundSync(): void {
@@ -171,18 +216,26 @@ export async function createCustodyEvent(input: {
   type: CustodyEventType;
   partNumber: string;
   serialNumber: string;
+  domain?: InventoryDomain;
   previousHash?: string;
   coordinates?: CustodyCoordinates;
   evidenceIds?: string[];
   receiptNumber?: string;
   trackingNumber?: string;
   notes?: string;
+  packageId?: string;
+  packageContents?: string;
+  equipmentLabel?: string;
+  sourceContext?: string;
 }): Promise<CustodyEvent> {
+  const domain = input.domain || 'merchandising';
   const eventWithoutHash: Omit<CustodyEvent, 'hash'> = {
     id: randomId('custody-event'),
     jobId: input.jobId,
     itemId: input.itemId,
     type: input.type,
+    domain,
+    integrityVersion: 3,
     occurredAt: new Date().toISOString(),
     partNumber: input.partNumber.trim(),
     serialNumber: input.serialNumber.trim(),
@@ -191,6 +244,10 @@ export async function createCustodyEvent(input: {
     receiptNumber: input.receiptNumber?.trim() || undefined,
     trackingNumber: input.trackingNumber?.trim() || undefined,
     notes: input.notes?.trim() || undefined,
+    packageId: input.packageId?.trim() || undefined,
+    packageContents: input.packageContents?.trim() || undefined,
+    equipmentLabel: input.equipmentLabel?.trim() || undefined,
+    sourceContext: input.sourceContext?.trim() || undefined,
     previousHash: input.previousHash || GENESIS_HASH,
     syncStatus: 'queued',
   };
@@ -200,6 +257,7 @@ export async function createCustodyEvent(input: {
 export function appendCustodyEvent(ledger: CustodyLedger, event: CustodyEvent, item: CustodyItem): CustodyLedger {
   const nextItem: CustodyItem = {
     ...item,
+    domain: ledger.domain,
     status: event.type === 'receive_in' ? 'received' : event.type === 'install' ? 'installed' : event.type === 'removal' ? 'removed' : 'returned',
     eventIds: [...item.eventIds, event.id],
     evidence: [...item.evidence],
@@ -213,7 +271,7 @@ export function appendCustodyEvent(ledger: CustodyLedger, event: CustodyEvent, i
     events: [...ledger.events, event],
   };
   saveCustodyLedger(next);
-  saveSyncQueue([...loadSyncQueue(), event]);
+  saveSyncQueue([...loadSyncQueue(ledger.domain), event], ledger.domain);
   requestInventoryBackgroundSync();
   return next;
 }
@@ -230,8 +288,8 @@ export async function verifyCustodyLedger(ledger: CustodyLedger): Promise<{ vali
 }
 
 export async function flushCustodySyncQueue(): Promise<{ synced: number; remaining: number }> {
-  if (typeof navigator !== 'undefined' && !navigator.onLine) return { synced: 0, remaining: loadSyncQueue().length };
-  const queue = loadSyncQueue();
+  const queue = [...loadSyncQueue('merchandising'), ...loadSyncQueue('contract_parts')];
+  if (typeof navigator !== 'undefined' && !navigator.onLine) return { synced: 0, remaining: queue.length };
   if (queue.length === 0) return { synced: 0, remaining: 0 };
   try {
     const { authFetchJson } = await import('../apiClient');
@@ -241,10 +299,12 @@ export async function flushCustodySyncQueue(): Promise<{ synced: number; remaini
       body: JSON.stringify({ events: queue }),
     });
     const syncedIds = new Set(queue.map(event => event.id));
-    saveSyncQueue(loadSyncQueue().filter(event => !syncedIds.has(event.id)));
-    return { synced: queue.length, remaining: loadSyncQueue().length };
+    for (const domain of ['merchandising', 'contract_parts'] as const) {
+      saveSyncQueue(loadSyncQueue(domain).filter(event => !syncedIds.has(event.id)), domain);
+    }
+    return { synced: queue.length, remaining: loadSyncQueue('merchandising').length + loadSyncQueue('contract_parts').length };
   } catch {
-    return { synced: 0, remaining: loadSyncQueue().length };
+    return { synced: 0, remaining: queue.length };
   }
 }
 
