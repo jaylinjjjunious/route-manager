@@ -19,15 +19,16 @@ These decisions are documented in the legacy `docs/DECISIONS.md` file. New ADRs 
 | D011 | Separate GitHub/Sites remotes | Accepted |
 | D012 | No Phase 0 behavior changes | Accepted |
 | D013 | Start inventory custody with a job-scoped offline ledger | Accepted |
+| D014 | Temporarily bypass the Shower Gate while preserving reactivation | Accepted |
 
 ## Creating New ADRs
 
 Use the template at `knowledge/decisions/adr-template.md`.
 
-Number new ADRs sequentially starting from D013.
+Number new ADRs sequentially starting from D014.
 
 Place new files in `knowledge/decisions/` with the format `adr-XXX-kebab-case-title.md`.
 
 ---
 
-**Last Updated:** 2026-07-29 (inventory-custody-first-slice)
+**Last Updated:** 2026-07-29 (temporary-shower-gate-bypass)

@@ -1,6 +1,6 @@
 # Navigation System
 
-**Last Updated:** 2026-07-26 (inline-bottom-nav-doc-fix)
+**Last Updated:** 2026-07-29 (temporary-shower-gate-bypass)
 **Related Source Files:** `src/App.tsx`
 
 ---
@@ -22,7 +22,7 @@ The All in One 667 uses a **floating pill-shaped bottom navigation bar** pinned 
 
 ### Protected Tabs
 
-Tabs 2-3 (Battery and Tracker) are **locked** until the shower gate is verified. When locked:
+Tabs 2-3 (Battery and Tracker) are **available without verification while the temporary bypass is active**. If SHOWER_GATE_REQUIRED is set to true, they are locked until the shower gate is verified. When locked:
 
 - The tab buttons are visually dimmed or show an amber lock indicator.
 - Clicking a locked tab does not navigate — it may prompt the user to verify their shower proof.

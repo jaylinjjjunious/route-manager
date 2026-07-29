@@ -131,6 +131,8 @@ const SHOWER_HABIT_TASK_ID = 'habit-task-mandatory-shower';
 const SHOWER_HABIT_NAME = 'Mandatory Shower';
 const SHOWER_GATE_STORAGE_KEY = 'daily_shower_gate_proofs';
 const REQUIRED_SHOWER_BARCODE = '075371003233';
+// Temporary operational bypass. Set true to restore the scan/access gate without removing its implementation.
+const SHOWER_GATE_REQUIRED = false;
 const SHOWER_PROOF_MANDATORY = true;
 const MAX_SHOWER_PROOF_SIDE = 720;
 const SHOWER_PROOF_JPEG_QUALITY = 0.58;
@@ -1662,6 +1664,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           : barcodeScanMessage === 'Incorrect product barcode.'
           ? 'Incorrect barcode'
           : 'Barcode not scanned';
+  const showerGateAccessReady = !SHOWER_GATE_REQUIRED || showerGateUnlocked;
   showerGateUnlockedRef.current = showerGateUnlocked;
   const missionControlShowerProofRecord: ShowerProofRecord | null = showerProofForCycle?.proofId && showerProofForCycle?.imageUrl
     ? {
@@ -1842,7 +1845,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   }, [showerCycleKey]);
 
   const blockJobAccess = (action: string) => {
-    if (showerGateUnlocked) return false;
+    if (showerGateAccessReady) return false;
     setCurrentTab('dashboard');
     if (typeof window !== 'undefined') {
       window.history.replaceState(null, '', '#dashboard');
@@ -2316,12 +2319,12 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   }, [showerCycleKey]);
 
   useEffect(() => {
-    if (!showerGateUnlocked && rideModeActive) {
+    if (!showerGateAccessReady && rideModeActive) {
       setRideModeActive(false);
       setTrackerStatus('idle');
       setDispatcherMessage('Daily shower gate reset at 6:00 AM. Confirm shower proof before continuing jobs.');
     }
-  }, [showerGateUnlocked, rideModeActive]);
+  }, [showerGateAccessReady, rideModeActive]);
 
   const updateActiveHabitTask = (updates: Partial<Pick<HabitTask, 'name' | 'targetMinutes' | 'lastMinutes'>>) => {
     setHabitTasks(prev => prev.map(task => task.id === activeHabitTask.id ? {
@@ -2690,7 +2693,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
 
         {/* Main Content Body */}
         <main className="app-main mx-auto max-w-7xl px-3 py-4 pb-40 sm:px-6 sm:py-6 lg:px-8 space-y-6">
-          {currentTab === 'dashboard' && !rideModeActive && !showerGateUnlocked && (
+          {currentTab === 'dashboard' && !rideModeActive && SHOWER_GATE_REQUIRED && !showerGateUnlocked && (
             <ShowerGatePanel
               cycleId={showerCycleKey}
               cycleLabel={showerCycleLabel}
@@ -2829,8 +2832,8 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                   <button
                     type="button"
                     onClick={handleStartRideMode}
-                    disabled={!showerGateUnlocked}
-                    title={showerGateUnlocked ? 'Start ride mode' : 'Shower proof required first'}
+                    disabled={!showerGateAccessReady}
+                    title={showerGateAccessReady ? 'Start ride mode' : 'Shower proof required first'}
                     className="min-h-14 rounded-[8px] bg-slate-950 px-5 text-xl font-black uppercase text-white shadow-lg transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:bg-white dark:text-slate-950 dark:disabled:bg-white/10 dark:disabled:text-slate-500 sm:min-h-16 sm:text-2xl"
                   >
                     🚴 I&apos;m Riding
@@ -2872,7 +2875,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                   </div>
 
                   <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    {showerGateUnlocked ? (
+                    {showerGateAccessReady ? (
                       <a
                         href={nextStopNavLink}
                         target="_blank"
@@ -2895,7 +2898,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                     )}
                     <button
                       type="button"
-                      disabled={!showerGateUnlocked || !nextRouteAJob || Boolean(nextRouteAJob && completingJobIds.includes(nextRouteAJob.id))}
+                      disabled={!showerGateAccessReady || !nextRouteAJob || Boolean(nextRouteAJob && completingJobIds.includes(nextRouteAJob.id))}
                       onClick={() => nextRouteAJob && (nextRouteAJob.status === 'under_review' ? handleToggleComplete(nextRouteAJob.id) : handleMarkUnderReview(nextRouteAJob.id))}
                       className={`flex min-h-20 items-center justify-center gap-3 rounded-[8px] px-5 text-2xl font-black uppercase text-white shadow-lg transition disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 lg:min-h-14 lg:text-xl ${
                         nextRouteAJob?.status === 'under_review'
@@ -3020,7 +3023,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                               </div>
 
                               <div className="mt-2 grid grid-cols-3 gap-1.5">
-                                {showerGateUnlocked ? (
+                                {showerGateAccessReady ? (
                                   <a
                                     href={routeStopNavLink}
                                     target="_blank"
@@ -3051,7 +3054,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                                     event.stopPropagation();
                                     job.status === 'under_review' ? handleToggleComplete(job.id) : handleMarkUnderReview(job.id);
                                   }}
-                                  disabled={!showerGateUnlocked || completingJobIds.includes(job.id)}
+                                  disabled={!showerGateAccessReady || completingJobIds.includes(job.id)}
                                   className={`flex min-h-11 items-center justify-center gap-1 rounded-[8px] px-2 text-sm font-black uppercase text-white transition disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:disabled:bg-white/10 dark:disabled:text-slate-500 ${
                                     job.status === 'under_review'
                                       ? 'bg-blue-700 hover:bg-blue-600'
@@ -3630,7 +3633,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           )}
 
           {/* Tab 4: Battery Safety Parameters */}
-          {currentTab === 'battery' && !showerGateUnlocked && (
+          {currentTab === 'battery' && !showerGateAccessReady && (
             <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-8 text-center dark:border-amber-500/30 dark:bg-amber-500/10">
               <ShieldCheck size={40} className="mx-auto mb-4 text-amber-500" />
               <h3 className="text-lg font-black text-amber-900 dark:text-amber-100">Daily Verification Required</h3>
@@ -3638,7 +3641,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
               <button onClick={() => handleTabChange('dashboard')} className="mt-4 rounded-xl bg-amber-600 px-6 py-2.5 text-sm font-black text-white hover:bg-amber-500 transition-all">Go to Mission Control</button>
             </div>
           )}
-          {currentTab === 'battery' && showerGateUnlocked && (
+          {currentTab === 'battery' && showerGateAccessReady && (
             <div className="space-y-6 animate-fade-in" id="tab-view-battery">
               {/* Top Summary Banner */}
               <div className="road-card p-6">
@@ -4186,7 +4189,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           )}
 
           {/* Tab 5: Ride Tracker */}
-          {currentTab === 'tracker' && !showerGateUnlocked && (
+          {currentTab === 'tracker' && !showerGateAccessReady && (
             <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-8 text-center dark:border-amber-500/30 dark:bg-amber-500/10">
               <ShieldCheck size={40} className="mx-auto mb-4 text-amber-500" />
               <h3 className="text-lg font-black text-amber-900 dark:text-amber-100">Daily Verification Required</h3>
@@ -4194,7 +4197,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
               <button onClick={() => handleTabChange('dashboard')} className="mt-4 rounded-xl bg-amber-600 px-6 py-2.5 text-sm font-black text-white hover:bg-amber-500 transition-all">Go to Mission Control</button>
             </div>
           )}
-          {currentTab === 'tracker' && showerGateUnlocked && (
+          {currentTab === 'tracker' && showerGateAccessReady && (
             <div className="space-y-6 animate-fade-in" id="tab-view-tracker">
               {trackerStatus === 'completed' ? (
                 <EndOfDaySummary
@@ -4603,7 +4606,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                 </div>
               </div>
 
-              {!showerGateUnlocked && (
+              {SHOWER_GATE_REQUIRED && !showerGateUnlocked && (
               <section
                 id="mandatory-shower-habit"
                 className={`rounded-[8px] border-2 p-5 ${
@@ -5453,7 +5456,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
               rideMinutes={rideMinutes}
               navLink={navLink}
               isOutlier={outlierIds.includes(routeDetailJob.id)}
-              jobAccessLocked={!showerGateUnlocked}
+              jobAccessLocked={!showerGateAccessReady}
               onToggleComplete={handleToggleComplete}
               onEdit={handleOpenEditModal}
               onDelete={handleDeleteJob}

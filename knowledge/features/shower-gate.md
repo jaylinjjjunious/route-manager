@@ -2,7 +2,7 @@
 
 ## Description
 
-The Daily Shower Gate is a mandatory daily verification system. Before the user can access Route, Jobs, Battery, or Tracker tabs, they must scan a specific product barcode and upload a proof image.
+The Daily Shower Gate is a preserved daily verification system whose access requirement is temporarily bypassed. The scanner, proof upload, cycle management, and history remain available for later reactivation.
 
 ## User Value
 
@@ -125,7 +125,7 @@ Key endpoints:
 - `SHOWER_PROOF_MANDATORY = true` — Gate is always enforced.
 - Cycle resets at 6:00 AM local time (configurable in `showerCycle.ts:SHOWER_CYCLE_RESET`).
 - At exactly the reset boundary (e.g., 6:00:00), a new cycle begins.
-- Protected tabs: jobs, battery, tracker. Dashboard route controls still enforce current-cycle shower access for navigation and completion actions.
+- When SHOWER_GATE_REQUIRED is true, Dashboard route controls and the Battery/Tracker surfaces enforce current-cycle shower access. When false, they remain available.
 - Proof must have `uploadStatus === 'saved'` and `verificationStatus === 'verified'` to unlock.
 
 ## Error Handling

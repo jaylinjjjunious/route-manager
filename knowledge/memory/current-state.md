@@ -7,7 +7,7 @@
 ## Features Built
 
 - **6-tab navigation:** Dashboard, Jobs, Battery, Tracker, Habits, Settings — with protected tab support.
-- **Daily Shower Gate:** Barcode scan + proof upload + cycle management with 6:00 AM reset.
+- **Daily Shower Gate:** Barcode scan + proof upload + cycle management with 6:00 AM reset remain implemented, but access enforcement is temporarily bypassed by SHOWER_GATE_REQUIRED = false in src/App.tsx.
 - **Job system:** 5 types, 7 statuses, completion workflow, proof vault.
 - **Route optimization:** Nearest-neighbor algorithm, battery-aware, outlier detection.
 - **Dashboard route interface:** Dashboard is the authoritative route-planning and route-management surface; the standalone Route page has been retired. Today's Route cards open compact per-job detail panels from the card surface.
