@@ -38,6 +38,10 @@ For every finished application change:
 
 Never leave completed production work only in the local working tree.
 
+## User-Visible Handoff Verification
+
+Before describing a feature as ready, giving a walkthrough, or telling the user to check the app, personally verify the complete intended interaction in the actual user-visible app, including discoverability and visibility. If authenticated access is unavailable, report the validation blocker and do not shift verification to the user.
+
 Never use git push --force.
 
 Never commit .env files, secrets, tokens, private proof images, local databases, or upload folders.
