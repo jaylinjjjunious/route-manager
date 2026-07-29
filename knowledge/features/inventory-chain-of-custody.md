@@ -17,7 +17,7 @@ Job-scoped inventory tracking for receiving, installation, removal, and return o
 
 ## Workflow
 
-1. Open an existing job's detail sheet.
+1. Open Inventory from the main navigation, select an existing job, and use its custody panel.
 2. Capture the item with the rear camera, enter part and serial numbers, and save Receive-in.
 3. Tap Install when the item is installed, then Removal when it is removed.
 4. Enter the return receipt and tracking number and record Return.

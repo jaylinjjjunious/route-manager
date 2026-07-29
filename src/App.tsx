@@ -38,6 +38,7 @@ import { EndOfDaySummary } from './components/EndOfDaySummary';
 import ShowerGatePanel from './components/ShowerGatePanel';
 import ScreenshotImportModal from './components/ScreenshotImportModal';
 import SmartAisleScan from './components/SmartAisleScan';
+import InventoryCustodyPanel from './components/InventoryCustodyPanel';
 import SmartAisleScanTestLab from './components/SmartAisleScanTestLab';
 import { RouteFilter, filterJobsByType } from './components/RouteFilter';
 import type { RouteFilterType } from './components/RouteFilter';
@@ -55,7 +56,7 @@ import {
   LayoutDashboard, Briefcase, Battery, Settings, AlertTriangle, ArrowRightLeft,
   TrendingUp, HelpCircle, ShieldAlert, Sparkles, Compass, ExternalLink, Navigation, CheckCircle2,
   Pause, Square, Timer, Clock, ChevronDown, ChevronUp, ChevronRight, DollarSign, Zap, Award, Volume2, VolumeX,
-  FolderOpen, Camera, FileImage, ReceiptText, StickyNote, X, Hourglass, Bug, FlaskConical
+  FolderOpen, Camera, FileImage, ReceiptText, StickyNote, X, Hourglass, Bug, FlaskConical, PackageCheck
 } from 'lucide-react';
 
 const isSmartAisleTestLabEnabled = import.meta.env.DEV && import.meta.env.VITE_ENABLE_SMART_AISLE_TEST_LAB === 'true';
@@ -139,9 +140,9 @@ const SHOWER_PROOF_JPEG_QUALITY = 0.58;
 const SHOWER_BACKEND_TIMEOUT_MS = 15000;
 
 type BarcodePermissionStatus = 'idle' | 'requesting' | 'granted' | 'denied' | 'unsupported' | 'error';
-type AppTab = 'dashboard' | 'battery' | 'tracker' | 'habits' | 'tools' | 'settings';
+type AppTab = 'dashboard' | 'inventory' | 'battery' | 'tracker' | 'habits' | 'tools' | 'settings';
 
-const APP_TABS: AppTab[] = ['dashboard', 'battery', 'tracker', 'habits', 'tools', 'settings'];
+const APP_TABS: AppTab[] = ['dashboard', 'inventory', 'battery', 'tracker', 'habits', 'tools', 'settings'];
 const SHOWER_PROTECTED_TABS: AppTab[] = ['battery', 'tracker'];
 
 const RETIRED_ROUTE_DESTINATIONS = new Set(['route', 'routes', 'jobs']);
@@ -553,6 +554,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const [isTestLabOpen, setIsTestLabOpen] = useState(false);
   const [routeFilter, setRouteFilter] = useState<RouteFilterType>('today');
   const [routeDetailJobId, setRouteDetailJobId] = useState<string | null>(null);
+  const [inventoryJobId, setInventoryJobId] = useState<string | null>(null);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [defaultJobType, setDefaultJobType] = useState<JobType>('retail_audit');
   const [isConfigExpanded, setIsConfigExpanded] = useState(false);
@@ -2634,6 +2636,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const proofRecords = (Object.values(proofVault) as ProofRecord[]).sort((a, b) => new Date(b.completionTime).getTime() - new Date(a.completionTime).getTime());
   const selectedProofRecord = selectedProofJobId ? proofVault[selectedProofJobId] : null;
   const routeDetailJob = routeDetailJobId ? jobs.find(job => job.id === routeDetailJobId) || null : null;
+  const inventoryJob = jobs.find(job => job.id === inventoryJobId) || routeAJobs[0] || jobs[0] || null;
   const getRouteStopNavLink = (job: Job, idx: number) => {
     const origin = idx === 0
       ? startCoord
@@ -3630,6 +3633,27 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
 
               </div>
             </div>
+          )}
+
+          {/* Dedicated inventory workspace */}
+          {currentTab === 'inventory' && (
+            <section id='tab-view-inventory' className='space-y-5 animate-fade-in'>
+              <div className='road-card p-5 sm:p-6'>
+                <div className='flex items-start gap-3'>
+                  <div className='rounded-xl bg-cyan-500/10 p-3 text-cyan-500'><PackageCheck size={24} /></div>
+                  <div>
+                    <p className='text-xs font-black uppercase tracking-widest text-cyan-600 dark:text-cyan-300'>Inventory custody</p>
+                    <h2 className='mt-1 text-3xl font-black text-slate-950 dark:text-white'>Track equipment by job</h2>
+                    <p className='mt-2 max-w-2xl text-sm font-bold text-slate-500 dark:text-slate-300'>Receive, install, remove, and return equipment while preserving its evidence trail.</p>
+                  </div>
+                </div>
+                <label className='mt-5 block text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400'>Job</label>
+                <select value={inventoryJob?.id || ''} onChange={event => setInventoryJobId(event.target.value)} className='mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-900 outline-none focus:border-cyan-500 dark:border-white/10 dark:bg-white/5 dark:text-white'>
+                  {jobs.length === 0 ? <option value=''>No jobs available</option> : jobs.map(job => <option key={job.id} value={job.id}>{job.storeName} - {job.address}</option>)}
+                </select>
+              </div>
+              {inventoryJob ? <InventoryCustodyPanel job={inventoryJob} /> : <div className='road-card p-6 text-sm font-bold text-slate-500'>Add or import a job to begin inventory custody.</div>}
+            </section>
           )}
 
           {/* Tab 4: Battery Safety Parameters */}
@@ -5299,6 +5323,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           >
             {[
               { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, color: 'text-blue-500' },
+              { id: 'inventory', label: 'Inventory', icon: PackageCheck, color: 'text-cyan-500' },
               { id: 'battery', label: 'Battery', icon: Battery, color: 'text-lime-600' },
               { id: 'tracker', label: 'Tracker', icon: Timer, color: 'text-indigo-500' },
               { id: 'habits', label: 'Habits', icon: Award, color: 'text-amber-500' },
