@@ -13,6 +13,10 @@ import {
 } from 'lucide-react';
 import type { Job } from '../types';
 import {
+  findInventoryCatalogMatch,
+  type InventoryCatalogEntry,
+} from '../services/inventory/referenceCatalog';
+import {
   appendCustodyEvent,
   createCustodyEvent,
   emptyCustodyLedger,
@@ -34,6 +38,20 @@ interface InventoryCustodyPanelProps {
 
 type ActionType = Exclude<CustodyEventType, 'receive_in'>;
 
+interface InventoryBarcodeResult {
+  rawValue?: string;
+}
+
+interface InventoryBarcodeDetector {
+  new (options?: { formats?: string[] }): {
+    detect: (source: ImageBitmap) => Promise<InventoryBarcodeResult[]>;
+  };
+}
+
+const inventoryBarcodeHost = globalThis as typeof globalThis & {
+  BarcodeDetector?: InventoryBarcodeDetector;
+};
+
 function makeLocalId(prefix: string): string {
   if (globalThis.crypto?.randomUUID) return `${prefix}-${globalThis.crypto.randomUUID()}`;
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -53,6 +71,8 @@ export default function InventoryCustodyPanel({ job }: InventoryCustodyPanelProp
   const [serialNumber, setSerialNumber] = useState('');
   const [receiveNotes, setReceiveNotes] = useState('');
   const [receivePhoto, setReceivePhoto] = useState<CustodyEvidence | null>(null);
+  const [catalogMatch, setCatalogMatch] = useState<InventoryCatalogEntry | null>(null);
+  const [catalogMessage, setCatalogMessage] = useState('Catalog match is optional; manual correction is always available.');
   const [receiveDocuments, setReceiveDocuments] = useState<CustodyEvidence[]>([]);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [returnReceipt, setReturnReceipt] = useState('');
@@ -103,6 +123,28 @@ export default function InventoryCustodyPanel({ job }: InventoryCustodyPanelProp
     try {
       setReceivePhoto(await fileToCustodyEvidence(file, 'photo'));
       setMessage('Item photo ready. Confirm the part and serial to receive it.');
+      const BarcodeDetector = inventoryBarcodeHost.BarcodeDetector;
+      if (BarcodeDetector && globalThis.createImageBitmap) {
+        try {
+          const image = await createImageBitmap(file);
+          const detector = new BarcodeDetector({ formats: ['code_128', 'code_39', 'data_matrix', 'qr_code', 'ean_13', 'upc_a'] });
+          const detectedValue = (await detector.detect(image))[0]?.rawValue || '';
+          image.close();
+          const match = findInventoryCatalogMatch(detectedValue);
+          if (match) {
+            setPartNumber(match.partNumber);
+            setCatalogMatch(match);
+            setCatalogMessage(`Barcode matched ${match.partNumber}. Confirm or correct before receiving.`);
+          } else if (detectedValue) {
+            setCatalogMatch(null);
+            setCatalogMessage(`Barcode ${detectedValue} was not in the reference catalog. Correct the part number manually.`);
+          } else {
+            setCatalogMessage('No supported part barcode detected. Enter the part number manually.');
+          }
+        } catch {
+          setCatalogMessage('Barcode scan was unavailable for this image. Enter the part number manually.');
+        }
+      }
     } catch {
       setMessage('The item photo could not be read. Try the camera again.');
     }
@@ -224,7 +266,7 @@ export default function InventoryCustodyPanel({ job }: InventoryCustodyPanelProp
         </div>
         {receivePhoto && <img src={receivePhoto.dataUrl} alt="Captured inventory item" className="h-24 w-full rounded-lg object-cover" />}
         <div className="grid grid-cols-2 gap-2">
-          <input value={partNumber} onChange={event => setPartNumber(event.target.value)} placeholder="Part number" className="min-w-0 rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-cyan-400" />
+          <input value={partNumber} onChange={event => { const value = event.target.value; setPartNumber(value); setCatalogMatch(findInventoryCatalogMatch(value)); }} placeholder="Part number" className="min-w-0 rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-cyan-400" />
           <input value={serialNumber} onChange={event => setSerialNumber(event.target.value)} placeholder="Serial number" className="min-w-0 rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-cyan-400" />
         </div>
         <textarea value={receiveNotes} onChange={event => setReceiveNotes(event.target.value)} placeholder="Optional receiving note" rows={2} className="w-full resize-none rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-cyan-400" />
@@ -235,6 +277,8 @@ export default function InventoryCustodyPanel({ job }: InventoryCustodyPanelProp
         <button type="button" disabled={isSaving} onClick={() => { void handleReceive(); }} className="flex min-h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-white px-3 py-2 text-xs font-black text-slate-950 hover:bg-cyan-50 disabled:opacity-50">
           <PackageCheck size={14} /> Receive item and start custody history
         </button>
+        <p className="text-[10px] font-bold text-cyan-200">{catalogMessage}</p>
+        {catalogMatch && <p className="text-[10px] text-emerald-300">Matched: {catalogMatch.description}</p>}
       </div>
 
       {activeItems.length > 0 && (
