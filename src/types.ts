@@ -42,6 +42,16 @@ export interface ProcessServeDetails {
   proofReady?: boolean;
 }
 
+export interface CalendarSourceMeta {
+  eventId: string;
+  calendarId: string;
+  eventStart: string; // ISO datetime in source timezone
+  eventEnd: string;
+  allDay: boolean;
+  sourceTimezone: string;
+  lastSyncedAt: string;
+}
+
 export interface Job {
   id: string;
   storeName: string;
@@ -65,6 +75,10 @@ export interface Job {
   processServe?: ProcessServeDetails;
   captureMode?: 'single_photo' | 'manual_multiple' | 'smart_aisle_scan';
   scanSessionId?: string;
+  /** Local workday YYYY-MM-DD in America/Los_Angeles. Absent for legacy/undated jobs (effective day is derived). */
+  scheduledDate?: string;
+  /** Snapshot metadata for future Google Calendar imports. Never drives day grouping — scheduledDate does. */
+  calendar?: CalendarSourceMeta;
   /** Existing jobs default to merchandising; contract-parts jobs must opt in explicitly. */
   inventoryDomain?: 'merchandising' | 'contract_parts';
 }

@@ -1,6 +1,7 @@
 import { Job, JobStatus, StatusEvent } from '../types';
+import { migrateScheduledDates, ScheduleMigrationResult, todayString } from './jobSchedule';
 
-export const JOB_STATE_SCHEMA_VERSION = '3';
+export const JOB_STATE_SCHEMA_VERSION = '4';
 
 const VALID_JOB_STATUSES: JobStatus[] = ['ready', 'revisit', 'under_review', 'completed', 'pending', 'postponed', 'outlier', 'finished'];
 
@@ -85,4 +86,22 @@ export function normalizeJobState(job: Job): Job {
 
 export function normalizeJobsForStorage(jobs: Job[]): Job[] {
   return jobs.map(normalizeJobState);
+}
+
+/**
+ * Runs the one-time legacy `jobs_moved_to_tomorrow` migration (schema 3 → 4)
+ * then normalizes. Idempotent: jobs that already carry a valid scheduledDate
+ * are preserved, so re-running after a partial write is safe.
+ */
+export function migrateJobSchedules(
+  jobs: Job[],
+  movedToTomorrowIds: string[],
+  today: string = todayString(),
+): ScheduleMigrationResult & { jobs: Job[] } {
+  const migrated = migrateScheduledDates(jobs, movedToTomorrowIds, today);
+  return {
+    jobs: normalizeJobsForStorage(migrated.jobs),
+    migratedCount: migrated.migratedCount,
+    changed: migrated.changed,
+  };
 }

@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { Job, JobType, JobStatus, ProcessServeDetails } from '../types';
 import { resolveCoordinates, BAKERSFIELD_COORDINATES } from '../utils/routeUtils';
+import { todayString } from '../utils/jobSchedule';
 import { X, Sparkles, MapPin, DollarSign, Clock, HelpCircle } from 'lucide-react';
 
 interface JobModalProps {
@@ -33,6 +34,7 @@ export default function JobModal({
   const [estimatedMinutes, setEstimatedMinutes] = useState<number>(20);
   const [jobType, setJobType] = useState<JobType>('retail_audit');
   const [dueTime, setDueTime] = useState('17:00');
+  const [scheduledDate, setScheduledDate] = useState<string>('');
   const [notes, setNotes] = useState('');
   const [routeId, setRouteId] = useState<'A' | 'B'>('A');
   const [status, setStatus] = useState<JobStatus>('ready');
@@ -82,6 +84,7 @@ export default function JobModal({
       setEstimatedMinutes(editingJob.estimatedMinutes);
       setJobType(editingJob.jobType);
       setDueTime(editingJob.dueTime);
+      setScheduledDate(editingJob.scheduledDate ?? '');
       setNotes(editingJob.notes);
       setRouteId(editingJob.routeId);
       setStatus(editingJob.status === 'pending' ? 'ready' : (editingJob.status || 'ready'));
@@ -100,6 +103,7 @@ export default function JobModal({
       setEstimatedMinutes(isProcessServeDefault ? 10 : 20);
       setJobType(defaultJobType);
       setDueTime(isProcessServeDefault ? 'ASAP' : '17:00');
+      setScheduledDate('');
       setNotes(isProcessServeDefault ? 'Use ABC Legal app as source of truth. Record attempt result, GPS/photo proof, residence evidence, and any safety/access issues.' : '');
       setRouteId(defaultRouteId);
       setStatus('ready');
@@ -163,6 +167,7 @@ export default function JobModal({
       estimatedMinutes: Number(estimatedMinutes),
       jobType,
       dueTime,
+      scheduledDate: scheduledDate || undefined,
       notes: notes.trim(),
       status,
       routeId,
@@ -393,6 +398,25 @@ export default function JobModal({
               </div>
             </div>
           </div>
+
+          {/* Optional schedule day */}
+          <div>
+            <label htmlFor="scheduled-date-input" className="block text-xs font-bold text-slate-600 uppercase tracking-wide dark:text-slate-400 mb-1">
+              Schedule For (Optional)
+            </label>
+            <input
+              id="scheduled-date-input"
+              type="date"
+              min={todayString()}
+              value={scheduledDate}
+              onChange={(e) => setScheduledDate(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm dark:border-white/10 dark:bg-[#050505] dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            />
+            <p className="mt-1 text-[11px] font-semibold text-slate-400 dark:text-slate-500">
+              Leave empty for today&apos;s route. A future date moves this job to standby (Route B) and it stays out of today&apos;s pool.
+            </p>
+          </div>
+
 
           {isProcessServe && (
             <div className="space-y-4 rounded-xl border-2 border-red-200 bg-red-50/60 p-4 dark:border-red-500/20 dark:bg-red-500/10">

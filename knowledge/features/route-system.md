@@ -10,6 +10,10 @@ Greedy nearest-neighbor route optimization with battery-aware planning, Dashboar
 
 Dashboard is the authoritative route interface. The standalone Route tab/page was retired; Dashboard owns the user-facing route workflow for next stop, Today's Route, per-job detail panels, navigation links, review/complete actions, move controls, revision alerts, route order, route updates, and route calculations.
 
+### Scheduling (Phase 1) integration
+
+Today's Route pool = Route A jobs whose `effectiveDay(job, today) === today` (`src/utils/jobSchedule.ts`). Future-dated jobs live on standby (Route B) and are excluded from today's pool; they are surfaced through the dashboard weekly strip (`WeeklyStrip`), per-day detail (`ExpandedDayPanel`), and the unscheduled/overdue review list. Moving a job to a future day sets `routeId: 'B'`; moving to today sets `routeId: 'A'`. Route re-optimization only ever runs over today's executable pool — future-dated Route A jobs are never re-ordered. Completed `finished` Route A jobs still roll into Route B at day end. Midday rollover only recomputes derived filters; active rides are never silently re-sorted.
+
 Today's Route card surfaces are interactive: tapping the card surface opens a `DashboardJobDetailSheet` bottom-sheet modal that renders the shared `JobCard` component (the same visual design as the Jobs tab). The sheet includes a compact route-info header (stop number, leg distance, ride time) and footer actions (Navigate, Open in Jobs). Existing Navigate, Review, and Move controls on the route card stop event propagation and keep their original behavior.
 
 The underlying route system remains shared: `src/utils/routeUtils.ts`, route state in `src/App.tsx`, route/job types, battery-aware metrics, revision insertion, and Route A/Route B assignment logic are still active. Retired route destinations (`/route`, `/routes`, `#route`) redirect to Dashboard.
@@ -171,15 +175,16 @@ Jobs → optimizeRoute → Optimized List → Ride Mode
 ## Related Source Files
 
 - `src/utils/routeUtils.ts` — core algorithms and config
+- `src/utils/jobSchedule.ts` — effective-day pooling that gates today's route
 - `src/App.tsx` — Ride Mode and route state
 - `src/components/BakersfieldMapPreview.tsx` — shared map visualization component, currently not mounted by the retired Route tab
 
 ## Related Knowledge
 
-- [Job System](./job-system.md) — jobs feed into route optimization
+- [Job System](./job-system.md) — jobs feed into route optimization (incl. scheduling)
 - [Habit Tracker](./habit-tracker.md) — shower requirement before ride
 - [Voice System](./voice-system.md) — TTS for directions during ride
 
 ## Last Updated
 
-2026-07-22 (dashboard-route-job-details)
+2026-07-30 (phase-1-scheduling: today's pool + future-day standby)

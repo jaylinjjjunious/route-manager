@@ -31,6 +31,8 @@
 - Bottom navigation on mobile needs `overflow-x-auto` for small screens to prevent tab overflow.
 - Focus trapping improves accessibility for modal-like components.
 - Optional chaining filters must check `!= null` when a missing parent object should be excluded; `obj?.value !== null` still allows `undefined` through.
+- Local calendar days must never round-trip through `new Date('YYYY-MM-DD')` — that parses as UTC and shifts the rider's day. Use a local-noon `Date` for math and `Intl.DateTimeFormat('en-CA', { timeZone })` for the `YYYY-MM-DD` string, and encode the rule in a timezone test.
+- Date validation must check the real calendar (leap years, month lengths) with `Date.UTC` re-read, and invalid stored dates surface as Needs Review instead of being silently coerced.
 
 ## CSS / Dark Mode
 
@@ -53,5 +55,5 @@
 
 ---
 
-**Last Updated:** 2026-07-30 (integrate-official-transit-api)
+**Last Updated:** 2026-07-30 (phase-1-scheduling)
 

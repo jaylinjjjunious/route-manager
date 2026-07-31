@@ -41,7 +41,7 @@ Six app tabs defined in `src/App.tsx`:
 
 | Tab | ID | Protected | Purpose |
 |-----|----|-----------|---------|
-| Dashboard | `dashboard` | No | Shower gate, ride mode toggle, quick actions, Today's Route management |
+| Dashboard | `dashboard` | No | Shower gate, ride mode toggle, quick actions, Today's Route management, weekly scheduling strip + expanded day panel |
 | Jobs | `jobs` | Yes | Job list, sub-tabs (Active, Secure Import, Archived), proof vault |
 | Battery | `battery` | Yes | Jasion EB5 telemetry, range calculator |
 | Tracker | `tracker` | Yes | End of day summary, ride telemetry |
@@ -56,6 +56,7 @@ All state lives in `App.tsx` using `useState` hooks. No Redux, Zustand, or Conte
 
 Key state groups:
 - **Jobs**: `jobs`, `routeOrder`, `routeAJobs`, `archivedJobs`
+- **Scheduling**: `today` (local LA date string, recomputed on focus/visibility/60s tick), `selectedStripDate`, `showScheduleReview`, `moveToDayJob`
 - **Inventory**: `inventoryDomain`, `inventoryJobId`, domain-filtered job selection
 - **Route**: `routeMetrics`, `routingProvider`, `nextRouteAJob`
 - **Ride Mode**: `rideModeActive`, `currentStopIndex`, `rideSession`
@@ -63,6 +64,10 @@ Key state groups:
 - **Habits**: `showerHabitLogs`, `showerHabitTasks`
 - **Proof Vault**: `proofVault` (keyed by jobId)
 - **Settings**: `startAddress`, `theme`, `debugCenterOpen`
+
+### Scheduling derivations
+
+Today's route pool, the weekly strip, and the expanded day panel all derive from `effectiveDay(job, today)` and `groupJobsByDay(jobs, today)` in `src/utils/jobSchedule.ts` (see ADR-016). Only derived filters change on the mid-day rollover — job state is never mutated and active rides are never silently re-sorted.
 
 ### Rendering Patterns
 
@@ -129,4 +134,4 @@ Targets modern mobile browsers (iOS Safari, Android Chrome) and desktop (Chrome,
 
 ## Last Updated
 
-2026-07-28 (smart-aisle-immediate-delete-lens-cleanliness)
+2026-07-30 (phase-1-scheduling)

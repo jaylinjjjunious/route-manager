@@ -1,11 +1,41 @@
 # UI Components
 
-**Last Updated:** 2026-07-28 (smart-aisle-immediate-delete-lens-cleanliness)
+**Last Updated:** 2026-07-30 (phase-1-scheduling)
 **Related Source Files:** `src/components/*.tsx`, `src/assistant/*.tsx`
 
 ---
 
 ## Component Reference
+
+### WeeklyStrip
+
+| Field | Value |
+|-------|-------|
+| **File** | `src/components/WeeklyStrip.tsx` |
+| **Props** | `days: ScheduledDaySummary[]`, `today: string`, `selectedDate: string \| null`, `onSelect: (date: string) => void`, `overdueCount: number`, `unscheduledCount: number`, `onReviewOverdue: () => void`, `onReviewUnscheduled: () => void` |
+| **Responsibility** | 7-day horizontal snap-scroll scheduling strip on the Mission Control dashboard (desktop `lg:col-span-4`). Cell shows weekday/date/job count/pay plus a `◌` weather placeholder (Phase 2). Today pill (blue), selected ring (amber), Needs Review badge, overdue + unscheduled chips, arrow-key/Home/End navigation, `motion-reduce:transition-none`. |
+
+---
+
+### ExpandedDayPanel
+
+| Field | Value |
+|-------|-------|
+| **File** | `src/components/ExpandedDayPanel.tsx` |
+| **Props** | `day: ScheduledDaySummary`, `today: string`, `todayJobsCount`, `todayPay`, `todayWorkMinutes`, `startCoord`, `avgSpeedMph`, `onMoveToDay(job)`, `onOpenJob(id)`, `onPlanThisDay(day)`, `onAddJob()`, `onMoveExisting()`, `onCollapse()` |
+| **Responsibility** | Detail panel shown beneath the strip for the selected day (or today when no day is selected). Stats (Jobs/Pay/Work/Ride), placeholders for Phase 2 weather/transit analysis, Plan This Day (today → re-optimize; future → validation hint), Compare Days table, per-job list with Move actions, Needs Review inline list with Fix/Move, disabled "Hear Summary" (Phase 3), empty-day Add Job / Move Existing Job actions, Collapse. |
+
+---
+
+### MoveToDaySheet
+
+| Field | Value |
+|-------|-------|
+| **File** | `src/components/MoveToDaySheet.tsx` |
+| **Props** | `job: Job \| null`, `today: string`, `onMove(id, date \| null)`, `onClose()` |
+| **Responsibility** | Portal bottom-sheet/modal to reschedule a job. Move to Today, Move to Tomorrow, native date input (min today, max today+365), save-state spinner + error message, Remove scheduled date, Escape/tap-outside close. Past dates disallowed; jobs move in place (no duplicates). |
+
+---
 
 ### AI Operations Assistant System
 
@@ -154,7 +184,7 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 |-------|-------|
 | **File** | `src/components/DashboardJobDetailSheet.tsx` |
 | **Props** | `job: Job`, `routeIndex: number \| null`, `legDistance: number`, `rideMinutes: number`, `navLink: string`, `isOutlier: boolean`, `jobAccessLocked: boolean`, `onToggleComplete`, `onEdit`, `onDelete`, `onDuplicate`, `onToggleRoute`, `onUpdateStatus`, `onOpenInJobs`, `onClose` |
-| **Responsibility** | Mobile-friendly bottom-sheet modal that opens when a Dashboard "Today's Route" card is tapped. Wraps `JobCard` as the shared detail component with a compact route-info header (stop number, leg distance, ride time) and footer actions (Navigate, Open in Jobs). Does not duplicate JobCard's design. |
+| **Responsibility** | Mobile-friendly bottom-sheet modal that opens when a Dashboard "Today's Route" card is tapped. Wraps `JobCard` as the shared detail component with a compact route-info header (stop number, leg distance, ride time) and footer actions (Navigate, Open in Jobs). Does not duplicate JobCard's design. Displays a Scheduled row and a "Move to a different day" action (opens MoveToDaySheet) when present. |
 
 ---
 
@@ -164,7 +194,7 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 |-------|-------|
 | **File** | `src/components/JobModal.tsx` |
 | **Props** | `job: Job`, `onSave: (job: Job) => void`, `onClose: () => void` |
-| **Responsibility** | Modal dialog for viewing and editing job details. Provides form fields for job attributes and save/cancel actions. |
+| **Responsibility** | Modal dialog for viewing and editing job details. Provides form fields for job attributes and save/cancel actions. Includes an optional "Schedule For" native date input (min today; future dates go to standby Route B). |
 
 ---
 

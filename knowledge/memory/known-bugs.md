@@ -13,6 +13,7 @@
 | P006 | Low | No error monitoring or alerting | Open |
 | P008 | Low | Lens cleanliness detection may produce false uncertain results on naturally low-detail scenes (plain walls); controlled testing with real smudge samples is needed to calibrate confidence thresholds | Open |
 | P009 | Low | Transit plan walk legs return placeholder board/exit coordinates because the upstream plan API does not expose coordinates on plan legs | Open |
+| P010 | Low | Legacy jobs moved with the old "Move → Route B" control before Phase 1 scheduling shipped have no `scheduledDate`; they surface as unscheduled rather than pinned to a day until rescheduled | Open |
 
 
 ## Resolved Bugs
@@ -28,5 +29,5 @@
 
 ---
 
-**Last Updated:** 2026-07-30 (integrate-official-transit-api)
+**Last Updated:** 2026-07-30 (phase-1-scheduling)
 

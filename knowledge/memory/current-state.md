@@ -4,6 +4,15 @@
 
 **Phase 2 active.** Core features are built and deployed. Phase 3 (server sync, multi-user, team dashboard) has not started.
 
+## Phase 1 Scheduling
+
+Implemented on top of the existing job system:
+- `Job.scheduledDate?: string` — local workday `YYYY-MM-DD` in `America/Los_Angeles` (never UTC).
+- Mission Control dashboard gains the weekly strip (`WeeklyStrip`), expanded day panel (`ExpandedDayPanel`), and move-to-day sheet (`MoveToDaySheet`).
+- Today's Route pool = Route A jobs with `effectiveDay === today`; future-dated jobs live on standby (Route B).
+- Legacy `jobs_moved_to_tomorrow` migrated to per-job `scheduledDate` (schema v4).
+- Weather/AQ (Phase 2 of scheduling) and TTS companion (Phase 3 of scheduling) remain planned; strip shows `◌` placeholders.
+
 ## Features Built
 
 - **6-tab navigation:** Dashboard, Jobs, Battery, Tracker, Habits, Settings — with protected tab support.
@@ -39,4 +48,4 @@
 
 ---
 
-**Last Updated:** 2026-07-30 (integrate-official-transit-api)
+**Last Updated:** 2026-07-30 (phase-1-scheduling)

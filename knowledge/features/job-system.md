@@ -54,6 +54,27 @@ interface Job {
 }
 ```
 
+## Scheduling (Phase 1 — per-job workday)
+
+Every job can be pinned to a local workday with `Job.scheduledDate?: string` (`YYYY-MM-DD` in `America/Los_Angeles`, never a UTC timestamp).
+
+### Rules
+
+- **`effectiveDay(job, today)`** (src/utils/jobSchedule.ts): a valid `scheduledDate` always wins; an *invalid* date is never coerced and returns `null` so it surfaces as Needs Review; an undated Route A job that is actionable (`ready`/`revisit`/`outlier`) or `under_review` derives `today` (derived only, never persisted). Undated Route B / inactive jobs have no effective day and surface through the unscheduled review list.
+- **Moving jobs**: moving to a future day sets `routeId: 'B'` (standby); moving to today sets `routeId: 'A'` and triggers re-optimization. Moves are in place (same job object) — no duplicates; proof/inventory/notes/statusHistory are preserved.
+- **Past dates are disallowed** in Move-to-Day (native `input type="date"`, `min` today, `max` today+365). Invalid stored dates → Needs Review, never silently coerced.
+- **Today's Route pool** = Route A jobs with `effectiveDay === today` (includes under-review for visibility; `activeRouteAJobs`/next stop excludes them). Postponed jobs are excluded and surfaced via the unscheduled review list.
+- **Midday rollover**: local date is recomputed on mount/focus/visibilitychange/60s tick; only derived filters change, no job mutation, and active rides are never silently re-sorted.
+- **Overdue**: an active job (`actionable` or `under_review`) pinned to a date strictly before today is surfaced in the strip's overdue review — never auto-moved.
+
+### Migration (schema v4)
+
+`JOB_STATE_SCHEMA_VERSION = '4'` (src/utils/jobState.ts). The legacy `jobs_moved_to_tomorrow` list is read once at boot and migrated into per-job `scheduledDate = tomorrow` + Route B. Completed/finished/under-review jobs are never rewritten. The legacy key is cleared only after a successful migrated write; there are no new writers.
+
+### Grouping
+
+`groupJobsByDay(jobs, today)` returns a 7-day `ScheduledDaySummary[]` (date, jobs, pay, workMinutes, reviewJobs) starting today — feeds the weekly strip and expanded day panel.
+
 ## Architecture
 
 ### Data Flow
@@ -138,10 +159,15 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 ## Related Source Files
 
 - `src/App.tsx` — main app state, Dashboard Today's Route cards, compact route job detail panel, and handlers
-- `src/types.ts` — Job type definitions
-- `src/utils/jobState.ts` — schema normalization
+- `src/types.ts` — Job type definitions (`scheduledDate`, `calendar`, `CalendarSourceMeta`)
+- `src/utils/jobState.ts` — schema normalization (v4) + `migrateJobSchedules`
+- `src/utils/jobSchedule.ts` — scheduling/migration/grouping helpers
+- `src/components/WeeklyStrip.tsx` — 7-day scheduling strip on the dashboard
+- `src/components/ExpandedDayPanel.tsx` — per-day detail panel (jobs, pay, plan, review)
+- `src/components/MoveToDaySheet.tsx` — move-a-job-to-a-day bottom sheet/modal
 - `src/components/JobCard.tsx` — job display component
-- `src/components/JobModal.tsx` — job editing/completion modal
+- `src/components/JobModal.tsx` — job editing/completion modal (optional schedule field)
+- `src/components/JobDetailModal.tsx` — scheduled row + Move-to-Day action
 - `src/components/OutlierDetector.tsx` — outlier detection UI
 
 ## Related Knowledge
@@ -152,4 +178,4 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 
 ## Last Updated
 
-2026-07-22 (dashboard-route-job-details)
+2026-07-30 (phase-1-scheduling: per-job scheduledDate + weekly strip)

@@ -1,6 +1,6 @@
 # Navigation System
 
-**Last Updated:** 2026-07-29 (temporary-shower-gate-bypass)
+**Last Updated:** 2026-07-30 (phase-1-scheduling)
 **Related Source Files:** `src/App.tsx`
 
 ---
@@ -74,7 +74,7 @@ This creates a frosted glass appearance that sits above the content layer while 
 
 ## Standalone Route Destination
 
-The standalone Route tab was retired. Dashboard is now the authoritative interface for route planning and route management, including Next Stop, Today's Route, compact per-job route details, navigation actions, review/complete actions, move controls, revision alerts, route order, and route calculations.
+The standalone Route tab was retired. Dashboard is now the authoritative interface for route planning and route management, including Next Stop, Today's Route, compact per-job route details, navigation actions, review/complete actions, move controls, revision alerts, route order, route calculations, and the weekly scheduling strip / expanded day panel (Phase 1 scheduling — integrated into the Mission Control grid, not a new tab).
 
 Retired route destinations (`/route`, `/routes`, and `#route`) redirect to Dashboard. Assistant route requests also open Dashboard and focus Today's Route when possible.
 

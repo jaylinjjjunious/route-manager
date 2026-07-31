@@ -20,13 +20,24 @@ import {
 import {
   JOB_STATE_SCHEMA_VERSION,
   isJobCompleted,
+  isJobFinished,
   isRevisionJob,
   normalizeJobState,
   normalizeJobsForStorage,
-  isJobFinished,
-  isUnderReview,
-  recordStatusTransition
+  recordStatusTransition,
+  migrateJobSchedules
 } from './utils/jobState';
+import {
+  addDays,
+  effectiveDay,
+  todayString,
+  isValidScheduledDate,
+  isActionableJob,
+  formatScheduledDate,
+  groupJobsByDay,
+  isOverdue,
+  SCHEDULE_MAX_DAYS_AHEAD
+} from './utils/jobSchedule';
 import Header from './components/Header';
 import JobCard from './components/JobCard';
 import JobModal from './components/JobModal';
@@ -47,6 +58,9 @@ import { BusModeToggle } from './components/BusModeToggle';
 import { TransitTripCard } from './components/TransitTripCard';
 import { useTransitTrip } from './hooks/useTransitTrip';
 import { TransitDashboardCard } from './components/transit/TransitDashboardCard';
+import { WeeklyStrip } from './components/WeeklyStrip';
+import { ExpandedDayPanel } from './components/ExpandedDayPanel';
+import { MoveToDaySheet } from './components/MoveToDaySheet';
 import { TransitToolsPanel } from './components/transit/TransitToolsPanel';
 import { TransitStatusCard } from './components/transit/TransitStatusCard';
 import type { TravelMode } from './types';
@@ -427,14 +441,10 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
       return [];
     }
   });
-  const [jobsMovedToTomorrowIds, setJobsMovedToTomorrowIds] = useState<string[]>(() => {
-    try {
-      const saved = safeStorage.getItem('jobs_moved_to_tomorrow');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [today, setToday] = useState<string>(() => todayString());
+  const [selectedStripDate, setSelectedStripDate] = useState<string | null>(null);
+  const [showScheduleReview, setShowScheduleReview] = useState<'overdue' | 'unscheduled' | null>(null);
+  const [moveToDayJob, setMoveToDayJob] = useState<Job | null>(null);
   const trackerTimerRef = useRef<number | null>(null);
   const [habitTasks, setHabitTasks] = useState<HabitTask[]>(() => {
     try {
@@ -565,6 +575,21 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const [defaultJobType, setDefaultJobType] = useState<JobType>('retail_audit');
   const [isConfigExpanded, setIsConfigExpanded] = useState(false);
 
+  // Day rollover: recompute the local date on focus/visibility and on a
+  // foreground minute tick. Only derived filters change — no job data is
+  // mutated, so an active ride is never silently re-sorted.
+  useEffect(() => {
+    const refresh = () => setToday((prev) => (prev === todayString() ? prev : todayString()));
+    const id = window.setInterval(refresh, 60_000);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, []);
+
   // Load from local storage
   useEffect(() => {
     const savedJobs = safeStorage.getItem('route_optimizer_jobs');
@@ -589,12 +614,26 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     if (savedJobs) {
       try {
         const parsedJobs = JSON.parse(savedJobs);
-        const migratedJobs = Array.isArray(parsedJobs) && parsedJobs.length > 0
-          ? normalizeJobsForStorage(parsedJobs)
-          : normalizeJobsForStorage(SEED_JOBS);
-        setJobs(migratedJobs);
-        safeStorage.setItem('route_optimizer_jobs', JSON.stringify(migratedJobs));
+        const rawJobs = Array.isArray(parsedJobs) && parsedJobs.length > 0
+          ? parsedJobs
+          : SEED_JOBS;
+        let legacyMovedIds: string[] = [];
+        try {
+          const moved = safeStorage.getItem('jobs_moved_to_tomorrow');
+          if (moved) {
+            const parsed = JSON.parse(moved);
+            if (Array.isArray(parsed)) legacyMovedIds = parsed;
+          }
+        } catch {
+          // Legacy list unreadable — fall through with no migration targets.
+        }
+        const migrated = migrateJobSchedules(rawJobs, legacyMovedIds, today);
+        setJobs(migrated.jobs);
+        safeStorage.setItem('route_optimizer_jobs', JSON.stringify(migrated.jobs));
         safeStorage.setItem('route_optimizer_jobs_schema_version', JOB_STATE_SCHEMA_VERSION);
+        if (migrated.changed) {
+          safeStorage.removeItem('jobs_moved_to_tomorrow');
+        }
       } catch (e) {
         const seededJobs = normalizeJobsForStorage(SEED_JOBS);
         setJobs(seededJobs);
@@ -904,6 +943,21 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const routeAJobs = jobs.filter(j => j.routeId === 'A');
   const routeBJobs = jobs.filter(j => j.routeId === 'B');
 
+  // Scheduling derivations (local day in America/Los_Angeles).
+  const tomorrow = addDays(today, 1);
+  // Today's Route pool: Route A jobs whose effective day is today — includes
+  // actionable jobs plus under-review jobs (reviewable, but never the next
+  // stop). Postponed jobs are intentionally excluded and surface through the
+  // unscheduled review list.
+  const todayRouteJobs = jobs.filter(j => j.routeId === 'A' && effectiveDay(j, today) === today);
+  const executableRouteJobs = todayRouteJobs.filter(isActionableJob);
+  const tomorrowJobs = jobs.filter(j => effectiveDay(j, today) === tomorrow);
+  const overdueJobs = jobs.filter(j => isOverdue(j, today));
+  const unscheduledJobs = jobs.filter(j => effectiveDay(j, today) === null && !isJobCompleted(j) && !isJobFinished(j));
+  const weeklyDays = groupJobsByDay(jobs, today);
+  const todayDay = weeklyDays[0];
+  const selectedDay = selectedStripDate ? weeklyDays.find(day => day.date === selectedStripDate) || null : null;
+
   useEffect(() => {
     jobs
       .filter(isJobCompleted)
@@ -985,8 +1039,8 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     return 'Ready';
   };
   const completedRouteAJobs = routeAJobs.filter(isJobDone);
-  const remainingRouteAJobs = routeAJobs.filter(job => !isJobDone(job) && !isJobFinished(job));
-  const activeRouteAJobs = remainingRouteAJobs.filter(job => !isUnderReview(job));
+  const remainingRouteAJobs = todayRouteJobs;
+  const activeRouteAJobs = executableRouteJobs;
   const nextRouteAJob = activeRouteAJobs[0] || null;
   const liveEarnedToday = completedRouteAJobs.reduce((sum, job) => sum + job.pay, 0);
   const isWorkSessionActive = trackerStatus === 'riding' || trackerStatus === 'at_store';
@@ -1003,13 +1057,13 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
 
   // Filter counts
   const routeFilterCounts = {
-    today: routeAJobs.filter(j => j.status !== 'finished' && j.status !== 'completed').length,
-    under_review: routeAJobs.filter(j => j.status === 'under_review').length,
-    revisions: routeAJobs.filter(j => j.status === 'revisit').length,
+    today: todayRouteJobs.filter(j => j.status !== 'finished' && j.status !== 'completed').length,
+    under_review: todayRouteJobs.filter(j => j.status === 'under_review').length,
+    revisions: todayRouteJobs.filter(j => j.status === 'revisit').length,
     finished: routeAJobs.filter(j => j.status === 'finished' || j.status === 'completed').length,
   };
 
-  const filteredRouteJobs = filterJobsByType(routeAJobs, routeFilter);
+  const filteredRouteJobs = filterJobsByType(todayRouteJobs, routeFilter);
 
   const transitOrigin = { latitude: startCoord.lat, longitude: startCoord.lng };
   const transitDest = nextRouteAJob ? { latitude: nextRouteAJob.coordinates.lat, longitude: nextRouteAJob.coordinates.lng } : null;
@@ -1026,12 +1080,17 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const saveJobsToStorage = (updatedJobs: Job[]) => {
     const normalizedJobs = normalizeJobsForStorage(updatedJobs);
     const routeAJobs = normalizedJobs.filter(j => j.routeId === 'A' && j.status !== 'finished');
+    // Only today's executable work joins the optimized route order;
+    // future-dated Route A jobs keep their relative position and never enter
+    // today's sequence.
+    const todayPool = routeAJobs.filter(j => effectiveDay(j, today) === today && isActionableJob(j));
+    const futurePool = routeAJobs.filter(j => effectiveDay(j, today) !== today);
     const finishedRouteAJobs = normalizedJobs.filter(j => j.routeId === 'A' && j.status === 'finished');
     const restJobs = normalizedJobs.filter(j => j.routeId !== 'A');
     
     // Automatically apply Smart Revision Merge & Continuous Route Optimization (exclude finished)
-    const optimizedRouteA = optimizeRouteWithSmartMerge(startCoord, routeAJobs, ebikeConfig);
-    const finalized = normalizeJobsForStorage([...optimizedRouteA, ...finishedRouteAJobs, ...restJobs]);
+    const optimizedRouteA = optimizeRouteWithSmartMerge(startCoord, todayPool, ebikeConfig);
+    const finalized = normalizeJobsForStorage([...optimizedRouteA, ...futurePool, ...finishedRouteAJobs, ...restJobs]);
 
     setJobs(finalized);
     safeStorage.setItem('route_optimizer_jobs', JSON.stringify(finalized));
@@ -1519,8 +1578,10 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const handleOptimizeRouteSequence = () => {
     const routeAJobs = jobs.filter(j => j.routeId === 'A');
     const restJobs = jobs.filter(j => j.routeId !== 'A');
-    const optimized = optimizeRouteWithSmartMerge(startCoord, routeAJobs, ebikeConfig);
-    saveJobsToStorage([...optimized, ...restJobs]);
+    const todayPool = routeAJobs.filter(j => effectiveDay(j, today) === today && isActionableJob(j));
+    const futurePool = routeAJobs.filter(j => effectiveDay(j, today) !== today);
+    const optimized = optimizeRouteWithSmartMerge(startCoord, todayPool, ebikeConfig);
+    saveJobsToStorage([...optimized, ...futurePool, ...restJobs]);
   };
 
   const handleResetSeeds = () => {
@@ -1573,20 +1634,45 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     saveJobsToStorage(updated);
   };
 
+  /**
+   * Moves a job to a scheduled day. Future days put the job on standby
+   * (Route B); today pulls it into the active route and re-optimizes. The
+   * single job record is updated in place — id unchanged, so the job never
+   * duplicates and proof/inventory/notes/status history are preserved.
+   */
+  const handleMoveJobToDate = (id: string, date: string | null) => {
+    const target = jobs.find(j => j.id === id);
+    if (!target) return;
+    if (date !== null && !isValidScheduledDate(date)) return;
+    const isToday = date === today;
+    const updated = jobs.map(job =>
+      job.id === id
+        ? {
+            ...job,
+            scheduledDate: date ?? undefined,
+            routeId: date === null ? job.routeId : isToday ? ('A' as const) : ('B' as const),
+          }
+        : job
+    );
+    saveJobsToStorage(updated);
+    setMoveToDayJob(null);
+    if (date) setSelectedStripDate(date);
+  };
+
   const handleMoveUnfinishedToTomorrow = () => {
-    const unfinishedRouteAJobs = jobs.filter(j => j.routeId === 'A' && !isJobCompleted(j));
-    const unfinishedIds = unfinishedRouteAJobs.map(j => j.id);
-    
-    setJobsMovedToTomorrowIds(unfinishedIds);
-    safeStorage.setItem('jobs_moved_to_tomorrow', JSON.stringify(unfinishedIds));
-    
+    const unfinishedRouteAJobs = jobs.filter(
+      j => j.routeId === 'A' && !isJobCompleted(j) && effectiveDay(j, today) === today
+    );
     const updatedJobs = jobs.map(j => {
+      if (unfinishedRouteAJobs.some(u => u.id === j.id)) {
+        return { ...j, scheduledDate: tomorrow, routeId: 'B' as const };
+      }
       if (j.routeId === 'A' && isJobCompleted(j)) {
         return { ...j, routeId: 'B' as const };
       }
       return j;
     });
-    
+
     saveJobsToStorage(updatedJobs);
   };
 
@@ -1596,8 +1682,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     setTrackerStoreTime(0);
     setTrackerTotalDayTime(0);
     setTrackerJobsCompleted([]);
-    setJobsMovedToTomorrowIds([]);
-    safeStorage.removeItem('jobs_moved_to_tomorrow');
+    setSelectedStripDate(null);
   };
 
   const formatDuration = (seconds: number) => {
@@ -2465,7 +2550,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
       routeScore,
       efficiencyScore,
       timeSaved: Math.max(0, lastOptimizationLog?.minutesSaved || 0),
-      jobsMovedToTomorrow: jobsMovedToTomorrowIds.length,
+      jobsMovedToTomorrow: tomorrowJobs.length,
       learnedRange: batteryUsed > 0 ? parseFloat(((distance / batteryUsed) * 100).toFixed(1)) : null
     };
 
@@ -2480,7 +2565,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
       routeScore,
       efficiencyScore,
       timeSaved: Math.max(0, lastOptimizationLog?.minutesSaved || 0),
-      jobsMovedToTomorrow: jobsMovedToTomorrowIds.length,
+      jobsMovedToTomorrow: tomorrowJobs.length,
       avgRideSpeed: avgSpeed,
       stopsCompleted: completedRouteAJobs.length,
       startedAt: rideStartedAt,
@@ -2572,12 +2657,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           j.storeName.toLowerCase().includes(target)
         );
         if (matchedJob) {
-          setJobsMovedToTomorrowIds(prev => {
-            const next = [...prev, matchedJob.id];
-            safeStorage.setItem('jobs_moved_to_tomorrow', JSON.stringify(next));
-            return next;
-          });
-          handleUpdateJobStatus(matchedJob.id, { routeId: 'B' });
+          handleMoveJobToDate(matchedJob.id, tomorrow);
           return `Postponed ${matchedJob.storeName} to tomorrow's standby list.`;
         }
         return `Could not find job matching "${action.jobTarget}".`;
@@ -3080,7 +3160,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                                   type="button"
                                   onClick={(event) => {
                                     event.stopPropagation();
-                                    handleMoveJobRoute(job.id, 'B');
+                                    setMoveToDayJob(job);
                                   }}
                                   className="flex min-h-11 items-center justify-center gap-1 rounded-[8px] bg-amber-400 px-2 text-sm font-black uppercase text-slate-950 transition hover:bg-amber-300"
                                   title={`Move ${job.storeName}`}
@@ -3102,6 +3182,84 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                     )}
                   </div>
                 </section>
+
+                <WeeklyStrip
+                  days={weeklyDays}
+                  today={today}
+                  selectedDate={selectedStripDate}
+                  onSelect={setSelectedStripDate}
+                  overdueCount={overdueJobs.length}
+                  unscheduledCount={unscheduledJobs.length}
+                  onReviewOverdue={() => setShowScheduleReview(prev => prev === 'overdue' ? null : 'overdue')}
+                  onReviewUnscheduled={() => setShowScheduleReview(prev => prev === 'unscheduled' ? null : 'unscheduled')}
+                />
+
+                {selectedDay && (
+                  <ExpandedDayPanel
+                    day={selectedDay}
+                    today={today}
+                    todayJobsCount={todayDay?.jobs.length ?? 0}
+                    todayPay={todayDay?.pay ?? 0}
+                    todayWorkMinutes={todayDay?.workMinutes ?? 0}
+                    startCoord={startCoord}
+                    avgSpeedMph={ebikeConfig.avgSpeedMph}
+                    onMoveToDay={(job) => setMoveToDayJob(job)}
+                    onOpenJob={(id) => setRouteDetailJobId(id)}
+                    onPlanThisDay={() => handleOptimizeRouteSequence()}
+                    onAddJob={handleOpenAddModal}
+                    onMoveExisting={() => setShowScheduleReview(prev => prev === 'unscheduled' ? null : 'unscheduled')}
+                    onCollapse={() => setSelectedStripDate(null)}
+                  />
+                )}
+
+                {showScheduleReview && (
+                  <section className="col-span-2 lg:col-span-4 rounded-[8px] border-2 border-amber-300 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-500/10">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-sm font-black uppercase text-amber-900 dark:text-amber-100">
+                        {showScheduleReview === 'overdue' ? `${overdueJobs.length} jobs from earlier days` : `${unscheduledJobs.length} unscheduled jobs`}
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => setShowScheduleReview(null)}
+                        className="rounded-[8px] bg-slate-200 px-2.5 py-1 text-xs font-black text-slate-600 hover:bg-slate-300 dark:bg-white/10 dark:text-slate-200"
+                      >
+                        Close
+                      </button>
+                    </div>
+                    {showScheduleReview === 'overdue' && overdueJobs.length === 0 && (
+                      <p className="mt-2 text-sm font-bold text-amber-800 dark:text-amber-200">Nothing overdue.</p>
+                    )}
+                    {showScheduleReview === 'unscheduled' && unscheduledJobs.length === 0 && (
+                      <p className="mt-2 text-sm font-bold text-slate-600 dark:text-slate-300">Every job has a day.</p>
+                    )}
+                    <ul className="mt-2 space-y-1.5">
+                      {(showScheduleReview === 'overdue' ? overdueJobs : unscheduledJobs).map(job => (
+                        <li key={job.id} className="flex flex-wrap items-center gap-2 rounded-[8px] bg-white p-2 dark:bg-white/5">
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-black text-slate-950 dark:text-white">{job.storeName}</span>
+                            <span className="block truncate text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                              {job.scheduledDate ? formatScheduledDate(job.scheduledDate) : 'No date'} · {job.dueTime || 'Flex'}
+                            </span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setMoveToDayJob(job)}
+                            className="rounded-[8px] bg-blue-700 px-2.5 py-1 text-[10px] font-black text-white hover:bg-blue-600"
+                          >
+                            Move to a day
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setRouteDetailJobId(job.id)}
+                            className="rounded-[8px] bg-slate-100 px-2.5 py-1 text-[10px] font-black text-slate-600 hover:bg-slate-200 dark:bg-white/10 dark:text-slate-200"
+                          >
+                            Fix
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
 
                 <section className={`col-span-1 rounded-[8px] border-2 p-4 lg:p-3 ${batteryToneClass}`}>
                   <div className="flex items-center justify-between">
@@ -4251,7 +4409,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                   batteryUsed={Math.max(0, trackerStartBattery - currentBattery)}
                   distance={parseFloat(((trackerRideTime / 3600) * ebikeConfig.avgSpeedMph).toFixed(1))}
                   ebikeConfig={ebikeConfig}
-                  jobsMovedToTomorrow={jobs.filter(j => jobsMovedToTomorrowIds.includes(j.id))}
+                  jobsMovedToTomorrow={tomorrowJobs}
                   onMoveUnfinishedToTomorrow={handleMoveUnfinishedToTomorrow}
                   onResetTracker={handleResetActiveTracker}
                 />
@@ -4314,7 +4472,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                           setTrackerStoreTime(0);
                           setTrackerTotalDayTime(0);
                           setTrackerJobsCompleted([]);
-                          setJobsMovedToTomorrowIds([]);
                           safeStorage.removeItem('jobs_moved_to_tomorrow');
                         }}
                         disabled={trackerStatus === 'riding'}
@@ -5515,6 +5672,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
               onUpdateStatus={handleUpdateJobStatus}
               onOpenScan={(jobId) => { setScanJobId(jobId); setIsScanOpen(true); }}
               transitOrigin={{ latitude: origin.lat, longitude: origin.lng }}
+              onMoveToDay={setMoveToDayJob}
               onClose={() => setRouteDetailJobId(null)}
             />
           );
@@ -5566,6 +5724,14 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
             onClose={() => setIsTestLabOpen(false)}
           />
         )}
+
+        {/* Move-to-Day scheduling sheet */}
+        <MoveToDaySheet
+          job={moveToDayJob}
+          today={today}
+          onMove={handleMoveJobToDate}
+          onClose={() => setMoveToDayJob(null)}
+        />
 
         {/* Portable Footer */}
         {currentTab !== 'dashboard' && (

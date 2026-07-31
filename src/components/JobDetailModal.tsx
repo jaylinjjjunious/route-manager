@@ -15,6 +15,7 @@ import { createPortal } from 'react-dom';
 import { X, Navigation, Clock, MapPin, CheckSquare, Edit2, Trash2, Copy, ArrowRightLeft, ShieldAlert, Calendar, AlertCircle, Sparkles, Hourglass, RefreshCw, CheckCircle2, RotateCcw, Camera } from 'lucide-react';
 import type { Job, JobType } from '../types';
 import { isJobCompleted, isRevisionJob } from '../utils/jobState';
+import { formatScheduledDate, isValidScheduledDate } from '../utils/jobSchedule';
 import InventoryCustodyPanel from './InventoryCustodyPanel';
 import { JobTransitSection } from './transit/JobTransitSection';
 import { isTransitApiEnabled } from '../services/transit';
@@ -37,6 +38,7 @@ interface JobDetailModalProps {
   onUpdateStatus?: (id: string, updates: Partial<Job>) => void;
   onOpenScan?: (jobId: string) => void;
   transitOrigin?: { latitude: number; longitude: number };
+  onMoveToDay?: (job: Job) => void;
   onClose: () => void;
 }
 
@@ -107,6 +109,7 @@ export default function JobDetailModal({
   onUpdateStatus,
   onOpenScan,
   transitOrigin,
+  onMoveToDay,
   onClose,
 }: JobDetailModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -336,7 +339,28 @@ export default function JobDetailModal({
                   <p className="mt-0.5 text-xs font-bold text-slate-300 break-words">{job.dueTime}</p>
                 </div>
               ) : null}
+              {job.scheduledDate && (
+                <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                  <p className="text-[9px] font-black uppercase text-slate-500">Scheduled</p>
+                  <div className="mt-0.5 flex items-center gap-1 text-xs font-black text-slate-300">
+                    <Calendar size={11} />
+                    <span className={isValidScheduledDate(job.scheduledDate) ? '' : 'text-amber-400'}>
+                      {formatScheduledDate(job.scheduledDate)}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
+
+            {onMoveToDay && !isDone && (
+              <button
+                type="button"
+                onClick={() => onMoveToDay(job)}
+                className="mt-2 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-black text-slate-200 hover:bg-white/[0.08]"
+              >
+                Move to a different day
+              </button>
+            )}
 
             {isTransitApiEnabled() && transitOrigin && (
               <JobTransitSection job={job} origin={transitOrigin} />
