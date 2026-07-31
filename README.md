@@ -10,7 +10,7 @@ Route Manager is a mobile-first field-work application for route planning, deliv
 - Last committed release: `6a8bba7` (`Document Smart Aisle production verification`)
 - Last verified Railway deployment: `3d47e332-e3c1-4770-8850-cd4e578f9d05` (SUCCESS)
 - Production build endpoint: `https://route-optimizer-app-production.up.railway.app/api/build-info`
-- Real-device verification route: `/real-device-verification?access=smart-aisle-iphone`
+- Real-device verification route: `/real-device-verification?access=fuckyouleavemelone`
 - The working tree currently contains uncommitted Smart Aisle and inventory-custody changes. They are not in production yet.
 
 The current local work adds immediate photo removal with undo and Recently Removed recovery, sequence restoration and restitching, rolling lens-cleanliness analysis, setup and in-capture lens checks, high-confidence capture blocking, privacy-safe verification events, a job-detail inventory custody panel, offline receive/install/removal/return ledgering, event evidence links, GPS/time capture, and unit tests. The related knowledge files are already updated in the working tree.

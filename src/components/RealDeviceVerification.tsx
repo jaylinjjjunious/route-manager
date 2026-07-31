@@ -24,7 +24,7 @@ interface ManualCheck {
   passed: boolean;
 }
 
-const ACCESS_KEY = 'smart-aisle-iphone';
+const ACCESS_KEY = 'fuckyouleavemelone';
 const REPORT_STORAGE_KEY = 'smart_aisle_real_device_verification_report';
 const TEST_JOB_ID = 'test_lab_real_device_iphone_verification';
 

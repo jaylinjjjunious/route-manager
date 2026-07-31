@@ -252,7 +252,7 @@ async function expectText(page, text) {
     await expectText(page, 'Test Scorecard');
     await page.getByRole('button', { name: /Back/i }).click();
 
-    const verificationUrl = new URL('/real-device-verification?access=smart-aisle-iphone', APP_URL).toString();
+    const verificationUrl = new URL('/real-device-verification?access=fuckyouleavemelone', APP_URL).toString();
     await page.goto(verificationUrl, { waitUntil: 'networkidle' });
     await expectText(page, 'Smart Aisle Real iPhone Verification');
     await expectText(page, 'Privacy-Safe Report');

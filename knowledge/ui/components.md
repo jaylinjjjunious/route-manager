@@ -238,7 +238,7 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 | Field | Value |
 |-------|-------|
 | **File** | `src/components/RealDeviceVerification.tsx` |
-| **Route** | `/real-device-verification?access=smart-aisle-iphone` |
+| **Route** | `/real-device-verification?access=fuckyouleavemelone` |
 | **Responsibility** | Protected tester-assisted real-iPhone verification panel for Smart Aisle Scan. Bypasses auth, uses the existing `SmartAisleScan` component with isolated `test_lab_real_device_iphone_verification` data, records privacy-safe event evidence, displays build commit/deployment info, provides the exact Safari/PWA test script, supports repeated hold/removal/stitch checks without clearing the whole session, captures manual checklist results, and exports a report without photo contents. |
 ### SmartAisleScanTestLab
 

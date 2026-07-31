@@ -18,7 +18,7 @@
 - Vitest covers scan analysis, photo storage, the inventory custody ledger, and the Transit backend; UI, camera, and live-API flows still require browser/device checks. The Transit UI has no automated browser coverage and the live upstream contract is verified by hand (probes) rather than in CI.
 - **No integration tests** — API endpoints are not tested programmatically.
 - **Limited browser checks** — Playwright is available for focused checks, but broad end-to-end coverage is not set up.
-- Manual testing is required for camera, barcode scanning, upload flows, and real iPhone Safari/Home Screen PWA behavior. Smart Aisle Scan real-device evidence should be collected from `/real-device-verification?access=smart-aisle-iphone` and must include the copied privacy-safe report plus screenshots or screen recording when available.
+- Manual testing is required for camera, barcode scanning, upload flows, and real iPhone Safari/Home Screen PWA behavior. Smart Aisle Scan real-device evidence should be collected from `/real-device-verification?access=fuckyouleavemelone` and must include the copied privacy-safe report plus screenshots or screen recording when available.
 - The Railway healthcheck at `GET /api/health` is the only automated runtime check.
 
 ## What Is Tested
