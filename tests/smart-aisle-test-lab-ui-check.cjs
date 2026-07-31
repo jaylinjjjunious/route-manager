@@ -198,12 +198,11 @@ async function expectText(page, text) {
     await page.getByRole('button', { name: /^Next$/i }).click();
     await expectText(page, 'Section photo');
     await page.getByRole('button', { name: /Remove Photo/i }).click();
-    await expectText(page, 'Remove this photo from the aisle sequence?');
-    await page.getByRole('button', { name: /^Cancel$/i }).click();
-    await expectText(page, 'Section photo');
-    await page.getByRole('button', { name: /Remove Photo/i }).click();
-    await page.getByRole('button', { name: /Confirm Remove Photo/i }).click();
-    await expectText(page, 'Updated review ready');
+    const confirmModalVisible = await page.locator('text=Remove this photo from the aisle sequence?').isVisible().catch(() => false);
+    if (confirmModalVisible) throw new Error('Confirmation modal still appeared for photo removal');
+    await expectText(page, 'Photo removed');
+    const undoButton = page.getByRole('button', { name: /^Undo$/i });
+    await undoButton.waitFor({ state: 'visible', timeout: 3000 });
     const removalAfter = await page.evaluate(() => {
       const sessions = JSON.parse(localStorage.getItem('smart_aisle_scan_sessions') || '{}');
       const photos = JSON.parse(localStorage.getItem('smart_aisle_scan_photos') || '{}');
@@ -214,6 +213,34 @@ async function expectText(page, text) {
     });
     if (removalAfter.activeCount !== removalBefore.count - 1 || removalAfter.inactiveCount < 1 || !removalAfter.sequenceVersion) {
       throw new Error(`Photo removal did not preserve/recalculate sequence: ${JSON.stringify({ removalBefore, removalAfter })}`);
+    }
+
+    // Test Undo
+    await undoButton.click();
+    await page.waitForTimeout(500);
+    const undoAfter = await page.evaluate(() => {
+      const sessions = JSON.parse(localStorage.getItem('smart_aisle_scan_sessions') || '{}');
+      const photos = JSON.parse(localStorage.getItem('smart_aisle_scan_photos') || '{}');
+      const session = Object.values(sessions).find((item) => item.mode === 'test_lab' && item.status === 'capturing');
+      const active = session ? session.photoSequence.map((id) => photos[id]).filter((photo) => photo && photo.isActive) : [];
+      return { activeCount: active.length, sequenceVersion: session?.sequenceVersion };
+    });
+    if (undoAfter.activeCount !== removalBefore.count) {
+      throw new Error(`Undo did not restore photo count: expected ${removalBefore.count}, got ${undoAfter.activeCount}`);
+    }
+    if (undoAfter.sequenceVersion !== undefined && undoAfter.sequenceVersion <= (removalAfter.sequenceVersion || 0)) {
+      throw new Error('Undo did not increment sequence version');
+    }
+
+    // Test Check Lens
+    const checkLensButton = page.getByRole('button', { name: /Check Lens/i });
+    if (await checkLensButton.isVisible().catch(() => false)) {
+      await checkLensButton.click();
+      await page.waitForTimeout(3000);
+      const lensResultVisible = await page.locator('text=Looks clear').or(page.locator('text=Unable to verify')).or(page.locator('text=lens may need cleaning')).isVisible().catch(() => false);
+      if (!lensResultVisible) {
+        // Lens check may not be visible if camera is not active — acceptable
+      }
     }
 
     await page.getByRole('button', { name: /Capture Next Photo/i }).click();

@@ -36,6 +36,25 @@ server.ts → bootstrap()
 | POST | `/api/dispatcher/chat` | JWT | Gemini 2 chat for route advice |
 | POST | `/api/dispatcher/tts` | JWT | Text-to-speech (Gemini/OpenAI/ElevenLabs) |
 | POST | `/api/import/ocr` | JWT | Screenshot OCR via Gemini 2 |
+| GET | `/api/transit/status` | JWT | Transit service + rate-limit + cache status |
+| POST | `/api/transit/cache/clear` | JWT | Reset the in-memory transit cache |
+| GET | `/api/transit/nearby-stops` | JWT | Nearby stops (lat, lon, radiusMeters, limit) |
+| GET | `/api/transit/stops/:stopId/arrivals` | JWT | Live arrivals for a stop |
+| POST | `/api/transit/trip-plan` | JWT | Plan a transit trip |
+| GET | `/api/transit/alerts` | JWT | Active service alerts |
+
+#### Transit Layer
+
+The Express server proxies the official Transit API (Transit app v4) behind authentication. Mounted at `/api/transit` via `app.use("/api/transit", createTransitRouter(requireAuth))`. The upstream `TRANSIT_API_KEY` is a server-side env var only and is sent to `https://external.transitapp.com/v4` (configurable via `TRANSIT_API_BASE_URL`) as a literal `apiKey` header.
+
+- `server/transit/transitApiClient.ts` — upstream client (apiKey header, HTTP/network error mapping, one retry on network failure)
+- `server/transit/transitService.ts` — orchestration: fresh-cache-first, in-flight dedupe, bounded queue (8 / 45s), stale-while-revalidate, normalizers
+- `server/transit/transitCache.ts` — in-memory TTL cache; expired entries retained so `getStale()` can serve them
+- `server/transit/transitRateLimiter.ts` — sliding-window 5/min (free-tier budget) with release on network failure
+- `server/transit/transitTypes.ts` — canonical normalized models + raw upstream shapes
+- `server/transit/transitRoutes.ts` — `createTransitRouter(requireAuth)` with per-code HTTP error mapping (400/404/429/502/503/500)
+
+Error codes: `TRANSIT_NOT_CONFIGURED` (503), `TRANSIT_RATE_LIMITED` (429), `TRANSIT_TEMPORARILY_UNAVAILABLE` (503), `TRANSIT_INVALID_LOCATION` (400), `TRANSIT_STOP_NOT_FOUND` (404), `TRANSIT_TRIP_NOT_FOUND` (404), `TRANSIT_AUTH_FAILED` (502).
 
 #### Authentication Middleware
 
@@ -86,6 +105,7 @@ Receives FormData with `barcode`, `image` (Blob), `cycleId`, `localDate`, `captu
 ## Related Source Files
 
 - `server.ts` — Express backend (724 lines)
+- `server/transit/` — Transit API proxy layer (router, service, client, cache, limiter, types)
 - `worker/index.ts` — Cloudflare Worker (700 lines)
 
 ## Related Knowledge
@@ -94,7 +114,8 @@ Receives FormData with `barcode`, `image` (Blob), `cycleId`, `localDate`, `captu
 - `api/authentication.md` — Auth middleware details
 - `api/error-contracts.md` — Error response shapes
 - `database/schema.md` — Database schema
+- `features/transit.md` — Transit Mode feature behavior
 
 ## Last Updated
 
-2026-07-20 (c12bd44)
+2026-07-30 (integrate-official-transit-api)

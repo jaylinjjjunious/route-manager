@@ -1,6 +1,6 @@
 # Responsive Behavior
 
-**Last Updated:** 2026-07-28 (smart-aisle-real-device-verification)
+**Last Updated:** 2026-07-28 (smart-aisle-immediate-delete-lens-cleanliness)
 **Related Source Files:** `src/components/*.tsx`, `src/index.css`
 
 ---
@@ -80,7 +80,7 @@ The layout accounts for iOS safe areas:
 
 ### Smart Aisle Real-Device Verification
 
-The route `/real-device-verification?access=smart-aisle-iphone` is available for real iPhone Safari and installed Home Screen PWA verification. It records viewport, visual viewport, standalone mode, pointer cancellation, context menu, selection, backgrounding, and photo-sequence metadata without exporting photo contents. The app now includes a web manifest and a no-stale service worker so installed-PWA behavior can be tested against the current deployed build.
+The route `/real-device-verification?access=smart-aisle-iphone` is available for real iPhone Safari and installed Home Screen PWA verification. It records viewport, visual viewport, standalone mode, pointer cancellation, context menu, selection, backgrounding, and photo-sequence metadata without exporting photo contents. The report now includes immediate-delete results, confirmation-modal absence, undo results, count-update results, automatic-restitch results, lens-smudge detection, recheck results, and capture-block results. The app now includes a web manifest and a no-stale service worker so installed-PWA behavior can be tested against the current deployed build.
 
 ### Assistant Bubble and Panel (safe-area-aware)
 

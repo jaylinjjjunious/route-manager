@@ -1,7 +1,7 @@
 # API Endpoints Reference
 
-**Last Updated:** 2026-07-20 (c12bd44)
-**Related Source Files:** `server.ts`, `worker/index.ts`, `src/services/showerProofApi.ts`, `src/services/apiClient.ts`
+**Last Updated:** 2026-07-30 (integrate-official-transit-api)
+**Related Source Files:** `server.ts`, `worker/index.ts`, `server/transit/transitRoutes.ts`, `src/services/showerProofApi.ts`, `src/services/apiClient.ts`, `src/services/transit/transitApiClient.ts`
 
 ---
 
@@ -234,6 +234,88 @@ Health check endpoint. Returns server uptime, memory usage, current timestamp, a
 Debug endpoint that returns current authentication state and configuration details.
 
 ---
+
+## Domain: Transit (Express Only)
+
+All routes are mounted at `/api/transit` via `createTransitRouter(requireAuth)` (see `server/transit/transitRoutes.ts`). Every route requires a Supabase Bearer token; unauthenticated calls return `401 { "error": "Authentication required." }`. The server proxies the official Transit API (v4) using `TRANSIT_API_KEY`; the key never reaches the client.
+
+Error bodies use `{ error: string, code?: TransitErrorCode }`. Error code → HTTP status mapping:
+
+| Code | Status |
+|------|--------|
+| `TRANSIT_INVALID_LOCATION` | 400 |
+| `TRANSIT_STOP_NOT_FOUND` | 404 |
+| `TRANSIT_TRIP_NOT_FOUND` | 404 |
+| `TRANSIT_RATE_LIMITED` | 429 |
+| `TRANSIT_AUTH_FAILED` | 502 |
+| `TRANSIT_NOT_CONFIGURED` | 503 |
+| `TRANSIT_TEMPORARILY_UNAVAILABLE` | 503 |
+
+### GET `/api/transit/status`
+
+| Field | Value |
+|-------|-------|
+| **Auth** | JWT |
+| **Query Params** | None |
+| **Response** | `{ configured, provider, networks, rateLimit, cache, ttlSeconds, lastSuccessfulRequestAt, lastError }` |
+
+Diagnostic status: whether the API is configured, the provider name (`transit-api`), configured network ids, sliding-window rate-limit state (`limit`, `used`, `remaining`, `windowStartMs`, `nextAvailableAtMs`, `pending`, `inFlight`), cache `size`/`capacity`, TTLs in seconds, and last request/error metadata. Never returns 4xx/5xx on success; always 200.
+
+### POST `/api/transit/cache/clear`
+
+| Field | Value |
+|-------|-------|
+| **Auth** | JWT |
+| **Content-Type** | `application/json` |
+| **Body** | None |
+| **Response** | `{ ok: true, size: number, capacity: number }` |
+
+Resets the in-memory transit response cache.
+
+### GET `/api/transit/nearby-stops`
+
+| Field | Value |
+|-------|-------|
+| **Auth** | JWT |
+| **Query Params** | `lat` (number, required), `lon` (number, required), `radiusMeters` (number, default 1000, clamped 100–2000), `limit` (number, default 10, clamped 1–25) |
+| **Response** | `{ stops: TransitStop[], freshness: { source: "live"\|"cache"\|"stale", lastUpdatedAt, ageMs } }` |
+
+Returns stops near a location sorted by distance, normalized from the upstream `nearby_stops` endpoint. TTL 5 min.
+
+### GET `/api/transit/stops/:stopId/arrivals`
+
+| Field | Value |
+|-------|-------|
+| **Auth** | JWT |
+| **Path Params** | `stopId` (string, e.g. a `global_stop_id`) |
+| **Response** | `{ stop: TransitStop \| null, arrivals: TransitArrival[], freshness: { source, lastUpdatedAt, ageMs } }` |
+
+Live departures for a stop (up to 40, sorted by departure time). Times are Unix-epoch seconds (UTC); `isRealTime`/`isCancelled`/`isLast` flags included. TTL 45 s.
+
+### POST `/api/transit/trip-plan`
+
+| Field | Value |
+|-------|-------|
+| **Auth** | JWT |
+| **Content-Type** | `application/json` |
+| **Body** | `{ origin: { lat, lng }, destination: { lat, lng }, departureTime?: ISO string, arrivalTime?: ISO string }` |
+| **Response** | `{ trip: TransitTrip, alternatives: number, freshness: { source, lastUpdatedAt, ageMs } }` |
+
+Plans a transit trip. `departureTime`/`arrivalTime` set `date`+`time` (arrive-by when `arrivalTime`). Returns the fastest result; `alternatives` counts extra returned trips. TTL 3 min. Returns 404 `TRANSIT_TRIP_NOT_FOUND` when no route exists, 400 `TRANSIT_INVALID_LOCATION` for missing/out-of-range coordinates.
+
+### GET `/api/transit/alerts`
+
+| Field | Value |
+|-------|-------|
+| **Auth** | JWT |
+| **Query Params** | `lat` (number, optional), `lon` (number, optional) |
+| **Response** | `{ alerts: TransitAlert[], freshness: { source, lastUpdatedAt, ageMs } }` |
+
+Active service alerts, normalized and sorted by severity (critical → warning → info). Without location it uses configured `TRANSIT_NETWORK_IDS`; with location it discovers nearby networks first. TTL 2 min.
+
+### Frontend client
+
+`src/services/transit/transitApiClient.ts` calls these endpoints through the app's authenticated `authFetch`. It throws `TransitClientError` carrying the server `{ error, code }`. Provider selection gates the UI on `import.meta.env.VITE_TRANSIT_PROVIDER === "transit"`; when the backend is not configured (503), the Tools tab shows a fallback callout instead of transit UI.
 
 ## Types
 

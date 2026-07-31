@@ -26,6 +26,7 @@
 - **Knowledge system:** This documentation directory.
 - **Official app icon:** Preserved source artwork and generated iPhone Safari/Home Screen plus favicon PNG assets.
 - **Inventory custody first slice:** Job-detail camera-first receive-in with part/serial/photo/document capture, automatic time/GPS, receive/install/removal/return event chain, receipt/tracking return linkage, local offline queue, and Background Sync wake-up.
+- **Transit Mode (official Transit API):** Backend-proxied integration with Transit app v4 — server `server/transit/` (router, service, client, cache, 5/min rate limiter) mounted at `/api/transit` behind `requireAuth`; frontend gated by `VITE_TRANSIT_PROVIDER=transit`; UI in `src/components/transit/` (nearby stops, live arrivals, trip planner, favorites, alerts, job trip section, dashboard card, Settings diagnostic). Key stays server-side. Depends on Railway env `TRANSIT_API_KEY`; without it the Tools tab shows a fallback callout.
 
 ## Infrastructure
 
@@ -38,4 +39,4 @@
 
 ---
 
-**Last Updated:** 2026-07-29 (inventory-custody-first-slice)
+**Last Updated:** 2026-07-30 (integrate-official-transit-api)

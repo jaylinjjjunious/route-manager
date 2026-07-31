@@ -49,6 +49,7 @@ Use this map to select relevant documents before editing code. Read only what yo
 - `features/ai-dispatcher.md` — AI chat dispatcher and safety news
 - `features/screenshot-import.md` — OCR import from screenshots
 - `features/voice-system.md` — Text-to-speech for directions
+- `features/transit.md` — Transit Mode: official Transit API integration (stops, arrivals, trip planning, alerts)
 
 ### API and Data
 - `api/endpoints.md` — All REST API routes and contracts

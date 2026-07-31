@@ -16,6 +16,8 @@ import { X, Navigation, Clock, MapPin, CheckSquare, Edit2, Trash2, Copy, ArrowRi
 import type { Job, JobType } from '../types';
 import { isJobCompleted, isRevisionJob } from '../utils/jobState';
 import InventoryCustodyPanel from './InventoryCustodyPanel';
+import { JobTransitSection } from './transit/JobTransitSection';
+import { isTransitApiEnabled } from '../services/transit';
 
 const SCAN_COMPATIBLE_TYPES: JobType[] = ['retail_audit', 'mystery_shop', 'merchandising'];
 
@@ -34,6 +36,7 @@ interface JobDetailModalProps {
   onToggleRoute: (id: string) => void;
   onUpdateStatus?: (id: string, updates: Partial<Job>) => void;
   onOpenScan?: (jobId: string) => void;
+  transitOrigin?: { latitude: number; longitude: number };
   onClose: () => void;
 }
 
@@ -103,6 +106,7 @@ export default function JobDetailModal({
   onToggleRoute,
   onUpdateStatus,
   onOpenScan,
+  transitOrigin,
   onClose,
 }: JobDetailModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -333,6 +337,10 @@ export default function JobDetailModal({
                 </div>
               ) : null}
             </div>
+
+            {isTransitApiEnabled() && transitOrigin && (
+              <JobTransitSection job={job} origin={transitOrigin} />
+            )}
 
             <InventoryCustodyPanel job={job} />
 

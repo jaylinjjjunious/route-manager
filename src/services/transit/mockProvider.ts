@@ -1,4 +1,19 @@
-import type { TransitTripRequest, TransitTrip, TransitLeg } from '../../types';
+import type {
+  TransitTripRequest,
+  TransitTrip,
+  TransitLeg,
+  NearbyStopsRequest,
+  NearbyStopsResult,
+  StopArrivalsRequest,
+  StopArrivalsResult,
+  ServiceAlertsRequest,
+  ServiceAlertsResult,
+  TransitStop,
+  TransitArrival,
+  TransitRoute,
+  TransitAlert,
+  TransitFreshness,
+} from '../../types';
 import type { TransitProvider } from './provider';
 
 const MOCK_ROUTES: Array<{
@@ -18,9 +33,44 @@ const MOCK_ROUTES: Array<{
   { routeName: 'GET 21 / 42', headsign: 'Downtown via Ming', boardStop: 'Ming Ave & Real Rd', exitStop: 'Chester Ave & 4th St', duration: 35, waitMin: 10, walkToMin: 9, walkFromMin: 5, transfers: 1 },
 ];
 
+const MOCK_STOPS: Array<{ name: string; lat: number; lng: number; routes: string[]; distance: number }> = [
+  { name: 'GET Offices', lat: 35.3919, lng: -119.0255, routes: ['42', '22'], distance: 163 },
+  { name: 'Chester Ave & 36th St', lat: 35.3969, lng: -119.0156, routes: ['42', '45'], distance: 652 },
+  { name: 'Ming Ave & Real Rd', lat: 35.3574, lng: -119.0363, routes: ['21', '42'], distance: 1450 },
+  { name: 'Golden State Ave & Brundage Ln', lat: 35.3822, lng: -119.0242, routes: ['11'], distance: 980 },
+  { name: 'Union Ave & Niles St', lat: 35.3768, lng: -118.9984, routes: ['11', '21'], distance: 2600 },
+  { name: 'Chester Ave & 24th St', lat: 35.3701, lng: -119.0148, routes: ['45'], distance: 2250 },
+];
+
 function generateTime(minuteOffset: number): string {
   const d = new Date(Date.now() + minuteOffset * 60000);
   return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+}
+
+function freshFreshness(now = Date.now()): TransitFreshness {
+  return { source: 'live', lastUpdatedAt: new Date(now).toISOString(), ageMs: 0 };
+}
+
+function mockRoute(shortName: string, routeId: string): TransitRoute {
+  return { routeId, shortName, longName: `GET Route ${shortName}` };
+}
+
+function mockArrival(shortName: string, routeId: string, headsign: string, minutesFromNow: number): TransitArrival {
+  const now = Date.now();
+  const departure = Math.round(now / 1000) + minutesFromNow * 60;
+  return {
+    tripId: `${routeId}-${departure}`,
+    route: mockRoute(shortName, routeId),
+    headsign,
+    departureTime: departure,
+    arrivalTime: departure + minutesFromNow * 30,
+    scheduledDepartureTime: departure,
+    scheduledArrivalTime: departure + minutesFromNow * 30,
+    isRealTime: minutesFromNow % 3 === 0,
+    isCancelled: false,
+    isLast: false,
+    wheelchairAccessible: 1,
+  };
 }
 
 export class MockTransitProvider implements TransitProvider {
@@ -47,6 +97,7 @@ export class MockTransitProvider implements TransitProvider {
         type: 'transit',
         routeShortName: template.routeName.split(' ')[1],
         routeLongName: `GET Route ${template.routeName.split(' ')[1]}`,
+        routeId: `GETCA:mock-${template.routeName.split(' ')[1]}`,
         headsign: template.headsign,
         agencyName: 'Golden Empire Transit',
         boardingStop: {
@@ -95,5 +146,61 @@ export class MockTransitProvider implements TransitProvider {
       provider: this.name,
       fetchedAt: new Date().toISOString(),
     };
+  }
+
+  async getNearbyStops(request: NearbyStopsRequest): Promise<NearbyStopsResult> {
+    await new Promise(r => setTimeout(r, 150));
+    const radius = request.radiusMeters ?? 1200;
+    const stops: TransitStop[] = MOCK_STOPS
+      .filter(s => s.distance <= radius)
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, request.limit ?? 10)
+      .map(s => ({
+        stopId: `mock-${s.name.replace(/\s/g, '-').toLowerCase()}`,
+        stopName: s.name,
+        latitude: s.lat,
+        longitude: s.lng,
+        distanceMeters: s.distance,
+        routes: s.routes.map(r => mockRoute(r, `GETCA:mock-${r}`)),
+      }));
+    return { stops, freshness: freshFreshness() };
+  }
+
+  async getStopArrivals(request: StopArrivalsRequest): Promise<StopArrivalsResult> {
+    await new Promise(r => setTimeout(r, 120));
+    const known = MOCK_STOPS.find(s => `mock-${s.name.replace(/\s/g, '-').toLowerCase()}` === request.stopId);
+    const stop: TransitStop | null = known
+      ? { stopId: request.stopId, stopName: known.name, latitude: known.lat, longitude: known.lng, routes: known.routes.map(r => mockRoute(r, `GETCA:mock-${r}`)) }
+      : null;
+    const arrivals: TransitArrival[] = [];
+    (known ? known.routes : ['22', '42']).forEach((routeShort, index) => {
+      arrivals.push(mockArrival(routeShort, `GETCA:mock-${routeShort}`, index % 2 === 0 ? 'Downtown via Chester' : 'CSUB', 4 + index * 9));
+      arrivals.push(mockArrival(routeShort, `GETCA:mock-${routeShort}`, index % 2 === 0 ? 'Downtown via Chester' : 'CSUB', 28 + index * 17));
+    });
+    arrivals.sort((a, b) => a.departureTime - b.departureTime);
+    return { stop, arrivals, freshness: freshFreshness() };
+  }
+
+  async getServiceAlerts(_request?: ServiceAlertsRequest): Promise<ServiceAlertsResult> {
+    await new Promise(r => setTimeout(r, 100));
+    const alerts: TransitAlert[] = [
+      {
+        id: 'mock-alert-1',
+        title: '41 Valley Plaza / Bakersfield - Mt Vernon/Niles detour',
+        description: 'Due to construction stop from Mt Vernon to College will be out of service.',
+        severity: 'critical',
+        cause: 'CONSTRUCTION',
+        effect: 'NO_SERVICE',
+      },
+      {
+        id: 'mock-alert-2',
+        title: 'Trolley detour during construction',
+        description: 'Trolley will operate on 17th Street between Q Street and Chester.',
+        severity: 'warning',
+        cause: 'CONSTRUCTION',
+        effect: 'STOP_MOVED',
+      },
+    ];
+    return { alerts, freshness: freshFreshness() };
   }
 }

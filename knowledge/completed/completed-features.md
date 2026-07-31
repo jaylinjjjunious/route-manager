@@ -66,9 +66,17 @@
 - Full-screen camera: modal goes edge-to-edge during capture with overlay controls and camera-readiness guarded capture buttons.
 - 0.5x/1x zoom toggle with native track.applyConstraints + CSS scale fallback.
 - Session persistence: localStorage with resume-on-reopen.
-- Quality analysis: brightness, motion, level detection.
+- Quality analysis: brightness, motion, level, sharpness, edge density detection.
 - Coverage analysis: pairwise overlap estimation with gap/duplicate warnings.
 - Canvas stitching: scaled panorama with overlap.
+- Immediate photo removal: tapping X on a thumbnail instantly removes the photo from the active sequence with no confirmation dialog.
+- Undo protection: after removal, a temporary "Photo removed / Undo" toast appears for 6 seconds. Undo restores the exact photo at its original sequence position, recalculates overlaps, and rebuilds the stitched preview.
+- Photo review details: each reviewed photo shows Sharpness, Level, Lighting, Motion, Overlap, Stitch use, and Lens clarity status.
+- Lens cleanliness detection: rolling-frame analysis that detects persistent haze, smudge, or obstruction signals using global contrast, center-edge sharpness ratio, and local contrast analysis.
+- Check Lens control: manual camera tool that analyzes several fresh frames and returns a clear, cleaning-needed, or uncertain result.
+- Capture blocking: high-confidence persistent lens contamination blocks photo acceptance. Uncertain results show a warning but allow capture.
+- Lens warning banner: inline camera-status panel displays when possible lens contamination is detected during live preview.
+- Burst behavior: lens quality monitoring continues during burst capture without interrupting with popups.
 
 ## Smart Aisle Scan Test Lab
 - Development/testing feature for Smart Aisle Scan quality assurance.
@@ -87,11 +95,13 @@
 
 ---
 
-**Last Updated:** 2026-07-28 (smart-aisle-hold-burst-release-flow)
+**Last Updated:** 2026-07-28 (smart-aisle-immediate-delete-lens-cleanliness)
 
 ## 2026-07-28
 
 - Smart Aisle Scan camera flow: added animated start-photo proof tray, changed burst capture to press-and-hold while moving across the aisle, release-to-pause burst completion plus Reached the End stitching, disabled text selection/callout on capture controls, kept camera-readiness guards plus browser harness coverage for the live practice flow, added a protected real-device verification panel for iPhone Safari/Home Screen PWA evidence collection, replaced visible thumbnail number badges with removable-photo X controls, added photo review/removal/recalculation, and added pre-save quality and level validation.
+- Smart Aisle Scan immediate photo removal: removed confirmation dialog from thumbnail X button. Photo is instantly removed from the active sequence. Temporary "Photo removed / Undo" toast allows restoration within 6 seconds. Sequence version protection prevents stale stitch overwrites.
+- Smart Aisle Scan lens cleanliness detection: rolling-frame analysis using global contrast, center-edge sharpness ratio, and local block-contrast analysis. Persistent haze/smudge/obstruction signals detected across multiple frames with low motion and adequate lighting. High-confidence persistent lens issues block photo acceptance. Check Lens and Recheck Lens manual controls. Cautious language ("may need cleaning"). Motion blur, low light, and low-detail scenes distinguished from dirty-lens signals.
 
 ## 2026-07-26
 

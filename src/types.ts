@@ -65,6 +65,8 @@ export interface Job {
   processServe?: ProcessServeDetails;
   captureMode?: 'single_photo' | 'manual_multiple' | 'smart_aisle_scan';
   scanSessionId?: string;
+  /** Existing jobs default to merchandising; contract-parts jobs must opt in explicitly. */
+  inventoryDomain?: 'merchandising' | 'contract_parts';
 }
 
 export interface RouteMetrics {
@@ -203,6 +205,12 @@ export interface TransitStop {
   stopName: string;
   latitude: number;
   longitude: number;
+  distanceMeters?: number;
+  stopCode?: string;
+  wheelchairBoarding?: number;
+  routeType?: number;
+  cityName?: string;
+  routes?: TransitRoute[];
 }
 
 export interface TransitInstruction {
@@ -215,6 +223,12 @@ export interface TransitAlert {
   title: string;
   description: string;
   severity: 'info' | 'warning' | 'critical';
+  cause?: string;
+  effect?: string;
+  activeFrom?: number | null;
+  activeUntil?: number | null;
+  affectedRoutes?: string[];
+  affectedStops?: string[];
 }
 
 export interface TransitWalkLeg {
@@ -231,6 +245,7 @@ export interface TransitRideLeg {
   type: 'transit';
   routeShortName?: string;
   routeLongName?: string;
+  routeId?: string;
   headsign?: string;
   agencyName?: string;
   boardingStop: TransitStop;
@@ -240,6 +255,7 @@ export interface TransitRideLeg {
   arrivalTime: string;
   predictedArrivalTime?: string;
   stopCount?: number;
+  isCancelled?: boolean;
 }
 
 export type TransitLeg = TransitWalkLeg | TransitRideLeg;
@@ -262,6 +278,7 @@ export interface TransitTrip {
   alerts: TransitAlert[];
   provider: string;
   fetchedAt: string;
+  fare?: string | null;
 }
 
 export interface TransitTripRequest {
@@ -274,11 +291,161 @@ export interface TransitTripRequest {
 
 export type BusModeStatus = 'idle' | 'loading' | 'active' | 'error' | 'stale';
 
+// ─── Official Transit API Types ────────────────────────────────────────
+
+export interface TransitRoute {
+  routeId: string;
+  shortName: string;
+  longName?: string;
+  color?: string;
+  textColor?: string;
+  networkId?: string;
+  networkName?: string;
+  modeName?: string;
+}
+
+export interface TransitArrival {
+  tripId: string;
+  route: TransitRoute;
+  headsign: string;
+  /** Unix seconds (UTC). */
+  departureTime: number;
+  /** Unix seconds (UTC). */
+  arrivalTime: number;
+  scheduledDepartureTime: number;
+  scheduledArrivalTime: number;
+  isRealTime: boolean;
+  isCancelled: boolean;
+  isLast: boolean;
+  wheelchairAccessible?: number;
+}
+
+export type TransitFreshnessSource = 'live' | 'cache' | 'stale';
+
+export interface TransitFreshness {
+  source: TransitFreshnessSource;
+  lastUpdatedAt: string;
+  ageMs: number;
+}
+
+export interface FavoriteTransitStop {
+  id: string;
+  stopId: string;
+  stopName: string;
+  customName?: string;
+  latitude: number;
+  longitude: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NearbyStopsResult {
+  stops: TransitStop[];
+  freshness: TransitFreshness;
+}
+
+export interface StopArrivalsResult {
+  stop: TransitStop | null;
+  arrivals: TransitArrival[];
+  freshness: TransitFreshness;
+}
+
+export interface TripPlanResult {
+  trip: TransitTrip;
+  alternatives: number;
+  freshness: TransitFreshness;
+}
+
+export interface ServiceAlertsResult {
+  alerts: TransitAlert[];
+  freshness: TransitFreshness;
+}
+
+export interface TransitRateLimitStatus {
+  limit: number;
+  used: number;
+  remaining: number;
+  windowStartMs: number;
+  nextAvailableAtMs: number;
+  pending: number;
+  inFlight: number;
+}
+
+export interface TransitApiStatus {
+  configured: boolean;
+  provider: string;
+  networks: string[];
+  rateLimit: TransitRateLimitStatus;
+  cache: { size: number; capacity: number };
+  ttlSeconds: { nearby: number; arrivals: number; tripPlan: number; alerts: number };
+  lastSuccessfulRequestAt: string | null;
+  lastError: { code: string; message: string; at: string } | null;
+}
+
+export interface NearbyStopsRequest {
+  latitude: number;
+  longitude: number;
+  radiusMeters?: number;
+  limit?: number;
+}
+
+export interface StopArrivalsRequest {
+  stopId: string;
+}
+
+export interface ServiceAlertsRequest {
+  latitude?: number;
+  longitude?: number;
+}
+
 // ─── Smart Aisle Scan Types ───────────────────────────────────────────
 
 export type CaptureDirection = 'left_to_right' | 'right_to_left';
 export type AisleSide = 'left' | 'right' | 'both' | 'endcap';
 export type PhotoRole = 'beginning' | 'section' | 'ending' | 'context' | 'retake';
+
+export type LensCleanlinessStatus =
+  | 'clear'
+  | 'possible_smudge'
+  | 'possible_haze'
+  | 'possible_obstruction'
+  | 'uncertain'
+  | 'unsupported';
+
+export interface LensCleanlinessResult {
+  status: LensCleanlinessStatus;
+  confidence?: number;
+  globalContrast?: number;
+  centerSharpness?: number;
+  edgeSharpness?: number;
+  centerEdgeRatio?: number;
+  persistenceFrames?: number;
+  reasons: string[];
+  guidance: string[];
+}
+
+export type CameraQualityCause =
+  | 'smudge'
+  | 'haze'
+  | 'fingerprint'
+  | 'condensation'
+  | 'scratch'
+  | 'low_light'
+  | 'low_detail'
+  | 'motion_blur'
+  | 'clean'
+  | 'unknown';
+
+export interface RecentlyRemovedPhoto {
+  id: string;
+  sessionId: string;
+  sequenceNumber: number;
+  role: PhotoRole;
+  thumbnailDataUrl: string;
+  removedAt: string;
+  removalSource: AisleScanPhoto['removalSource'];
+  canRestore: boolean;
+}
 
 export type ScanSessionStatus =
   | 'setup'
@@ -313,6 +480,7 @@ export interface PhotoValidation {
   deviceLevelDegrees?: number | null;
   sceneLevelDegrees?: number | null;
   levelToleranceDegrees?: number | null;
+  lensCleanliness?: LensCleanlinessResult;
 }
 
 export interface OverlapInfo {

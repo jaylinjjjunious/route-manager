@@ -8,6 +8,7 @@ import multer from "multer";
 import { GoogleGenAI, Type } from "@google/genai";
 import { createClient } from "@supabase/supabase-js";
 import { createAssistantRouter } from "./server/assistant/assistantRoute";
+import { createTransitRouter } from "./server/transit/transitRoutes";
 
 // Load environment variables
 dotenv.config();
@@ -146,6 +147,9 @@ app.get(["/route", "/routes", "/jobs"], (_req, res) => {
 });
 // AI Operations Assistant
 app.use("/api/assistant", createAssistantRouter(requireAuth));
+
+// Official Transit API (server-side proxy, rate-limited, cached)
+app.use("/api/transit", createTransitRouter(requireAuth));
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {

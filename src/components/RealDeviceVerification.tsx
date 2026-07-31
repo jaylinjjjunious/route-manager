@@ -42,11 +42,25 @@ const CHECKS: ManualCheck[] = [
   { id: 'stitching', label: 'A real stitched preview was created from captured photos', passed: false },
   { id: 'originals', label: 'Original photos remained separately available after stitching', passed: false },
   { id: 'safe_area', label: 'Controls were not covered by iPhone safe areas or Safari/PWA chrome', passed: false },
-  { id: 'thumbnail_x', label: 'Thumbnail number badges are replaced by translucent black X controls', passed: false },
+  { id: 'thumbnail_x', label: 'Thumbnail X removes a photo immediately without confirmation modal', passed: false },
   { id: 'thumbnail_open', label: 'Tapping thumbnail image opens review and tapping X does not', passed: false },
   { id: 'remove_recalc', label: 'Removing a photo updates count, sequence, warnings, and stitched preview', passed: false },
+  { id: 'undo_remove', label: 'Undo restores the removed photo with correct position and count', passed: false },
+  { id: 'undo_count', label: 'Undo restores the total photo count correctly', passed: false },
+  { id: 'undo_restitch', label: 'Undo triggers automatic restitch of the restored sequence', passed: false },
   { id: 'quality_gate', label: 'Blur, motion, dark, or tilted photos are rejected instead of accepted with only a warning', passed: false },
   { id: 'level_toggle', label: 'Level guide can be hidden and validation still blocks tilted capture', passed: false },
+  { id: 'lens_check_button', label: 'Check Lens button appears during capture and produces a result', passed: false },
+  { id: 'lens_clean_result', label: 'Check Lens shows clear result with clean camera', passed: false },
+  { id: 'lens_recheck', label: 'Recheck Lens analyzes fresh frames and updates the result', passed: false },
+  { id: 'lens_no_false_dirty', label: 'No persistent false dirty-lens warning under normal detailed lighting', passed: false },
+  { id: 'lens_unsupported', label: 'Unsupported analysis returns uncertain without false certainty', passed: false },
+  { id: 'recently_removed_panel', label: 'Recently Removed button appears after first removal with correct count', passed: false },
+  { id: 'recently_removed_restore', label: 'Recently Removed panel shows removed photos and Restore button works', passed: false },
+  { id: 'setup_camera_check', label: 'Setup screen shows Camera Lens Check with Check/Recheck button', passed: false },
+  { id: 'setup_camera_result', label: 'Setup Camera Lens Check produces a result before Begin Capture', passed: false },
+  { id: 'backgrounding_safe', label: 'Backgrounding Safari during burst pauses capture and preserves photos', passed: false },
+  { id: 'foreground_recovery', label: 'Returning to foreground recovers camera without data loss', passed: false },
 ];
 
 function readStoredEvents(): EvidenceEvent[] {
@@ -220,6 +234,10 @@ export default function RealDeviceVerification() {
       visibilityEvents: events.filter(event => event.type === 'visibilitychange').length,
       photoSavedEvents: events.filter(event => event.type === 'photo_saved').length,
       stitchFinishedEvents: events.filter(event => event.type === 'stitch_finished').length,
+      immediateRemoveEvents: events.filter(event => event.type === 'photo_remove_immediate').length,
+      undoRestoreEvents: events.filter(event => event.type === 'photo_undo_restore').length,
+      lensCheckEvents: events.filter(event => event.type === 'lens_check_completed').length,
+      lensRejectedEvents: events.filter(event => event.type === 'photo_rejected_lens_cleanliness').length,
     },
     sessions: sanitizeSessions(),
     events,
@@ -295,6 +313,9 @@ export default function RealDeviceVerification() {
             <li>Press and hold for at least five seconds while moving across household objects, then release.</li>
             <li>Hold again, drag outside the button, release outside, and confirm capture stops.</li>
             <li>Begin another hold, background Safari or the installed PWA, return, and confirm recovery.</li>
+            <li>Tap the X on a thumbnail and confirm it removes immediately with no confirmation popup.</li>
+            <li>Confirm the Undo toast appears, tap Undo, and confirm the photo returns with correct count.</li>
+            <li>Tap Check Lens and confirm a result appears (clear, uncertain, or cleaning needed).</li>
             <li>Tap Reached the End, review the stitched preview, and confirm originals remain listed in the report.</li>
             <li>Repeat from the Home Screen installed PWA and copy the report.</li>
           </ol>
@@ -307,6 +328,12 @@ export default function RealDeviceVerification() {
             </button>
             <button type="button" onClick={() => resetChecks(['thumbnail_x', 'thumbnail_open', 'remove_recalc'], 'reset_current_correction_step')} className="inline-flex h-12 items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 text-sm font-black text-slate-200">
               Reset Current Test Step
+            </button>
+            <button type="button" onClick={() => resetChecks(['undo_remove', 'undo_count', 'undo_restitch'], 'reset_undo_test')} className="inline-flex h-12 items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 text-sm font-black text-slate-200">
+              Reset Delete/Undo Test
+            </button>
+            <button type="button" onClick={() => resetChecks(['lens_check_button', 'lens_clean_result', 'lens_recheck', 'lens_no_false_dirty', 'lens_unsupported'], 'reset_lens_test')} className="inline-flex h-12 items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 text-sm font-black text-slate-200">
+              Reset Lens Test
             </button>
             <button type="button" onClick={() => resetChecks(['reached_end', 'stitching', 'originals'], 'repeat_stitch_test_requested')} className="inline-flex h-12 items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 text-sm font-black text-slate-200">
               Repeat Stitch Test
@@ -346,6 +373,10 @@ export default function RealDeviceVerification() {
             <div className="rounded bg-black/30 p-2">Selections: {report.automatedSummary.selectionEvents}</div>
             <div className="rounded bg-black/30 p-2">Context menus: {report.automatedSummary.contextMenuEvents}</div>
             <div className="rounded bg-black/30 p-2">Photos saved: {report.automatedSummary.photoSavedEvents}</div>
+            <div className="rounded bg-black/30 p-2">Immediate deletes: {report.automatedSummary.immediateRemoveEvents}</div>
+            <div className="rounded bg-black/30 p-2">Undo restores: {report.automatedSummary.undoRestoreEvents}</div>
+            <div className="rounded bg-black/30 p-2">Lens checks: {report.automatedSummary.lensCheckEvents}</div>
+            <div className="rounded bg-black/30 p-2">Lens rejections: {report.automatedSummary.lensRejectedEvents}</div>
           </div>
           <textarea readOnly value={reportText} className="h-80 w-full rounded-lg border border-white/10 bg-black/40 p-3 font-mono text-[10px] text-slate-200" />
           <button type="button" onClick={() => appendEvent('report_refreshed')} className="inline-flex h-10 items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 text-xs font-black text-slate-200">

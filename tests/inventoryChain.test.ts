@@ -12,6 +12,7 @@ import {
 
 function makeItem(): CustodyItem {
   return {
+    domain: 'merchandising',
     id: 'item-1',
     jobId: 'job-1',
     partNumber: 'P-100',
@@ -75,5 +76,24 @@ describe('chain of custody ledger', () => {
     expect(loadCustodyLedger('job-1')).toEqual(emptyCustodyLedger('job-1'));
     saveCustodyLedger(emptyCustodyLedger('job-2'));
     expect(loadCustodyLedger('job-2').jobId).toBe('job-2');
+  });
+
+  it('keeps merchandising package custody separate from contract-parts custody', async () => {
+    const ledger = emptyCustodyLedger('job-1', 'merchandising');
+    const event = await createCustodyEvent({
+      domain: 'merchandising',
+      jobId: 'job-1',
+      itemId: 'package-1',
+      type: 'receive_in',
+      partNumber: '',
+      serialNumber: '',
+      packageId: 'PKG-1',
+      packageContents: 'Shelf tags',
+    });
+    appendCustodyEvent(ledger, event, { ...makeItem(), id: 'package-1', domain: 'merchandising', partNumber: '', serialNumber: '', packageId: 'PKG-1', packageContents: 'Shelf tags' });
+
+    expect(loadCustodyLedger('job-1', 'merchandising').events).toHaveLength(1);
+    expect(loadCustodyLedger('job-1', 'contract_parts').events).toHaveLength(0);
+    expect(loadCustodyLedger('job-1', 'merchandising').events[0].packageId).toBe('PKG-1');
   });
 });

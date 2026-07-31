@@ -1,4 +1,4 @@
-import type { TransitTripRequest, TransitTrip, TransitLeg, TransitWalkLeg, TransitRideLeg, TransitStop, TransitPoint } from '../../types';
+import type { TransitTripRequest, TransitTrip, TransitLeg, TransitWalkLeg, TransitRideLeg, TransitStop, TransitPoint, NearbyStopsRequest, NearbyStopsResult, StopArrivalsRequest, StopArrivalsResult, ServiceAlertsRequest, ServiceAlertsResult } from '../../types';
 import type { TransitProvider } from './provider';
 import { authFetch } from '../apiClient';
 
@@ -134,5 +134,17 @@ export class GoogleRoutesTransitProvider implements TransitProvider {
       provider: this.name,
       fetchedAt: new Date().toISOString(),
     };
+  }
+
+  getNearbyStops(_request: NearbyStopsRequest): Promise<NearbyStopsResult> {
+    throw new Error('Nearby stops are not available with the Google Routes provider.');
+  }
+
+  getStopArrivals(_request: StopArrivalsRequest): Promise<StopArrivalsResult> {
+    throw new Error('Live arrivals are not available with the Google Routes provider.');
+  }
+
+  getServiceAlerts(_request?: ServiceAlertsRequest): Promise<ServiceAlertsResult> {
+    throw new Error('Service alerts are not available with the Google Routes provider.');
   }
 }

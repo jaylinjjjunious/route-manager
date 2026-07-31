@@ -13,6 +13,11 @@
 - Press-and-hold camera flows should wait for the visible button to be enabled in browser tests because capture cooldown can leave the next button visible before it is interactive.
 - Real iPhone Safari/PWA acceptance cannot be replaced by desktop emulation; when direct device automation is unavailable, ship a privacy-safe tester-assisted route that records build info, pointer/touch lifecycle, selection/context menu evidence, visibility changes, photo sequence metadata, repeated correction attempts, and manual checklist results.
 - Quality gates must run before active-sequence persistence. Warning-only validation is not enough for camera evidence workflows because bad frames can contaminate sequence, overlap, and stitching state.
+- Immediate photo removal (no confirmation dialog) with an undo toast is more practical for field workflows than confirmation modals, which interrupt the camera flow and lose the user's spatial context.
+- Undo after immediate removal requires restoring the exact photo by stable ID, its original sequence position, its active state, and recalculating overlaps and stitching from the restored sequence.
+- Lens cleanliness detection requires rolling-frame analysis across multiple preview frames to avoid false positives from single uncertain frames, low-detail scenes, or transient conditions.
+- Lens cleanliness should use cautious language ("may need cleaning") because visual symptoms alone cannot definitively identify the cause — it could be smudge, fog, low light, focus not settled, or a naturally low-detail scene.
+- Motion blur, low light, and low-detail scenes must be distinguished from dirty-lens signals; a single soft frame after rapid movement or in dim lighting should not trigger a lens warning.
 
 ## Build and Deployment
 
@@ -37,7 +42,16 @@
 - Always verify deployment after push — never assume it succeeded.
 - Documentation must be updated in the same session as code changes, or it will drift.
 
+## External API Integration (Transit)
+
+- Auth header can be a literal `apiKey` header, not `Bearer` — read the upstream docs, don't assume.
+- Transit v4 returns HTTP 200 with an `{"error": "..."}` body for malformed plan requests — treat 200-with-error as failure, not success.
+- Build upstream URLs with `new URL(base + pathname)` when the base URL has a path (`/v4`); `new URL(pathname, base)` silently drops it.
+- Sensitive upstream keys must be server-side only; gate the UI with a separate public build-time `VITE_` flag and enforce the separation with a key-hygiene test.
+- Mocking `fetch` in Vitest requires `vi.fn<FetchMock>` typing and reading `init?.headers` (RequestInit) to satisfy TypeScript — cast headers via `new Headers(...)` when asserting.
+- Test upstream module selection with `vi.stubEnv`/`vi.resetModules` (dynamic import) so the chosen provider is actually re-evaluated per test.
+
 ---
 
-**Last Updated:** 2026-07-28 (smart-aisle-thumbnail-removal-quality-level)
+**Last Updated:** 2026-07-30 (integrate-official-transit-api)
 

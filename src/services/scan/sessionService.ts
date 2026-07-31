@@ -12,7 +12,11 @@ import type {
   ScanChecklist,
   AisleScanSessionMode,
   OverlapInfo,
+  LensCleanlinessResult,
+  LensCleanlinessStatus,
 } from '../../types';
+
+export type { LensCleanlinessResult, LensCleanlinessStatus } from '../../types';
 
 const STORAGE_KEY = 'smart_aisle_scan_sessions';
 const PHOTOS_KEY = 'smart_aisle_scan_photos';
@@ -38,6 +42,16 @@ export const SCAN_CONFIG = {
   minEdgeDensity: 0.015,
   levelToleranceDegrees: 6,
   maxSceneTiltDegrees: 7,
+  // Lens cleanliness analysis thresholds
+  lensMinGlobalContrast: 30,
+  lensMaxGlobalContrast: 70,
+  lensCenterEdgeRatioThreshold: 0.55,
+  lensLowDetailMinVariance: 2,
+  lensPersistenceRequired: 3,
+  lensRollingWindowSize: 6,
+  lensHighConfidenceThreshold: 0.7,
+  lensMinMotionForSkip: 0.12,
+  lensMinBrightnessForAnalysis: 30,
 } as const;
 
 // ─── ID Generation ────────────────────────────────────────────────
@@ -374,6 +388,342 @@ function estimateSceneTiltDegrees(imageData: ImageData): number | null {
   return candidates[Math.floor(candidates.length / 2)];
 }
 
+// ─── Lens Cleanliness Analysis ──────────────────────────────────────
+
+export function analyzeLensCleanliness(imageData: ImageData): LensCleanlinessResult {
+  const { width, height, data } = imageData;
+  const grayAt = (x: number, y: number) => {
+    const idx = (y * width + x) * 4;
+    return (data[idx] * 0.299) + (data[idx + 1] * 0.587) + (data[idx + 2] * 0.114);
+  };
+
+  // Global contrast: Michelson contrast of the luminance histogram
+  let minLum = 255;
+  let maxLum = 0;
+  let lumSum = 0;
+  let lumSqSum = 0;
+  let pixelCount = 0;
+  for (let y = 0; y < height; y += 2) {
+    for (let x = 0; x < width; x += 2) {
+      const lum = grayAt(x, y);
+      if (lum < minLum) minLum = lum;
+      if (lum > maxLum) maxLum = lum;
+      lumSum += lum;
+      lumSqSum += lum * lum;
+      pixelCount++;
+    }
+  }
+  const meanLum = pixelCount > 0 ? lumSum / pixelCount : 128;
+  const varianceLum = pixelCount > 0 ? Math.max(0, (lumSqSum / pixelCount) - meanLum * meanLum) : 0;
+  const globalContrast = (maxLum + minLum) > 0 ? ((maxLum - minLum) / (maxLum + minLum)) * 100 : 0;
+
+  // Center sharpness (inner 50% region)
+  const cx = Math.floor(width / 2);
+  const cy = Math.floor(height / 2);
+  const innerW = Math.floor(width / 4);
+  const innerH = Math.floor(height / 4);
+  let centerLaplacianSum = 0;
+  let centerSamples = 0;
+  for (let y = cy - innerH; y < cy + innerH; y += 2) {
+    for (let x = cx - innerW; x < cx + innerW; x += 2) {
+      if (x < 1 || x >= width - 1 || y < 1 || y >= height - 1) continue;
+      const center = grayAt(x, y) * 4;
+      const laplacian = center - grayAt(x - 1, y) - grayAt(x + 1, y) - grayAt(x, y - 1) - grayAt(x, y + 1);
+      centerLaplacianSum += Math.abs(laplacian);
+      centerSamples++;
+    }
+  }
+  const centerSharpness = centerSamples > 0 ? centerLaplacianSum / centerSamples : 0;
+
+  // Edge sharpness (outer 25% border region)
+  let edgeLaplacianSum = 0;
+  let edgeSamples = 0;
+  const borderWidth = Math.floor(width / 6);
+  const borderHeight = Math.floor(height / 6);
+  for (let y = 2; y < height - 2; y += 2) {
+    for (let x = 2; x < width - 2; x += 2) {
+      const isEdge = x < borderWidth || x >= width - borderWidth || y < borderHeight || y >= height - borderHeight;
+      if (!isEdge) continue;
+      const center = grayAt(x, y) * 4;
+      const laplacian = center - grayAt(x - 1, y) - grayAt(x + 1, y) - grayAt(x, y - 1) - grayAt(x, y + 1);
+      edgeLaplacianSum += Math.abs(laplacian);
+      edgeSamples++;
+    }
+  }
+  const edgeSharpness = edgeSamples > 0 ? edgeLaplacianSum / edgeSamples : 0;
+
+  // Center-to-edge ratio: low ratio means edges are much softer than center (possible smudge)
+  const centerEdgeRatio = edgeSharpness > 0 ? centerSharpness / edgeSharpness : 1;
+
+  // Haze detection: local contrast in blocks — low local contrast suggests veiling glare
+  const blockSize = Math.max(8, Math.floor(Math.min(width, height) / 10));
+  let lowContrastBlocks = 0;
+  let totalBlocks = 0;
+  for (let by = 0; by < height - blockSize; by += blockSize) {
+    for (let bx = 0; bx < width - blockSize; bx += blockSize) {
+      let bMin = 255;
+      let bMax = 0;
+      for (let dy = 0; dy < blockSize; dy += 2) {
+        for (let dx = 0; dx < blockSize; dx += 2) {
+          const lum = grayAt(bx + dx, by + dy);
+          if (lum < bMin) bMin = lum;
+          if (lum > bMax) bMax = lum;
+        }
+      }
+      const localContrast = bMax - bMin;
+      totalBlocks++;
+      if (localContrast < 15) lowContrastBlocks++;
+    }
+  }
+  const hazeFraction = totalBlocks > 0 ? lowContrastBlocks / totalBlocks : 0;
+
+  // Evaluate signals
+  const reasons: string[] = [];
+  const guidance: string[] = [];
+  let status: LensCleanlinessStatus = 'clear';
+  let confidence = 0;
+
+  const hasLowContrast = globalContrast < SCAN_CONFIG.lensMaxGlobalContrast;
+  const hasLowDetail = varianceLum < SCAN_CONFIG.lensLowDetailMinVariance;
+  const hasSoftEdges = centerEdgeRatio > SCAN_CONFIG.lensCenterEdgeRatioThreshold;
+  const hasHaze = hazeFraction > 0.35;
+
+  if (hasLowContrast) {
+    reasons.push('Low global contrast across the frame');
+  }
+  if (hasSoftEdges) {
+    reasons.push('Edges are noticeably softer than center');
+  }
+  if (hasHaze) {
+    reasons.push(`Widespread low local contrast (${Math.round(hazeFraction * 100)}% of blocks)`);
+  }
+
+  if (hasLowDetail) {
+    // Scene may be naturally low-detail (plain wall, etc.)
+    status = 'uncertain';
+    confidence = 0.2;
+    reasons.push('Scene may have limited detail for reliable analysis');
+    guidance.push('Point the camera at a detailed shelf or object and try again.');
+  } else if (reasons.length === 0) {
+    status = 'clear';
+    confidence = 0.85;
+  } else if (reasons.length === 1 && hasSoftEdges && !hasHaze) {
+    // Single soft-edge signal: possible but uncertain
+    status = 'possible_smudge';
+    confidence = 0.45;
+    reasons.push('Possible lens smudge');
+    guidance.push('Clean the camera lens with a soft cloth and try again.');
+  } else if (reasons.length >= 2 || hasHaze) {
+    // Multiple signals or haze: stronger indication
+    const ratioScore = hasSoftEdges ? 0.3 : 0;
+    const contrastScore = hasLowContrast ? 0.3 : 0;
+    const hazeScore = hasHaze ? 0.4 : 0;
+    confidence = Math.min(0.85, ratioScore + contrastScore + hazeScore + reasons.length * 0.05);
+
+    if (confidence >= SCAN_CONFIG.lensHighConfidenceThreshold && hasHaze) {
+      status = 'possible_haze';
+      guidance.push('Wipe the lens with a clean, soft cloth and try again.');
+    } else if (hasSoftEdges && hasLowContrast) {
+      status = 'possible_smudge';
+      guidance.push('Check the lens for fingerprints or fog.');
+    } else {
+      status = 'possible_smudge';
+      guidance.push('Clean the camera lens and try again.');
+    }
+  } else {
+    status = 'uncertain';
+    confidence = 0.3;
+    guidance.push('Unable to determine lens condition from this frame.');
+  }
+
+  return {
+    status,
+    confidence,
+    globalContrast: Math.round(globalContrast * 10) / 10,
+    centerSharpness: Math.round(centerSharpness * 100) / 100,
+    edgeSharpness: Math.round(edgeSharpness * 100) / 100,
+    centerEdgeRatio: Math.round(centerEdgeRatio * 100) / 100,
+    persistenceFrames: 0,
+    reasons,
+    guidance,
+  };
+}
+
+export interface FrameLensSnapshot {
+  lensResult: LensCleanlinessResult;
+  motionScore: number;
+  brightness: number;
+  timestamp: number;
+}
+
+export function analyzeFrameLensSnapshot(
+  analysisDataUrl: string,
+  previousAnalysisDataUrl: string | null,
+): Promise<FrameLensSnapshot> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve({
+          lensResult: { status: 'unsupported', reasons: ['No canvas context'], guidance: [] },
+          motionScore: 0,
+          brightness: 128,
+          timestamp: Date.now(),
+        });
+        return;
+      }
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const brightness = analyzeBrightness(imageData);
+      const lensResult = analyzeLensCleanliness(imageData);
+
+      if (previousAnalysisDataUrl) {
+        const prevImg = new Image();
+        prevImg.onload = () => {
+          const prevCanvas = document.createElement('canvas');
+          prevCanvas.width = prevImg.width;
+          prevCanvas.height = prevImg.height;
+          const prevCtx = prevCanvas.getContext('2d');
+          let motionScore = 0;
+          if (prevCtx) {
+            prevCtx.drawImage(prevImg, 0, 0);
+            const prevData = prevCtx.getImageData(0, 0, prevCanvas.width, prevCanvas.height);
+            motionScore = analyzeMotion(imageData, prevData);
+          }
+          resolve({ lensResult, motionScore, brightness, timestamp: Date.now() });
+        };
+        prevImg.onerror = () => resolve({ lensResult, motionScore: 0, brightness, timestamp: Date.now() });
+        prevImg.src = previousAnalysisDataUrl;
+        return;
+      }
+      resolve({ lensResult, motionScore: 0, brightness, timestamp: Date.now() });
+    };
+    img.onerror = () => {
+      resolve({
+        lensResult: { status: 'unsupported', reasons: ['Failed to load image'], guidance: [] },
+        motionScore: 0,
+        brightness: 128,
+        timestamp: Date.now(),
+      });
+    };
+    img.src = analysisDataUrl;
+  });
+}
+
+export function analyzeRollingLensCleanliness(
+  snapshots: FrameLensSnapshot[],
+): LensCleanlinessResult {
+  if (snapshots.length < 2) {
+    return { status: 'uncertain', reasons: ['Insufficient frames for analysis'], guidance: ['Hold steady for a moment.'], persistenceFrames: snapshots.length };
+  }
+
+  const recentMotion = snapshots.slice(-3).map(s => s.motionScore);
+  const avgRecentMotion = recentMotion.reduce((a, b) => a + b, 0) / recentMotion.length;
+
+  // Skip analysis if motion is high
+  if (avgRecentMotion > SCAN_CONFIG.lensMinMotionForSkip) {
+    return { status: 'uncertain', reasons: ['Device motion too high for lens analysis'], guidance: ['Hold the phone steady to check the lens.'], persistenceFrames: 0 };
+  }
+
+  const avgBrightness = snapshots.reduce((a, s) => a + s.brightness, 0) / snapshots.length;
+  if (avgBrightness < SCAN_CONFIG.lensMinBrightnessForAnalysis) {
+    return { status: 'uncertain', reasons: ['Lighting too low for reliable lens analysis'], guidance: ['Improve lighting and try again.'], persistenceFrames: 0 };
+  }
+
+  // Count frames with haze or smudge signals
+  let hazeCount = 0;
+  let smudgeCount = 0;
+  let clearCount = 0;
+  let uncertainCount = 0;
+  let totalConfidence = 0;
+  let validFrames = 0;
+  let latestResult: LensCleanlinessResult = snapshots[snapshots.length - 1].lensResult;
+
+  for (const snap of snapshots) {
+    const r = snap.lensResult;
+    if (r.status === 'possible_haze' || r.status === 'possible_obstruction') hazeCount++;
+    else if (r.status === 'possible_smudge') smudgeCount++;
+    else if (r.status === 'clear') clearCount++;
+    else uncertainCount++;
+    if (r.confidence != null) {
+      totalConfidence += r.confidence;
+      validFrames++;
+    }
+  }
+
+  const avgConfidence = validFrames > 0 ? totalConfidence / validFrames : 0;
+  const problematicFrames = hazeCount + smudgeCount;
+  const persistenceRatio = snapshots.length > 0 ? problematicFrames / snapshots.length : 0;
+  const persistenceCount = Math.max(hazeCount, smudgeCount);
+
+  // If most frames are clear, the lens is likely fine
+  if (clearCount > snapshots.length * 0.6) {
+    return {
+      status: 'clear',
+      confidence: 0.8,
+      persistenceFrames: persistenceCount,
+      reasons: [],
+      guidance: [],
+    };
+  }
+
+  // Low-detail scene: uncertain
+  const lowDetailFrames = snapshots.filter(s =>
+    s.lensResult.reasons.some(r => r.toLowerCase().includes('limited detail'))
+  ).length;
+  if (lowDetailFrames > snapshots.length * 0.5) {
+    return {
+      status: 'uncertain',
+      confidence: 0.25,
+      persistenceFrames: persistenceCount,
+      reasons: ['Scene may have limited detail for reliable lens analysis'],
+      guidance: ['Point the camera at a detailed shelf or object and try again.'],
+    };
+  }
+
+  // Persistent haze across multiple frames
+  if (persistenceRatio >= 0.5 && persistenceCount >= SCAN_CONFIG.lensPersistenceRequired) {
+    const status: LensCleanlinessStatus = hazeCount > smudgeCount ? 'possible_haze' : 'possible_smudge';
+    const highConf = avgConfidence >= SCAN_CONFIG.lensHighConfidenceThreshold;
+    return {
+      status,
+      confidence: Math.min(0.85, avgConfidence + 0.1),
+      globalContrast: latestResult.globalContrast,
+      centerSharpness: latestResult.centerSharpness,
+      edgeSharpness: latestResult.edgeSharpness,
+      centerEdgeRatio: latestResult.centerEdgeRatio,
+      persistenceFrames: persistenceCount,
+      reasons: [`Persistent ${status === 'possible_haze' ? 'haze' : 'softness'} across ${persistenceCount} of ${snapshots.length} frames`],
+      guidance: highConf
+        ? ['Wipe the lens with a clean, soft cloth and try again.']
+        : ['Clean the camera lens and try again.'],
+    };
+  }
+
+  // Some problematic frames but not enough for persistence threshold
+  if (problematicFrames > 0) {
+    return {
+      status: 'uncertain',
+      confidence: avgConfidence * 0.6,
+      persistenceFrames: persistenceCount,
+      reasons: latestResult.reasons.slice(0, 2),
+      guidance: ['Hold steady and allow autofocus to settle.'],
+    };
+  }
+
+  return {
+    status: 'clear',
+    confidence: 0.7,
+    persistenceFrames: 0,
+    reasons: [],
+    guidance: [],
+  };
+}
+
 export function validatePhoto(
   analysisDataUrl: string,
   previousAnalysisDataUrl: string | null,
@@ -439,6 +789,7 @@ export function validatePhoto(
       }
 
       let motionScore: number | null = null;
+      const lensCleanliness = analyzeLensCleanliness(imageData);
       const finish = () => {
         const motionStatus: PhotoValidation['motionStatus'] = motionScore !== null && motionScore > SCAN_CONFIG.maxMotionPercent ? 'fail' : motionScore === null ? 'unsupported' : 'pass';
         const passed = !warnings.length;
@@ -450,7 +801,7 @@ export function validatePhoto(
           deviceLevelDegrees,
           sceneLevelDegrees: sceneTilt,
           levelToleranceDegrees: SCAN_CONFIG.levelToleranceDegrees,
-        }));
+        }, lensCleanliness));
       };
 
       if (previousAnalysisDataUrl) {
@@ -491,6 +842,7 @@ function makeValidation(
   motion: number | null = null,
   sharpness: number | null = null,
   statuses: Partial<PhotoValidation> = {},
+  lensCleanliness?: LensCleanlinessResult,
 ): PhotoValidation {
   return {
     focusScore: sharpness,
@@ -504,6 +856,7 @@ function makeValidation(
     passed,
     warnings,
     guidance,
+    lensCleanliness,
     ...statuses,
   };
 }

@@ -14,14 +14,18 @@ import type {
   AisleSide,
   PhotoRole,
   ScanChecklist,
+  RecentlyRemovedPhoto,
 } from '../types';
 import {
-  createSession, getSession, updateSession, savePhoto, getPhoto,
+  createSession, getSession, updateSession, savePhoto, getPhoto, updatePhoto,
   getActivePhotos, createAnalysisCopy, createThumbnail, validatePhoto,
   markPhotoInactive, recalculateSessionAfterSequenceChange,
   captureFrameFromVideo, analyzeCoveragePairwise, stitchPhotos,
   SCAN_CONFIG, defaultChecklist, deleteSession, getActiveSessionForJob,
+  analyzeFrameLensSnapshot, analyzeRollingLensCleanliness,
 } from '../services/scan/sessionService';
+import type { FrameLensSnapshot } from '../services/scan/sessionService';
+import type { LensCleanlinessResult } from '../types';
 
 type CameraCapturePhase =
   | 'ready_for_start'
@@ -89,12 +93,20 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
   const [shutterFlash, setShutterFlash] = useState(false);
   const [burstStatusMessage, setBurstStatusMessage] = useState('');
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
-  const [photoPendingRemovalId, setPhotoPendingRemovalId] = useState<string | null>(null);
   const [sequenceProcessing, setSequenceProcessing] = useState('');
   const [showLevelGuide, setShowLevelGuide] = useState(() => localStorage.getItem('smart_aisle_show_level_guide') !== 'false');
   const [deviceLevelDegrees, setDeviceLevelDegrees] = useState<number | null>(null);
   const [levelAvailable, setLevelAvailable] = useState(false);
   const [qualityNotice, setQualityNotice] = useState('');
+  const [undoToastPhoto, setUndoToastPhoto] = useState<{ photo: import('../types').AisleScanPhoto; sequenceIndex: number; sequenceVersion: number } | null>(null);
+  const [lensCleanliness, setLensCleanliness] = useState<LensCleanlinessResult | null>(null);
+  const [lensCheckRunning, setLensCheckRunning] = useState(false);
+  const [lensCheckResult, setLensCheckResult] = useState<'checking' | LensCleanlinessResult | null>(null);
+  const [lensBlockedCapture, setLensBlockedCapture] = useState(false);
+  const [recentlyRemoved, setRecentlyRemoved] = useState<RecentlyRemovedPhoto[]>([]);
+  const [showRecentlyRemoved, setShowRecentlyRemoved] = useState(false);
+  const [setupCheckResult, setSetupCheckResult] = useState<LensCleanlinessResult | null>(null);
+  const [setupCheckRunning, setSetupCheckRunning] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -109,6 +121,11 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
   const stitchRequestedRef = useRef(false);
   const sequenceProcessingVersionRef = useRef(0);
   const removalInProgressRef = useRef(false);
+  const undoTimerRef = useRef<number | null>(null);
+  const lensSnapshotsRef = useRef<FrameLensSnapshot[]>([]);
+  const lensLastAnalysisUrlRef = useRef<string | null>(null);
+  const lensRollingResultRef = useRef<LensCleanlinessResult | null>(null);
+  const lensManualCheckRef = useRef(false);
 
   const emitVerificationEvent = useCallback((type: string, detail?: Record<string, unknown>) => {
     onVerificationEvent?.({ type, timestamp: new Date().toISOString(), detail });
@@ -144,6 +161,21 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
   useEffect(() => {
     localStorage.setItem('smart_aisle_show_level_guide', showLevelGuide ? 'true' : 'false');
   }, [showLevelGuide]);
+
+  // Clean up undo and lens state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setUndoToastPhoto(null);
+      if (undoTimerRef.current) {
+        clearTimeout(undoTimerRef.current);
+        undoTimerRef.current = null;
+      }
+      setLensCheckResult(null);
+      setLensBlockedCapture(false);
+      lensSnapshotsRef.current = [];
+      lensManualCheckRef.current = false;
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -208,6 +240,10 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
     return () => {
       clearBurstTimers();
       stopCamera();
+      if (undoTimerRef.current) {
+        clearTimeout(undoTimerRef.current);
+        undoTimerRef.current = null;
+      }
     };
   }, [isOpen, jobId, clearBurstTimers]);
 
@@ -384,6 +420,27 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
         });
         return null;
       }
+
+      // Lens cleanliness blocking: high-confidence persistent issue
+      const lensResult = validation.lensCleanliness;
+      const isHighConfidenceLensIssue = session.mode !== 'test_lab' &&
+        lensResult &&
+        (lensResult.status === 'possible_haze' || lensResult.status === 'possible_smudge' || lensResult.status === 'possible_obstruction') &&
+        (lensResult.confidence || 0) >= SCAN_CONFIG.lensHighConfidenceThreshold;
+      if (isHighConfidenceLensIssue) {
+        const message = 'Camera lens may need cleaning. Wipe the lens and try again.';
+        setCurrentWarnings([message]);
+        setQualityNotice(message);
+        setLensBlockedCapture(true);
+        emitVerificationEvent('photo_rejected_lens_cleanliness', {
+          role,
+          lensStatus: lensResult.status,
+          confidence: lensResult.confidence,
+          reasons: lensResult.reasons,
+        });
+        return null;
+      }
+
       setQualityNotice(isAutomatedFakeCamera ? 'Automated fake camera frame accepted' : 'Photo accepted');
 
       const activeSequenceCount = prevSession ? getActivePhotos(prevSession.id).length : 0;
@@ -533,6 +590,71 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
     }
   }, [session, captureCooldown, cameraReady, capturePhase, capturePhoto, transitionCapturePhase, emitVerificationEvent]);
 
+  const handleCheckLens = useCallback(async () => {
+    if (lensCheckRunning || !cameraReady || !videoRef.current) return;
+    setLensCheckRunning(true);
+    setLensCheckResult('checking');
+    try {
+      const freshSnapshots: FrameLensSnapshot[] = [];
+      const FRAMES_TO_CAPTURE = 5;
+      const FRAME_DELAY = 350;
+      for (let i = 0; i < FRAMES_TO_CAPTURE; i++) {
+        await new Promise(r => setTimeout(r, FRAME_DELAY));
+        if (!videoRef.current || videoRef.current.readyState < 2) continue;
+        const dataUrl = captureFrameFromVideo(videoRef.current);
+        const { dataUrl: analysisUrl } = await createAnalysisCopy(dataUrl);
+        const snapshot = await analyzeFrameLensSnapshot(analysisUrl, lensLastAnalysisUrlRef.current);
+        lensLastAnalysisUrlRef.current = analysisUrl;
+        freshSnapshots.push(snapshot);
+      }
+      const result = analyzeRollingLensCleanliness(freshSnapshots);
+      setLensCheckResult(result);
+      setLensCleanliness(result);
+      const isHighConfidenceBlocker =
+        (result.status === 'possible_haze' || result.status === 'possible_smudge' || result.status === 'possible_obstruction') &&
+        (result.confidence || 0) >= SCAN_CONFIG.lensHighConfidenceThreshold;
+      setLensBlockedCapture(isHighConfidenceBlocker);
+      lensManualCheckRef.current = true;
+      emitVerificationEvent('lens_check_completed', {
+        status: result.status,
+        confidence: result.confidence,
+        persistenceFrames: result.persistenceFrames,
+      });
+    } catch {
+      setLensCheckResult({ status: 'uncertain', reasons: ['Analysis failed'], guidance: ['Try again.'], confidence: 0 });
+    } finally {
+      setLensCheckRunning(false);
+    }
+  }, [lensCheckRunning, cameraReady, emitVerificationEvent]);
+
+  const handleSetupCameraCheck = useCallback(async () => {
+    if (setupCheckRunning || !cameraReady || !videoRef.current) return;
+    setSetupCheckRunning(true);
+    try {
+      const freshSnapshots: FrameLensSnapshot[] = [];
+      for (let i = 0; i < 4; i++) {
+        await new Promise(r => setTimeout(r, 300));
+        if (!videoRef.current || videoRef.current.readyState < 2) continue;
+        const dataUrl = captureFrameFromVideo(videoRef.current);
+        const { dataUrl: analysisUrl } = await createAnalysisCopy(dataUrl);
+        const snapshot = await analyzeFrameLensSnapshot(analysisUrl, lensLastAnalysisUrlRef.current);
+        lensLastAnalysisUrlRef.current = analysisUrl;
+        freshSnapshots.push(snapshot);
+      }
+      const result = analyzeRollingLensCleanliness(freshSnapshots);
+      setSetupCheckResult(result);
+      setLensCleanliness(result);
+      emitVerificationEvent('setup_camera_check_completed', {
+        status: result.status,
+        confidence: result.confidence,
+      });
+    } catch {
+      setSetupCheckResult({ status: 'uncertain', reasons: ['Setup check failed'], guidance: ['Try again.'], confidence: 0 });
+    } finally {
+      setSetupCheckRunning(false);
+    }
+  }, [setupCheckRunning, cameraReady, emitVerificationEvent]);
+
   // Auto-capture loop
   useEffect(() => {
     if (phase !== 'capturing' || !stream || captureCooldown || !session) return;
@@ -548,12 +670,52 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
     return () => { if (scanLoopRef.current) cancelAnimationFrame(scanLoopRef.current); };
   }, [phase, stream, captureCooldown, session]);
 
+  // Lens cleanliness rolling analysis
+  useEffect(() => {
+    if (phase !== 'capturing' || !stream || !session || !cameraReady) return;
+    let active = true;
+    let frameCount = 0;
+    const ANALYSIS_INTERVAL = 6;
+
+    const runLensAnalysis = async () => {
+      if (!active || !videoRef.current || videoRef.current.readyState < 2) return;
+      frameCount++;
+      if (frameCount % ANALYSIS_INTERVAL !== 0) return;
+
+      try {
+        const dataUrl = captureFrameFromVideo(videoRef.current);
+        const { dataUrl: analysisUrl } = await createAnalysisCopy(dataUrl);
+        const snapshot = await analyzeFrameLensSnapshot(analysisUrl, lensLastAnalysisUrlRef.current);
+        lensLastAnalysisUrlRef.current = analysisUrl;
+
+        lensSnapshotsRef.current = [...lensSnapshotsRef.current.slice(-SCAN_CONFIG.lensRollingWindowSize + 1), snapshot];
+        const rolling = analyzeRollingLensCleanliness(lensSnapshotsRef.current);
+        lensRollingResultRef.current = rolling;
+        setLensCleanliness(rolling);
+
+        const isHighConfidenceBlocker =
+          (rolling.status === 'possible_haze' || rolling.status === 'possible_smudge' || rolling.status === 'possible_obstruction') &&
+          (rolling.confidence || 0) >= SCAN_CONFIG.lensHighConfidenceThreshold;
+        setLensBlockedCapture(isHighConfidenceBlocker);
+      } catch {
+        // Ignore analysis errors during camera feed
+      }
+    };
+
+    const lensLoop = () => {
+      if (!active) return;
+      void runLensAnalysis();
+      requestAnimationFrame(lensLoop);
+    };
+    requestAnimationFrame(lensLoop);
+    return () => { active = false; };
+  }, [phase, stream, session, cameraReady]);
+
 
   // Coverage review
   const photos = session ? getActivePhotos(session.id) : [];
   const warnings = session ? [...(session.warnings || []), ...analyzeCoveragePairwise(photos)] : [];
   const selectedPhoto = selectedPhotoId ? photos.find(p => p.id === selectedPhotoId) || null : null;
-  const pendingRemovalPhoto = photoPendingRemovalId ? photos.find(p => p.id === photoPendingRemovalId) || null : null;
 
   const roleLabel = (role: PhotoRole) => role === 'beginning' ? 'Beginning' : role === 'ending' ? 'Ending' : role === 'context' ? 'Context' : role === 'retake' ? 'Retake' : 'Section';
   const photoCountLabel = `${photos.length} ${photos.length === 1 ? 'photo' : 'photos'}`;
@@ -567,12 +729,46 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
     const version = sequenceProcessingVersionRef.current + 1;
     sequenceProcessingVersionRef.current = version;
     removalInProgressRef.current = true;
+
+    // Store undo data before removal
+    const photo = getPhoto(photoId);
+    const currentSession = getSession(session.id);
+    const sequenceIndex = currentSession ? currentSession.photoSequence.indexOf(photoId) : -1;
+    if (photo && sequenceIndex >= 0) {
+      // Clear any existing undo timer
+      if (undoTimerRef.current) {
+        clearTimeout(undoTimerRef.current);
+        undoTimerRef.current = null;
+      }
+      setUndoToastPhoto({ photo, sequenceIndex, sequenceVersion: currentSession?.sequenceVersion || 0 });
+      undoTimerRef.current = window.setTimeout(() => {
+        setUndoToastPhoto(null);
+        undoTimerRef.current = null;
+      }, 6000);
+    }
+
     try {
       setSequenceProcessing('Removing photo');
-      emitVerificationEvent('photo_remove_confirmed', { photoId, source, sequenceVersion: version });
+      emitVerificationEvent('photo_remove_immediate', { photoId, source, sequenceVersion: version });
       markPhotoInactive(photoId, source);
-      setPhotoPendingRemovalId(null);
       if (selectedPhotoId === photoId) setSelectedPhotoId(null);
+
+      // Track in Recently Removed for recovery beyond the 6-second undo window
+      if (photo) {
+        setRecentlyRemoved(prev => {
+          const entry: RecentlyRemovedPhoto = {
+            id: photo.id,
+            sessionId: photo.sessionId,
+            sequenceNumber: photo.sequenceNumber,
+            role: photo.role,
+            thumbnailDataUrl: photo.dataUrl,
+            removedAt: new Date().toISOString(),
+            removalSource: source,
+            canRestore: true,
+          };
+          return [entry, ...prev].slice(0, 20);
+        });
+      }
 
       setSequenceProcessing('Updating sequence');
       await new Promise(resolve => setTimeout(resolve, 80));
@@ -598,14 +794,114 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
     }
   }, [session, capturePhase, emitVerificationEvent, selectedPhotoId]);
 
+  const undoPhotoRemoval = useCallback(() => {
+    if (!undoToastPhoto || !session) return;
+    if (undoTimerRef.current) {
+      clearTimeout(undoTimerRef.current);
+      undoTimerRef.current = null;
+    }
+    const { photo, sequenceIndex, sequenceVersion } = undoToastPhoto;
+    const version = sequenceProcessingVersionRef.current + 1;
+    sequenceProcessingVersionRef.current = version;
+    removalInProgressRef.current = true;
+
+    try {
+      // Restore the photo's active state
+      updatePhoto(photo.id, {
+        isActive: true,
+        previousSequenceNumber: undefined,
+        removedAt: undefined,
+        removalSource: undefined,
+        inactiveReason: undefined,
+        includedInStitch: true,
+        exclusionReason: undefined,
+      });
+
+      // Restore sequence position
+      const currentSession = getSession(session.id);
+      if (currentSession) {
+        const newSequence = [...currentSession.photoSequence];
+        // Remove photoId from wherever it might be and insert at original position
+        const existingIdx = newSequence.indexOf(photo.id);
+        if (existingIdx >= 0) newSequence.splice(existingIdx, 1);
+        const insertAt = Math.min(sequenceIndex, newSequence.length);
+        newSequence.splice(insertAt, 0, photo.id);
+        updateSession(session.id, {
+          photoSequence: newSequence,
+          sequenceVersion: sequenceVersion + 1,
+        });
+      }
+
+      setSequenceProcessing('Restoring photo');
+      emitVerificationEvent('photo_undo_restore', { photoId: photo.id, sequenceIndex });
+
+      // Recalculate after restore
+      void recalculateSessionAfterSequenceChange(session.id).then(updated => {
+        if (sequenceProcessingVersionRef.current === version && updated) {
+          setSession(updated);
+          setChecklist(updated.checklist);
+          setCurrentWarnings(updated.warnings.map(w => w.message));
+          stitchRequestedRef.current = updated.status === 'stitch_review';
+        }
+        setSequenceProcessing('');
+        removalInProgressRef.current = false;
+      });
+    } catch {
+      removalInProgressRef.current = false;
+      setSequenceProcessing('');
+    }
+
+    setUndoToastPhoto(null);
+  }, [undoToastPhoto, session, emitVerificationEvent]);
+
   const requestRemovePhoto = useCallback((photoId: string) => {
     if (capturePhase === 'burst_capturing' || captureWritePromiseRef.current) {
       setQualityNotice('Release Hold for Burst before editing captured photos.');
       return;
     }
-    setPhotoPendingRemovalId(photoId);
-    emitVerificationEvent('photo_remove_requested', { photoId });
-  }, [capturePhase, emitVerificationEvent]);
+    void runSequenceRecalculation(photoId, 'thumbnail_x');
+  }, [capturePhase, runSequenceRecalculation]);
+
+  const restoreFromRecentlyRemoved = useCallback((removedId: string) => {
+    if (!session) return;
+    const entry = recentlyRemoved.find(r => r.id === removedId);
+    if (!entry || !entry.canRestore) return;
+
+    // Restore the photo
+    updatePhoto(entry.id, {
+      isActive: true,
+      previousSequenceNumber: undefined,
+      removedAt: undefined,
+      removalSource: undefined,
+      inactiveReason: undefined,
+      includedInStitch: true,
+      exclusionReason: undefined,
+    });
+
+    const currentSession = getSession(session.id);
+    if (currentSession) {
+      const newSequence = [...currentSession.photoSequence];
+      const existingIdx = newSequence.indexOf(entry.id);
+      if (existingIdx >= 0) newSequence.splice(existingIdx, 1);
+      // Append to end of sequence
+      newSequence.push(entry.id);
+      updateSession(session.id, {
+        photoSequence: newSequence,
+        sequenceVersion: (currentSession.sequenceVersion || 0) + 1,
+      });
+    }
+
+    // Remove from recently removed list
+    setRecentlyRemoved(prev => prev.filter(r => r.id !== removedId));
+
+    emitVerificationEvent('photo_recently_removed_restore', { photoId: entry.id });
+    void recalculateSessionAfterSequenceChange(session.id).then(updated => {
+      if (updated) {
+        setSession(updated);
+        setChecklist(updated.checklist);
+      }
+    });
+  }, [session, recentlyRemoved, emitVerificationEvent]);
 
   // Stitch
   const handleStitch = async () => {
@@ -815,6 +1111,43 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
                 </div>
               </div>
 
+              {/* Setup Camera Check */}
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-bold text-white/70">Camera Lens Check</p>
+                  <button
+                    onClick={handleSetupCameraCheck}
+                    disabled={setupCheckRunning}
+                    className="rounded-lg bg-white/10 px-3 py-1.5 text-[10px] font-bold text-white/80 hover:text-white transition disabled:opacity-50"
+                  >
+                    {setupCheckRunning ? 'Checking...' : setupCheckResult ? 'Recheck' : 'Check Lens'}
+                  </button>
+                </div>
+                {setupCheckResult && (
+                  <div className={`rounded-lg px-3 py-2 text-[11px] font-bold ${
+                    setupCheckResult.status === 'clear'
+                      ? 'bg-emerald-500/20 text-emerald-300'
+                      : setupCheckResult.status === 'uncertain' || setupCheckResult.status === 'unsupported'
+                        ? 'bg-white/5 text-white/60'
+                        : 'bg-amber-500/20 text-amber-300'
+                  }`}>
+                    <p className="font-black mb-0.5">
+                      {setupCheckResult.status === 'clear' && 'Lens looks clear'}
+                      {setupCheckResult.status === 'possible_smudge' && 'Lens may need cleaning'}
+                      {setupCheckResult.status === 'possible_haze' && 'Lens may have haze'}
+                      {setupCheckResult.status === 'possible_obstruction' && 'Possible obstruction on lens'}
+                      {setupCheckResult.status === 'uncertain' && 'Unable to determine'}
+                    </p>
+                    {setupCheckResult.guidance.length > 0 && (
+                      <p className="text-[10px] opacity-80">{setupCheckResult.guidance[0]}</p>
+                    )}
+                  </div>
+                )}
+                {!setupCheckResult && !setupCheckRunning && (
+                  <p className="text-[10px] text-white/40">Optional: check your camera lens before starting.</p>
+                )}
+              </div>
+
               <button onClick={handleBeginScan}
                 className="w-full rounded-xl bg-cyan-600 py-3.5 text-sm font-black text-white hover:bg-cyan-500 transition flex items-center justify-center gap-2">
                 <Camera size={16} /> Begin Capture
@@ -900,6 +1233,51 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
                     >
                       {showLevelGuide ? 'Hide Level' : 'Show Level'}
                     </button>
+                    <button
+                      type="button"
+                      aria-label="Check camera lens cleanliness"
+                      onClick={handleCheckLens}
+                      disabled={lensCheckRunning}
+                      className="rounded-full bg-black/50 px-3 py-2 text-[10px] font-black text-white/80 hover:text-white transition disabled:opacity-50"
+                    >
+                      {lensCheckRunning ? 'Checking...' : 'Check Lens'}
+                    </button>
+                    {lensCheckResult && lensCheckResult !== 'checking' && (
+                      <div className={`max-w-[200px] rounded-lg px-2.5 py-2 text-[10px] font-bold shadow ${
+                        lensCheckResult.status === 'clear'
+                          ? 'bg-emerald-500/90 text-black'
+                          : lensCheckResult.status === 'uncertain' || lensCheckResult.status === 'unsupported'
+                            ? 'bg-black/50 text-white/80'
+                            : 'bg-amber-500/90 text-black'
+                      }`}>
+                        <p className="font-black">
+                          {lensCheckResult.status === 'clear' && 'Looks clear'}
+                          {lensCheckResult.status === 'possible_smudge' && 'Camera lens may need cleaning'}
+                          {lensCheckResult.status === 'possible_haze' && 'Camera lens may need cleaning'}
+                          {lensCheckResult.status === 'possible_obstruction' && 'Possible obstruction detected'}
+                          {lensCheckResult.status === 'uncertain' && 'Unable to verify'}
+                          {lensCheckResult.status === 'unsupported' && 'Not supported on this device'}
+                        </p>
+                        <p className="mt-0.5 text-[9px] opacity-80">
+                          {lensCheckResult.status === 'clear' && 'No persistent haze or obstruction detected.'}
+                          {lensCheckResult.status === 'possible_smudge' && (lensCheckResult.guidance[0] || 'Persistent softness detected. Wipe the lens.')}
+                          {lensCheckResult.status === 'possible_haze' && (lensCheckResult.guidance[0] || 'Persistent haze detected. Wipe the lens.')}
+                          {lensCheckResult.status === 'possible_obstruction' && (lensCheckResult.guidance[0] || 'Check for partial obstruction.')}
+                          {lensCheckResult.status === 'uncertain' && (lensCheckResult.guidance[0] || 'Lighting or scene detail is too limited to check the lens reliably.')}
+                          {lensCheckResult.status === 'unsupported' && (lensCheckResult.guidance[0] || 'Use existing blur and focus checks.')}
+                        </p>
+                      </div>
+                    )}
+                    {recentlyRemoved.length > 0 && !showRecentlyRemoved && (
+                      <button
+                        type="button"
+                        aria-label="Show recently removed photos"
+                        onClick={() => setShowRecentlyRemoved(true)}
+                        className="rounded-full bg-amber-500/80 px-3 py-2 text-[10px] font-black text-black hover:bg-amber-400 transition"
+                      >
+                        {recentlyRemoved.length} Removed
+                      </button>
+                    )}
                     {(qualityNotice || sequenceProcessing) && (
                       <div className="max-w-[180px] rounded-lg bg-black/75 px-3 py-2 text-[10px] font-black text-white shadow" aria-live="polite">
                         {sequenceProcessing || qualityNotice}
@@ -910,7 +1288,71 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
                         <AlertTriangle size={10} />{w}
                       </div>
                     ))}
+                    {lensCleanliness && lensCleanliness.status !== 'clear' && lensCleanliness.status !== 'unsupported' && lensCleanliness.status !== 'uncertain' && (
+                      <div className="max-w-[200px] rounded-lg bg-amber-500/90 px-2.5 py-2 text-[10px] font-bold text-black space-y-1">
+                        <div className="flex items-center gap-1">
+                          <AlertTriangle size={10} />
+                          <span>Camera lens may need cleaning</span>
+                        </div>
+                        {lensCleanliness.guidance.length > 0 && (
+                          <p className="text-[9px] text-black/70">{lensCleanliness.guidance[0]}</p>
+                        )}
+                        <button
+                          type="button"
+                          onClick={handleCheckLens}
+                          disabled={lensCheckRunning}
+                          className="mt-1 w-full rounded bg-black/15 px-2 py-1 text-[9px] font-black hover:bg-black/25 transition disabled:opacity-50"
+                        >
+                          {lensCheckRunning ? 'Checking...' : 'Recheck Lens'}
+                        </button>
+                      </div>
+                    )}
                   </div>
+
+                  {/* Recently Removed panel */}
+                  {showRecentlyRemoved && (
+                    <div className="absolute top-14 right-0 z-20 w-[260px] max-h-[60vh] overflow-y-auto bg-[#111214] border border-white/10 rounded-l-xl shadow-2xl">
+                      <div className="flex items-center justify-between px-3 py-2 border-b border-white/10">
+                        <p className="text-[11px] font-black text-white">Recently Removed</p>
+                        <button
+                          onClick={() => setShowRecentlyRemoved(false)}
+                          className="flex h-6 w-6 items-center justify-center rounded bg-white/10 text-white/60 hover:text-white transition"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                      <div className="p-2 space-y-2">
+                        {recentlyRemoved.map(entry => (
+                          <div key={entry.id} className="flex items-center gap-2 rounded-lg bg-white/5 p-2">
+                            <img
+                              src={entry.thumbnailDataUrl}
+                              alt={`${entry.role} photo ${entry.sequenceNumber}`}
+                              className="h-10 w-10 rounded object-cover shrink-0"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[10px] font-bold text-white/80 truncate">
+                                {entry.role === 'beginning' ? 'Start' : entry.role === 'ending' ? 'End' : `Section ${entry.sequenceNumber}`}
+                              </p>
+                              <p className="text-[9px] text-white/40">
+                                Removed {new Date(entry.removedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </div>
+                            {entry.canRestore && (
+                              <button
+                                onClick={() => restoreFromRecentlyRemoved(entry.id)}
+                                className="shrink-0 rounded bg-cyan-500/20 px-2 py-1 text-[9px] font-bold text-cyan-300 hover:bg-cyan-500/30 transition"
+                              >
+                                Restore
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        {recentlyRemoved.length === 0 && (
+                          <p className="text-[10px] text-white/40 text-center py-3">No recently removed photos.</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Alignment guide lines */}
                   <div className="absolute inset-0 pointer-events-none z-[5]">
@@ -1220,6 +1662,21 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
                   <div className="rounded-lg bg-white/5 p-2">Motion: {selectedPhoto.validation.motionStatus || 'unsupported'}</div>
                   <div className="rounded-lg bg-white/5 p-2">Overlap: {selectedPhoto.overlapWithPrevious?.estimatedPercent != null ? `${selectedPhoto.overlapWithPrevious.estimatedPercent}%` : 'N/A'}</div>
                   <div className="rounded-lg bg-white/5 p-2">Stitch use: {selectedPhoto.includedInStitch === false ? `Excluded - ${selectedPhoto.exclusionReason || 'removed'}` : 'Included'}</div>
+                  <div className="col-span-2 rounded-lg bg-white/5 p-2">
+                    Lens clarity: {selectedPhoto.validation.lensCleanliness
+                      ? selectedPhoto.validation.lensCleanliness.status === 'clear'
+                        ? 'No persistent issue detected'
+                        : selectedPhoto.validation.lensCleanliness.status === 'possible_smudge'
+                          ? 'Possible smudge detected'
+                          : selectedPhoto.validation.lensCleanliness.status === 'possible_haze'
+                            ? 'Possible haze detected'
+                            : selectedPhoto.validation.lensCleanliness.status === 'possible_obstruction'
+                              ? 'Possible obstruction detected'
+                              : selectedPhoto.validation.lensCleanliness.status === 'unsupported'
+                                ? 'Not automatically verified'
+                                : 'Unable to verify'
+                      : 'Not checked'}
+                  </div>
                 </div>
                 {selectedPhoto.validation.warnings.length > 0 && (
                   <div className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-[11px] font-bold text-amber-200">
@@ -1236,16 +1693,17 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
             </div>
           )}
 
-          {pendingRemovalPhoto && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/75 p-4" onClick={() => setPhotoPendingRemovalId(null)}>
-              <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#111214] p-4 shadow-2xl" onClick={event => event.stopPropagation()}>
-                <p className="text-sm font-black text-white">Remove this photo from the aisle sequence?</p>
-                <p className="mt-2 text-xs font-bold text-white/55">The sequence, coverage checks, and stitched preview will be recalculated.</p>
-                {session?.mode === 'test_lab' && <p className="mt-2 text-[11px] font-bold text-cyan-200">Removed test photos will not affect real audit records.</p>}
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  <button type="button" onClick={() => setPhotoPendingRemovalId(null)} className="rounded-xl border border-white/10 bg-white/5 py-3 text-xs font-black text-white/70">Cancel</button>
-                  <button type="button" aria-label="Confirm Remove Photo" onClick={() => runSequenceRecalculation(pendingRemovalPhoto.id, selectedPhoto ? 'viewer' : 'thumbnail_x')} className="rounded-xl bg-rose-600 py-3 text-xs font-black text-white">Remove Photo</button>
-                </div>
+          {undoToastPhoto && (
+            <div className="absolute bottom-20 left-1/2 z-50 -translate-x-1/2 max-w-[320px] w-[calc(100%-2rem)]" aria-live="polite">
+              <div className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-[#1a1b1e] px-3 py-2.5 shadow-xl">
+                <span className="text-[11px] font-bold text-white/80">Photo removed</span>
+                <button
+                  type="button"
+                  onClick={undoPhotoRemoval}
+                  className="shrink-0 rounded-lg bg-cyan-600 px-3 py-1.5 text-[10px] font-black text-white hover:bg-cyan-500 transition"
+                >
+                  Undo
+                </button>
               </div>
             </div>
           )}

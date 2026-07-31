@@ -56,6 +56,7 @@ All state lives in `App.tsx` using `useState` hooks. No Redux, Zustand, or Conte
 
 Key state groups:
 - **Jobs**: `jobs`, `routeOrder`, `routeAJobs`, `archivedJobs`
+- **Inventory**: `inventoryDomain`, `inventoryJobId`, domain-filtered job selection
 - **Route**: `routeMetrics`, `routingProvider`, `nextRouteAJob`
 - **Ride Mode**: `rideModeActive`, `currentStopIndex`, `rideSession`
 - **Shower Gate**: `showerProofs`, `showerGateUnlocked`, `barcodeScanSuccess`
@@ -66,6 +67,7 @@ Key state groups:
 ### Rendering Patterns
 
 - **Dashboard route management**: Dashboard is the authoritative route interface; the standalone Route tab was retired and `/route`, `/routes`, and `#route` redirect to Dashboard. Today's Route cards open compact per-job detail panels from the card surface while action buttons keep their own behavior.
+- **Inventory domain selection**: The dedicated Inventory page resolves jobs without `inventoryDomain` to merchandising / secret-shopping and exposes explicit contract-parts jobs only when marked `inventoryDomain: 'contract_parts'`.
 - **Conditional rendering** based on `currentTab` and `showerGateUnlocked`
 - **Protected tab overlay**: Rendered before actual tab content when `!showerGateUnlocked`
 - **Ride Mode**: Replaces entire dashboard with distraction-free execution surface
@@ -127,4 +129,4 @@ Targets modern mobile browsers (iOS Safari, Android Chrome) and desktop (Chrome,
 
 ## Last Updated
 
-2026-07-28 (smart-aisle-real-device-verification)
+2026-07-28 (smart-aisle-immediate-delete-lens-cleanliness)

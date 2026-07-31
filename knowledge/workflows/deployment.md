@@ -51,6 +51,21 @@ This uploads the current code directly. Do not use `railway redeploy` for new so
 - Railway service: `route-optimizer-app`
 - Environment: `production`
 
+## Transit API Environment Variables
+
+| Variable | Scope | Value |
+|----------|-------|-------|
+| `TRANSIT_API_KEY` | Server runtime | Official Transit API key (never `VITE_`-prefixed) |
+| `TRANSIT_API_BASE_URL` | Server runtime | `https://external.transitapp.com/v4` |
+| `TRANSIT_NETWORK_IDS` | Server runtime | `GET\|Bakersfield` (pipe-separated) |
+| `VITE_TRANSIT_PROVIDER` | **Build time** | `transit` |
+
+Notes:
+
+- `VITE_TRANSIT_PROVIDER` is baked into the frontend bundle at build time (`import.meta.env`), so it must be present when Railway runs the Vite build. `TRANSIT_API_KEY`, `TRANSIT_API_BASE_URL`, and `TRANSIT_NETWORK_IDS` are read at runtime by the server.
+- Never create a `VITE_TRANSIT_API_KEY` variable — the key must stay server-side. `tests/transitKeyHygiene.test.ts` enforces this.
+- With `VITE_TRANSIT_PROVIDER` unset/empty the Transit UI is hidden; the server endpoints still respond (503 `TRANSIT_NOT_CONFIGURED` without a key).
+
 ---
 
-**Last Updated:** 2026-07-20 (c12bd44)
+**Last Updated:** 2026-07-30 (integrate-official-transit-api)

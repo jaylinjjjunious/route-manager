@@ -11,6 +11,8 @@
 | P005 | Low | No automated tests for camera/barcode/upload flows | Open |
 | P007 | Medium | Smart Aisle iPhone Safari/PWA real-device evidence is pending; direct automation is blocked until a controllable iPhone or provider credentials are available, and tester-assisted verification report is the current path | Open |
 | P006 | Low | No error monitoring or alerting | Open |
+| P008 | Low | Lens cleanliness detection may produce false uncertain results on naturally low-detail scenes (plain walls); controlled testing with real smudge samples is needed to calibrate confidence thresholds | Open |
+| P009 | Low | Transit plan walk legs return placeholder board/exit coordinates because the upstream plan API does not expose coordinates on plan legs | Open |
 
 
 ## Resolved Bugs
@@ -26,5 +28,5 @@
 
 ---
 
-**Last Updated:** 2026-07-28 (smart-aisle-real-device-verification)
+**Last Updated:** 2026-07-30 (integrate-official-transit-api)
 
