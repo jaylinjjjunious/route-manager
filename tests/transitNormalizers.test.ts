@@ -175,6 +175,12 @@ describe('transit normalizers', () => {
       expect(trip!.fare).toBe('1.75 USD');
       expect(trip!.provider).toBe('transit-api');
       expect(trip!.legs).toHaveLength(2);
+      const walk = trip!.legs[0];
+      if (walk.type === 'walk') {
+        expect(walk.coordinatesAvailable).toBe(false);
+        expect(walk.distanceMeters).toBe(800);
+        expect(walk.instructions?.[0]?.text).toContain('Walk 800 m');
+      }
       const ride = trip!.legs[1];
       expect(ride.type).toBe('transit');
       if (ride.type === 'transit') {

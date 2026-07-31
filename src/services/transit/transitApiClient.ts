@@ -17,6 +17,7 @@ export type TransitClientErrorCode =
   | 'TRANSIT_STOP_NOT_FOUND'
   | 'TRANSIT_TRIP_NOT_FOUND'
   | 'TRANSIT_AUTH_FAILED'
+  | 'TRANSIT_MONTHLY_BUDGET_EXHAUSTED'
   | 'AUTH_TOKEN_INVALID';
 
 export class TransitClientError extends Error {

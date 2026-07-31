@@ -247,6 +247,7 @@ Error bodies use `{ error: string, code?: TransitErrorCode }`. Error code → HT
 | `TRANSIT_STOP_NOT_FOUND` | 404 |
 | `TRANSIT_TRIP_NOT_FOUND` | 404 |
 | `TRANSIT_RATE_LIMITED` | 429 |
+| `TRANSIT_MONTHLY_BUDGET_EXHAUSTED` | 429 |
 | `TRANSIT_AUTH_FAILED` | 502 |
 | `TRANSIT_NOT_CONFIGURED` | 503 |
 | `TRANSIT_TEMPORARILY_UNAVAILABLE` | 503 |
@@ -257,9 +258,9 @@ Error bodies use `{ error: string, code?: TransitErrorCode }`. Error code → HT
 |-------|-------|
 | **Auth** | JWT |
 | **Query Params** | None |
-| **Response** | `{ configured, provider, networks, rateLimit, cache, ttlSeconds, lastSuccessfulRequestAt, lastError }` |
+| **Response** | `{ configured, provider, networks, rateLimit, cache, ttlSeconds, monthly, lastSuccessfulRequestAt, lastError }` |
 
-Diagnostic status: whether the API is configured, the provider name (`transit-api`), configured network ids, sliding-window rate-limit state (`limit`, `used`, `remaining`, `windowStartMs`, `nextAvailableAtMs`, `pending`, `inFlight`), cache `size`/`capacity`, TTLs in seconds, and last request/error metadata. Never returns 4xx/5xx on success; always 200.
+Diagnostic status: whether the API is configured, the provider name (`transit-api`), configured network ids, sliding-window rate-limit state (`limit`, `used`, `remaining`, `windowStartMs`, `nextAvailableAtMs`, `pending`, `inFlight`), cache `size`/`capacity`, TTLs in seconds, durable monthly budget (`month`, `limit` 1500, `used`, `remaining`, `level`, `byCategory`, `estimated: true`), and last request/error metadata. Never returns 4xx/5xx on success; always 200.
 
 ### POST `/api/transit/cache/clear`
 
@@ -277,7 +278,7 @@ Resets the in-memory transit response cache.
 | Field | Value |
 |-------|-------|
 | **Auth** | JWT |
-| **Query Params** | `lat` (number, required), `lon` (number, required), `radiusMeters` (number, default 1000, clamped 100–2000), `limit` (number, default 10, clamped 1–25) |
+| **Query Params** | `lat` (number, required), `lon` (number, required), `radiusMeters` (number, default 1000, clamped 100–1500), `limit` (number, default 10, clamped 1–25) |
 | **Response** | `{ stops: TransitStop[], freshness: { source: "live"\|"cache"\|"stale", lastUpdatedAt, ageMs } }` |
 
 Returns stops near a location sorted by distance, normalized from the upstream `nearby_stops` endpoint. TTL 5 min.

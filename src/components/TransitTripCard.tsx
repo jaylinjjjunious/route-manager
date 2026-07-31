@@ -28,24 +28,40 @@ function OnTimeBadge({ status }: { status: OnTimeStatus }) {
 }
 
 function WalkLeg({ leg }: { leg: TransitWalkLeg }) {
-  const mapsUrl = buildWalkingMapsUrl(
-    { lat: leg.from.latitude, lng: leg.from.longitude },
-    { lat: leg.to.latitude, lng: leg.to.longitude }
-  );
+  const hasUsableCoords =
+    leg.coordinatesAvailable !== false &&
+    Number.isFinite(leg.from.latitude) &&
+    Number.isFinite(leg.from.longitude) &&
+    Number.isFinite(leg.to.latitude) &&
+    Number.isFinite(leg.to.longitude) &&
+    (leg.from.latitude !== 0 || leg.from.longitude !== 0) &&
+    (leg.to.latitude !== 0 || leg.to.longitude !== 0);
 
   return (
     <div className="flex items-start gap-2 text-xs text-white/50">
       <span className="mt-0.5">🚶</span>
       <div className="flex-1">
-        <a
-          href={mapsUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-cyan-400 hover:text-cyan-300 underline decoration-dotted"
-        >
-          {leg.instructions?.[0]?.text || 'Walk'}
-        </a>
+        {hasUsableCoords ? (
+          <a
+            href={buildWalkingMapsUrl(
+              { lat: leg.from.latitude, lng: leg.from.longitude },
+              { lat: leg.to.latitude, lng: leg.to.longitude }
+            )}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-cyan-400 hover:text-cyan-300 underline decoration-dotted"
+          >
+            {leg.instructions?.[0]?.text || 'Walk'}
+          </a>
+        ) : (
+          <span>{leg.instructions?.[0]?.text || 'Walk'}</span>
+        )}
         <span className="ml-1.5 text-white/40">{leg.durationMinutes}m · {(leg.distanceMeters * 0.000621371).toFixed(1)}mi</span>
+        {!hasUsableCoords && (
+          <div className="mt-0.5 text-[10px] text-white/35">
+            Trip overview — walking directions are not provided by the transit data source.
+          </div>
+        )}
       </div>
     </div>
   );

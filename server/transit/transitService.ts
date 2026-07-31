@@ -14,6 +14,7 @@
 import { transitRequest, isTransitConfigured, getTransitConfig } from "./transitApiClient";
 import { TransitCache } from "./transitCache";
 import { TransitRateLimiter } from "./transitRateLimiter";
+import { getTransitBudgetStore } from "./transitBudget";
 import {
   TransitApiError,
   isTransitError,
@@ -40,6 +41,12 @@ const WINDOW_MS = 60_000;
 /** Maximum time a queued request waits for a rate-limit slot. */
 const QUEUE_WAIT_MS = 45_000;
 const MAX_QUEUE_DEPTH = 8;
+
+// Nearby-stop radius bounds per the official v4 contract:
+// `nearby_stops.max_distance` supports 100–1500 meters.
+export const MIN_NEARBY_RADIUS_METERS = 100;
+export const MAX_NEARBY_RADIUS_METERS = 1500;
+export const DEFAULT_NEARBY_RADIUS_METERS = 1000;
 
 const TTL_NEARBY_MS = 5 * 60_000;
 const TTL_ARRIVALS_MS = 45_000;
@@ -133,12 +140,27 @@ export function normalizeAlerts(raw: UpstreamAlert[] | undefined): TransitAlert[
   return alerts.sort((a, b) => rank[a.severity] - rank[b.severity]);
 }
 
+function hasValidCoordinates(lat?: number, lon?: number): boolean {
+  return (
+    typeof lat === "number" &&
+    typeof lon === "number" &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lon) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lon >= -180 &&
+    lon <= 180
+  );
+}
+
 function normalizeStop(raw: UpstreamNearbyStop): TransitStop {
+  const coordinatesAvailable = hasValidCoordinates(raw.stop_lat, raw.stop_lon);
   return {
     stopId: raw.global_stop_id || "",
     stopName: raw.stop_name || raw.global_stop_id || "Unnamed stop",
-    latitude: typeof raw.stop_lat === "number" ? raw.stop_lat : 0,
-    longitude: typeof raw.stop_lon === "number" ? raw.stop_lon : 0,
+    latitude: coordinatesAvailable ? (raw.stop_lat as number) : 0,
+    longitude: coordinatesAvailable ? (raw.stop_lon as number) : 0,
+    coordinatesAvailable,
     distanceMeters: typeof raw.distance === "number" ? Math.round(raw.distance) : undefined,
     stopCode: raw.stop_code || undefined,
     wheelchairBoarding: typeof raw.wheelchair_boarding === "number" ? raw.wheelchair_boarding : undefined,
@@ -242,9 +264,14 @@ function normalizePlanLegs(raw: UpstreamPlanResult): {
         to: { latitude: 0, longitude: 0 },
         durationMinutes,
         distanceMeters,
+        // The v4 plan legs we have verified do not expose walking-leg endpoint
+        // coordinates, so these endpoints are placeholders. Present the leg as
+        // an overview (duration + distance), never as turn-by-turn walking
+        // navigation with fabricated coordinates or directions.
+        coordinatesAvailable: false,
         instructions: [
           {
-            text: "Walk to the transit stop",
+            text: distanceMeters > 0 ? `Walk ${distanceMeters} m to the transit stop` : "Walk to the transit stop",
             distanceMeters,
           },
         ],
@@ -346,7 +373,9 @@ export class TransitService {
 
   async getNearbyStops(lat: number, lng: number, radiusMeters: number, limit: number): Promise<NearbyStopsResult> {
     assertValidCoordinate(lat, lng, "Location");
-    const safeRadius = Number.isFinite(radiusMeters) ? Math.min(2000, Math.max(100, Math.round(radiusMeters))) : 1000;
+    const safeRadius = Number.isFinite(radiusMeters)
+      ? Math.min(MAX_NEARBY_RADIUS_METERS, Math.max(MIN_NEARBY_RADIUS_METERS, Math.round(radiusMeters)))
+      : DEFAULT_NEARBY_RADIUS_METERS;
     const safeLimit = Number.isFinite(limit) ? Math.min(25, Math.max(1, Math.round(limit))) : 10;
 
     const result = await this.runScheduled<TransitStop[]>({
@@ -356,8 +385,12 @@ export class TransitService {
       fetchFresh: async () => {
         const data = await transitRequest<{ stops?: UpstreamNearbyStop[] }>("/public/nearby_stops", {
           params: { lat, lon: lng, max_distance: safeRadius },
+          category: "nearby",
         });
-        const stops = (data.stops || []).map(normalizeStop).sort((a, b) => (a.distanceMeters ?? Infinity) - (b.distanceMeters ?? Infinity));
+        const stops = (data.stops || [])
+          .map(normalizeStop)
+          .filter((stop) => stop.stopId.length > 0)
+          .sort((a, b) => (a.distanceMeters ?? Infinity) - (b.distanceMeters ?? Infinity));
         return stops.slice(0, safeLimit);
       },
     });
@@ -376,6 +409,7 @@ export class TransitService {
       fetchFresh: async () => {
         const data = await transitRequest<{ route_departures?: unknown }>("/public/stop_departures", {
           params: { global_stop_id: stopId, should_update_realtime: true },
+          category: "arrivals",
         });
         const arrivals = normalizeArrivals(data).slice(0, 40);
         let stop: TransitStop | null = null;
@@ -426,7 +460,7 @@ export class TransitService {
       ttlMs: TTL_PLAN_MS,
       allowStale: true,
       fetchFresh: async () => {
-        const data = await transitRequest<{ results?: UpstreamPlanResult[] }>("/public/plan", { params });
+        const data = await transitRequest<{ results?: UpstreamPlanResult[] }>("/public/plan", { params, category: "plan" });
         const fetchedAt = new Date().toISOString();
         const trips = (data.results || [])
           .map((raw) => normalizePlan(raw, from, to, fetchedAt))
@@ -453,6 +487,7 @@ export class TransitService {
         if (networkIds.length === 0) return [];
         const data = await transitRequest<{ alerts?: UpstreamAlert[] }>("/public/alerts_for_networks", {
           params: { network_ids: networkIds.join(",") },
+          category: "alerts",
         });
         return normalizeAlerts(data.alerts);
       },
@@ -477,6 +512,7 @@ export class TransitService {
         tripPlan: TTL_PLAN_MS / 1000,
         alerts: TTL_ALERTS_MS / 1000,
       },
+      monthly: getTransitBudgetStore().snapshotSync(),
       lastSuccessfulRequestAt: this.lastSuccessfulRequestAt,
       lastError: this.lastError,
     };
@@ -500,6 +536,7 @@ export class TransitService {
     try {
       const data = await transitRequest<{ networks?: Array<{ network_id?: string }> }>("/public/available_networks", {
         params: { lat, lon: lng },
+        category: "networks",
       });
       const discovered = Array.from(new Set((data.networks || []).map((n) => n.network_id).filter((v): v is string => !!v)));
       const ids = discovered.length > 0 ? discovered : configured;
@@ -560,6 +597,14 @@ export class TransitService {
     } catch (err) {
       if (isTransitError(err)) {
         this.lastError = { code: err.code, message: err.message, at: new Date().toISOString() };
+        if (err.code === "TRANSIT_MONTHLY_BUDGET_EXHAUSTED") {
+          // No upstream request was made: return the granted slot and serve
+          // the last known data so the app keeps working on cache.
+          this.limiter.release();
+          const stale = this.cache.getStale<T>(options.cacheKey);
+          if (stale) return { data: stale.value, freshness: freshnessStale(stale) };
+          throw err;
+        }
         // A slot was granted but the upstream never answered: return it.
         if (!err.reachedUpstream) this.limiter.release();
       } else {

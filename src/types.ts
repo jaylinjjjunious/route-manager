@@ -219,6 +219,8 @@ export interface TransitStop {
   stopName: string;
   latitude: number;
   longitude: number;
+  /** False when the stop lacks usable coordinates; such stops are not navigable. */
+  coordinatesAvailable?: boolean;
   distanceMeters?: number;
   stopCode?: string;
   wheelchairBoarding?: number;
@@ -251,6 +253,8 @@ export interface TransitWalkLeg {
   to: TransitPoint;
   durationMinutes: number;
   distanceMeters: number;
+  /** False when the leg is an overview only (no walkable endpoints/directions). */
+  coordinatesAvailable?: boolean;
   instructions: TransitInstruction[];
   polyline?: string;
 }
@@ -385,6 +389,19 @@ export interface TransitRateLimitStatus {
   inFlight: number;
 }
 
+export type TransitBudgetLevel = 'normal' | 'warning' | 'reduce' | 'reserve' | 'exhausted';
+
+export interface TransitMonthlyStatus {
+  month: string;
+  limit: number;
+  used: number;
+  remaining: number;
+  lastRequestAt: string | null;
+  level: TransitBudgetLevel;
+  byCategory: { nearby?: number; arrivals?: number; plan?: number; alerts?: number; networks?: number };
+  estimated: true;
+}
+
 export interface TransitApiStatus {
   configured: boolean;
   provider: string;
@@ -392,6 +409,7 @@ export interface TransitApiStatus {
   rateLimit: TransitRateLimitStatus;
   cache: { size: number; capacity: number };
   ttlSeconds: { nearby: number; arrivals: number; tripPlan: number; alerts: number };
+  monthly: TransitMonthlyStatus;
   lastSuccessfulRequestAt: string | null;
   lastError: { code: string; message: string; at: string } | null;
 }

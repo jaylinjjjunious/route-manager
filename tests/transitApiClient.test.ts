@@ -1,6 +1,16 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { transitRequest } from '../server/transit/transitApiClient';
 
+const budgetMocks = vi.hoisted(() => ({
+  canSpend: vi.fn<() => Promise<{ allowed: boolean; code?: 'exhausted' | 'reserved' }>>(async () => ({ allowed: true })),
+  record: vi.fn<() => Promise<void>>(async () => {}),
+}));
+
+vi.mock('../server/transit/transitBudget', () => ({
+  getTransitBudgetStore: () => ({ canSpend: budgetMocks.canSpend, record: budgetMocks.record }),
+  resetTransitBudgetForTests: vi.fn(),
+}));
+
 function jsonResponse(body: unknown, status = 200): Response {
   return {
     ok: status >= 200 && status < 300,
@@ -24,6 +34,8 @@ describe('transitApiClient', () => {
   beforeEach(() => {
     process.env.TRANSIT_API_KEY = 'test-key';
     process.env.TRANSIT_API_BASE_URL = 'https://external.transitapp.com/v4';
+    budgetMocks.canSpend.mockReset().mockResolvedValue({ allowed: true });
+    budgetMocks.record.mockReset().mockResolvedValue(undefined);
   });
   afterEach(() => {
     if (originalKey === undefined) delete process.env.TRANSIT_API_KEY;
@@ -112,5 +124,51 @@ describe('transitApiClient', () => {
     await transitRequest('/public/nearby_stops');
     const url = fetchMock.mock.calls[0][0] as string;
     expect(url.startsWith('https://external.transitapp.com/v4/public/nearby_stops')).toBe(true);
+  });
+
+  it('rejects with TRANSIT_MONTHLY_BUDGET_EXHAUSTED without calling fetch when the monthly budget is spent', async () => {
+    budgetMocks.canSpend.mockResolvedValue({ allowed: false, code: 'exhausted' });
+    const fetchMock = stubFetch(async () => jsonResponse({ stops: [] }));
+
+    await expect(transitRequest('/public/nearby_stops')).rejects.toMatchObject({
+      code: 'TRANSIT_MONTHLY_BUDGET_EXHAUSTED',
+      status: 429,
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(budgetMocks.record).not.toHaveBeenCalled();
+  });
+
+  it('rejects with a reserve message when the budget is reserved for nonessential categories', async () => {
+    budgetMocks.canSpend.mockResolvedValue({ allowed: false, code: 'reserved' });
+    const fetchMock = stubFetch(async () => jsonResponse({ stops: [] }));
+
+    let caught: unknown;
+    try {
+      await transitRequest('/public/nearby_stops');
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toMatchObject({
+      code: 'TRANSIT_MONTHLY_BUDGET_EXHAUSTED',
+      message: expect.stringContaining('reserved for trip planning'),
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('counts upstream-reaching HTTP errors against the monthly budget', async () => {
+    stubFetch(async () => jsonResponse({ message: 'API rate limit exceeded' }, 429));
+
+    await expect(transitRequest('/public/nearby_stops')).rejects.toMatchObject({ code: 'TRANSIT_RATE_LIMITED' });
+    expect(budgetMocks.record).toHaveBeenCalledTimes(1);
+    expect(budgetMocks.record).toHaveBeenCalledWith('nearby');
+  });
+
+  it('does not count network-level failures against the monthly budget', async () => {
+    stubFetch(async () => {
+      throw new TypeError('fetch failed');
+    });
+
+    await expect(transitRequest('/public/nearby_stops')).rejects.toMatchObject({ code: 'TRANSIT_TEMPORARILY_UNAVAILABLE' });
+    expect(budgetMocks.record).not.toHaveBeenCalled();
   });
 });

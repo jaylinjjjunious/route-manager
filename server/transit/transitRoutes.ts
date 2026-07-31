@@ -15,7 +15,7 @@
  */
 
 import { Router } from "express";
-import { TransitService } from "./transitService";
+import { TransitService, DEFAULT_NEARBY_RADIUS_METERS } from "./transitService";
 import { isTransitError, TransitErrorCode } from "./transitTypes";
 
 const ERROR_STATUS: Record<TransitErrorCode, number> = {
@@ -26,6 +26,7 @@ const ERROR_STATUS: Record<TransitErrorCode, number> = {
   TRANSIT_STOP_NOT_FOUND: 404,
   TRANSIT_TRIP_NOT_FOUND: 404,
   TRANSIT_AUTH_FAILED: 502,
+  TRANSIT_MONTHLY_BUDGET_EXHAUSTED: 429,
 };
 
 function handleError(res: { status: (code: number) => { json: (body: unknown) => void } }, err: unknown): void {
@@ -53,7 +54,7 @@ export function createTransitRouter(requireAuth: (req: unknown, res: unknown, ne
     try {
       const lat = Number(req.query.lat);
       const lon = Number(req.query.lon);
-      const radiusMeters = req.query.radiusMeters !== undefined ? Number(req.query.radiusMeters) : 1000;
+      const radiusMeters = req.query.radiusMeters !== undefined ? Number(req.query.radiusMeters) : DEFAULT_NEARBY_RADIUS_METERS;
       const limit = req.query.limit !== undefined ? Number(req.query.limit) : 10;
       const result = await service.getNearbyStops(lat, lon, radiusMeters, limit);
       res.json(result);

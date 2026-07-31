@@ -147,6 +147,9 @@ export function NearbyStopsPanel({ hubCoord, jobs }: NearbyStopsPanelProps) {
                     <span className="text-[10px] font-bold text-slate-400">
                       {stop.distanceMeters !== undefined ? formatDistanceMeters(stop.distanceMeters) : ''}
                     </span>
+                    {stop.coordinatesAvailable === false && (
+                      <span className="text-[9px] font-black uppercase text-amber-500">Incomplete stop data</span>
+                    )}
                     {stop.routes && stop.routes.length > 0 && (
                       <span className="flex gap-1">
                         {stop.routes.slice(0, 4).map((route) => (

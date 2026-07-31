@@ -18,7 +18,8 @@ export type TransitErrorCode =
   | "TRANSIT_INVALID_LOCATION"
   | "TRANSIT_STOP_NOT_FOUND"
   | "TRANSIT_TRIP_NOT_FOUND"
-  | "TRANSIT_AUTH_FAILED";
+  | "TRANSIT_AUTH_FAILED"
+  | "TRANSIT_MONTHLY_BUDGET_EXHAUSTED";
 
 export class TransitApiError extends Error {
   readonly code: TransitErrorCode;
@@ -55,6 +56,11 @@ export interface TransitStop {
   stopName: string;
   latitude: number;
   longitude: number;
+  /**
+   * False when the upstream response did not include usable coordinates.
+   * Such a stop must not be presented as navigable (no map/plan-from actions).
+   */
+  coordinatesAvailable?: boolean;
   distanceMeters?: number;
   stopCode?: string;
   wheelchairBoarding?: number;
@@ -122,6 +128,12 @@ export interface TransitWalkLeg {
   to: TransitPoint;
   durationMinutes: number;
   distanceMeters: number;
+  /**
+   * False when the leg endpoints are placeholders (the upstream plan leg did
+   * not expose coordinates). Such a leg is a trip overview (duration/distance)
+   * and must not be presented as turn-by-turn walking navigation.
+   */
+  coordinatesAvailable?: boolean;
   instructions: TransitInstruction[];
   polyline?: string;
 }
@@ -202,6 +214,19 @@ export interface RateLimitStatus {
   inFlight: number;
 }
 
+export type TransitBudgetLevel = "normal" | "warning" | "reduce" | "reserve" | "exhausted";
+
+export interface TransitMonthlyStatus {
+  month: string;
+  limit: number;
+  used: number;
+  remaining: number;
+  lastRequestAt: string | null;
+  level: TransitBudgetLevel;
+  byCategory: { nearby?: number; arrivals?: number; plan?: number; alerts?: number; networks?: number };
+  estimated: true;
+}
+
 export interface TransitStatus {
   configured: boolean;
   provider: string;
@@ -209,6 +234,7 @@ export interface TransitStatus {
   rateLimit: RateLimitStatus;
   cache: { size: number; capacity: number };
   ttlSeconds: { nearby: number; arrivals: number; tripPlan: number; alerts: number };
+  monthly: TransitMonthlyStatus;
   lastSuccessfulRequestAt: string | null;
   lastError: { code: string; message: string; at: string } | null;
 }

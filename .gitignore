@@ -4,6 +4,7 @@ dist/
 coverage/
 test-results/
 .local-shower-proofs/
+.local-transit-usage/
 .DS_Store
 *.log
 .env*

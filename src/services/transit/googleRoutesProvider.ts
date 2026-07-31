@@ -20,6 +20,7 @@ function mapWalkLeg(step: any, from: TransitPoint, to: TransitPoint): TransitWal
     to,
     durationMinutes: parseDuration(step.duration),
     distanceMeters: step.distanceMeters || 0,
+    coordinatesAvailable: true,
     instructions: step.localizedValues
       ? [{ text: step.localizedValues.instructions || 'Walk' }]
       : [{ text: 'Walk' }],

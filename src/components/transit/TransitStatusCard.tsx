@@ -96,6 +96,50 @@ export function TransitStatusCard() {
             </div>
           )}
 
+          {status.configured && status.monthly && (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/5">
+              <div className="flex items-center justify-between">
+                <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">
+                  Monthly Usage · {status.monthly.month}
+                </p>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase ${
+                    status.monthly.level === 'normal'
+                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                      : status.monthly.level === 'warning' || status.monthly.level === 'reduce'
+                        ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                        : 'bg-red-500/15 text-red-500 dark:text-red-400'
+                  }`}
+                >
+                  {status.monthly.level}
+                </span>
+              </div>
+              <p className="mt-1 text-sm font-black text-slate-900 dark:text-white">
+                {status.monthly.used}
+                <span className="text-[10px] font-bold text-slate-400"> / {status.monthly.limit} requests</span>
+              </p>
+              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
+                <div
+                  className={`h-full rounded-full ${
+                    status.monthly.level === 'normal'
+                      ? 'bg-emerald-500'
+                      : status.monthly.level === 'warning' || status.monthly.level === 'reduce'
+                        ? 'bg-amber-500'
+                        : 'bg-red-500'
+                  }`}
+                  style={{ width: `${Math.min(100, Math.round((status.monthly.used / status.monthly.limit) * 100))}%` }}
+                />
+              </div>
+              <p className="mt-1.5 text-[9px] font-bold text-slate-400">
+                {status.monthly.byCategory
+                  ? Object.entries(status.monthly.byCategory)
+                      .map(([k, v]) => `${k}: ${v}`)
+                      .join(' · ')
+                  : ''}
+              </p>
+            </div>
+          )}
+
           {status.lastError && (
             <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-2.5">
               <p className="text-[9px] font-black uppercase tracking-wider text-red-400">Last Error</p>

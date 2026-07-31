@@ -39,6 +39,33 @@ describe('TransitService', () => {
     );
   });
 
+  it('clamps the nearby radius to the upstream 100–1500 m range', async () => {
+    vi.mocked(transitRequest).mockResolvedValue({ stops: [stopB] });
+    const service = new TransitService();
+
+    await service.getNearbyStops(35.39, -119.02, 99, 5);
+    await service.getNearbyStops(35.4, -119.02, 1500, 5);
+    await service.getNearbyStops(35.41, -119.02, 2000, 5);
+    await service.getNearbyStops(35.42, -119.02, Number.NaN, 5);
+
+    const sent = vi.mocked(transitRequest).mock.calls.map(([, o]) => o?.params?.max_distance);
+    expect(sent).toEqual([100, 1500, 1500, 1000]);
+  });
+
+  it('marks stops without valid coordinates and drops stops with an empty stop id', async () => {
+    const goodStop = { global_stop_id: 'GETCA:5391', stop_name: 'Chester / 36th', stop_lat: 35.3969, stop_lon: -119.0156, distance: 652, route_type: 3 };
+    const noCoords = { global_stop_id: 'GETCA:9999', stop_name: 'No Coords', distance: 200, route_type: 3 };
+    const noId = { stop_name: 'Orphan', stop_lat: 35.39, stop_lon: -119.02, distance: 50, route_type: 3 };
+    vi.mocked(transitRequest).mockResolvedValue({ stops: [goodStop, noCoords, noId] });
+    const service = new TransitService();
+
+    const result = await service.getNearbyStops(35.39, -119.02, 1000, 10);
+
+    expect(result.stops.map((s) => s.stopId)).toEqual(['GETCA:9999', 'GETCA:5391']);
+    expect(result.stops[1].coordinatesAvailable).toBe(true);
+    expect(result.stops[0].coordinatesAvailable).toBe(false);
+  });
+
   it('serves fresh cache hits without another upstream call', async () => {
     vi.mocked(transitRequest).mockResolvedValue({ stops: [stopB] });
     const service = new TransitService();
@@ -155,6 +182,9 @@ describe('TransitService', () => {
     expect(status.cache.size).toBe(1);
     expect(status.rateLimit.used).toBe(1);
     expect(status.lastSuccessfulRequestAt).not.toBeNull();
+    expect(status.monthly).toMatchObject({ limit: 1500, estimated: true });
+    expect(status.monthly.month).toMatch(/^\d{4}-\d{2}$/);
+    expect(typeof status.monthly.used).toBe('number');
 
     const cleared = service.clearCache();
     expect(cleared.size).toBe(0);

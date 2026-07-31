@@ -48,13 +48,14 @@ server.ts → bootstrap()
 The Express server proxies the official Transit API (Transit app v4) behind authentication. Mounted at `/api/transit` via `app.use("/api/transit", createTransitRouter(requireAuth))`. The upstream `TRANSIT_API_KEY` is a server-side env var only and is sent to `https://external.transitapp.com/v4` (configurable via `TRANSIT_API_BASE_URL`) as a literal `apiKey` header.
 
 - `server/transit/transitApiClient.ts` — upstream client (apiKey header, HTTP/network error mapping, one retry on network failure)
-- `server/transit/transitService.ts` — orchestration: fresh-cache-first, in-flight dedupe, bounded queue (8 / 45s), stale-while-revalidate, normalizers
+- `server/transit/transitService.ts` — orchestration: fresh-cache-first, in-flight dedupe, bounded queue (8 / 45s), stale-while-revalidate, budget-gated stale fallback, normalizers (nearby radius clamped 100–1500 m)
 - `server/transit/transitCache.ts` — in-memory TTL cache; expired entries retained so `getStale()` can serve them
-- `server/transit/transitRateLimiter.ts` — sliding-window 5/min (free-tier budget) with release on network failure
+- `server/transit/transitRateLimiter.ts` — sliding-window 5/min (per-minute free-tier budget) with release on network failure
+- `server/transit/transitBudget.ts` — durable monthly budget guard (1,500/month, `America/Los_Angeles`, persisted to `.local-transit-usage/usage.json`), 70%/85%/95% thresholds, low-priority categories throttled first, `plan`/`arrivals` reserved; exposed via `getTransitBudgetStore()` (warmed at startup)
 - `server/transit/transitTypes.ts` — canonical normalized models + raw upstream shapes
 - `server/transit/transitRoutes.ts` — `createTransitRouter(requireAuth)` with per-code HTTP error mapping (400/404/429/502/503/500)
 
-Error codes: `TRANSIT_NOT_CONFIGURED` (503), `TRANSIT_RATE_LIMITED` (429), `TRANSIT_TEMPORARILY_UNAVAILABLE` (503), `TRANSIT_INVALID_LOCATION` (400), `TRANSIT_STOP_NOT_FOUND` (404), `TRANSIT_TRIP_NOT_FOUND` (404), `TRANSIT_AUTH_FAILED` (502).
+Error codes: `TRANSIT_NOT_CONFIGURED` (503), `TRANSIT_RATE_LIMITED` (429), `TRANSIT_MONTHLY_BUDGET_EXHAUSTED` (429), `TRANSIT_TEMPORARILY_UNAVAILABLE` (503), `TRANSIT_INVALID_LOCATION` (400), `TRANSIT_STOP_NOT_FOUND` (404), `TRANSIT_TRIP_NOT_FOUND` (404), `TRANSIT_AUTH_FAILED` (502).
 
 #### Authentication Middleware
 
@@ -105,7 +106,7 @@ Receives FormData with `barcode`, `image` (Blob), `cycleId`, `localDate`, `captu
 ## Related Source Files
 
 - `server.ts` — Express backend (724 lines)
-- `server/transit/` — Transit API proxy layer (router, service, client, cache, limiter, types)
+- `server/transit/` — Transit API proxy layer (router, service, client, cache, limiter, budget, types)
 - `worker/index.ts` — Cloudflare Worker (700 lines)
 
 ## Related Knowledge

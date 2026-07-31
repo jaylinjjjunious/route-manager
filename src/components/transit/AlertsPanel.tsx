@@ -57,15 +57,24 @@ export function AlertsPanel({ location }: AlertsPanelProps) {
 
       {error && (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
-          <p className="text-[11px] font-bold text-amber-600 dark:text-amber-400">{error}</p>
+          <p className="text-[11px] font-bold text-amber-600 dark:text-amber-400">Alerts unavailable right now.</p>
+          <p className="mt-0.5 text-[10px] text-amber-500/80">{error}</p>
           <button onClick={() => void refresh()} className="mt-1 text-[10px] font-black text-emerald-700 dark:text-emerald-400">
             Retry
           </button>
         </div>
       )}
 
-      {!error && alerts.length === 0 && (
+      {!error && alerts.length === 0 && freshness?.source === 'stale' && (
+        <p className="text-[11px] font-bold text-amber-500">Alerts unavailable — no cached alerts available.</p>
+      )}
+
+      {!error && alerts.length === 0 && freshness?.source !== 'stale' && (
         <p className="text-[11px] font-bold text-slate-400">No active service alerts in this area.</p>
+      )}
+
+      {!error && alerts.length > 0 && freshness?.source === 'stale' && (
+        <p className="text-[10px] font-bold text-amber-500">Showing cached alerts — live update unavailable.</p>
       )}
 
       {alerts.length > 0 && (

@@ -11,6 +11,7 @@
  */
 
 import { TransitApiError, isTransitError } from "./transitTypes";
+import { getTransitBudgetStore, TransitRequestCategory } from "./transitBudget";
 
 const DEFAULT_BASE_URL = "https://external.transitapp.com/v4";
 const REQUEST_TIMEOUT_MS = 15_000;
@@ -39,10 +40,19 @@ export function isTransitConfigured(): boolean {
 
 interface RequestOptions {
   params?: Record<string, string | number | boolean | undefined>;
+  /** Which monthly-budget category this upstream call belongs to. */
+  category?: TransitRequestCategory;
 }
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function budgetExhaustedMessage(code: "exhausted" | "reserved" | undefined): string {
+  if (code === "reserved") {
+    return "The Transit API monthly request budget is nearly exhausted. Live data is reserved for trip planning and arrivals; nonessential refreshes are paused. Cached data is still available.";
+  }
+  return "The Transit API monthly live-data budget is exhausted. Cached transit data is still available; new live requests resume next month.";
 }
 
 async function performRequest<T>(
@@ -155,15 +165,31 @@ export async function transitRequest<T>(path: string, options: RequestOptions = 
     );
   }
 
+  const category = options.category ?? "nearby";
+  const budget = getTransitBudgetStore();
+  const gate = await budget.canSpend(category);
+  if (!gate.allowed) {
+    throw new TransitApiError(
+      "TRANSIT_MONTHLY_BUDGET_EXHAUSTED",
+      budgetExhaustedMessage(gate.code),
+      429,
+      false
+    );
+  }
+
   let lastError: TransitApiError | null = null;
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     try {
-      return await performRequest<T>(baseUrl, process.env.TRANSIT_API_KEY as string, path, options.params);
+      const result = await performRequest<T>(baseUrl, process.env.TRANSIT_API_KEY as string, path, options.params);
+      await budget.record(category);
+      return result;
     } catch (err) {
       if (!isTransitError(err)) throw err;
-      // Only network-level failures (no upstream response received) are
-      // retried. Retrying HTTP responses would burn the tiny per-minute
-      // budget for no benefit.
+      // The upstream budget counts every request that reached the upstream
+      // server — including ones that returned an HTTP error (e.g. upstream
+      // 429/5xx). Network-level failures (no upstream response received) are
+      // not counted and are the only errors we retry.
+      if (err.reachedUpstream) await budget.record(category);
       if (!err.retryable) throw err;
       lastError = err;
       await sleep(250 * (attempt + 1));

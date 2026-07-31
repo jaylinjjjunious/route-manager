@@ -35,7 +35,7 @@ Implemented on top of the existing job system:
 - **Knowledge system:** This documentation directory.
 - **Official app icon:** Preserved source artwork and generated iPhone Safari/Home Screen plus favicon PNG assets.
 - **Inventory custody first slice:** Job-detail camera-first receive-in with part/serial/photo/document capture, automatic time/GPS, receive/install/removal/return event chain, receipt/tracking return linkage, local offline queue, and Background Sync wake-up.
-- **Transit Mode (official Transit API):** Backend-proxied integration with Transit app v4 — server `server/transit/` (router, service, client, cache, 5/min rate limiter) mounted at `/api/transit` behind `requireAuth`; frontend gated by `VITE_TRANSIT_PROVIDER=transit`; UI in `src/components/transit/` (nearby stops, live arrivals, trip planner, favorites, alerts, job trip section, dashboard card, Settings diagnostic). Key stays server-side. Depends on Railway env `TRANSIT_API_KEY`; without it the Tools tab shows a fallback callout.
+- **Transit Mode (official Transit API):** Backend-proxied integration with Transit app v4 — server `server/transit/` (router, service, client, cache, 5/min rate limiter, durable 1,500/month budget store persisted to `.local-transit-usage/usage.json`) mounted at `/api/transit` behind `requireAuth`; frontend gated by `VITE_TRANSIT_PROVIDER=transit`; UI in `src/components/transit/` (nearby stops, live arrivals, trip planner, favorites, alerts, job trip section, dashboard card, Settings diagnostic incl. monthly budget). Key stays server-side. Nearby radius is clamped 100–1500 m; trip-plan walk legs are overview-only (`coordinatesAvailable: false`). Depends on Railway env `TRANSIT_API_KEY`; without it the Tools tab shows a fallback callout.
 
 ## Infrastructure
 
@@ -48,4 +48,4 @@ Implemented on top of the existing job system:
 
 ---
 
-**Last Updated:** 2026-07-30 (phase-1-scheduling)
+**Last Updated:** 2026-07-31 (transit-audit-remediation)

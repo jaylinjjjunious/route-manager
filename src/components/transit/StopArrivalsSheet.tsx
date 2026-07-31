@@ -69,7 +69,11 @@ export function StopArrivalsSheet({ stop, isOpen, onClose, onPlanFromStop }: Sto
               <div>
                 <h3 className="text-sm font-black text-slate-900 dark:text-white">{stop?.stopName || 'Stop'}</h3>
                 <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
-                  {stop ? `${stop.latitude.toFixed(4)}, ${stop.longitude.toFixed(4)}` : ''}
+                  {stop?.coordinatesAvailable === false
+                    ? 'Incomplete stop data — no coordinates'
+                    : stop
+                      ? `${stop.latitude.toFixed(4)}, ${stop.longitude.toFixed(4)}`
+                      : ''}
                   {freshness ? ` · ${formatFreshnessLabel(freshness)}` : ''}
                 </p>
               </div>
@@ -91,7 +95,9 @@ export function StopArrivalsSheet({ stop, isOpen, onClose, onPlanFromStop }: Sto
             {onPlanFromStop && stop && (
               <button
                 onClick={() => onPlanFromStop(stop)}
-                className="flex items-center gap-1.5 rounded-lg bg-slate-200 px-3 py-1.5 text-[11px] font-black text-slate-700 hover:bg-slate-300 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/20"
+                disabled={stop.coordinatesAvailable === false}
+                className="flex items-center gap-1.5 rounded-lg bg-slate-200 px-3 py-1.5 text-[11px] font-black text-slate-700 hover:bg-slate-300 disabled:opacity-40 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/20"
+                title={stop.coordinatesAvailable === false ? 'This stop has no coordinates, so trip planning from it is unavailable.' : 'Plan a trip from this stop'}
               >
                 <Navigation size={12} />
                 Plan from here

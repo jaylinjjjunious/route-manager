@@ -16,6 +16,17 @@ import { transitGet, transitPost } from './transitApiClient';
  * TransitProvider backed by the app's authenticated `/api/transit/*` proxy.
  * The real Transit API key is held server-side only.
  */
+
+/** Aligned with the server clamp (`server/transit/transitService.ts`). */
+export const MIN_NEARBY_RADIUS_METERS = 100;
+export const MAX_NEARBY_RADIUS_METERS = 1500;
+export const DEFAULT_NEARBY_RADIUS_METERS = 1000;
+
+function clampRadius(radius?: number): number {
+  const value = Number.isFinite(radius) ? Math.round(radius as number) : DEFAULT_NEARBY_RADIUS_METERS;
+  return Math.min(MAX_NEARBY_RADIUS_METERS, Math.max(MIN_NEARBY_RADIUS_METERS, value));
+}
+
 export class TransitApiProvider implements TransitProvider {
   readonly name = 'transit-api';
 
@@ -45,7 +56,7 @@ export class TransitApiProvider implements TransitProvider {
     return transitGet<NearbyStopsResult>('/api/transit/nearby-stops', {
       lat: request.latitude,
       lon: request.longitude,
-      radiusMeters: request.radiusMeters ?? 1200,
+      radiusMeters: clampRadius(request.radiusMeters),
       limit: request.limit ?? 10,
     });
   }

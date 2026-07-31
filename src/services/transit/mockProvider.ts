@@ -91,6 +91,7 @@ export class MockTransitProvider implements TransitProvider {
         to: { latitude: request.origin.latitude + 0.002, longitude: request.origin.longitude + 0.001, name: template.boardStop },
         durationMinutes: template.walkToMin,
         distanceMeters: template.walkToMin * 80,
+        coordinatesAvailable: true,
         instructions: [{ text: `Walk to ${template.boardStop}` }],
       },
       {
@@ -125,6 +126,7 @@ export class MockTransitProvider implements TransitProvider {
         to: { latitude: request.destination.latitude || request.origin.latitude, longitude: request.destination.longitude || request.origin.longitude, name: 'Job location' },
         durationMinutes: template.walkFromMin,
         distanceMeters: template.walkFromMin * 75,
+        coordinatesAvailable: true,
         instructions: [{ text: `Walk to destination` }],
       });
     }
@@ -160,6 +162,7 @@ export class MockTransitProvider implements TransitProvider {
         stopName: s.name,
         latitude: s.lat,
         longitude: s.lng,
+        coordinatesAvailable: true,
         distanceMeters: s.distance,
         routes: s.routes.map(r => mockRoute(r, `GETCA:mock-${r}`)),
       }));
