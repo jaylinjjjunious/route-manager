@@ -1,6 +1,6 @@
 # API Endpoints Reference
 
-**Last Updated:** 2026-07-30 (integrate-official-transit-api)
+**Last Updated:** 2026-08-02 (transit-trip-stop-accuracy)
 **Related Source Files:** `server.ts`, `worker/index.ts`, `server/transit/transitRoutes.ts`, `src/services/showerProofApi.ts`, `src/services/apiClient.ts`, `src/services/transit/transitApiClient.ts`
 
 ---
@@ -302,7 +302,7 @@ Live departures for a stop (up to 40, sorted by departure time). Times are Unix-
 | **Body** | `{ origin: { lat, lng }, destination: { lat, lng }, departureTime?: ISO string, arrivalTime?: ISO string }` |
 | **Response** | `{ trip: TransitTrip, alternatives: number, freshness: { source, lastUpdatedAt, ageMs } }` |
 
-Plans a transit trip. `departureTime`/`arrivalTime` set `date`+`time` (arrive-by when `arrivalTime`). Returns the fastest result; `alternatives` counts extra returned trips. TTL 3 min. Returns 404 `TRANSIT_TRIP_NOT_FOUND` when no route exists, 400 `TRANSIT_INVALID_LOCATION` for missing/out-of-range coordinates.
+Plans a transit trip. `departureTime`/`arrivalTime` set `date`+`time` (arrive-by when `arrivalTime`). Returns the fastest result; `alternatives` counts extra returned trips. Transit ride legs include route metadata, scheduled/predicted Unix-second fields, `isRealTime`, and `stopSelectionConfidence` (`exact`, `inferred`, or `unavailable`). Exact boarding/exit stops come from upstream plan offsets and schedule items; fallback stops are explicitly labeled rather than silently presented as exact. TTL 3 min. Returns 404 `TRANSIT_TRIP_NOT_FOUND` when no route exists, 400 `TRANSIT_INVALID_LOCATION` for missing/out-of-range coordinates.
 
 ### GET `/api/transit/alerts`
 

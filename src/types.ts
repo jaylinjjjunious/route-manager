@@ -264,14 +264,21 @@ export interface TransitRideLeg {
   routeShortName?: string;
   routeLongName?: string;
   routeId?: string;
+  modeName?: string;
+  routeColor?: string;
+  routeTextColor?: string;
   headsign?: string;
   agencyName?: string;
   boardingStop: TransitStop;
   exitStop: TransitStop;
+  stopSelectionConfidence?: 'exact' | 'inferred' | 'unavailable';
   departureTime: string;
-  predictedDepartureTime?: string;
+  scheduledDepartureTime?: number;
+  predictedDepartureTime?: number;
   arrivalTime: string;
-  predictedArrivalTime?: string;
+  scheduledArrivalTime?: number;
+  predictedArrivalTime?: number;
+  isRealTime?: boolean;
   stopCount?: number;
   isCancelled?: boolean;
 }

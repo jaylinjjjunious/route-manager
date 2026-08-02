@@ -12,7 +12,6 @@
 | P007 | Medium | Smart Aisle iPhone Safari/PWA real-device evidence is pending; direct automation is blocked until a controllable iPhone or provider credentials are available, and tester-assisted verification report is the current path | Open |
 | P006 | Low | No error monitoring or alerting | Open |
 | P008 | Low | Lens cleanliness detection may produce false uncertain results on naturally low-detail scenes (plain walls); controlled testing with real smudge samples is needed to calibrate confidence thresholds | Open |
-| P009 | Low | Transit plan walk legs return placeholder board/exit coordinates because the upstream plan API does not expose coordinates on plan legs | Open |
 | P010 | Low | Legacy jobs moved with the old "Move → Route B" control before Phase 1 scheduling shipped have no `scheduledDate`; they surface as unscheduled rather than pinned to a day until rescheduled | Open |
 
 
@@ -26,8 +25,9 @@
 | R004 | Smart Aisle Scan Test Lab imported sequence crashed when the first photo had no overlap score | Fixed by filtering only numeric overlap scores before result averaging |
 | R005 | Railway had `VITE_ENABLE_SMART_AISLE_TEST_LAB=true`, which could expose Developer Tools in production | Fixed with a dev-build-only production guard and production bundle verification |
 | R006 | Smart Aisle capture button could enter text selection on long press and capture before the camera frame was ready | Fixed with burst capture controls that disable selection/touch callout behavior plus camera-readiness guards and live-practice harness coverage |
+| R007 | Transit trip plans silently used the first/last stops of an entire route as the rider's boarding/exit stops | Fixed by using plan offsets/schedule items when present and exposing exact/inferred/unavailable confidence with honest UI warnings |
 
 ---
 
-**Last Updated:** 2026-07-30 (phase-1-scheduling)
+**Last Updated:** 2026-08-02 (transit-trip-stop-accuracy)
 

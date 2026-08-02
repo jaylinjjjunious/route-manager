@@ -13,6 +13,12 @@ function parseTimestamp(ts: string | undefined): string {
   return new Date(ts).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
+function parseEpochSeconds(ts: string | undefined): number | undefined {
+  if (!ts) return undefined;
+  const milliseconds = Date.parse(ts);
+  return Number.isNaN(milliseconds) ? undefined : Math.round(milliseconds / 1000);
+}
+
 function mapWalkLeg(step: any, from: TransitPoint, to: TransitPoint): TransitWalkLeg {
   return {
     type: 'walk',
@@ -31,6 +37,8 @@ function mapWalkLeg(step: any, from: TransitPoint, to: TransitPoint): TransitWal
 function mapTransitLeg(step: any, from: TransitPoint, to: TransitPoint): TransitRideLeg {
   const transit = step.transitDetails;
   const stop = transit?.stopDetails;
+  const effectiveDepartureTime = transit?.predictedDepartureTime || transit?.departureTime;
+  const effectiveArrivalTime = transit?.predictedArrivalTime || transit?.arrivalTime;
   return {
     type: 'transit',
     routeShortName: transit?.transitLine?.nameShort || transit?.transitLine?.name,
@@ -49,14 +57,14 @@ function mapTransitLeg(step: any, from: TransitPoint, to: TransitPoint): Transit
       latitude: stop?.arrivalStop?.location?.latitude || to.latitude,
       longitude: stop?.arrivalStop?.location?.longitude || to.longitude,
     },
-    departureTime: parseTimestamp(transit?.departureTime),
-    predictedDepartureTime: transit?.predictedDepartureTime
-      ? parseTimestamp(transit.predictedDepartureTime)
-      : undefined,
-    arrivalTime: parseTimestamp(transit?.arrivalTime),
-    predictedArrivalTime: transit?.predictedArrivalTime
-      ? parseTimestamp(transit.predictedArrivalTime)
-      : undefined,
+    stopSelectionConfidence: stop?.departureStop && stop?.arrivalStop ? 'exact' : 'inferred',
+    departureTime: parseTimestamp(effectiveDepartureTime),
+    scheduledDepartureTime: parseEpochSeconds(transit?.departureTime),
+    predictedDepartureTime: parseEpochSeconds(transit?.predictedDepartureTime),
+    arrivalTime: parseTimestamp(effectiveArrivalTime),
+    scheduledArrivalTime: parseEpochSeconds(transit?.arrivalTime),
+    predictedArrivalTime: parseEpochSeconds(transit?.predictedArrivalTime),
+    isRealTime: !!(transit?.predictedDepartureTime || transit?.predictedArrivalTime),
     stopCount: transit?.stopCount,
   };
 }

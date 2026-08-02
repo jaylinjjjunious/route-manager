@@ -21,7 +21,7 @@
 - Consider image compression before localStorage upload for scan photos.
 - Expand automated Test Lab tests to include authenticated Settings entry and provider-controlled physical mobile camera capture when real-device service credentials are available.
 - Calibrate lens cleanliness confidence thresholds with controlled smudge samples on a real device (P008).
-- Verify Transit Mode against the live upstream quota during extended field use (stale-while-revalidate behavior, 429 handling, and monthly budget consumption). The audit-remediation slice (monthly budget guard, 1500 m radius clamp, honest walk-leg labeling) is implemented and needs a signed-in production pass to confirm live behavior.
+- Verify Transit Mode against the live upstream quota during extended field use (stale-while-revalidate behavior, 429 handling, monthly budget consumption, exact plan stop offsets, and scheduled-vs-realtime timing). The audit and trip-stop accuracy remediations are implemented and need a signed-in production pass to confirm live behavior.
 
 ## Low
 
@@ -29,5 +29,4 @@
 
 ---
 
-**Last Updated:** 2026-07-31 (transit-audit-remediation)
-
+**Last Updated:** 2026-08-02 (transit-trip-stop-accuracy)

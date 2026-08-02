@@ -189,6 +189,9 @@ describe('transit normalizers', () => {
         expect(ride.headsign).toBe('Downtown');
         expect(ride.boardingStop.stopId).toBe('GETCA:5391');
         expect(ride.exitStop.stopId).toBe('GETCA:5113');
+        expect(ride.stopSelectionConfidence).toBe('inferred');
+        expect(ride.isRealTime).toBe(true);
+        expect(ride.predictedDepartureTime).toBe(1_700_000_600);
         const expectedClock = new Date(1_700_000_600 * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
         expect(ride.departureTime).toBe(expectedClock);
         expect(ride.isCancelled).toBe(false);
@@ -196,6 +199,85 @@ describe('transit normalizers', () => {
       }
       expect(trip!.alerts).toHaveLength(1);
       expect(trip!.alerts[0].severity).toBe('critical');
+    });
+
+    it('uses plan offsets and schedule items for exact rider stops', () => {
+      const raw: UpstreamPlanResult = {
+        duration: 1200,
+        start_time: 1_700_000_000,
+        end_time: 1_700_001_200,
+        legs: [{
+          leg_mode: 'transit',
+          duration: 1200,
+          departures: [{
+            departure_time: 1_700_000_120,
+            arrival_time: 1_700_001_000,
+            scheduled_departure_time: 1_700_000_100,
+            scheduled_arrival_time: 1_700_000_980,
+            is_real_time: true,
+            plan_details: {
+              global_route_id: 'GETCA:118303',
+              start_stop_offset: 1,
+              end_stop_offset: 2,
+              stop_schedule_items: [
+                { global_stop_id: 'before', stop_name: 'Before' },
+                { ...stopA, departure_time: 1_700_000_120, scheduled_departure_time: 1_700_000_100 },
+                { ...stopB, arrival_time: 1_700_001_000, scheduled_arrival_time: 1_700_000_980 },
+                { global_stop_id: 'after', stop_name: 'After' },
+              ],
+            },
+          }],
+          routes: [{
+            global_route_id: 'GETCA:118303',
+            route_short_name: '22',
+            route_long_name: 'Downtown',
+            mode_name: 'Bus',
+            route_color: '00843D',
+            route_text_color: 'FFFFFF',
+            stops: [
+              { global_stop_id: 'before', stop_name: 'Before' },
+              stopA,
+              stopB,
+              { global_stop_id: 'after', stop_name: 'After' },
+            ],
+          }],
+        }],
+      };
+
+      const trip = normalizePlan(raw, { lat: 35.4, lng: -119.02 }, { lat: 35.38, lng: -118.99 }, 'fetched');
+      const ride = trip!.legs[0];
+      expect(ride.type).toBe('transit');
+      if (ride.type === 'transit') {
+        expect(ride.boardingStop.stopId).toBe('GETCA:5391');
+        expect(ride.exitStop.stopId).toBe('GETCA:5113');
+        expect(ride.stopSelectionConfidence).toBe('exact');
+        expect(ride.stopCount).toBe(2);
+        expect(ride.routeShortName).toBe('22');
+        expect(ride.routeLongName).toBe('Downtown');
+        expect(ride.modeName).toBe('Bus');
+        expect(ride.scheduledDepartureTime).toBe(1_700_000_100);
+        expect(ride.predictedDepartureTime).toBe(1_700_000_120);
+        expect(ride.scheduledArrivalTime).toBe(1_700_000_980);
+        expect(ride.predictedArrivalTime).toBe(1_700_001_000);
+      }
+    });
+
+    it('marks rider stops unavailable instead of inventing stop identities', () => {
+      const raw: UpstreamPlanResult = {
+        duration: 900,
+        start_time: 100,
+        end_time: 1000,
+        legs: [{ leg_mode: 'transit', duration: 900, departures: [{ departure_time: 100, arrival_time: 1000 }] }],
+      };
+      const trip = normalizePlan(raw, { lat: 0, lng: 0 }, { lat: 1, lng: 1 }, 'fetched');
+      const ride = trip!.legs[0];
+      expect(ride.type).toBe('transit');
+      if (ride.type === 'transit') {
+        expect(ride.stopSelectionConfidence).toBe('unavailable');
+        expect(ride.boardingStop.stopId).toBe('');
+        expect(ride.boardingStop.stopName).toBe('Boarding stop unavailable');
+        expect(ride.exitStop.stopName).toBe('Exit stop unavailable');
+      }
     });
 
     it('counts transfers across multiple transit legs', () => {

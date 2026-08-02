@@ -31,8 +31,12 @@ import {
   TransitTrip,
   TripPlanResult,
   UpstreamAlert,
+  UpstreamCompactDisplayShortName,
   UpstreamNearbyStop,
+  UpstreamPlanDeparture,
   UpstreamPlanResult,
+  UpstreamPlanRoute,
+  UpstreamStopScheduleItem,
 } from "./transitTypes";
 
 // Free-tier budget (5 requests/minute) enforced server-side.
@@ -169,10 +173,15 @@ function normalizeStop(raw: UpstreamNearbyStop): TransitStop {
   };
 }
 
-function routeShortNameFrom(raw: { compact_display_short_name?: { boxed_text?: string; elements?: (string | null)[] } } | undefined): string {
-  const elements = raw?.compact_display_short_name?.elements || [];
-  const fromElements = elements.find((e): e is string => typeof e === "string" && e.length > 0);
-  return fromElements || raw?.compact_display_short_name?.boxed_text || "";
+function routeShortNameFrom(raw: {
+  compact_display_short_name?: UpstreamCompactDisplayShortName;
+  route_display_short_name?: UpstreamCompactDisplayShortName;
+  route_short_name?: string;
+} | undefined): string {
+  const display = raw?.route_display_short_name || raw?.compact_display_short_name;
+  const elements = display?.elements || [];
+  const fromElements = elements.find((e): e is string => typeof e === "string" && e.trim().length > 0);
+  return fromElements?.trim() || display?.boxed_text?.trim() || raw?.route_short_name?.trim() || "";
 }
 
 function normalizeRoute(raw: { global_route_id?: string; compact_display_short_name?: { boxed_text?: string; elements?: (string | null)[] }; network_id?: string; network_name?: string; mode_name?: string }): TransitRoute {
@@ -282,16 +291,69 @@ function normalizePlanLegs(raw: UpstreamPlanResult): {
 
     // Transit leg
     const routes = rawLeg.routes || [];
-    const primaryRoute = routes[0];
     const departures = rawLeg.departures || [];
     const departure = departures[0];
+    const routeId = departure?.plan_details?.global_route_id || departure?.real_time_route_id;
+    const primaryRoute = routes.find((route) =>
+      route.global_route_id === routeId || route.real_time_route_id === routeId
+    ) || routes[0];
     transitLegCount += 1;
 
-    const stops = primaryRoute?.stops || [];
-    const boardStop = stops.length > 0 ? normalizeStop(stops[0]) : null;
-    const exitStop = stops.length > 1 ? normalizeStop(stops[stops.length - 1]) : boardStop;
-    const itinerary = primaryRoute?.itineraries?.[0];
+    const routeStops = primaryRoute?.stops || [];
+    const scheduleItems = departure?.plan_details?.stop_schedule_items || [];
+    const startOffset = departure?.plan_details?.start_stop_offset ?? departure?.start_stop_offset;
+    const endOffset = departure?.plan_details?.end_stop_offset ?? departure?.end_stop_offset;
+    const scheduleAt = (offset: number | undefined) =>
+      typeof offset === "number" && Number.isInteger(offset) && offset >= 0 && offset < scheduleItems.length
+        ? scheduleItems[offset]
+        : undefined;
+    const routeStopAt = (offset: number | undefined) =>
+      typeof offset === "number" && Number.isInteger(offset) && offset >= 0 && offset < routeStops.length
+        ? routeStops[offset]
+        : undefined;
+    const normalizeScheduleStop = (item: UpstreamStopScheduleItem | undefined): TransitStop | null =>
+      item
+        ? normalizeStop({
+            global_stop_id: item.global_stop_id,
+            stop_name: item.stop_name,
+            stop_code: item.stop_code,
+            stop_lat: item.stop_lat,
+            stop_lon: item.stop_lon,
+          })
+        : null;
+
+    const exactBoardSchedule = scheduleAt(startOffset);
+    const exactExitSchedule = departure?.plan_details?.arrival_schedule_item || scheduleAt(endOffset);
+    const exactBoardRouteStop = routeStopAt(startOffset);
+    const exactExitRouteStop = routeStopAt(endOffset);
+    const boardStop = normalizeScheduleStop(exactBoardSchedule)
+      || (exactBoardRouteStop ? normalizeStop(exactBoardRouteStop) : null)
+      || normalizeScheduleStop(scheduleItems[0])
+      || (routeStops[0] ? normalizeStop(routeStops[0]) : null);
+    const exitStop = normalizeScheduleStop(exactExitSchedule)
+      || (exactExitRouteStop ? normalizeStop(exactExitRouteStop) : null)
+      || normalizeScheduleStop(scheduleItems[scheduleItems.length - 1])
+      || (routeStops[routeStops.length - 1] ? normalizeStop(routeStops[routeStops.length - 1]) : null);
+    const stopSelectionConfidence = (exactBoardSchedule || exactBoardRouteStop) && (exactExitSchedule || exactExitRouteStop)
+      ? "exact"
+      : boardStop && exitStop
+        ? "inferred"
+        : "unavailable";
+
+    const itineraryId = departure?.plan_details?.internal_itinerary_id || departure?.internal_itinerary_id;
+    const itinerary = primaryRoute?.itineraries?.find((candidate) => candidate.internal_itinerary_id === itineraryId)
+      || primaryRoute?.itineraries?.[0];
     const headsign = itinerary?.merged_headsign || itinerary?.headsign || itinerary?.direction_headsign || "";
+    const boardSchedule = exactBoardSchedule || scheduleItems[0];
+    const arrivalSchedule = exactExitSchedule || scheduleItems[scheduleItems.length - 1];
+    const effectiveDeparture = departure?.departure_time ?? boardSchedule?.departure_time;
+    const effectiveArrival = departure?.arrival_time ?? arrivalSchedule?.arrival_time;
+    const scheduledDeparture = departure?.scheduled_departure_time ?? boardSchedule?.scheduled_departure_time;
+    const scheduledArrival = departure?.scheduled_arrival_time ?? arrivalSchedule?.scheduled_arrival_time;
+    const isRealTime = departure?.is_real_time ?? boardSchedule?.is_real_time ?? arrivalSchedule?.is_real_time;
+    const stopCount = typeof startOffset === "number" && typeof endOffset === "number" && endOffset >= startOffset
+      ? endOffset - startOffset + 1
+      : scheduleItems.length || routeStops.length || undefined;
 
     for (const route of routes) {
       alerts.push(...normalizeAlerts(route?.alerts));
@@ -299,22 +361,29 @@ function normalizePlanLegs(raw: UpstreamPlanResult): {
 
     legs.push({
       type: "transit",
-      routeShortName: routeShortNameFrom(primaryRoute) || primaryRoute?.global_route_id || undefined,
-      routeLongName: undefined,
-      routeId: primaryRoute?.global_route_id,
+      routeShortName: routeShortNameFrom(departure) || routeShortNameFrom(primaryRoute) || primaryRoute?.global_route_id || undefined,
+      routeLongName: departure?.route_long_name || primaryRoute?.route_long_name,
+      routeId: routeId || primaryRoute?.global_route_id,
+      modeName: primaryRoute?.mode_name,
+      routeColor: primaryRoute?.route_color,
+      routeTextColor: primaryRoute?.route_text_color,
       headsign,
       agencyName: undefined,
       boardingStop:
         boardStop ||
-        normalizeStop({ global_stop_id: `stop-${transitLegCount}-board`, stop_name: "Board" }),
+        normalizeStop({ stop_name: "Boarding stop unavailable" }),
       exitStop:
         exitStop ||
-        normalizeStop({ global_stop_id: `stop-${transitLegCount}-exit`, stop_name: "Exit" }),
-      departureTime: typeof departure?.departure_time === "number" ? formatClock(departure.departure_time) : "--:--",
-      predictedDepartureTime: undefined,
-      arrivalTime: typeof departure?.arrival_time === "number" ? formatClock(departure.arrival_time) : "--:--",
-      predictedArrivalTime: undefined,
-      stopCount: stops.length > 0 ? stops.length : undefined,
+        normalizeStop({ stop_name: "Exit stop unavailable" }),
+      stopSelectionConfidence,
+      departureTime: typeof effectiveDeparture === "number" ? formatClock(effectiveDeparture) : "--:--",
+      scheduledDepartureTime: scheduledDeparture,
+      predictedDepartureTime: isRealTime && typeof effectiveDeparture === "number" ? effectiveDeparture : undefined,
+      arrivalTime: typeof effectiveArrival === "number" ? formatClock(effectiveArrival) : "--:--",
+      scheduledArrivalTime: scheduledArrival,
+      predictedArrivalTime: isRealTime && typeof effectiveArrival === "number" ? effectiveArrival : undefined,
+      isRealTime: !!isRealTime,
+      stopCount,
       isCancelled: departure?.is_cancelled,
     });
   }
