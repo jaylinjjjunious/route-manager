@@ -6,6 +6,8 @@
 
 ## Camera and Media
 
+- Long screen recordings should be sampled locally at controlled seek intervals, with conservative duplicate removal and selected-page-only AI processing; uploading or OCRing every frame is wasteful and privacy-hostile.
+
 - iPhone Safari camera requires the `playsInline` attribute on video elements.
 - Camera lifecycle management must account for Safari's aggressive tab recycling.
 - Camera capture buttons should wait for a readable video frame before capturing; zero-size video frames can produce invalid data URLs in automated and real startup timing.

@@ -12,13 +12,14 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Navigation, Clock, MapPin, CheckSquare, Edit2, Trash2, Copy, ArrowRightLeft, ShieldAlert, Calendar, AlertCircle, Sparkles, Hourglass, RefreshCw, CheckCircle2, RotateCcw, Camera } from 'lucide-react';
+import { X, Navigation, Clock, MapPin, CheckSquare, Edit2, Trash2, Copy, ArrowRightLeft, ShieldAlert, Calendar, AlertCircle, Sparkles, Hourglass, RefreshCw, CheckCircle2, RotateCcw, Camera, BookOpen } from 'lucide-react';
 import type { Job, JobType } from '../types';
 import { isJobCompleted, isRevisionJob } from '../utils/jobState';
 import { formatScheduledDate, isValidScheduledDate } from '../utils/jobSchedule';
 import InventoryCustodyPanel from './InventoryCustodyPanel';
 import { JobTransitSection } from './transit/JobTransitSection';
 import { isTransitApiEnabled } from '../services/transit';
+import PreviewGuideModal from '../features/previewGuide/PreviewGuideModal';
 
 const SCAN_COMPATIBLE_TYPES: JobType[] = ['retail_audit', 'mystery_shop', 'merchandising'];
 
@@ -115,6 +116,7 @@ export default function JobDetailModal({
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [previewGuideOpen, setPreviewGuideOpen] = useState(false);
 
   const category = getCategory(job, isOutlier);
   const isDone = isJobCompleted(job);
@@ -362,6 +364,15 @@ export default function JobDetailModal({
               </button>
             )}
 
+            <button
+              type="button"
+              onClick={() => setPreviewGuideOpen(true)}
+              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3 py-3 text-sm font-black text-cyan-200 transition hover:bg-cyan-500/20"
+            >
+              <BookOpen size={17} />
+              Preview Guide
+            </button>
+
             {isTransitApiEnabled() && transitOrigin && (
               <JobTransitSection job={job} origin={transitOrigin} />
             )}
@@ -604,5 +615,12 @@ export default function JobDetailModal({
     </div>
   );
 
-  return createPortal(modalContent, document.body);
+  return createPortal(<>{modalContent}{previewGuideOpen && (
+    <PreviewGuideModal
+      job={job}
+      navLink={navLink}
+      transitOrigin={transitOrigin}
+      onClose={() => setPreviewGuideOpen(false)}
+    />
+  )}</>, document.body);
 }

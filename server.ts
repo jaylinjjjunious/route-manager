@@ -602,6 +602,101 @@ app.post("/api/dispatcher/tts", requireAuth, async (req: any, res: any) => {
   }
 });
 
+// Selected-page Preview Guide extraction. The recording itself is never accepted.
+app.post("/api/import/preview-summary", requireAuth, async (req: any, res: any) => {
+  try {
+    const pages = Array.isArray(req.body?.pages) ? req.body.pages : [];
+    if (pages.length < 1 || pages.length > 12) return res.status(400).json({ error: "Select between 1 and 12 preview pages." });
+    const validPages = pages.filter((page: any) => typeof page?.pageId === "string" && typeof page?.image === "string" && page.image.startsWith("data:image/"));
+    if (validPages.length !== pages.length) return res.status(400).json({ error: "One or more selected preview pages could not be read." });
+    if (validPages.reduce((total: number, page: any) => total + page.image.length, 0) > 13_000_000) {
+      return res.status(413).json({ error: "Those pages are too large to process together. Select fewer pages and try again." });
+    }
+
+    const ai = getGeminiClient();
+    const sourceIds = new Set(validPages.map((page: any) => page.pageId));
+    const contents = validPages.flatMap((page: any) => [
+      { text: "SOURCE_PAGE_ID: " + page.pageId },
+      { inlineData: { mimeType: typeof page.mimeType === "string" ? page.mimeType : "image/jpeg", data: page.image.split(",").pop() || "" } },
+    ]);
+    contents.push({ text: "Create the structured preparation summary from only these selected pages." });
+    const instruction = [
+      "Create a concise job Preview Guide from selected captured preview pages.",
+      "Preserve source wording where important. Do not infer missing instructions or assume all visible questions will be asked.",
+      "Distinguish instructions from examples, and required actions from optional advice. Identify uncertainty.",
+      "Every item must cite one or more provided SOURCE_PAGE_ID values.",
+      "Never classify something as required solely because it appears in an example image.",
+      "Use confirmationMode photo only for a physical preparation item; one_tap for dress code; review for training or authorization.",
+      "Do not include customer names, phone numbers, login details, or credentials."
+    ].join("\n");
+    const sourcedItem = {
+      type: Type.OBJECT,
+      properties: {
+        id: { type: Type.STRING }, text: { type: Type.STRING },
+        sourcePageIds: { type: Type.ARRAY, items: { type: Type.STRING } },
+        confidence: { type: Type.NUMBER },
+      },
+      required: ["id", "text", "sourcePageIds", "confidence"],
+    };
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents,
+      config: {
+        systemInstruction: instruction,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            estimatedMinutes: { type: Type.INTEGER },
+            payText: { type: Type.STRING },
+            beforeYouGo: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  id: { type: Type.STRING }, text: { type: Type.STRING }, type: { type: Type.STRING },
+                  confirmationMode: { type: Type.STRING }, required: { type: Type.BOOLEAN },
+                  sourcePageIds: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  confidence: { type: Type.NUMBER },
+                },
+                required: ["id", "text", "type", "confirmationMode", "required", "sourcePageIds", "confidence"],
+              },
+            },
+            whatYouWillDo: { type: Type.ARRAY, items: sourcedItem },
+            proofRequirements: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: { ...sourcedItem.properties, required: { type: Type.BOOLEAN } },
+                required: ["id", "text", "required", "sourcePageIds", "confidence"],
+              },
+            },
+            warnings: { type: Type.ARRAY, items: sourcedItem },
+            referenceTopics: { type: Type.ARRAY, items: { type: Type.STRING } },
+            uncertainItems: { type: Type.ARRAY, items: sourcedItem },
+          },
+          required: ["beforeYouGo", "whatYouWillDo", "proofRequirements", "warnings", "referenceTopics", "uncertainItems"],
+        },
+      },
+    });
+    if (!response.text) return res.status(502).json({ error: "No summary was returned. Try selecting clearer pages." });
+    const parsed = JSON.parse(response.text.trim());
+    const sanitizeItems = (items: any[]) => (Array.isArray(items) ? items : []).map(item => ({
+      ...item,
+      sourcePageIds: (Array.isArray(item.sourcePageIds) ? item.sourcePageIds : []).filter((id: string) => sourceIds.has(id)),
+    })).filter(item => item.sourcePageIds.length > 0);
+    parsed.beforeYouGo = sanitizeItems(parsed.beforeYouGo);
+    parsed.whatYouWillDo = sanitizeItems(parsed.whatYouWillDo);
+    parsed.proofRequirements = sanitizeItems(parsed.proofRequirements);
+    parsed.warnings = sanitizeItems(parsed.warnings);
+    parsed.uncertainItems = sanitizeItems(parsed.uncertainItems);
+    return res.json(parsed);
+  } catch (error: any) {
+    console.error("Preview summary endpoint failed:", error?.name || "unknown");
+    return res.status(500).json({ error: "The quick summary could not be created. Try again with fewer clear pages." });
+  }
+});
 // Privacy-First Screenshot OCR Import API
 app.post("/api/import/ocr", requireAuth, async (req: any, res: any) => {
   try {

@@ -351,3 +351,15 @@ interface Proof {
   verified?: boolean;
 }
 ```
+
+## POST /api/import/preview-summary
+
+Authenticated selected-page extraction for the per-job Preview Guide.
+
+- Auth: existing Supabase requireAuth Bearer session.
+- Body: pages array with pageId, image, and mimeType; 1–12 image data URLs only.
+- The endpoint does not accept a video or recording field.
+- Total encoded selected-page payload is capped below the global 15 MB JSON limit.
+- Response: structured title/time/pay when visible, beforeYouGo, whatYouWillDo, proofRequirements, warnings, referenceTopics, and uncertainItems.
+- Every returned action item retains valid submitted source page IDs; items without valid source references are dropped.
+- Errors use plain messages and server logs omit image data and extracted text.

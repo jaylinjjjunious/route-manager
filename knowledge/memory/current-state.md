@@ -26,6 +26,7 @@ Implemented on top of the existing job system:
 - **AI Operations Assistant:** 22-file assistant system with floating chat bubble, tool registry, server-side Gemini integration, and 10 tools (navigation, shower gate, jobs, battery, weather, travel, proof, debug).
 - **Safety News:** Bakersfield area crime/safety via Google News RSS.
 - **Screenshot OCR import:** Extract job data from screenshots.
+- **Per-job Preview Guide:** Local screen-recording extraction, offline ordered pages, selected-page authenticated summary/review, generated Get Ready confirmations, explicit navigation/Transit handoff, and manual arrival/job-guide handoff.
 - **Text-to-speech:** Gemini, OpenAI, ElevenLabs providers.
 - **Debug Center:** Diagnostics and system status.
 - **Supabase authentication:** Magic link and email/password login.
