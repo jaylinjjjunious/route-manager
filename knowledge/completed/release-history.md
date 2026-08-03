@@ -4,6 +4,7 @@
 
 | SHA | Description |
 |-----|-------------|
+| 7c32096 | Add localhost-only shield-logo sign-in bypass with production exclusion safeguards |
 | eb11679 | Add self-hosted error reporting and camera/upload test coverage |
 | bc38fd6 | Smart Aisle photo review, removable thumbnails, recalculation, quality gate, and level guide |
 | fb7027d | Smart Aisle real-device verification route, PWA manifest/service worker, and build-info endpoint |
@@ -56,5 +57,5 @@ Plus approximately 45 earlier commits covering the full feature progression: hab
 
 ---
 
-**Last Updated:** 2026-07-28 (bc38fd6)
+**Last Updated:** 2026-08-03 (7c32096)
 
