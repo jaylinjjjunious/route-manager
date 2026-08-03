@@ -31,6 +31,7 @@ Implemented on top of the existing job system:
 - **Text-to-speech:** Gemini, OpenAI, ElevenLabs providers.
 - **Debug Center:** Diagnostics and system status.
 - **Supabase authentication:** Magic link and email/password login.
+- **Self-hosted error reporting:** Privacy-safe client reporter (`src/services/errorReporter.ts`) captures window errors/unhandled rejections, batches them, and flushes to authenticated `POST /api/errors`; reports land in `.local-error-reports/reports.json`. Opt-out toggle + "Send Test Error" live in Debug Center. Bounded/sanitized; no third-party service.
 - **Railway deployment:** Autodeploy from main branch.
 - **Cloudflare Worker API variant:** Alternative backend deployment.
 - **Checkpoint and release scripts:** `scripts/checkpoint.cjs`, `scripts/release.cjs`.
@@ -50,4 +51,4 @@ Implemented on top of the existing job system:
 
 ---
 
-**Last Updated:** 2026-08-02 (aio-three-tab-redesign)
+**Last Updated:** 2026-08-03 (error-reporting)

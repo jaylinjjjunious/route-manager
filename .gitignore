@@ -5,6 +5,7 @@ coverage/
 test-results/
 .local-shower-proofs/
 .local-transit-usage/
+.local-error-reports/
 screenshots/
 .DS_Store
 *.log

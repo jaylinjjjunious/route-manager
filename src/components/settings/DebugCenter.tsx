@@ -3,7 +3,7 @@ import {
   ChevronDown, ChevronRight, Copy, Download, Trash2, RefreshCw,
   Activity, Wifi, WifiOff, Globe, Shield, Smartphone, Camera,
   AlertTriangle, Clock, CheckCircle2, XCircle, Search, Filter,
-  Bug, Server, Key, Eye, EyeOff,
+  Bug, Server, Key, Eye, EyeOff, Send,
 } from 'lucide-react';
 import { useDebug } from '../../debug/useDebug';
 import {
@@ -14,6 +14,11 @@ import {
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../auth/AuthProvider';
 import { authDebugStorageCheck, authDebugPathname, getAuthDebugState } from '../../auth/authDebug';
+import {
+  isErrorReportingEnabled,
+  setErrorReportingEnabled,
+  sendTestError,
+} from '../../services/errorReporter';
 
 function Section({ title, icon: Icon, children, defaultOpen = false }: {
   title: string;
@@ -74,6 +79,9 @@ export default function DebugCenter() {
   const [authState, setAuthState] = useState(() => getAuthDebugState());
   const [showSecrets, setShowSecrets] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [errorReportingEnabled, setErrorReportingEnabledState] = useState(() => isErrorReportingEnabled());
+  const [errorReportResult, setErrorReportResult] = useState('');
+  const [errorReportSentAt, setErrorReportSentAt] = useState('');
 
   useEffect(() => {
     authDebugStorageCheck();
@@ -151,6 +159,19 @@ export default function DebugCenter() {
     a.download = `route-manager-diagnostics-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  }, []);
+
+  const toggleErrorReporting = useCallback(() => {
+    const next = !isErrorReportingEnabled();
+    setErrorReportingEnabled(next);
+    setErrorReportingEnabledState(next);
+  }, []);
+
+  const runTestError = useCallback(async () => {
+    setErrorReportResult('sending...');
+    const ok = await sendTestError();
+    setErrorReportResult(ok ? 'Sent' : 'Queued locally (not sent — offline or not signed in)');
+    setErrorReportSentAt(new Date().toLocaleTimeString());
   }, []);
 
   const filteredRequests = debug.requestLog.filter(r => {
@@ -307,6 +328,23 @@ export default function DebugCenter() {
               <span className="text-slate-700 dark:text-slate-300 flex-1 break-all">{e.message}</span>
             </div>
           ))}
+        </div>
+      </Section>
+
+      <Section title="Error Reporting" icon={Send}>
+        <div className="space-y-1">
+          <Row label="Reporting" value={errorReportingEnabled ? 'enabled' : 'disabled'} color={errorReportingEnabled ? 'text-emerald-500' : 'text-red-500'} />
+          <Row label="Scope" value="window errors + unhandled rejections, sanitized, capped" />
+          {errorReportSentAt && <Row label="Last test" value={errorReportSentAt} />}
+          {errorReportResult && <Row label="Test result" value={errorReportResult} />}
+        </div>
+        <div className="mt-3 pt-3 border-t border-slate-100 dark:border-white/5 grid grid-cols-2 gap-2">
+          <button onClick={toggleErrorReporting} className={`flex items-center justify-center gap-2 text-white text-[11px] font-black py-3 rounded-xl transition-all min-h-[48px] ${errorReportingEnabled ? 'bg-red-600 hover:bg-red-500' : 'bg-emerald-600 hover:bg-emerald-500'}`}>
+            <Shield size={14} /> {errorReportingEnabled ? 'Disable Reporting' : 'Enable Reporting'}
+          </button>
+          <button onClick={runTestError} disabled={!errorReportingEnabled} className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:hover:bg-blue-600 text-white text-[11px] font-black py-3 rounded-xl transition-all min-h-[48px]">
+            <Send size={14} /> Send Test Error
+          </button>
         </div>
       </Section>
 

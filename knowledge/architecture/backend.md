@@ -36,6 +36,7 @@ server.ts → bootstrap()
 | POST | `/api/dispatcher/chat` | JWT | Gemini 2 chat for route advice |
 | POST | `/api/dispatcher/tts` | JWT | Text-to-speech (Gemini/OpenAI/ElevenLabs) |
 | POST | `/api/import/ocr` | JWT | Screenshot OCR via Gemini 2 |
+| POST | `/api/errors` | JWT | Client error reports (sanitized batch → `.local-error-reports/`) |
 | GET | `/api/transit/status` | JWT | Transit service + rate-limit + cache status |
 | POST | `/api/transit/cache/clear` | JWT | Reset the in-memory transit cache |
 | GET | `/api/transit/nearby-stops` | JWT | Nearby stops (lat, lon, radiusMeters, limit) |

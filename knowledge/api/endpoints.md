@@ -235,6 +235,19 @@ Debug endpoint that returns current authentication state and configuration detai
 
 ---
 
+### POST `/api/errors`
+
+| Field | Value |
+|-------|-------|
+| **Auth** | Supabase Bearer token (`requireAuth`) |
+| **Content-Type** | `application/json` |
+| **Body** | `{ "reports": [{ message, category?, source?, pathname?, userAgent? }] }` (max 25) |
+| **Response** | `{ ok: true, received: number }` |
+
+Self-hosted client error reporting sink. Fields are sanitized and bounded server-side (message 300, category 40, source/pathname/userAgent 200 chars; control chars stripped; empty messages dropped). Records are appended to `.local-error-reports/reports.json` (capped at 200) with the owner's user ID. Returns `400 { error }` when no valid reports are provided and `500 { error }` on storage failure.
+
+---
+
 ## Domain: Transit (Express Only)
 
 All routes are mounted at `/api/transit` via `createTransitRouter(requireAuth)` (see `server/transit/transitRoutes.ts`). Every route requires a Supabase Bearer token; unauthenticated calls return `401 { "error": "Authentication required." }`. The server proxies the official Transit API (v4) using `TRANSIT_API_KEY`; the key never reaches the client.

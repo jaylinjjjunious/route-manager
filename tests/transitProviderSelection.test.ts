@@ -1,5 +1,14 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 
+vi.mock('../src/lib/supabase', () => ({
+  supabase: {
+    auth: {
+      getSession: vi.fn(async () => ({ data: { session: null }, error: null })),
+      refreshSession: vi.fn(async () => ({ data: { session: null }, error: null })),
+    },
+  },
+}));
+
 describe('transit provider selection', () => {
   beforeEach(() => {
     vi.resetModules();

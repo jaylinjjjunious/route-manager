@@ -27,8 +27,8 @@
 
 ## Low
 
-- Add error monitoring (e.g., Sentry integration).
+- None currently tracked. Self-hosted client error reporting (P006) shipped; only remaining observability gap is aggregation/alerting from the ephemeral `.local-error-reports/` store (see `roadmap/technical-debt.md`).
 
 ---
 
-**Last Updated:** 2026-08-02 (aio-three-tab-redesign)
+**Last Updated:** 2026-08-03 (error-reporting)

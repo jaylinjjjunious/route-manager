@@ -21,6 +21,8 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPA
 const showerProofRoot = path.join(process.cwd(), ".local-shower-proofs");
 const showerProofImageRoot = path.join(showerProofRoot, "images");
 const showerProofMetadataPath = path.join(showerProofRoot, "proofs.json");
+const errorReportRoot = path.join(process.cwd(), ".local-error-reports");
+const errorReportsPath = path.join(errorReportRoot, "reports.json");
 
 interface LocalShowerProofRecord {
   id: string;
@@ -68,6 +70,34 @@ const writeLocalShowerProofs = async (records: LocalShowerProofRecord[]) => {
 const normalizeLocalCycleId = (value: unknown) => {
   const key = (value || "").toString().trim();
   return /^\d{4}-\d{2}-\d{2}$/.test(key) ? key : new Date().toISOString().slice(0, 10);
+};
+
+interface ErrorReportRecord {
+  id: string;
+  ownerId?: string;
+  timestamp: string;
+  message: string;
+  category: string;
+  source: string;
+  pathname: string;
+  userAgent: string;
+}
+
+const MAX_ERROR_REPORTS = 200;
+const MAX_REPORTS_PER_BATCH = 25;
+const MAX_ERROR_FIELD_LENGTH = 300;
+
+const sanitizeReportField = (value: unknown, maxLength: number): string =>
+  String(value || "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, maxLength);
+
+const readErrorReports = async (): Promise<ErrorReportRecord[]> => {
+  try {
+    const text = await fs.readFile(errorReportsPath, "utf8");
+    const records = JSON.parse(text) as ErrorReportRecord[];
+    return Array.isArray(records) ? records : [];
+  } catch {
+    return [];
+  }
 };
 
 app.use("/shower-proof-assets", express.static(showerProofImageRoot, {
@@ -193,6 +223,43 @@ app.get("/api/debug/auth-check", async (req, res) => {
   const token = authHeader.slice(7);
   const { data: { user }, error } = await serverSupabase.auth.getUser(token);
   res.json({ authenticated: !!user && !error, userPresent: !!user?.id });
+});
+
+// Client error reports: authenticated, sanitized, bounded, local-only storage.
+app.post("/api/errors", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const raw = Array.isArray(req.body?.reports) ? req.body.reports.slice(0, MAX_REPORTS_PER_BATCH) : [];
+    if (raw.length === 0) return res.status(400).json({ error: "No error reports provided." });
+
+    const now = new Date().toISOString();
+    const ownerId = (req as AuthenticatedRequest).userId;
+    const records: ErrorReportRecord[] = [];
+    for (const item of raw) {
+      const message = sanitizeReportField(item?.message, MAX_ERROR_FIELD_LENGTH);
+      if (!message) continue;
+      records.push({
+        id: `err-${crypto.randomUUID()}`,
+        ownerId,
+        timestamp: now,
+        message,
+        category: sanitizeReportField(item?.category, 40) || "app",
+        source: sanitizeReportField(item?.source, 200),
+        pathname: sanitizeReportField(item?.pathname, 200),
+        userAgent: sanitizeReportField(item?.userAgent, 200),
+      });
+    }
+    if (records.length === 0) return res.status(400).json({ error: "No valid error reports provided." });
+
+    const existing = await readErrorReports();
+    await fs.mkdir(errorReportRoot, { recursive: true });
+    await fs.writeFile(errorReportsPath, JSON.stringify([...existing, ...records].slice(-MAX_ERROR_REPORTS), null, 2));
+
+    console.log(`[ERRORS] Stored ${records.length} report(s) from user ${ownerId?.slice(0, 8) || "unknown"}...`);
+    res.json({ ok: true, received: records.length });
+  } catch (error) {
+    console.error("[ERRORS] Failed to store error report:", error);
+    res.status(500).json({ error: "Error report storage failed." });
+  }
 });
 
 app.get("/api/shower-proofs/current", requireAuth, async (req: Request, res: Response) => {

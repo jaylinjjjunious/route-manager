@@ -95,7 +95,12 @@
 
 ---
 
-**Last Updated:** 2026-07-28 (smart-aisle-immediate-delete-lens-cleanliness)
+**Last Updated:** 2026-08-03 (error-reporting)
+
+## 2026-08-03
+
+- Self-hosted error reporting: privacy-safe client reporter (`src/services/errorReporter.ts`) captures window errors and unhandled rejections, sanitizes/bounds every field, batches (max 40, flush 25) and flushes to authenticated `POST /api/errors` every 10s and on background. Reports land in `.local-error-reports/reports.json` (capped 200) with the owner ID. Opt-out toggle + Send Test Error in Debug Center.
+- Automated coverage for camera/barcode/upload flows: added `tests/cameraLifecycle.test.ts` (10 tests), `tests/showerProofUpload.test.ts` (5 tests), and `tests/errorReporter.test.ts` (3 tests); fixed the transit provider-selection test to mock Supabase so it runs without env vars.
 
 ## 2026-07-28
 
