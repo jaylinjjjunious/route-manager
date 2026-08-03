@@ -1,4 +1,6 @@
 import type { JobPreviewGuide } from './types';
+import type { PreviewGuideSectionId } from './types';
+import { markPreviewGuideSectionViewed } from './reviewCompletion';
 
 const META_KEY = 'job_preview_guides_v1';
 const DB_NAME = 'job_preview_media';
@@ -46,6 +48,14 @@ export function savePreviewGuide(guide: JobPreviewGuide): void {
   const all = readAll();
   all[guide.jobId] = { ...guide, updatedAt: new Date().toISOString() };
   localStorage.setItem(META_KEY, JSON.stringify(all));
+}
+
+export function saveViewedPreviewGuideSection(jobId: string, sectionId: PreviewGuideSectionId): JobPreviewGuide | null {
+  const guide = getPreviewGuide(jobId);
+  if (!guide?.summary) return guide;
+  const next = markPreviewGuideSectionViewed(guide, sectionId);
+  savePreviewGuide(next);
+  return next;
 }
 
 export async function saveMedia(record: MediaRecord): Promise<void> {

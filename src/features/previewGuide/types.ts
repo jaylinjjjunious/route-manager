@@ -21,6 +21,12 @@ export type PreviewPageTag =
 
 export type ConfirmationMode = 'photo' | 'one_tap' | 'review' | 'none';
 export type RequirementStatus = 'incomplete' | 'in_progress' | 'complete' | 'needs_review';
+export type PreviewGuideSectionId =
+  | 'what-youre-doing'
+  | 'questions-youll-answer'
+  | 'photos-and-proof'
+  | 'warnings'
+  | 'how-to-complete';
 
 export interface PreviewRequirement {
   id: string;
@@ -95,6 +101,7 @@ export interface JobPreviewGuide {
   pages: PreviewPage[];
   coverPageId?: string;
   summary?: JobPreviewSummary;
+  viewedSectionIds?: PreviewGuideSectionId[];
   preparation: PreparationState[];
   extractionVersion: number;
   createdAt: string;

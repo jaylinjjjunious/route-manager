@@ -198,7 +198,7 @@ The panel should answer, at a glance:
 - Improve text contrast.
 - Remove contradictory readiness messaging.
 - Keep secondary actions visually secondary.
-- Preview Guide review is mandatory for every actionable job before Ride Mode can start.
+- Preview Guide review is mandatory for every actionable job before Ride Mode can start. Opening the guide does not count as review; its five required sections must each be viewed for that job before review is complete.
 - An unreviewed Preview Guide produces `NEEDS ATTENTION`, makes `Review Preview Guide` the primary action, and opens that job's Preview Guide directly.
 - An unavailable Preview Guide produces `BLOCKED` and disables Ride Mode.
 - A reviewed Preview Guide makes `Start Ride Mode` the primary action.

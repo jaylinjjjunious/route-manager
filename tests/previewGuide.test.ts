@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { blurScore, grayscaleSignature, signatureDifference, validatePreviewRecording, VIDEO_LIMITS } from '../src/features/previewGuide/frameExtraction';
-import { _resetPreviewStorageForTests, getPreviewGuide, savePreviewGuide } from '../src/features/previewGuide/storage';
+import { _resetPreviewStorageForTests, getPreviewGuide, savePreviewGuide, saveViewedPreviewGuideSection } from '../src/features/previewGuide/storage';
+import { REQUIRED_PREVIEW_GUIDE_SECTION_IDS } from '../src/features/previewGuide/reviewCompletion';
 import type { JobPreviewGuide } from '../src/features/previewGuide/types';
 
 const guide = (jobId: string): JobPreviewGuide => ({
@@ -64,5 +65,61 @@ describe('per-job metadata persistence and migration guards', () => {
   it('does not allow unreviewed summaries to enter preparation', () => {
     savePreviewGuide({ ...guide('job-1'), stage: 'preparation', summary: { beforeYouGo: [], whatYouWillDo: [], proofRequirements: [], warnings: [], referenceTopics: [], uncertainItems: [], sourcePageIds: ['page-1'], generatedAt: '2026-08-02T00:00:00.000Z', reviewedByUser: false } });
     expect(getPreviewGuide('job-1')?.stage).toBe('summary_review');
+  });
+});
+
+describe('Preview Guide section review completion', () => {
+  const unreviewedGuide = (jobId: string): JobPreviewGuide => ({
+    ...guide(jobId),
+    status: 'needs_review',
+    stage: 'summary_review',
+    viewedSectionIds: [],
+    summary: {
+      beforeYouGo: [], whatYouWillDo: [], proofRequirements: [], warnings: [], referenceTopics: [], uncertainItems: [],
+      sourcePageIds: ['page-1'], generatedAt: '2026-08-03T00:00:00.000Z', reviewedByUser: false,
+    },
+  });
+
+  it('does not complete review when the guide is merely opened or partially viewed', () => {
+    savePreviewGuide(unreviewedGuide('job-1'));
+    expect(getPreviewGuide('job-1')?.summary?.reviewedByUser).toBe(false);
+
+    for (const sectionId of REQUIRED_PREVIEW_GUIDE_SECTION_IDS.slice(0, -1)) {
+      saveViewedPreviewGuideSection('job-1', sectionId);
+    }
+
+    expect(getPreviewGuide('job-1')).toMatchObject({
+      viewedSectionIds: REQUIRED_PREVIEW_GUIDE_SECTION_IDS.slice(0, -1),
+      summary: { reviewedByUser: false },
+    });
+  });
+
+  it('marks review complete only after all five required sections are viewed', () => {
+    savePreviewGuide(unreviewedGuide('job-1'));
+    for (const sectionId of REQUIRED_PREVIEW_GUIDE_SECTION_IDS) {
+      saveViewedPreviewGuideSection('job-1', sectionId);
+    }
+
+    expect(getPreviewGuide('job-1')).toMatchObject({
+      status: 'ready',
+      viewedSectionIds: REQUIRED_PREVIEW_GUIDE_SECTION_IDS,
+      summary: { reviewedByUser: true },
+    });
+  });
+
+  it('persists viewed sections across guide reloads', () => {
+    savePreviewGuide(unreviewedGuide('job-1'));
+    saveViewedPreviewGuideSection('job-1', 'photos-and-proof');
+
+    expect(getPreviewGuide('job-1')?.viewedSectionIds).toEqual(['photos-and-proof']);
+  });
+
+  it('keeps viewed-section progress isolated between jobs', () => {
+    savePreviewGuide(unreviewedGuide('job-1'));
+    savePreviewGuide(unreviewedGuide('job-2'));
+    saveViewedPreviewGuideSection('job-1', 'warnings');
+
+    expect(getPreviewGuide('job-1')?.viewedSectionIds).toEqual(['warnings']);
+    expect(getPreviewGuide('job-2')?.viewedSectionIds).toEqual([]);
   });
 });

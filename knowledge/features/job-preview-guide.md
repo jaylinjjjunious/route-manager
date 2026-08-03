@@ -28,7 +28,7 @@ Preview Guide turns one slow iPhone screen recording of an external job preview 
 
 Only pages explicitly selected by the user are sent to authenticated `POST /api/import/preview-summary` (maximum 12 pages and request-size guarded). The endpoint uses the existing Gemini client and `requireAuth`, accepts images—not video—and requests structured requirements, tasks, proof, warnings, uncertainty, and source page IDs. Server output drops items with invalid/missing source references.
 
-The proposal cannot activate preparation until the user reviews and saves it. Requirements can be edited, removed, marked required/optional, and assigned photo, one-tap, review, or no confirmation.
+The proposal cannot activate preparation until the user reviews all five required sections and saves it. Requirements can be edited, removed, marked required/optional, and assigned photo, one-tap, review, or no confirmation.
 
 ## Get Ready
 
@@ -40,11 +40,11 @@ After preparation is committed, the user must explicitly choose **I'm Ready — 
 
 ## Road Readiness integration
 
-Every actionable job requires a user-reviewed Preview Guide before Ride Mode can start. The Today screen opens the actionable job's Preview Guide directly when review is incomplete. An unreviewed guide produces `NEEDS ATTENTION`; a failed/unavailable guide produces `BLOCKED`. Extracted pages alone are not sufficient—the saved summary must have `reviewedByUser: true`.
+Every actionable job requires a user-reviewed Preview Guide before Ride Mode can start. The Today screen opens the actionable job's Preview Guide directly when review is incomplete. Opening the guide alone does not mark it reviewed. Review completes only after the job's `what-youre-doing`, `questions-youll-answer`, `photos-and-proof`, `warnings`, and `how-to-complete` sections have all been viewed. An unreviewed guide produces `NEEDS ATTENTION`; a failed/unavailable guide produces `BLOCKED`. Extracted pages alone are not sufficient—the summary must have `reviewedByUser: true`.
 
 ## State and storage
 
-`JobPreviewGuide` is stored separately from `Job`. Stages cover no preview, processing, summary selection/review, preparation, travel planning/travel, arrival, and job guide. Load-time guards repair ready-without-pages and block preparation from an unreviewed summary. Each guide and media record carries `jobId`; deletion enumerates only that guide's media.
+`JobPreviewGuide` is stored separately from `Job`. Its metadata includes the viewed review-section IDs, persisted per job in the existing Preview Guide localStorage record. Completing all five required section IDs sets `reviewedByUser`; partial progress remains unreviewed and isolated from other jobs. Stages cover no preview, processing, summary selection/review, preparation, travel planning/travel, arrival, and job guide. Load-time guards repair ready-without-pages and block preparation from an unreviewed summary. Each guide and media record carries `jobId`; deletion enumerates only that guide's media.
 
 Manage Preview Storage supports removing only the original recording while preserving pages, or removing the full guide after confirmation. Saved pages and preparation state work offline; live route/AI operations still require connectivity.
 
@@ -62,7 +62,7 @@ Missing/unsupported/oversized/unreadable video, excessive duration, storage pres
 
 ## Testing
 
-`tests/previewGuide.test.ts` covers video validation, local signatures/detail scoring, job isolation, and impossible-state migration guards. `tests/previewSummary.test.ts` proves only selected image pages are uploaded, the body contains no video, source IDs are retained, an explicit selection is required, and large selections are blocked locally. Browser/device validation remains required for real codec seeking, camera capture, pinch zoom, memory pressure, and PWA suspension.
+`tests/previewGuide.test.ts` covers video validation, local signatures/detail scoring, review partial/full completion, review-progress persistence and job isolation, and impossible-state migration guards. `tests/previewSummary.test.ts` proves only selected image pages are uploaded, the body contains no video, source IDs are retained, an explicit selection is required, and large selections are blocked locally. Browser/device validation remains required for real codec seeking, camera capture, pinch zoom, memory pressure, and PWA suspension.
 
 ## Known limitations
 
@@ -82,4 +82,4 @@ Missing/unsupported/oversized/unreadable video, excessive duration, storage pres
 
 ## Last updated
 
-2026-08-03 (Road Readiness integration)
+2026-08-03 (five-section review completion)
