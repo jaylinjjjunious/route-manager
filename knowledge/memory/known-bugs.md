@@ -11,6 +11,7 @@
 | P007 | Medium | Smart Aisle iPhone Safari/PWA real-device evidence is pending; direct automation is blocked until a controllable iPhone or provider credentials are available, and tester-assisted verification report is the current path | Open |
 | P008 | Low | Lens cleanliness detection may produce false uncertain results on naturally low-detail scenes (plain walls); controlled testing with real smudge samples is needed to calibrate confidence thresholds | Open |
 | P010 | Low | Legacy jobs moved with the old "Move → Route B" control before Phase 1 scheduling shipped have no `scheduledDate`; they surface as unscheduled rather than pinned to a day until rescheduled | Open |
+| P011 | High | Cloudflare Worker API routes do not validate Supabase bearer tokens even though the Express deployment uses `requireAuth()`; client token injection alone does not protect Worker endpoints | Open |
 
 
 ## Resolved Bugs
@@ -29,5 +30,5 @@
 
 ---
 
-**Last Updated:** 2026-08-03 (error-reporting)
+**Last Updated:** 2026-08-03 (Worker authentication gap)
 

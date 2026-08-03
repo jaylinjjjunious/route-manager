@@ -2,6 +2,10 @@
 
 ## High
 
+- Add server-side Supabase bearer-token validation to protected Cloudflare
+  Worker routes so Worker deployments enforce the same authentication boundary
+  as Express; track as P011.
+
 - Verify the AIØ three-tab redesign (Today/Jobs/More) in the live signed-in app on a real device: readiness hero, Next Best Job actions, Travel Plan, weekly strip + expanded day panel, Jobs schedule list, More hub navigation, and the jobs-count badge. Headless layout verification (320/390/430 px, dark/light, no overflow) is done via `scripts/screenshot-today.mjs`; the signed-in production pass remains.
 
 - Complete real iPhone Safari/Home Screen PWA verification of Preview Guide using a real slow-scroll recording, including codec decode, seek order, cancellation/recovery, storage pressure, camera preparation photo, explicit trip handoff, and arrival persistence.

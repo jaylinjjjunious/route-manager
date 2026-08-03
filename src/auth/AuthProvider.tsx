@@ -10,12 +10,15 @@ import {
   authDebugSignOut,
   authDebugRaw,
 } from "./authDebug";
+import { isLocalAuthBypassAllowed } from "./localAuthBypass";
 
 interface AuthContextValue {
   session: Session | null;
   user: User | null;
   loading: boolean;
   verificationMode: boolean;
+  localAuthBypassAvailable: boolean;
+  enableLocalAuthBypass: () => void;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error?: string }>;
@@ -37,6 +40,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const mountedRef = useRef(true);
   const initIdRef = useRef(0);
   const userSignedOutRef = useRef(false);
+  const localAuthBypassAvailable = isLocalAuthBypassAllowed({
+    isDevelopment: import.meta.env.DEV,
+    enabled: import.meta.env.VITE_LOCAL_AUTH_BYPASS === "true",
+    hostname: window.location.hostname,
+  });
 
   useEffect(() => {
     mountedRef.current = true;
@@ -126,6 +134,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return {};
   }, []);
 
+  const enableLocalAuthBypass = useCallback(() => {
+    if (!import.meta.env.DEV || !localAuthBypassAvailable) return;
+    setVerificationMode(true);
+    setLoading(false);
+    authDebugRaw("Local auth bypass enabled (development loopback only)");
+  }, [localAuthBypassAvailable]);
+
   const signOut = useCallback(async () => {
     userSignedOutRef.current = true;
     setVerificationMode(false);
@@ -156,6 +171,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user: session?.user ?? null,
     loading,
     verificationMode,
+    localAuthBypassAvailable,
+    enableLocalAuthBypass,
     signIn,
     signOut,
     resetPassword,

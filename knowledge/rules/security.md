@@ -9,9 +9,17 @@
 
 ## Authentication
 
-- All API endpoints except `GET /api/health` and `GET /api/auth-check` require authentication.
+- Express protected application endpoints require authentication. Public
+  operational routes include `GET /api/health`, `GET /api/build-info`, and
+  `GET /api/debug/auth-check`; the development verification handshake is also
+  unauthenticated but requires a non-production server, an explicit server flag,
+  and a loopback request.
 - Authentication uses Supabase JWT tokens passed in the `Authorization` header.
 - Tokens are refreshed by the Supabase client SDK — the app handles 401 retries.
+- The local sign-in bypass is client-shell access only. It requires Vite
+  development mode, `VITE_LOCAL_AUTH_BYPASS=true`, and a loopback hostname. It
+  must never create a session, relax backend authentication, or work in a
+  production build/shared environment.
 
 ## Data Isolation
 
@@ -44,4 +52,4 @@
 
 ---
 
-**Last Updated:** 2026-07-20 (c12bd44)
+**Last Updated:** 2026-08-03 (local sign-in bypass safeguards)

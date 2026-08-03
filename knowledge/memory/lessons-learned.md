@@ -3,6 +3,9 @@
 ## Authentication
 
 - Supabase token refresh must be handled explicitly — implement a 401 retry pattern to catch stale tokens before upload requests fail.
+- A local UI bypass must require an explicit development flag and a loopback
+  hostname, compile out of production behavior, and never weaken protected API
+  authentication. A visually hidden control is not a security boundary.
 
 ## Camera and Media
 

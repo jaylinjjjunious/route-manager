@@ -26,6 +26,9 @@
 - Habit tracker: `tests/habit-ui-check.cjs` validates UI state and rendering.
 - Smart Aisle Scan Test Lab: `tests/smart-aisle-test-lab-ui-check.cjs` opens a local harness, clicks through practice setup, start capture, hold-for-burst, short tap, pointer cancel/lost-capture interruption, thumbnail review, immediate removal (no confirmation modal), undo restore, sequence recalculation, Reached the End stitching, the real-device verification report route (including new undo/lens fields), import processing, controlled scenarios, markers, diagnostics, cleanup, and verifies test cleanup preserves seeded audit data.
 - TypeScript compilation: lint catches type errors across all source files.
+- Local auth bypass: `tests/localAuthBypass.test.ts` verifies the explicit dev
+  flag and loopback allowlist, plus production, disabled-flag, and remote-host
+  rejection.
 - Inventory custody ledger: `tests/inventoryChain.test.ts` validates lifecycle chaining, local persistence, queueing, and tamper detection.
 - Preview Guide: previewGuide.test.ts validates recording limits, frame signatures/detail scoring, per-job isolation and state guards; previewSummary.test.ts verifies only selected images are uploaded, video is excluded, source IDs remain, and selection limits apply.
 - Scheduling: `tests/jobSchedule.test.ts` validates LA-timezone-stable date math, calendar validation, effective-day pooling, legacy migration (schema v4), day grouping, overdue detection, and planning-issue review flags.
