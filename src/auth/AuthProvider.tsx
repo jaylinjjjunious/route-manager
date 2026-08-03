@@ -58,6 +58,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .catch(() => undefined);
     }
 
+    const enableTodayScreenshotMode = import.meta.env.DEV && import.meta.env.VITE_TODAY_SCREENSHOT_MODE === "true";
+    if (enableTodayScreenshotMode) {
+      setVerificationMode(true);
+      setLoading(false);
+      authDebugRaw("Today screenshot mode enabled (dev only)");
+    }
+
     supabase.auth.getSession().then(({ data: { session: s }, error }) => {
       if (error) authDebugRaw(`getSession error: ${error.message}`);
       if (mountedRef.current && initIdRef.current === id) {

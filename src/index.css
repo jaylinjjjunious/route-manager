@@ -147,6 +147,51 @@ select {
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+
+  /* AIØ design tokens (light defaults; .dark overrides below) */
+  --color-aio-bg: #f2f2f7;
+  --color-aio-bg-raised: #ffffff;
+  --color-aio-surface: #ffffff;
+  --color-aio-surface-2: #f5f5f7;
+  --color-aio-surface-elev: #ffffff;
+  --color-aio-text: #1c1c1e;
+  --color-aio-text-2: #8e8e93;
+  --color-aio-text-3: #c7c7cc;
+  --color-aio-line: rgba(0, 0, 0, 0.06);
+  --color-aio-blue: #007aff;
+  --color-aio-blue-2: #0a84ff;
+  --color-aio-cyan: #5ac8fa;
+  --color-aio-green: #34c759;
+  --color-aio-orange: #ff9f0a;
+  --color-aio-red: #ff3b30;
+  --color-aio-purple: #af52de;
+  --color-aio-yellow: #ffcc00;
+  --color-aio-teal: #30b0c7;
+  --color-aio-pink: #ff2d55;
+}
+
+@layer base {
+  .dark {
+    --color-aio-bg: #000000;
+    --color-aio-bg-raised: #0c0c0e;
+    --color-aio-surface: #0f0f10;
+    --color-aio-surface-2: #1c1c1e;
+    --color-aio-surface-elev: #2c2c2e;
+    --color-aio-text: #ffffff;
+    --color-aio-text-2: #98989f;
+    --color-aio-text-3: #48484a;
+    --color-aio-line: rgba(255, 255, 255, 0.08);
+    --color-aio-blue: #0a84ff;
+    --color-aio-blue-2: #3d9bff;
+    --color-aio-cyan: #64d2ff;
+    --color-aio-green: #30d158;
+    --color-aio-orange: #ff9f0a;
+    --color-aio-red: #ff453a;
+    --color-aio-purple: #bf5af2;
+    --color-aio-yellow: #ffd60a;
+    --color-aio-teal: #40c8e0;
+    --color-aio-pink: #ff375f;
+  }
 }
 
 @keyframes fadeIn {
@@ -204,6 +249,30 @@ select {
 
   .road-slider {
     @apply h-3 w-full cursor-pointer appearance-none rounded-full bg-slate-200 accent-blue-500 dark:bg-white/10;
+  }
+
+  .aio-card {
+    @apply rounded-[24px] border border-[var(--color-aio-line)] bg-[var(--color-aio-surface)] shadow-[0_18px_50px_rgba(15,23,42,0.06)];
+  }
+
+  .aio-card-flat {
+    @apply rounded-[24px] border border-[var(--color-aio-line)] bg-[var(--color-aio-surface-2)];
+  }
+
+  .aio-hero-gradient {
+    background: linear-gradient(135deg, var(--color-aio-blue-2) 0%, var(--color-aio-blue) 55%, var(--color-aio-teal) 130%);
+  }
+
+  .aio-heading {
+    @apply text-[17px] font-black tracking-[-0.01em] text-[var(--color-aio-text)];
+  }
+
+  .aio-label {
+    @apply text-[13px] font-bold tracking-[-0.01em] text-[var(--color-aio-text-2)];
+  }
+
+  .aio-caption {
+    @apply text-[13px] font-semibold text-[var(--color-aio-text-3)];
   }
 }
 

@@ -1,7 +1,68 @@
 # UI Components
 
-**Last Updated:** 2026-07-30 (phase-1-scheduling)
-**Related Source Files:** `src/components/*.tsx`, `src/assistant/*.tsx`
+**Last Updated:** 2026-08-02 (aio-three-tab-redesign)
+**Related Source Files:** `src/components/*.tsx`, `src/components/aio/*.tsx`, `src/assistant/*.tsx`
+
+---
+
+## AIØ Components
+
+### AioHeader
+
+| Field | Value |
+|-------|-------|
+| **File** | `src/components/aio/AioHeader.tsx` |
+| **Props** | `theme: 'dark' \| 'light'`, `userName?: string`, `onToggleTheme()`, `onMore?()` |
+| **Responsibility** | Sticky top header for Today/Jobs/More tabs. Shows time-of-day greeting with first name, the AIØ wordmark, formatted date, theme toggle, and a More shortcut button. |
+
+### TodayScreen
+
+| Field | Value |
+|-------|-------|
+| **File** | `src/components/aio/TodayScreen.tsx` |
+| **Props** | Theme, username, weather wind, current/next job, remaining jobs, completion state, navigation link, transit result, weekly schedule, battery, earnings, route progress, revision alerts — all derived values passed from `App.tsx` |
+| **Responsibility** | Authoritative route-planning screen (the former Mission Control dashboard) in AIØ style. Sections: readiness/weather hero (ride-mode start, wind, battery, preview-guide and battery checklists), Next Best Job / Current Job card with Distance/Ride/Due metrics and Navigate/Complete actions, Travel Plan (transit plan + leave-by + deadline status + Optimize/Open Route), Today's Other Jobs list, and This Week strip with the shared `ExpandedDayPanel`. No fabricated scoring — reuses existing `nextRouteAJob`, `todayRouteJobs`, `weeklyDays`, battery, weather, and transit values. |
+
+### JobsScreen
+
+| Field | Value |
+|-------|-------|
+| **File** | `src/components/aio/JobsScreen.tsx` |
+| **Props** | `today`, `todayJobs`, `weekDays`, `routeBJobs`, `overdueJobs`, `unscheduledJobs`, `onOpenJob`, `onAddJob`, `onOptimizeRoute`, `onMoveToDay` |
+| **Responsibility** | Schedule list in AIØ style. Header with Optimize/Add actions, overdue/unscheduled attention card with Move actions, Today section, later scheduled days (with pay totals), and Route B Standby section. |
+
+### MoreScreen
+
+| Field | Value |
+|-------|-------|
+| **File** | `src/components/aio/MoreScreen.tsx` |
+| **Props** | `theme`, `onToggleTheme`, `userEmail`, `onNavigate(tab)`, `onOpenProofHistory`, `onOpenDebugCenter`, `onAddProcessServe`, `onImportScreenshots`, `onSignOut` |
+| **Responsibility** | Hub for everything outside the primary flow: account card (avatar, email, theme toggle), the six legacy feature tabs (Inventory, Battery, Tracker, Habits, Tools, Settings), action links (Proof Vault, Add Process Serve, Import Job Screenshots, Debug Center), and Sign Out. Legacy screens remain reachable. |
+
+### AIØ Primitives
+
+| Component | Responsibility |
+|-----------|----------------|
+| `AioCard` | Elevated or gradient rounded card surface; renders as a button when `onClick` is provided |
+| `AioSectionLabel` | Section header with optional trailing content |
+| `GradientIconTile` | Rounded gradient tile with a lucide icon (`sm`/`md`/`lg`) |
+| `StatusIndicator` | Colored dot + label (blue/green/amber/red/neutral) |
+| `MetricItem` | Label + value pair with optional tone |
+| `ChecklistRow` | Checkable row (used in the readiness hero) |
+| `AioButton` | Primary/secondary/ghost button, 48px min height |
+| `CompactJobRow` | Store name + street/type + badge + pay + chevron; tappable to open job |
+| `WeekDayIndicator` | Strip day cell (weekday, date, count) with today/selected states |
+| `BottomTabBar` | Floating Today/Jobs/More bottom bar with active pill indicator and jobs-count badge |
+
+### AIØ Job Metadata
+
+| Export | Responsibility |
+|--------|----------------|
+| `getStreetName` | Extracts street portion of an address |
+| `getJobTypeLabel` | Human-readable job type label |
+| `getJobIconMeta` | Icon + gradient per job type (revision/process-serve overrides) |
+| `getRouteBadgeClasses` / `getRouteBadgeLabel` | Status badge styling/text |
+| `getStatusIcon` | Status → lucide icon |
 
 ---
 
@@ -13,7 +74,7 @@
 |-------|-------|
 | **File** | `src/components/WeeklyStrip.tsx` |
 | **Props** | `days: ScheduledDaySummary[]`, `today: string`, `selectedDate: string \| null`, `onSelect: (date: string) => void`, `overdueCount: number`, `unscheduledCount: number`, `onReviewOverdue: () => void`, `onReviewUnscheduled: () => void` |
-| **Responsibility** | 7-day horizontal snap-scroll scheduling strip on the Mission Control dashboard (desktop `lg:col-span-4`). Cell shows weekday/date/job count/pay plus a `◌` weather placeholder (Phase 2). Today pill (blue), selected ring (amber), Needs Review badge, overdue + unscheduled chips, arrow-key/Home/End navigation, `motion-reduce:transition-none`. |
+| **Responsibility** | **Superseded** by the AIØ `WeekDayIndicator` strip rendered inside `TodayScreen` (This Week section). The standalone `WeeklyStrip` is no longer mounted by `App.tsx`. The AIØ strip keeps the same data contract (`weeklyDays`) and shows weekday/date/job-count cells with today/selected states plus overdue/unscheduled chips. |
 
 ---
 
@@ -142,7 +203,7 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 |-------|-------|
 | **File** | `src/components/Header.tsx` |
 | **Props** | `theme: 'light' \| 'dark'`, `onToggleTheme: () => void` |
-| **Responsibility** | App header with official logo image, title, e-bike status, user email, and theme toggle. Hidden on the dashboard tab. |
+| **Responsibility** | App header with official logo image, title, e-bike status, user email, and theme toggle. Used on the legacy tabs (Inventory, Battery, Tracker, Habits, Tools, Settings); the AIØ tabs (Today/Jobs/More) use `AioHeader` instead. |
 
 ---
 
@@ -150,11 +211,11 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 
 | Field | Value |
 |-------|-------|
-| **File** | `src/App.tsx` |
+| **File** | `src/components/aio/primitives.tsx` (`BottomTabBar`), wired in `src/App.tsx` |
 | **State** | `currentTab`, `activateTabFromTap`, `showerGateUnlocked` |
-| **Responsibility** | Inline floating pill navigation bar with 6 tabs. Battery and Tracker are locked until shower verification. Touch-friendly horizontal scrolling. |
+| **Responsibility** | Floating rounded bottom bar with 3 tabs: Today, Jobs, More. Active tab shows a top indicator pill and blue tint; Jobs shows a red badge with remaining count. Legacy tabs are reachable through the More screen. |
 
-**Tabs:** Dashboard, Battery, Tracker, Habits, Tools, Settings
+**Tabs:** Today (dashboard), Jobs, More → Inventory, Battery, Tracker, Habits, Tools, Settings
 
 ---
 
@@ -184,7 +245,7 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 |-------|-------|
 | **File** | `src/components/DashboardJobDetailSheet.tsx` |
 | **Props** | `job: Job`, `routeIndex: number \| null`, `legDistance: number`, `rideMinutes: number`, `navLink: string`, `isOutlier: boolean`, `jobAccessLocked: boolean`, `onToggleComplete`, `onEdit`, `onDelete`, `onDuplicate`, `onToggleRoute`, `onUpdateStatus`, `onOpenInJobs`, `onClose` |
-| **Responsibility** | Mobile-friendly bottom-sheet modal that opens when a Dashboard "Today's Route" card is tapped. Wraps `JobCard` as the shared detail component with a compact route-info header (stop number, leg distance, ride time) and footer actions (Navigate, Open in Jobs). Does not duplicate JobCard's design. Displays a Scheduled row and a "Move to a different day" action (opens MoveToDaySheet) when present. |
+| **Responsibility** | Mobile-friendly bottom-sheet modal that opens when a Today/Jobs job row is tapped. Wraps `JobCard` as the shared detail component with a compact route-info header (stop number, leg distance, ride time) and footer actions (Navigate, Open in Jobs). Does not duplicate JobCard's design. Displays a Scheduled row and a "Move to a different day" action (opens MoveToDaySheet) when present. |
 
 ---
 

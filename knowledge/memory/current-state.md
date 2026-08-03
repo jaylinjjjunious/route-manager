@@ -15,11 +15,12 @@ Implemented on top of the existing job system:
 
 ## Features Built
 
-- **6-tab navigation:** Dashboard, Jobs, Battery, Tracker, Habits, Settings — with protected tab support.
+- **AIØ three-tab navigation (Today / Jobs / More):** iOS-style redesign of the primary interface. The former Mission Control dashboard is now the **Today** readiness screen (hero + Next Best Job/Current Job, Travel Plan, Today's Other Jobs, This Week strip), **Jobs** is the schedule list (today, later days, Route B standby, overdue/unscheduled review), and **More** is the hub for all legacy tabs (Inventory, Battery, Tracker, Habits, Tools, Settings) plus Proof Vault, Add Process Serve, Import Screenshots, Debug Center, account, theme, and Sign Out. New AIØ design tokens (`--color-aio-*`) and primitives in `src/components/aio/`. Dev-only screenshot mode (`VITE_TODAY_SCREENSHOT_MODE`) and `scripts/screenshot-today.mjs` for headless layout verification (320/390/430 px, dark/light).
+- **6-tab navigation:** Inventory, Battery, Tracker, Habits, Tools, Settings — now reachable from the More screen, with protected tab support.
 - **Daily Shower Gate:** Barcode scan + proof upload + cycle management with 6:00 AM reset remain implemented, but access enforcement is temporarily bypassed by SHOWER_GATE_REQUIRED = false in src/App.tsx.
 - **Job system:** 5 types, 7 statuses, completion workflow, proof vault.
 - **Route optimization:** Nearest-neighbor algorithm, battery-aware, outlier detection.
-- **Dashboard route interface:** Dashboard is the authoritative route-planning and route-management surface; the standalone Route page has been retired. Today's Route cards open compact per-job detail panels from the card surface.
+- **Today's Route / AIØ Today screen:** The Today screen is the authoritative route-planning and route-management surface; the standalone Route page has been retired. Job rows open compact per-job detail panels from the card surface.
 - **Ride Mode:** Distraction-free execution surface for job completion.
 - **Habit tracker:** Mandatory shower + custom daily tasks with streak tracking.
 - **AI Dispatcher:** Gemini 2 chat integration for route advice.
@@ -49,4 +50,4 @@ Implemented on top of the existing job system:
 
 ---
 
-**Last Updated:** 2026-08-02 (transit-trip-stop-accuracy)
+**Last Updated:** 2026-08-02 (aio-three-tab-redesign)

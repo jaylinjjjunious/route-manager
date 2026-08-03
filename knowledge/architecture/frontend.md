@@ -17,17 +17,20 @@ Describes the React application structure, component hierarchy, state management
         <LoginPage />                   (unauthenticated)
         <ResetPasswordPage />           (password reset)
         <App>                            (authenticated)
-          <Header />                     (when not on dashboard)
+          <AioHeader />                  (Today/Jobs/More tabs)
+          <Header />                     (legacy tabs)
           <main>
-            <ShowerGatePanel />          (dashboard, gate locked)
-            <RideModeV2 />               (dashboard, ride mode)
-            <JobsTab />                  (job list, import)
+            <TodayScreen />              (today tab — readiness hero, next job, travel plan, week strip)
+            <JobsScreen />               (jobs tab — schedule list)
+            <MoreScreen />               (more tab — legacy feature hub)
+            <InventoryTab />             (legacy)
             <BatteryTab />               (e-bike telemetry)
             <TrackerTab />               (end of day summary)
             <HabitsTab />                (mandatory shower habit)
+            <ToolsTab />                 (Smart Aisle Scan, transit tools)
             <SettingsTab />              (hub address, theme, debug)
           </main>
-          <BottomNav />                  (floating pill navigation)
+          <BottomTabBar />               (Today / Jobs / More)
         </App>
       </ProtectedApp>
     </AuthProvider>
@@ -37,18 +40,21 @@ Describes the React application structure, component hierarchy, state management
 
 ### Tab Structure
 
-Six app tabs defined in `src/App.tsx`:
+Three AIØ primary tabs plus five legacy feature tabs (reachable from More), defined in `src/App.tsx`:
 
-| Tab | ID | Protected | Purpose |
-|-----|----|-----------|---------|
-| Dashboard | `dashboard` | No | Shower gate, ride mode toggle, quick actions, Today's Route management, weekly scheduling strip + expanded day panel |
-| Jobs | `jobs` | Yes | Job list, sub-tabs (Active, Secure Import, Archived), proof vault |
-| Battery | `battery` | Yes | Jasion EB5 telemetry, range calculator |
-| Tracker | `tracker` | Yes | End of day summary, ride telemetry |
-| Habits | `habits` | No | Mandatory shower habit + custom habit tasks |
-| Settings | `settings` | No | Hub address, theme, DB maintenance, Debug Center, sign out |
+| Tab | ID | Component | Protected | Purpose |
+|-----|----|-----------|-----------|---------|
+| Today | `dashboard` | `TodayScreen` | No | Authoritative route-planning screen: readiness hero, Next Best Job / Current Job, Travel Plan, Today's Other Jobs, This Week strip + expanded day panel |
+| Jobs | `jobs` | `JobsScreen` | No | Schedule list: Today, later days, Route B standby, overdue/unscheduled review, Optimize/Add |
+| More | `more` | `MoreScreen` | No | Hub for legacy tabs and actions (Proof Vault, Process Serve, Import, Debug Center, Sign Out) |
+| Inventory | `inventory` | legacy | No | Store inventory custody & domains |
+| Battery | `battery` | legacy | **Yes** | Jasion EB5 telemetry, range calculator |
+| Tracker | `tracker` | legacy | **Yes** | End of day summary, ride telemetry |
+| Habits | `habits` | legacy | No | Mandatory shower habit + custom habit tasks |
+| Tools | `tools` | legacy | No | Smart Aisle Scan, imports, transit tools |
+| Settings | `settings` | legacy | No | Hub address, theme, DB maintenance, Debug Center, sign out |
 
-Protected tabs (`jobs`, `battery`, `tracker`) show a "Shower Gate Locked" overlay when `showerGateUnlocked` is false.
+Protected tabs (`battery`, `tracker`) show a "Shower Gate Locked" overlay when `showerGateUnlocked` is false (temporarily bypassed while SHOWER_GATE_REQUIRED = false).
 
 ### State Management
 
@@ -71,7 +77,7 @@ Today's route pool, the weekly strip, and the expanded day panel all derive from
 
 ### Rendering Patterns
 
-- **Dashboard route management**: Dashboard is the authoritative route interface; the standalone Route tab was retired and `/route`, `/routes`, and `#route` redirect to Dashboard. Today's Route cards open compact per-job detail panels from the card surface while action buttons keep their own behavior.
+- **Today screen (dashboard)**: The AIØ Today screen is the authoritative route interface; the standalone Route tab was retired and `/route`, `/routes`, and `#route` redirect to Dashboard. Job rows open compact per-job detail panels while action buttons keep their own behavior.
 - **Inventory domain selection**: The dedicated Inventory page resolves jobs without `inventoryDomain` to merchandising / secret-shopping and exposes explicit contract-parts jobs only when marked `inventoryDomain: 'contract_parts'`.
 - **Conditional rendering** based on `currentTab` and `showerGateUnlocked`
 - **Protected tab overlay**: Rendered before actual tab content when `!showerGateUnlocked`
@@ -134,4 +140,4 @@ Targets modern mobile browsers (iOS Safari, Android Chrome) and desktop (Chrome,
 
 ## Last Updated
 
-2026-07-30 (phase-1-scheduling)
+2026-08-02 (aio-three-tab-redesign)

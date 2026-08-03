@@ -2,6 +2,8 @@
 
 ## High
 
+- Verify the AIØ three-tab redesign (Today/Jobs/More) in the live signed-in app on a real device: readiness hero, Next Best Job actions, Travel Plan, weekly strip + expanded day panel, Jobs schedule list, More hub navigation, and the jobs-count badge. Headless layout verification (320/390/430 px, dark/light, no overflow) is done via `scripts/screenshot-today.mjs`; the signed-in production pass remains.
+
 - Complete real iPhone Safari/Home Screen PWA verification of Preview Guide using a real slow-scroll recording, including codec decode, seek order, cancellation/recovery, storage pressure, camera preparation photo, explicit trip handoff, and arrival persistence.
 
 - Finish Phase 1 scheduling verification: confirm weekly strip + expanded day panel + move-to-day flows work end-to-end in the live production app (move today/future/remove, overdue + unscheduled review, migration of any legacy moved-tomorrow data), then update the ADR and mark the phase complete.
@@ -29,4 +31,4 @@
 
 ---
 
-**Last Updated:** 2026-08-02 (transit-trip-stop-accuracy)
+**Last Updated:** 2026-08-02 (aio-three-tab-redesign)

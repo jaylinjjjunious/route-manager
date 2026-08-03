@@ -13,12 +13,15 @@ The All in One 667 is designed **mobile-first** — the primary target is phone-
 
 ## Bottom Navigation
 
-The floating pill bottom nav is present on **all screen sizes**:
+The floating rounded bottom nav (Today / Jobs / More) is present on **all screen sizes**:
 
 - Fixed to the bottom of the viewport
 - Centered horizontally
 - Same size and behavior on mobile and desktop
 - Not affected by viewport width changes
+- On larger screens (`sm+`) it is constrained to a max-width pill rather than full width
+
+The AIØ Today screen is verified headlessly via `scripts/screenshot-today.mjs` at 320/390/430 px widths in dark and light, with no horizontal overflow at any width (decorative ambient orbs are clipped by `.ambient-root`'s `overflow: clip`).
 
 ---
 
