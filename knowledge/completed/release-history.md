@@ -4,6 +4,7 @@
 
 | SHA | Description |
 |-----|-------------|
+| eb11679 | Add self-hosted error reporting and camera/upload test coverage |
 | bc38fd6 | Smart Aisle photo review, removable thumbnails, recalculation, quality gate, and level guide |
 | fb7027d | Smart Aisle real-device verification route, PWA manifest/service worker, and build-info endpoint |
 | 19df97a | Smart Aisle hold burst state machine with separate Reached End stitching |
