@@ -65,6 +65,8 @@ import JobsScreen from './components/aio/JobsScreen';
 import MoreScreen from './components/aio/MoreScreen';
 import { BottomTabBar } from './components/aio/primitives';
 import { getPreviewGuide } from './features/previewGuide/storage';
+import PreviewGuideModal from './features/previewGuide/PreviewGuideModal';
+import { getPreviewGuideReadiness } from './components/aio/roadReadiness';
 import { TransitToolsPanel } from './components/transit/TransitToolsPanel';
 import { TransitStatusCard } from './components/transit/TransitStatusCard';
 import type { TravelMode } from './types';
@@ -573,6 +575,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const [isTestLabOpen, setIsTestLabOpen] = useState(false);
   const [routeFilter, setRouteFilter] = useState<RouteFilterType>('today');
   const [routeDetailJobId, setRouteDetailJobId] = useState<string | null>(null);
+  const [previewGuideJobId, setPreviewGuideJobId] = useState<string | null>(null);
   const [inventoryJobId, setInventoryJobId] = useState<string | null>(null);
   const [inventoryDomain, setInventoryDomain] = useState<'merchandising' | 'contract_parts'>('merchandising');
   const [editingJob, setEditingJob] = useState<Job | null>(null);
@@ -2726,6 +2729,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const proofRecords = (Object.values(proofVault) as ProofRecord[]).sort((a, b) => new Date(b.completionTime).getTime() - new Date(a.completionTime).getTime());
   const selectedProofRecord = selectedProofJobId ? proofVault[selectedProofJobId] : null;
   const routeDetailJob = routeDetailJobId ? jobs.find(job => job.id === routeDetailJobId) || null : null;
+  const previewGuideJob = previewGuideJobId ? jobs.find(job => job.id === previewGuideJobId) || null : null;
   const inventoryJobs = jobs.filter(job => getInventoryDomain(job) === inventoryDomain);
   const inventoryJob = inventoryJobs.find(job => job.id === inventoryJobId) || inventoryJobs.find(job => job.routeId === 'A') || inventoryJobs[0] || null;
   const getRouteStopNavLink = (job: Job, idx: number) => {
@@ -2763,7 +2767,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const currentJob = todayRouteJobs.find(job => job.status === 'under_review') || null;
   const hasCurrentJob = Boolean(currentJob);
   const nextJob = hasCurrentJob ? null : nextRouteAJob;
-  const previewGuideReady = Boolean(nextRouteAJob && getPreviewGuide(nextRouteAJob.id)?.status === 'ready');
+  const previewGuideReadiness = getPreviewGuideReadiness(nextRouteAJob ? getPreviewGuide(nextRouteAJob.id) : null);
   const userName = user?.email?.split('@')[0] || undefined;
   const handleToggleJobProgress = (job: Job) => {
     if (job.status === 'under_review') handleToggleComplete(job.id);
@@ -2959,14 +2963,15 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                 onToggleJobProgress={handleToggleJobProgress}
                 onOpenJob={(job) => setRouteDetailJobId(job.id)}
                 onStartRideMode={handleStartRideMode}
-                rideModeReady={showerGateAccessReady}
+                actionableJob={nextRouteAJob}
+                onOpenPreviewGuide={(job) => setPreviewGuideJobId(job.id)}
                 transit={transit}
                 transitOrigin={transitOrigin}
                 onSpeakRoute={handleSpeakRoute}
                 isSpeaking={isSpeaking}
                 onOptimizeRoute={handleOptimizeRouteSequence}
                 onAddJob={handleOpenAddModal}
-                previewGuideReady={previewGuideReady}
+                previewGuideReadiness={previewGuideReadiness}
                 weeklyDays={weeklyDays}
                 today={today}
                 selectedStripDate={selectedStripDate}
@@ -5352,6 +5357,22 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
               transitOrigin={{ latitude: origin.lat, longitude: origin.lng }}
               onMoveToDay={setMoveToDayJob}
               onClose={() => setRouteDetailJobId(null)}
+            />
+          );
+        })()}
+
+        {previewGuideJob && (() => {
+          const routeIndex = routeAJobs.findIndex(job => job.id === previewGuideJob.id);
+          const previousStop = routeIndex <= 0 ? null : routeAJobs[routeIndex - 1];
+          const origin = previousStop?.coordinates || startCoord;
+          const navLink = `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${previewGuideJob.coordinates.lat},${previewGuideJob.coordinates.lng}&travelmode=${travelMode}`;
+
+          return (
+            <PreviewGuideModal
+              job={previewGuideJob}
+              navLink={navLink}
+              transitOrigin={{ latitude: origin.lat, longitude: origin.lng }}
+              onClose={() => setPreviewGuideJobId(null)}
             />
           );
         })()}

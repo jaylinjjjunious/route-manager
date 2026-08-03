@@ -56,6 +56,11 @@ describe('per-job metadata persistence and migration guards', () => {
     expect(getPreviewGuide('job-1')).toMatchObject({ status: 'empty', stage: 'no_preview' });
   });
 
+  it('preserves a failed guide so Road Readiness can block Ride Mode', () => {
+    savePreviewGuide({ ...guide('job-1'), status: 'failed', pages: [], pageIds: [] });
+    expect(getPreviewGuide('job-1')).toMatchObject({ status: 'failed', stage: 'no_preview' });
+  });
+
   it('does not allow unreviewed summaries to enter preparation', () => {
     savePreviewGuide({ ...guide('job-1'), stage: 'preparation', summary: { beforeYouGo: [], whatYouWillDo: [], proofRequirements: [], warnings: [], referenceTopics: [], uncertainItems: [], sourcePageIds: ['page-1'], generatedAt: '2026-08-02T00:00:00.000Z', reviewedByUser: false } });
     expect(getPreviewGuide('job-1')?.stage).toBe('summary_review');

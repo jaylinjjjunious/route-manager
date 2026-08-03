@@ -154,7 +154,7 @@ The Phase One implementation improved structure, but the first review identified
 
 These are review notes, not permission to change all of those areas at once.
 
-## Active Review: Road Readiness Panel
+## Implemented: Road Readiness Panel
 
 ### Official name
 
@@ -198,6 +198,14 @@ The panel should answer, at a glance:
 - Improve text contrast.
 - Remove contradictory readiness messaging.
 - Keep secondary actions visually secondary.
+- Preview Guide review is mandatory for every actionable job before Ride Mode can start.
+- An unreviewed Preview Guide produces `NEEDS ATTENTION`, makes `Review Preview Guide` the primary action, and opens that job's Preview Guide directly.
+- An unavailable Preview Guide produces `BLOCKED` and disables Ride Mode.
+- A reviewed Preview Guide makes `Start Ride Mode` the primary action.
+- Wind mapping is exact: `none`, `calm`, and `tailwind` add no warning; `headwind_light` produces `NEEDS ATTENTION` and requires one confirmation before Ride Mode; `headwind_strong` produces `BLOCKED` and disables Ride Mode.
+- Status priority is `BLOCKED`, then `NEEDS ATTENTION`, then `READY`.
+- Battery stays visible but does not affect Road Readiness status or Ride Mode eligibility in this pass.
+- Shower Gate state is not part of the Road Readiness calculation.
 
 ### Current implementation inputs
 
@@ -209,32 +217,26 @@ The existing panel uses:
 - `batteryPct`
 - `batteryMilesLeft`
 - `batteryRisk`
-- `previewGuideReady`
-- `rideModeReady`
+- `actionableJob`
+- `previewGuideReadiness`
 - `onStartRideMode`
+- `onOpenPreviewGuide`
 
 ### Current implementation structure
 
-The existing Today screen renders:
+The Today screen renders:
 
-- readiness headline and status chip
+- a derived `READY`, `NEEDS ATTENTION`, `BLOCKED`, or no-actionable-work status and explanation
 - wind pill
 - battery/range pill
-- Start Ride Mode button
+- Review Preview Guide or Start Ride Mode as the state-driven primary action
+- an inline one-confirmation step for light headwind
 - Preview Guide checklist row
 - battery checklist row
 
 The panel is currently located at the top of `TodayScreen.tsx`, before the Next Best Job / Current Job section.
 
-### Still open for review
-
-- Exact status-state rules for `Ready`, `Needs Attention`, and `Blocked`
-- Whether incomplete Preview Guide should prevent a `Ready` state
-- Exact placement of the compact Start Ride Mode action
-- Final padding, radius, typography, glow, and button treatment
-- Weather presentation: pill only versus future readiness-row integration
-
-Do not implement unreviewed choices as if they are locked.
+The state derivation is isolated in `src/components/aio/roadReadiness.ts` and covered by `tests/roadReadiness.test.ts`. Final visual refinement beyond the state-driven status/action changes remains a separate review decision.
 
 ## Phase Two Planned Direction
 
@@ -370,6 +372,17 @@ Decision:
 - Make it shorter and compact.
 - Use the approved black-and-purple visual language rather than the large bright-blue treatment.
 
+### 2026-08-03 — Road Readiness state and action rules
+
+Decision:
+
+- Preview Guide review is mandatory for every actionable job.
+- Preview unavailable and strong headwind are blocking conditions.
+- Preview unreviewed and light headwind require attention.
+- Light headwind requires one confirmation before Ride Mode.
+- Battery is informational only for this state calculation, and Shower Gate is excluded from it.
+- Apply state priority in the order `BLOCKED`, `NEEDS ATTENTION`, `READY`.
+
 ### 2026-08-03 — Handoff system
 
 Decision:
@@ -380,16 +393,7 @@ Decision:
 
 ## Current Next Step
 
-Continue the Road Readiness Panel review before implementation.
-
-The next useful decision is the panel's exact readiness-state logic:
-
-- What conditions produce `Ready`?
-- What conditions produce `Needs Attention`?
-- What conditions produce `Blocked`?
-- Does an unavailable Preview Guide count as incomplete, neutral, or blocking?
-
-Do not move to another panel until this review is complete or the user explicitly changes focus.
+Validate the implemented Road Readiness interaction locally and in the signed-in user-visible app. Do not move to another panel until the user explicitly changes focus.
 
 ## Maintenance Rule
 

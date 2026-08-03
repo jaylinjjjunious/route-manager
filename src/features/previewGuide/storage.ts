@@ -34,7 +34,7 @@ export function getPreviewGuide(jobId: string): JobPreviewGuide | null {
   const guide = readAll()[jobId];
   if (!guide) return null;
   if (!Array.isArray(guide.pages) || guide.pages.length === 0) {
-    return { ...guide, status: 'empty', stage: 'no_preview', pageIds: [], pages: [] };
+    return { ...guide, status: guide.status === 'failed' ? 'failed' : 'empty', stage: 'no_preview', pageIds: [], pages: [] };
   }
   if (guide.summary?.reviewedByUser !== true && ['preparation', 'ready_to_travel', 'travel_planning', 'traveling'].includes(guide.stage)) {
     return { ...guide, stage: 'summary_review' };

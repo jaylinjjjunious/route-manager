@@ -38,6 +38,10 @@ Get Ready is generated only from the reviewed `beforeYouGo` requirements. Photo-
 
 After preparation is committed, the user must explicitly choose **I'm Ready — Plan My Trip**. The destination, nav link, origin, and Transit planner come from the existing selected job and `JobTransitSection`; there is no second route engine. Navigation failure does not clear preparation. Arrival is a manual **I'm at the Store** action that persists time and exposes the first reviewed on-site task, Original Preview, and Job Details.
 
+## Road Readiness integration
+
+Every actionable job requires a user-reviewed Preview Guide before Ride Mode can start. The Today screen opens the actionable job's Preview Guide directly when review is incomplete. An unreviewed guide produces `NEEDS ATTENTION`; a failed/unavailable guide produces `BLOCKED`. Extracted pages alone are not sufficient—the saved summary must have `reviewedByUser: true`.
+
 ## State and storage
 
 `JobPreviewGuide` is stored separately from `Job`. Stages cover no preview, processing, summary selection/review, preparation, travel planning/travel, arrival, and job guide. Load-time guards repair ready-without-pages and block preparation from an unreviewed summary. Each guide and media record carries `jobId`; deletion enumerates only that guide's media.
@@ -78,4 +82,4 @@ Missing/unsupported/oversized/unreadable video, excessive duration, storage pres
 
 ## Last updated
 
-2026-08-02
+2026-08-03 (Road Readiness integration)

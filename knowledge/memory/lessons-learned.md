@@ -32,6 +32,7 @@
 
 ## Application Logic
 
+- A Preview Guide's storage `status: 'ready'` can mean extracted pages are ready; user readiness must instead require `summary.reviewedByUser === true`.
 - Shower gate cycle boundary at exactly 6:00:00 requires careful comparison — use `< boundary`, not `<=`.
 - Bottom navigation on mobile needs `overflow-x-auto` for small screens to prevent tab overflow.
 - Focus trapping improves accessibility for modal-like components.
@@ -67,4 +68,4 @@
 
 ---
 
-**Last Updated:** 2026-08-03 (error-reporting)
+**Last Updated:** 2026-08-03 (Road Readiness rules)

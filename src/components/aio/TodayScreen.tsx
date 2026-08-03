@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
   ChevronRight,
@@ -15,6 +15,7 @@ import {
   Zap,
   AlertTriangle,
   Bike,
+  BookOpen,
 } from "lucide-react";
 import type { Job, Coordinates } from "../../types";
 import type { ScheduledDaySummary } from "../../utils/jobSchedule";
@@ -34,6 +35,10 @@ import {
 import { formatLeaveByTime, deadlineComparison } from "../../services/transit/leaveBy";
 import { getTransitMapsUrls } from "../../services/transit/mapsLinks";
 import { ExpandedDayPanel } from "../ExpandedDayPanel";
+import {
+  evaluateRoadReadiness,
+  type PreviewGuideReadiness,
+} from "./roadReadiness";
 
 const WEATHER_WIND_LABELS: Record<string, string> = {
   none: "Wind data off",
@@ -68,7 +73,8 @@ export interface TodayScreenProps {
   onToggleJobProgress: (job: Job) => void;
   onOpenJob: (job: Job) => void;
   onStartRideMode: () => void;
-  rideModeReady: boolean;
+  actionableJob: Job | null;
+  onOpenPreviewGuide: (job: Job) => void;
 
   transit: UseTransitTripResult;
   transitOrigin: { latitude: number; longitude: number };
@@ -78,7 +84,7 @@ export interface TodayScreenProps {
   onOptimizeRoute: () => void;
   onAddJob: () => void;
 
-  previewGuideReady: boolean;
+  previewGuideReadiness: PreviewGuideReadiness;
 
   weeklyDays: ScheduledDaySummary[];
   today: string;
@@ -142,6 +148,37 @@ export default function TodayScreen(props: TodayScreenProps) {
   const mapsUrl = transit.trip
     ? getTransitMapsUrls(transit.trip).full
     : props.nextStopNavLink;
+  const readiness = evaluateRoadReadiness({
+    hasActionableJob: props.actionableJob !== null,
+    previewGuide: props.previewGuideReadiness,
+    weatherWind: props.weatherWind,
+  });
+  const [confirmLightHeadwind, setConfirmLightHeadwind] = useState(false);
+
+  useEffect(() => {
+    setConfirmLightHeadwind(false);
+  }, [props.actionableJob?.id, props.weatherWind, props.previewGuideReadiness]);
+
+  const statusLabel = readiness.status === "needs_attention"
+    ? "Needs Attention"
+    : readiness.status === "blocked"
+      ? "Blocked"
+      : readiness.status === "done"
+        ? "Done"
+        : "Ready";
+  const StatusIcon = readiness.status === "ready" || readiness.status === "done" ? CheckCircle2 : AlertTriangle;
+  const handleReadinessAction = () => {
+    if (readiness.primaryAction === "review_preview_guide" && props.actionableJob) {
+      props.onOpenPreviewGuide(props.actionableJob);
+      return;
+    }
+    if (readiness.primaryAction !== "start_ride_mode" || !readiness.rideModeAllowed) return;
+    if (readiness.requiresWeatherConfirmation) {
+      setConfirmLightHeadwind(true);
+      return;
+    }
+    props.onStartRideMode();
+  };
 
   return (
     <div className="space-y-5" id="tab-view-today">
@@ -151,15 +188,17 @@ export default function TodayScreen(props: TodayScreenProps) {
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-white/80">
-                {hasCurrentJob ? "Current job in progress" : props.nextJob ? "Ready for the road" : "Route clear"}
+                Road Readiness
               </p>
               <h2 className="mt-1 text-[28px] font-black leading-none tracking-[-0.02em]">
-                {hasCurrentJob ? "Stay focused on your current stop." : props.nextJob ? "Everything's set for your next stop." : "No jobs left today. Nice work."}
+                {readiness.message}
               </h2>
             </div>
-            <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-[12px] font-black uppercase tracking-wide backdrop-blur-sm">
-              <CheckCircle2 size={14} />
-              {props.nextJob || hasCurrentJob ? "Ready" : "Done"}
+            <span className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-black uppercase tracking-wide backdrop-blur-sm ${
+              readiness.status === "blocked" ? "bg-rose-500/25" : readiness.status === "needs_attention" ? "bg-amber-400/25" : "bg-white/20"
+            }`}>
+              <StatusIcon size={14} />
+              {statusLabel}
             </span>
           </div>
 
@@ -174,20 +213,44 @@ export default function TodayScreen(props: TodayScreenProps) {
             </span>
             <button
               type="button"
-              onClick={props.onStartRideMode}
-              disabled={!props.rideModeReady}
+              onClick={handleReadinessAction}
+              disabled={readiness.primaryAction === "none" || (readiness.primaryAction === "start_ride_mode" && !readiness.rideModeAllowed)}
               className="ml-auto inline-flex min-h-12 items-center gap-2 rounded-[16px] bg-white px-4 py-3 text-[15px] font-black text-[#0A84FF] transition-transform active:scale-[0.98] disabled:opacity-40"
             >
-              <Bike size={20} strokeWidth={2.4} />
-              Start Ride Mode
+              {readiness.primaryAction === "review_preview_guide"
+                ? <BookOpen size={20} strokeWidth={2.4} />
+                : <Bike size={20} strokeWidth={2.4} />}
+              {readiness.primaryAction === "review_preview_guide"
+                ? "Review Preview Guide"
+                : readiness.primaryAction === "none"
+                  ? "Preview Guide Unavailable"
+                  : "Start Ride Mode"}
             </button>
           </div>
 
+          {confirmLightHeadwind && (
+            <div className="mt-3 rounded-[16px] border border-amber-200/30 bg-black/25 p-3" role="alert">
+              <p className="text-[13px] font-bold">Light headwind is active. Confirm once to start Ride Mode.</p>
+              <div className="mt-2 flex gap-2">
+                <button type="button" onClick={() => setConfirmLightHeadwind(false)} className="min-h-11 flex-1 rounded-xl border border-white/25 px-3 text-sm font-bold">
+                  Cancel
+                </button>
+                <button type="button" onClick={props.onStartRideMode} className="min-h-11 flex-1 rounded-xl bg-white px-3 text-sm font-black text-[#0A84FF]">
+                  Confirm &amp; Start
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="mt-5 border-t border-white/20 pt-4">
             <ChecklistRow
-              checked={props.previewGuideReady}
+              checked={props.previewGuideReadiness === "reviewed"}
               label="Preview guide ready"
-              detail={props.previewGuideReady ? "Screen preview reviewed for next stop" : "No preview guide for next stop yet"}
+              detail={props.previewGuideReadiness === "reviewed"
+                ? "Preview Guide reviewed for the next actionable job"
+                : props.previewGuideReadiness === "unavailable"
+                  ? "Preview Guide is unavailable"
+                  : "Review is required before Ride Mode"}
             />
             <ChecklistRow
               checked={batteryPct >= 15}
