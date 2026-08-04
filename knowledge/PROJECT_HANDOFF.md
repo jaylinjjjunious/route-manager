@@ -459,9 +459,18 @@ Decision:
 - The weather icon in Travel Plan and any square that does not identify a job keeps its generic appearance.
 - `StoreLogo` gained a `size` prop (`md`/`lg`); the registry gained `family-dollar` (assets added on origin/main), bringing it to nine registered stores.
 
+### 2026-08-04 — Shared store-logo system on the Jobs page
+
+Decision:
+
+- The shared store-logo system now applies to every job identity square on the **Jobs page** as well as the Today screen: the `JobsScreen` `CompactJobRow` lists (Today, later days, and Route B Standby) pass `iconSlot={<StoreLogo job={job} />}`.
+- Existing saved jobs update automatically at render time via the same resolver (stable companyId first, then normalized store/company/title text); no stored job is migrated or mutated. Future matching jobs show the logo automatically.
+- Visual rules preserved: row/card heights, spacing, rounded corners, text, badges, buttons, prices, and behavior unchanged; logos render `object-contain` on the existing `h-11 w-11 rounded-[14px]` neutral square; unknown stores and failed image loads fall back to the generic icon. Non-job icons are unchanged.
+- The overdue/unscheduled attention card rows have no job identity square and are unchanged.
+
 ## Current Next Step
 
-Validate the shared store-logo system locally (320px, 390px, 430px, dark and light mode): Next Best Job / Current Job identity square, Today's Other Jobs rows, matching and non-matching jobs including Family Dollar. Do not move to another panel until the user explicitly changes focus.
+Validate the shared store-logo system locally (320px, 390px, 430px, dark and light mode): Next Best Job / Current Job identity square, Today's Other Jobs rows, and Jobs page rows (Today, later days, Route B Standby), matching and non-matching jobs including Family Dollar. Do not move to another panel until the user explicitly changes focus.
 
 ## Maintenance Rule
 

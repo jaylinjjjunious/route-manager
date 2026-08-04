@@ -66,6 +66,27 @@ Each entry must include a **code locator** so a CLI agent can jump directly to t
 - **Focused tests:** `tests/storeLogos.test.ts`
 - **CLI instruction:** Start in `src/components/aio/TodayScreen.tsx`, locate the comment `/* 4. Today's Other Jobs */`, and edit only that section plus the store-logo module (`src/services/storeLogos.ts`), the `StoreLogo` component (`src/components/aio/StoreLogo.tsx`), and the `CompactJobRow` `iconSlot` hook. Do not modify the Road Readiness Panel, Next Best Job / Current Job Panel, Travel Plan, This Week, bottom navigation, the floating assistant controls, stored job data, or unrelated shared styles. New stores are added to the registry, not hard-coded in the row render.
 
+## Jobs Screen
+
+### Jobs Page
+
+- **Location in UI:** The second tab of the AIØ bottom navigation (`Jobs`). Rendered via `JobsScreen`; the page is anchored by `<div className="space-y-5" id="tab-view-jobs">`.
+- **Purpose:** Lists the user's scheduled jobs: an overdue/unscheduled attention card, the `Today` list, one section per later scheduled day, and a `Route B Standby` section. Every list uses `CompactJobRow` rows that open the job details on tap.
+- **Current review status:** No layout, row height, spacing, text, badges, buttons, prices, filters, search, sorting, or scheduling behavior changed. This pass replaced each row's generic job icon square with the shared store-logo system so every job identity square on the Jobs page renders a matching store logo (`object-contain`, existing `h-11 w-11 rounded-[14px]` square, neutral logo background and border). Unknown stores and failed image loads keep the generic icon. The overdue/unscheduled attention rows have no job identity square and are unchanged.
+- **Primary code file:** `src/components/aio/JobsScreen.tsx`
+- **Primary component:** `JobsScreen`
+- **Nearest stable anchor:** the root `id="tab-view-jobs"`; sections are labeled `aria-label="Today's jobs"`, `aria-label={dayLabel(day.date)}` (per later day), and `aria-label="Route B standby"`. There is no comment marker in this file.
+- **Root element:** `<div className="space-y-5" id="tab-view-jobs">`
+- **Job-square locations:** the three `CompactJobRow` usages, each passing `iconSlot={<StoreLogo job={job} />}`:
+  - Today list: `props.todayJobs.map(...)` under `<section aria-label="Today's jobs">`
+  - Later days: `day.jobs.map(...)` inside the `laterDays` map (`props.weekDays.slice(1)` filtered to non-empty)
+  - Route B Standby: `props.routeBJobs.map(...)` under `<section aria-label="Route B standby">`
+- **Relevant inputs/state:** `today`, `todayJobs`, `weekDays` (`ScheduledDaySummary[]`), `routeBJobs`, `overdueJobs`, `unscheduledJobs`, `onOpenJob`, `onAddJob`, `onOptimizeRoute`, `onMoveToDay`; per-row `job.storeName`/`job.notes` resolved via the logo registry (stored jobs are never mutated)
+- **Shared store-logo files:** resolver/registry `src/services/storeLogos.ts`; renderer `src/components/aio/StoreLogo.tsx` (default `size="md"` used here) — the same system used by the Today screen's Next Best Job / Current Job and Today's Other Jobs panels; assets in `public/store-logos/*.svg`
+- **Related shared primitives:** `AioCard`, `AioSectionLabel`, `AioButton`, `CompactJobRow` (optional `iconSlot` prop) from `src/components/aio/primitives`
+- **Focused tests:** `tests/jobsScreenStoreLogo.test.ts`, `tests/storeLogos.test.ts`
+- **CLI instruction:** Start in `src/components/aio/JobsScreen.tsx`, locate the root `id="tab-view-jobs"`, and edit only the job-row squares (the three `CompactJobRow` `iconSlot` usages) plus the shared store-logo module and `StoreLogo` component. Do not modify the Today screen panels, Road Readiness, Travel Plan, job ranking or sorting, job status logic, filters, search, scheduling behavior, job details behavior, bottom navigation, the overdue/unscheduled attention card layout, or unrelated shared styles. New stores are added to the registry, not hard-coded in the row render.
+
 ## Naming Rules
 
 - Every major screen, panel, workflow, feature, and system receives one official name.

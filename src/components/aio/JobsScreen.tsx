@@ -3,6 +3,7 @@ import { AlertTriangle, CalendarDays, ChevronRight, Plus, Route as RouteIcon } f
 import type { Job } from "../../types";
 import type { ScheduledDaySummary } from "../../utils/jobSchedule";
 import { AioCard, AioSectionLabel, AioButton, CompactJobRow } from "./primitives";
+import { StoreLogo } from "./StoreLogo";
 
 export interface JobsScreenProps {
   today: string;
@@ -106,7 +107,7 @@ export default function JobsScreen(props: JobsScreenProps) {
           ) : (
             <div className="divide-y divide-[var(--color-aio-line)]">
               {props.todayJobs.map(job => (
-                <CompactJobRow key={job.id} job={job} onOpen={props.onOpenJob} />
+                <CompactJobRow key={job.id} job={job} onOpen={props.onOpenJob} iconSlot={<StoreLogo job={job} />} />
               ))}
             </div>
           )}
@@ -121,7 +122,7 @@ export default function JobsScreen(props: JobsScreenProps) {
           <AioCard className="mt-2.5 p-2">
             <div className="divide-y divide-[var(--color-aio-line)]">
               {day.jobs.map(job => (
-                <CompactJobRow key={job.id} job={job} onOpen={props.onOpenJob} />
+                <CompactJobRow key={job.id} job={job} onOpen={props.onOpenJob} iconSlot={<StoreLogo job={job} />} />
               ))}
             </div>
           </AioCard>
@@ -140,7 +141,7 @@ export default function JobsScreen(props: JobsScreenProps) {
           ) : (
             <div className="divide-y divide-[var(--color-aio-line)]">
               {props.routeBJobs.map(job => (
-                <CompactJobRow key={job.id} job={job} onOpen={props.onOpenJob} />
+                <CompactJobRow key={job.id} job={job} onOpen={props.onOpenJob} iconSlot={<StoreLogo job={job} />} />
               ))}
             </div>
           )}
