@@ -7,26 +7,28 @@ import {
 } from "../src/services/storeLogos";
 
 describe("store logo registry", () => {
-  it("registers all eight supported stores", () => {
+  it("registers all nine supported stores", () => {
     expect(STORE_LOGO_REGISTRY.map((entry) => entry.companyId)).toEqual([
       "foods-co",
       "sprouts",
       "bevmo",
       "walgreens",
       "dollar-general",
+      "family-dollar",
       "vons",
       "target",
       "albertsons",
     ]);
   });
 
-  it("maps logo paths for all eight registered stores", () => {
+  it("maps logo paths for all nine registered stores", () => {
     const expectedPaths: Record<string, string> = {
       "foods-co": "/store-logos/foods-co.svg",
       sprouts: "/store-logos/sprouts.svg",
       bevmo: "/store-logos/bevmo.svg",
       walgreens: "/store-logos/walgreens.svg",
       "dollar-general": "/store-logos/dollar-general.svg",
+      "family-dollar": "/store-logos/family-dollar.svg",
       vons: "/store-logos/vons.svg",
       target: "/store-logos/target.svg",
       albertsons: "/store-logos/albertsons.svg",
@@ -71,6 +73,11 @@ describe("resolveStoreLogo", () => {
       companyId: "dollar-general",
       logoPath: "/store-logos/dollar-general.svg",
     });
+    expect(resolveStoreLogo({ companyId: "family-dollar" })).toMatchObject({
+      companyId: "family-dollar",
+      displayName: "Family Dollar",
+      logoPath: "/store-logos/family-dollar.svg",
+    });
   });
 
   it("matches a normalized companyId", () => {
@@ -98,6 +105,30 @@ describe("resolveStoreLogo", () => {
     });
   });
 
+  it("resolves Family Dollar by companyId", () => {
+    expect(resolveStoreLogo({ companyId: "family-dollar" })).toMatchObject({
+      companyId: "family-dollar",
+    });
+    expect(resolveStoreLogo({ companyId: "Family-Dollar" })).toMatchObject({
+      companyId: "family-dollar",
+    });
+    expect(resolveStoreLogo({ companyId: "familydollar" })).toMatchObject({
+      companyId: "family-dollar",
+    });
+  });
+
+  it("resolves Family Dollar from names with store numbers or locations", () => {
+    expect(resolveStoreLogo({ texts: ["Family Dollar 2151 S Chester Ave"] })).toMatchObject({
+      companyId: "family-dollar",
+    });
+    expect(resolveStoreLogo({ texts: ["Family Dollar Store #5101"] })).toMatchObject({
+      companyId: "family-dollar",
+    });
+    expect(resolveStoreLogo({ texts: ["Family Dollar Store"] })).toMatchObject({
+      companyId: "family-dollar",
+    });
+  });
+
   it("resolves the remaining example titles", () => {
     expect(resolveStoreLogo({ texts: ["Dollar General - White Ln"] })).toMatchObject({
       companyId: "dollar-general",
@@ -120,6 +151,7 @@ describe("resolveStoreLogo", () => {
       "Target Store 1384",
       "Walgreens Pharmacy #1234",
       "Dollar General - White Ln",
+      "Family Dollar 2151 S Chester Ave",
       "Albertsons Rosedale",
       "Sprouts",
       "Foods Co",
@@ -131,6 +163,7 @@ describe("resolveStoreLogo", () => {
       "target",
       "walgreens",
       "dollar-general",
+      "family-dollar",
       "albertsons",
       "sprouts",
       "foods-co",
@@ -149,7 +182,7 @@ describe("resolveStoreLogo", () => {
 
   it("returns the fallback (null) for unknown companies", () => {
     expect(resolveStoreLogo({ texts: ["Tractor Supply / Buck Café Revisit"] })).toBeNull();
-    expect(resolveStoreLogo({ texts: ["Family Dollar 2151 S Chester Ave"] })).toBeNull();
+    expect(resolveStoreLogo({ texts: ["Smart & Final Grand"] })).toBeNull();
     expect(resolveStoreLogo({ texts: [""] })).toBeNull();
     expect(resolveStoreLogo({})).toBeNull();
     expect(resolveStoreLogo({ companyId: "unknown-store" })).toBeNull();

@@ -5,9 +5,10 @@
  * Store logo registry and resolver.
  *
  * Pure, deterministic matching used to swap generic job icon squares for
- * matching store logos in the Today's Other Jobs Panel. The registry is
- * structured so logo URLs can later be supplied by backend data without
- * changing the resolver contract.
+ * matching store logos across every job identity square on the Today screen,
+ * including the Next Best Job / Current Job Panel and Today's Other Jobs
+ * Panel. The registry is structured so logo URLs can later be supplied by
+ * backend data without changing the resolver contract.
  */
 
 export interface StoreLogoEntry {
@@ -56,6 +57,12 @@ export const STORE_LOGO_REGISTRY: readonly StoreLogoEntry[] = [
     displayName: "Dollar General",
     logoPath: "/store-logos/dollar-general.svg",
     aliases: ["dollar general market", "dg"],
+  },
+  {
+    companyId: "family-dollar",
+    displayName: "Family Dollar",
+    logoPath: "/store-logos/family-dollar.svg",
+    aliases: ["family dollar", "family dollar store"],
   },
   {
     companyId: "vons",

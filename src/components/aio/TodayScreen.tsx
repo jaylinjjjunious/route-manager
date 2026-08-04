@@ -24,7 +24,7 @@ import {
 import type { Job, Coordinates } from "../../types";
 import type { ScheduledDaySummary } from "../../utils/jobSchedule";
 import type { UseTransitTripResult } from "../../hooks/useTransitTrip";
-import { getStreetName, getJobTypeLabel, getJobIconMeta } from "./jobMeta";
+import { getStreetName, getJobTypeLabel } from "./jobMeta";
 import {
   AioCard,
   AioSectionLabel,
@@ -330,13 +330,10 @@ export default function TodayScreen(props: TodayScreenProps) {
           {hasCurrentJob ? "Current Job" : "Next Best Job"}
         </AioSectionLabel>
         <AioCard className="mt-2.5 p-5" gradient={hasCurrentJob}>
-          {primaryJob ? (() => {
-            const meta = getJobIconMeta(primaryJob);
-            const Icon = meta.icon;
-            return (
+          {primaryJob ? (
               <div>
                 <div className="flex items-start gap-4">
-                  <GradientIconTile icon={Icon} gradient={meta.gradient} size="lg" />
+                  <StoreLogo job={primaryJob} size="lg" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <StatusIndicator
@@ -418,8 +415,7 @@ export default function TodayScreen(props: TodayScreenProps) {
                   Job details <ChevronRight size={14} />
                 </button>
               </div>
-            );
-          })() : (
+          ) : (
             <div className="py-4 text-center">
               <p className="aio-heading text-[17px] font-black">Route clear</p>
               <p className="aio-caption mt-1">No actionable jobs for today.</p>
