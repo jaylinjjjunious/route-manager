@@ -45,6 +45,7 @@ import {
 import { useLiveWeather } from "../../services/weather/useLiveWeather";
 import { formatTempF } from "../../services/weather/currentWeather";
 import { PreviewGuideCompletionRow } from "./PreviewGuideCompletionRow";
+import { StoreLogo } from "./StoreLogo";
 
 const WEATHER_WIND_LABELS: Record<string, string> = {
   none: "Wind data off",
@@ -547,7 +548,7 @@ export default function TodayScreen(props: TodayScreenProps) {
           ) : (
             <div className="divide-y divide-[var(--color-aio-line)]">
               {otherJobs.map(job => (
-                <CompactJobRow key={job.id} job={job} onOpen={props.onOpenJob} />
+                <CompactJobRow key={job.id} job={job} onOpen={props.onOpenJob} iconSlot={<StoreLogo job={job} />} />
               ))}
             </div>
           )}

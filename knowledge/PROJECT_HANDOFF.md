@@ -262,6 +262,21 @@ Keep the entire panel layout, size, spacing, buttons, content, and behavior unch
 
 Road Readiness remains closed after its final polish except for the deferred route-aware battery feature, which stays informational until explicitly approved.
 
+## Implemented: Today's Other Jobs Panel (store-logo pass)
+
+### Official name
+
+**Today's Other Jobs Panel**
+
+### Approved logo behavior
+
+- Each row's generic job icon square is replaced by a matching store logo when the store is registered; otherwise the generic icon is preserved.
+- A reusable store-logo registry (`src/services/storeLogos.ts`) holds stable `companyId`, `displayName`, `logoPath`, and normalized aliases for `foods-co`, `sprouts`, `bevmo`, `walgreens`, `dollar-general`, `vons`, `target`, and `albertsons`.
+- Matching priority: (1) a stable `companyId`/`storeId` field when the job already has one; (2) the best available company/store/title text. Normalization strips case, punctuation, apostrophes, repeated spaces, store numbers, and filler words such as `revisit`, `revision`, `store`, and `pharmacy`, so titles like `Vons Revisit`, `Vons #203`, `Target Store 1384`, `Dollar General - White Ln`, `Albertsons Rosedale`, and `Walgreens Pharmacy #1234` all resolve to the right store.
+- Existing saved jobs resolve automatically at render time from their `storeName`/`notes`; no stored job is re-added, migrated, or mutated. Future jobs matching these stores get the logo automatically. No backend dependency in this pass, but the registry is structured so logo URLs can later come from backend data.
+- UI rules: the logo square keeps the existing `h-11 w-11 rounded-[14px]` dimensions, renders with `object-contain`, restrained `p-1.5` padding, and a neutral background that works for white-background and transparent logos in dark and light mode. Meaningful alt text uses the display name. A failed image load falls back to the current generic icon. Logos are never stretched, recolored, redrawn, or cropped.
+- Assets live in `public/store-logos/*.svg`; the logo renderer is `src/components/aio/StoreLogo.tsx`, and `CompactJobRow` gained an optional `iconSlot` prop (default rendering unchanged for other screens).
+
 ## Phase Two Planned Direction
 
 Phase Two is intended to build the Next Best Job recommendation engine after Phase One is complete and verified.
@@ -425,9 +440,18 @@ Decision:
 - Keep the panel layout, spacing, values, and logic unchanged; preserve dark and light mode.
 - Road Readiness remains closed after its final polish, except for the deferred route-aware battery feature which stays informational until explicitly approved.
 
+### 2026-08-04 — Today's Other Jobs store-logo behavior
+
+Decision:
+
+- Replace the generic job icon square with a matching store logo for the eight registered stores (`foods-co`, `sprouts`, `bevmo`, `walgreens`, `dollar-general`, `vons`, `target`, `albertsons`) using a reusable, deterministic registry and resolver.
+- Keep the panel layout, row height, square size, spacing, text, prices, badges, chevrons, and behavior unchanged; preserve dark and light mode.
+- Resolve from a stable companyId when present, otherwise from normalized company/store/title text; never migrate or mutate stored jobs; fall back to the generic icon when nothing matches or an image fails to load.
+- No backend dependency in this pass; the registry stays structured for later backend-supplied logo URLs.
+
 ## Current Next Step
 
-Validate the Next Best Job / Current Job Panel tile-contrast refinement locally (320px, 390px, 430px, dark and light mode). Do not move to another panel until the user explicitly changes focus.
+Validate the Today's Other Jobs Panel store-logo pass locally (320px, 390px, 430px, dark and light mode, matching and non-matching jobs). Do not move to another panel until the user explicitly changes focus.
 
 ## Maintenance Rule
 

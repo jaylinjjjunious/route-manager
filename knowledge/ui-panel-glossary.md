@@ -47,6 +47,25 @@ Each entry must include a **code locator** so a CLI agent can jump directly to t
 - **Focused tests:** no dedicated test file; covered indirectly by the general suite. Road Readiness state tests: `tests/roadReadiness.test.ts`, `tests/previewGuideCompletionRow.test.ts`
 - **CLI instruction:** Start in `src/components/aio/TodayScreen.tsx`, locate the comment `/* 2. Next Best Job / Current Job */`, and edit only that section plus the directly related `MetricItem` shared primitive. Do not modify the Road Readiness Panel, job recommendation logic, the job title or address layout, the Pay tile, the `Navigate` button, the `Under Review`/`Complete Job` button, the `Job details` action, Travel Plan, Other Jobs, This Week, the bottom navigation, the floating assistant controls, or unrelated shared styles.
 
+### Today's Other Jobs Panel
+
+- **Location in UI:** On the Today screen, below the Travel Plan panel and above This Week, under the section marker `/* 4. Today's Other Jobs */`.
+- **Purpose:** Lists today's remaining jobs (everything except the primary Next Best Job / Current Job card) as compact rows showing store name, address, price, and status badge, each opening the job details on tap. A revision-attention banner sits above the list when revisions need attention, and an empty state reads `Nothing else scheduled for today.`
+- **Current review status:** Panel layout, row height, square size, spacing, text, prices, status badges, chevrons, and behavior are unchanged. This pass replaces only the generic job icon square in each row with a matching store logo from the store-logo registry; jobs with no match keep the generic icon.
+- **Locked visual direction:** Each row's icon square keeps the existing `h-11 w-11 rounded-[14px]` dimensions and spacing. Matched logos render with `object-contain` (no cropping), restrained internal padding (`p-1.5`), and a neutral `--color-aio-surface-2` background with a subtle `--color-aio-line` border so white-background and transparent logos both read in dark and light mode. Logos are not stretched, recolored, redrawn, or cropped. Meaningful alt text uses the store display name. If no store matches or the logo image fails to load, the current generic `GradientIconTile` icon renders instead.
+- **Primary code file:** `src/components/aio/TodayScreen.tsx`
+- **Primary component:** `TodayScreen`
+- **Code section marker:** `/* 4. Today's Other Jobs */`
+- **Current root element:** `<section aria-label="Today's other jobs">`
+- **Primary card:** `AioCard className="mt-2.5 p-2"` containing a `divide-y divide-[var(--color-aio-line)]` list of `CompactJobRow`s
+- **Store logo registry:** `src/services/storeLogos.ts` (entries, `normalizeStoreText`, `normalizeCompanyId`, `resolveStoreLogo`)
+- **Store logo UI:** `src/components/aio/StoreLogo.tsx` (renders matched logo or falls back to the generic icon)
+- **Registered stores:** `foods-co`, `sprouts`, `bevmo`, `walgreens`, `dollar-general`, `vons`, `target`, `albertsons` (assets in `public/store-logos/*.svg`)
+- **Relevant inputs/state:** `otherJobs` (`remainingJobs` filtered to exclude `primaryJob`), `revisionAlerts`, `onOpenJob`, and per-row `job.storeName`/`job.notes` (resolved via the logo registry; stored jobs are never mutated)
+- **Related shared primitives:** `AioSectionLabel`, `AioCard`, `CompactJobRow` (optional `iconSlot` prop) from `src/components/aio/primitives`; `GradientIconTile` and `getJobIconMeta` used for the fallback
+- **Focused tests:** `tests/storeLogos.test.ts`
+- **CLI instruction:** Start in `src/components/aio/TodayScreen.tsx`, locate the comment `/* 4. Today's Other Jobs */`, and edit only that section plus the store-logo module (`src/services/storeLogos.ts`), the `StoreLogo` component (`src/components/aio/StoreLogo.tsx`), and the `CompactJobRow` `iconSlot` hook. Do not modify the Road Readiness Panel, Next Best Job / Current Job Panel, Travel Plan, This Week, bottom navigation, the floating assistant controls, stored job data, or unrelated shared styles. New stores are added to the registry, not hard-coded in the row render.
+
 ## Naming Rules
 
 - Every major screen, panel, workflow, feature, and system receives one official name.

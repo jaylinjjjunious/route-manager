@@ -235,11 +235,13 @@ export function CompactJobRow({
   onOpen,
   trailing,
   subtitle,
+  iconSlot,
 }: {
   job: Job;
   onOpen?: (job: Job) => void;
   trailing?: React.ReactNode;
   subtitle?: string;
+  iconSlot?: React.ReactNode;
 }) {
   const meta = getJobIconMeta(job);
   const Icon = meta.icon;
@@ -247,7 +249,7 @@ export function CompactJobRow({
   const badgeClass = getRouteBadgeClasses(job);
   const rowContent = (
     <span className="flex w-full items-center gap-3 py-2.5 text-left">
-      <GradientIconTile icon={Icon} gradient={meta.gradient} />
+      {iconSlot ?? <GradientIconTile icon={Icon} gradient={meta.gradient} />}
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">
           <span className="truncate text-[16px] font-bold leading-tight tracking-[-0.01em] text-[var(--color-aio-text)]">
