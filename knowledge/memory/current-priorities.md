@@ -6,6 +6,8 @@
   Worker routes so Worker deployments enforce the same authentication boundary
   as Express; track as P011.
 
+- Begin the next named Today-screen panel review after the Road Readiness Panel. The Road Readiness Panel is approved in production for the current phase; its route-aware battery readiness feature is explicitly deferred to a later, separately scoped pass.
+
 - Verify the AIØ three-tab redesign (Today/Jobs/More) in the live signed-in app on a real device: Road Readiness mandatory Preview Guide states, live-weather slot (day sun / night moon, temperature, condition, feels-like, and the offline/denied fallback), direct Review Preview Guide action, light-headwind confirmation, strong-headwind blocking, Next Best Job actions, Travel Plan, weekly strip + expanded day panel, Jobs schedule list, More hub navigation, and the jobs-count badge. Headless layout verification (320/390/430 px, dark/light, no overflow) is done via `scripts/screenshot-today.mjs`; the signed-in production pass remains.
 
 - Complete real iPhone Safari/Home Screen PWA verification of Preview Guide using a real slow-scroll recording, including codec decode, seek order, cancellation/recovery, storage pressure, camera preparation photo, explicit trip handoff, and arrival persistence.
@@ -31,8 +33,8 @@
 
 ## Low
 
-- None currently tracked. Self-hosted client error reporting (P006) shipped; only remaining observability gap is aggregation/alerting from the ephemeral `.local-error-reports/` store (see `roadmap/technical-debt.md`).
+- Implement the deferred route-aware battery readiness feature for the Road Readiness Panel. It should evaluate travel, navigation use, job duration, next-stop or charging needs, and a safety buffer before affecting readiness or Ride Mode eligibility.
 
 ---
 
-**Last Updated:** 2026-08-03 (Road Readiness live weather panel)
+**Last Updated:** 2026-08-03 (Road Readiness current phase approved; battery deferred)
