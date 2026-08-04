@@ -252,13 +252,13 @@ On the Today screen, directly below the Road Readiness Panel — the first job c
 
 ### Locked decision for this pass
 
-Keep the entire panel layout, size, spacing, buttons, content, and behavior unchanged. Only the contrast of the three existing square information tiles is refined so they no longer blend into the card:
+Keep the entire panel layout, size, spacing, buttons, content, and behavior unchanged. Only the contrast of the three existing square information tiles is refined so they no longer blend into the card. Approved direction: **neutral high-contrast metric tiles, not color-coded tiles**.
 
-- **Distance** — neutral slate/charcoal surface
-- **Ride** — muted purple surface
-- **Due** — muted warm amber surface
-
-Each tile keeps its square dimensions, positions, spacing, values, and logic; labels stay readable and values stay bright/high contrast; dark and light mode are both preserved; a subtle tinted border and tinted surface provide the differentiation. No bright warning red is introduced. Verified against 320px, 390px, and 430px for clipping/overlap. Full panel details and the exact edit boundary are in `knowledge/ui-panel-glossary.md`.
+- **Distance, Ride, Due** all share one consistent neutral dark surface, slightly lighter than the main card, with a clearer border and a subtle inner top highlight for depth.
+- Labels are brightened from dim gray to a muted white; values stay bold white.
+- No separate slate, purple, or amber backgrounds — the three tiles stay in the same neutral family and do not compete with each other.
+- The Due tile may carry only a subtle warm amber accent in its label, remaining on the same neutral surface.
+- No bright warning red is introduced. Dark and light mode are both preserved. Verified against 320px, 390px, and 430px for clipping/overlap. Full panel details and the exact edit boundary are in `knowledge/ui-panel-glossary.md`.
 
 Road Readiness remains closed after its final polish except for the deferred route-aware battery feature, which stays informational until explicitly approved.
 
@@ -415,11 +415,13 @@ Decision:
 - Maintain `ui-panel-glossary.md` as the official naming and code-location reference.
 - New chats should read both before making changes.
 
-### 2026-08-04 — Next Best Job / Current Job tile contrast refinement
+### 2026-08-04 — Next Best Job / Current Job metric tile contrast
 
 Decision:
 
-- Refine only the contrast of the three square information tiles (Distance = neutral slate/charcoal, Ride = muted purple, Due = muted warm amber) in the Next Best Job / Current Job Panel.
+- Refine the contrast of the three square information tiles (Distance, Ride, Due) so they no longer blend into the card.
+- Approved direction is **neutral high-contrast metric tiles, not color-coded tiles**: one consistent neutral dark surface slightly lighter than the main card, a clearer border, a subtle inner top highlight, brighter muted-white labels, and bold white values.
+- No separate slate, purple, or amber tile backgrounds. The Due tile may use only a subtle warm amber accent in its label and stays in the same neutral surface family.
 - Keep the panel layout, spacing, values, and logic unchanged; preserve dark and light mode.
 - Road Readiness remains closed after its final polish, except for the deferred route-aware battery feature which stays informational until explicitly approved.
 

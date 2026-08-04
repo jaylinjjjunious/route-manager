@@ -363,19 +363,19 @@ export default function TodayScreen(props: TodayScreenProps) {
                     label="Distance"
                     value={`${props.nextStopDistance.toFixed(1)} mi`}
                     labelClassName="text-slate-600 dark:text-slate-300"
-                    className="rounded-[16px] border border-black/5 bg-slate-200 px-3 py-2.5 dark:border-white/10 dark:bg-slate-800"
+                    className="rounded-[16px] border border-black/10 bg-[#ECECF2] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] dark:border-white/15 dark:bg-[#222329] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
                   />
                   <MetricItem
                     label="Ride"
                     value={`${props.nextStopRideMinutes} min`}
-                    labelClassName="text-[#7C3AED] dark:text-[#CDB4F5]"
-                    className="rounded-[16px] border border-aio-purple/25 bg-aio-purple/15 px-3 py-2.5 dark:border-aio-purple/35 dark:bg-aio-purple/20"
+                    labelClassName="text-slate-600 dark:text-slate-300"
+                    className="rounded-[16px] border border-black/10 bg-[#ECECF2] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] dark:border-white/15 dark:bg-[#222329] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
                   />
                   <MetricItem
                     label="Due"
                     value={dueLabel(primaryJob)}
-                    labelClassName="text-[#B45309] dark:text-[#F5C97B]"
-                    className="rounded-[16px] border border-aio-orange/25 bg-aio-orange/15 px-3 py-2.5 dark:border-aio-orange/30 dark:bg-aio-orange/15"
+                    labelClassName="text-amber-700 dark:text-[#F5C97B]"
+                    className="rounded-[16px] border border-black/10 bg-[#ECECF2] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] dark:border-white/15 dark:bg-[#222329] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
                   />
                 </div>
 
