@@ -113,11 +113,13 @@ export function MetricItem({
   value,
   tone = "default",
   className = "",
+  labelClassName = "",
 }: {
   label: React.ReactNode;
   value: React.ReactNode;
   tone?: "default" | "accent" | "success" | "warning" | "danger";
   className?: string;
+  labelClassName?: string;
 }) {
   const valueTone =
     tone === "accent"
@@ -131,7 +133,7 @@ export function MetricItem({
             : "text-[var(--color-aio-text)]";
   return (
     <div className={className}>
-      <p className="aio-label text-[12px] leading-tight">{label}</p>
+      <p className={`aio-label text-[12px] leading-tight ${labelClassName}`}>{label}</p>
       <p className={`mt-0.5 text-[19px] font-black leading-tight tracking-[-0.02em] ${valueTone}`}>{value}</p>
     </div>
   );

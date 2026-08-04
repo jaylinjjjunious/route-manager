@@ -240,6 +240,28 @@ The state derivation is isolated in `src/components/aio/roadReadiness.ts` and co
 
 Final panel polish adds a one-time, session-only completion confirmation when Preview Guide review changes from incomplete to complete: the row fills green, displays a white check and `Preview Guide reviewed`, announces through `aria-live`, then fades, collapses, and is removed. Already-reviewed ordinary renders do not replay it. Reduced-motion users receive the announcement and immediate row removal without decorative timing. The 320px header reflows vertically, 390px/430px retain the compact side-by-side layout, active panel controls use at least 44px height, and the battery placeholder remains informational. Signed-in real-device iPhone verification remains required.
 
+## Implemented: Next Best Job / Current Job Panel (refinement pass)
+
+### Official name
+
+**Next Best Job / Current Job Panel**
+
+### UI location
+
+On the Today screen, directly below the Road Readiness Panel — the first job card under `/* 2. Next Best Job / Current Job */` in `src/components/aio/TodayScreen.tsx`.
+
+### Locked decision for this pass
+
+Keep the entire panel layout, size, spacing, buttons, content, and behavior unchanged. Only the contrast of the three existing square information tiles is refined so they no longer blend into the card:
+
+- **Distance** — neutral slate/charcoal surface
+- **Ride** — muted purple surface
+- **Due** — muted warm amber surface
+
+Each tile keeps its square dimensions, positions, spacing, values, and logic; labels stay readable and values stay bright/high contrast; dark and light mode are both preserved; a subtle tinted border and tinted surface provide the differentiation. No bright warning red is introduced. Verified against 320px, 390px, and 430px for clipping/overlap. Full panel details and the exact edit boundary are in `knowledge/ui-panel-glossary.md`.
+
+Road Readiness remains closed after its final polish except for the deferred route-aware battery feature, which stays informational until explicitly approved.
+
 ## Phase Two Planned Direction
 
 Phase Two is intended to build the Next Best Job recommendation engine after Phase One is complete and verified.
@@ -393,9 +415,17 @@ Decision:
 - Maintain `ui-panel-glossary.md` as the official naming and code-location reference.
 - New chats should read both before making changes.
 
+### 2026-08-04 — Next Best Job / Current Job tile contrast refinement
+
+Decision:
+
+- Refine only the contrast of the three square information tiles (Distance = neutral slate/charcoal, Ride = muted purple, Due = muted warm amber) in the Next Best Job / Current Job Panel.
+- Keep the panel layout, spacing, values, and logic unchanged; preserve dark and light mode.
+- Road Readiness remains closed after its final polish, except for the deferred route-aware battery feature which stays informational until explicitly approved.
+
 ## Current Next Step
 
-Validate the implemented Road Readiness interaction locally and in the signed-in user-visible app. Do not move to another panel until the user explicitly changes focus.
+Validate the Next Best Job / Current Job Panel tile-contrast refinement locally (320px, 390px, 430px, dark and light mode). Do not move to another panel until the user explicitly changes focus.
 
 ## Maintenance Rule
 

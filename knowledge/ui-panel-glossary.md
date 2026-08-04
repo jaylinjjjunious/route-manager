@@ -30,6 +30,23 @@ Each entry must include a **code locator** so a CLI agent can jump directly to t
 - **CLI instruction:** Start in `src/components/aio/TodayScreen.tsx`, locate the comment `/* 1. Readiness + weather header */`, and edit only that section plus directly related shared styles or primitives required for this panel. Do not modify the Next Best Job, Travel Plan, Other Jobs, This Week, or bottom navigation sections unless the task explicitly names them.
 - **Deferred-work rule:** Do not reopen this panel during Phase Two or second-panel work unless a production defect is found. The only planned future feature expansion is the separately scoped battery-readiness pass.
 
+### Next Best Job / Current Job Panel
+
+- **Location in UI:** On the Today screen, directly below the Road Readiness Panel. It is the first job card rendered under the section marker `/* 2. Next Best Job / Current Job */`.
+- **Purpose:** Surfaces the single job the user should act on next — the in-progress `Current Job` when one is active, otherwise the `Next Best Job` — including the job's pay, the Distance / Ride / Due metric tiles, the primary action (`Navigate` when unlocked, otherwise `Locked`, plus `Under Review`/`Complete Job`), the `Job details` link, and the route-progress strip when the route is incomplete. A `Route clear` empty state offers `Add a job`.
+- **Current review status:** Card structure, pay tile, actions, and logic unchanged. This pass refines only the contrast of the three square information tiles (Distance, Ride, Due) so they no longer blend into the card surface.
+- **Locked visual direction:** Keep the entire panel layout, size, spacing, buttons, content, and behavior unchanged. Only the three square metric tiles get distinct but restrained surfaces within the dark black-and-purple language: **Distance** = neutral slate/charcoal, **Ride** = muted purple, **Due** = muted warm amber. Values stay bright and high contrast; labels stay clearly readable; dark and light mode both preserved. A subtle tinted border and tinted surface differentiate each tile. No bright warning red is used unless existing logic already signals late/overdue. No clipping or overlap at 320px, 390px, or 430px.
+- **Primary code file:** `src/components/aio/TodayScreen.tsx`
+- **Primary component:** `TodayScreen`
+- **Code section marker:** `/* 2. Next Best Job / Current Job */`
+- **Current root element:** `<section aria-label="Next job">`
+- **Primary card:** `AioCard className="mt-2.5 p-5" gradient={hasCurrentJob}`
+- **Metric tiles:** a `grid grid-cols-3 gap-2.5` of three `MetricItem` elements (labels `Distance`, `Ride`, `Due`) inside the job card
+- **Relevant inputs/state:** `primaryJob` (`currentJob || nextJob`), `hasCurrentJob`, `nextJob`, `currentJob`, `remainingJobs`, `nextStopDistance`, `nextStopRideMinutes`, `dueLabel(primaryJob)` (uses `job.dueTime`, else `Flex`), `nextStopNavLink`, `jobAccessLocked`, `completingJobIds`, `routeProgressPct`, `earningsAmount`/`earningsTitle`/`earningsFooter`, `completedJobsCount`, `routeTotalJobs`, `onToggleJobProgress`, `onOpenJob`, `onBlockJobAccess`, `onAddJob`
+- **Related shared primitives:** `AioCard`, `AioSectionLabel`, `GradientIconTile`, `StatusIndicator`, `MetricItem`, `AioButton` from `src/components/aio/primitives` (the `MetricItem` label-color override `labelClassName` was added for this panel)
+- **Focused tests:** no dedicated test file; covered indirectly by the general suite. Road Readiness state tests: `tests/roadReadiness.test.ts`, `tests/previewGuideCompletionRow.test.ts`
+- **CLI instruction:** Start in `src/components/aio/TodayScreen.tsx`, locate the comment `/* 2. Next Best Job / Current Job */`, and edit only that section plus the directly related `MetricItem` shared primitive. Do not modify the Road Readiness Panel, job recommendation logic, the job title or address layout, the Pay tile, the `Navigate` button, the `Under Review`/`Complete Job` button, the `Job details` action, Travel Plan, Other Jobs, This Week, the bottom navigation, the floating assistant controls, or unrelated shared styles.
+
 ## Naming Rules
 
 - Every major screen, panel, workflow, feature, and system receives one official name.
