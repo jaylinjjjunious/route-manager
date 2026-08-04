@@ -114,6 +114,22 @@ This order is the locked layout. Do not move a panel to a different position on 
 - **Focused tests:** `tests/jobsScreenStoreLogo.test.ts`, `tests/storeLogos.test.ts`
 - **CLI instruction:** Start in `src/components/aio/JobsScreen.tsx`, locate the root `id="tab-view-jobs"`, and edit only the job-row squares (the three `CompactJobRow` `iconSlot` usages) plus the shared store-logo module and `StoreLogo` component. Do not modify the Today screen panels, Road Readiness, Travel Plan, job ranking or sorting, job status logic, filters, search, scheduling behavior, job details behavior, bottom navigation, the overdue/unscheduled attention card layout, or unrelated shared styles. New stores are added to the registry, not hard-coded in the row render.
 
+## Job Details Mini Page
+
+- **Location in UI:** Full-screen bottom-sheet modal opened by tapping any job card/row on the Today screen (Next Best Job / Current Job Panel and Today's Other Jobs Panel) and the Jobs page rows. Mounted from `src/App.tsx` under the marker `{/* Job Detail Mini Page Modal */}` via `routeDetailJob` → `JobDetailModal`.
+- **Purpose:** Focused mini page for a single job: status badge, store identity square + store name + address, pay block, type/duration/deadline/scheduled tiles, Move-to-day, Preview Guide, transit-to-job, inventory custody, notes, quick status controls, status history, Smart Aisle Scan, admin actions, and a sticky Navigate footer.
+- **Current review status:** The frosted-glass treatment is approved and applied: the overlay is `bg-black/35` with `backdrop-blur-[6px]`, and the card is `bg-[#111214]/[0.80]` with `backdrop-blur-[14px]` and `border-white/[0.12]` (webkit variants included for iOS). The job identity square beside the store name now uses the shared store-logo system via `StoreLogo` at the default `md` size (`h-11 w-11 rounded-[14px]`, `object-contain`); unknown stores and failed image loads keep the existing generic `GradientIconTile` fallback. The status-toggle button (Hourglass for normal pending, blue `CheckSquare` for completed, indigo `CheckSquare` for under review) is unchanged and never contains the store logo. No stored job data is mutated.
+- **Primary code file:** `src/components/JobDetailModal.tsx`
+- **Primary component:** `JobDetailModal`
+- **Mount point:** `src/App.tsx` marker `{/* Job Detail Mini Page Modal */}` (`routeDetailJob` state, close via `setRouteDetailJobId(null)`)
+- **Job identity square locator:** in `JobDetailModal.tsx`, the title row `<div className="flex items-start gap-3">` under the comment `{/* Job title and pay - stacked on mobile */}` — the first child is `<StoreLogo job={job} />` (md), followed by the status-toggle button, then the store name/address block.
+- **Approved glass treatment:** overlay `bg-black/35 backdrop-blur-[6px]`; card `bg-[#111214]/[0.80] backdrop-blur-[14px] border-white/[0.12]`.
+- **Status-toggle button behavior:** Hourglass for the normal pending state; existing `CheckSquare` states for completed (`text-blue-500`) and under_review (`text-indigo-500`); the store logo is never placed inside the status button.
+- **Shared store-logo files:** resolver/registry `src/services/storeLogos.ts`; renderer `src/components/aio/StoreLogo.tsx` (default `size="md"`); assets in `public/store-logos/*.svg` — the same system used by the Today screen and Jobs page. New stores are added to the registry, not hard-coded here.
+- **Relevant inputs/state:** `job`, `routeIndex`, `legDistance`, `rideMinutes`, `navLink`, `isOutlier`, `jobAccessLocked`, `onToggleComplete`, `onEdit`, `onDelete`, `onDuplicate`, `onToggleRoute`, `onUpdateStatus`, `onOpenScan`, `transitOrigin`, `onMoveToDay`, `onClose`; per-job `job.storeName`/`job.notes` resolved via the logo registry (stored jobs are never mutated)
+- **Focused tests:** `tests/jobDetailModalStoreLogo.test.ts`, `tests/storeLogos.test.ts`
+- **CLI instruction:** Start in `src/components/JobDetailModal.tsx`, locate the title row `<div className="flex items-start gap-3">`, and edit only that row plus the shared store-logo module/component and the approved glass classes on the modal overlay/card. Do not modify the store-logo registry or `public/store-logos/*.svg` assets, stored job data, the quick-status logic, or other screens/panels.
+
 ## Naming Rules
 
 - Every major screen, panel, workflow, feature, and system receives one official name.

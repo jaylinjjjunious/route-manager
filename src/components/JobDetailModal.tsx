@@ -19,6 +19,7 @@ import { formatScheduledDate, isValidScheduledDate } from '../utils/jobSchedule'
 import InventoryCustodyPanel from './InventoryCustodyPanel';
 import { JobTransitSection } from './transit/JobTransitSection';
 import { isTransitApiEnabled } from '../services/transit';
+import { StoreLogo } from './aio/StoreLogo';
 import PreviewGuideModal from '../features/previewGuide/PreviewGuideModal';
 
 const SCAN_COMPATIBLE_TYPES: JobType[] = ['retail_audit', 'mystery_shop', 'merchandising'];
@@ -191,7 +192,7 @@ export default function JobDetailModal({
 
   const modalContent = (
     <div
-      className={`fixed inset-0 z-[60] flex items-center justify-center bg-black/45 p-3 backdrop-blur-[10px] [-webkit-backdrop-filter:blur(10px)] transition-opacity duration-200 ease-out ${isOpen ? 'opacity-100' : 'opacity-0'}`}
+      className={`fixed inset-0 z-[60] flex items-center justify-center bg-black/35 p-3 backdrop-blur-[6px] [-webkit-backdrop-filter:blur(6px)] transition-opacity duration-200 ease-out ${isOpen ? 'opacity-100' : 'opacity-0'}`}
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
@@ -199,7 +200,7 @@ export default function JobDetailModal({
     >
       <div
         onClick={handlePanelClick}
-        className={`flex w-full max-w-[430px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#111214] shadow-2xl transition-all duration-200 ease-out ${isOpen ? 'scale-100 opacity-100' : 'scale-[0.97] opacity-0'}`}
+        className={`flex w-full max-w-[430px] flex-col overflow-hidden rounded-2xl border border-white/[0.12] bg-[#111214]/[0.80] shadow-2xl backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)] transition-all duration-200 ease-out ${isOpen ? 'scale-100 opacity-100' : 'scale-[0.97] opacity-0'}`}
         style={{ maxHeight: 'min(82dvh, 560px)' }}
       >
         {/* Compact sticky header */}
@@ -275,6 +276,7 @@ export default function JobDetailModal({
             {/* Job title and pay - stacked on mobile */}
             <div className="min-w-0">
               <div className="flex items-start gap-3">
+                <StoreLogo job={job} />
                 <button
                   onClick={() => handleQuickStatusChange(isDone ? 'ready' : job.status === 'under_review' ? 'completed' : 'under_review')}
                   disabled={jobAccessLocked && !isDone}

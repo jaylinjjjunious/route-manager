@@ -477,9 +477,19 @@ Decision:
 - Section-number comments in `src/components/aio/TodayScreen.tsx` were updated to match: Today's Other Jobs is now `/* 3. Today's Other Jobs */` and Travel Plan is now `/* 4. Travel Plan */`.
 - Travel Plan Panel was added to `knowledge/ui-panel-glossary.md` so both panels have a recorded UI location and section marker.
 
+### 2026-08-04 — Job Details Mini Page frosted glass + shared store logo
+
+Decision:
+
+- Apply the approved frosted-glass treatment to the **Job Details Mini Page** (`src/components/JobDetailModal.tsx`): overlay `bg-black/35` with `backdrop-blur-[6px]`; card `bg-[#111214]/[0.80]` with `backdrop-blur-[14px]` and `border-white/[0.12]` (webkit variants included for iOS).
+- The job identity square beside the store name uses the existing shared store-logo system (`src/services/storeLogos.ts` + `src/components/aio/StoreLogo.tsx` + `public/store-logos/*.svg`) at the default `md` size (`h-11 w-11 rounded-[14px]`, `object-contain`). Unknown stores and failed image loads keep the existing generic `GradientIconTile` fallback.
+- The status-toggle button keeps its existing icon behavior — Hourglass for the normal pending state, existing `CheckSquare` states for completed and under_review — and the store logo is never placed inside the status button.
+- No duplicate resolver or `StoreLogo` implementation was created; no Clearbit logo URLs or network-dependent logo fetching were introduced; stored job data is never mutated.
+- Registered stores are `foods-co`, `sprouts`, `bevmo`, `walgreens`, `dollar-general`, `family-dollar`, `vons`, `target`, `albertsons` (assets in `public/store-logos/*.svg`), unchanged.
+
 ## Current Next Step
 
-Validate the shared store-logo system locally (320px, 390px, 430px, dark and light mode): Next Best Job / Current Job identity square, Today's Other Jobs rows, and Jobs page rows (Today, later days, Route B Standby), matching and non-matching jobs including Family Dollar. Do not move to another panel until the user explicitly changes focus.
+Validate the shared store-logo system locally (320px, 390px, 430px, dark and light mode): the Job Details Mini Page identity square and status-toggle button, the Next Best Job / Current Job identity square, Today's Other Jobs rows, and Jobs page rows (Today, later days, Route B Standby), matching and non-matching jobs including Family Dollar. Do not move to another panel until the user explicitly changes focus.
 
 ## Maintenance Rule
 
