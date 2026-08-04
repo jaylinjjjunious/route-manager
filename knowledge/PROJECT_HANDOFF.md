@@ -236,7 +236,9 @@ The Today screen renders:
 
 The panel is currently located at the top of `TodayScreen.tsx`, before the Next Best Job / Current Job section.
 
-The state derivation is isolated in `src/components/aio/roadReadiness.ts` and covered by `tests/roadReadiness.test.ts`. Final visual refinement beyond the state-driven status/action changes remains a separate review decision.
+The state derivation is isolated in `src/components/aio/roadReadiness.ts` and covered by `tests/roadReadiness.test.ts`.
+
+Final panel polish adds a one-time, session-only completion confirmation when Preview Guide review changes from incomplete to complete: the row fills green, displays a white check and `Preview Guide reviewed`, announces through `aria-live`, then fades, collapses, and is removed. Already-reviewed ordinary renders do not replay it. Reduced-motion users receive the announcement and immediate row removal without decorative timing. The 320px header reflows vertically, 390px/430px retain the compact side-by-side layout, active panel controls use at least 44px height, and the battery placeholder remains informational. Signed-in real-device iPhone verification remains required.
 
 ## Phase Two Planned Direction
 

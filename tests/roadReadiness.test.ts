@@ -55,6 +55,13 @@ describe("Road Readiness rules", () => {
     });
   });
 
+  it("keeps battery informational and outside readiness evaluation", () => {
+    expect(evaluateRoadReadiness({ hasActionableJob: true, previewGuide: "reviewed", weatherWind: "calm" })).toMatchObject({
+      status: "ready",
+      rideModeAllowed: true,
+    });
+  });
+
   it("requires Preview Guide review before Ride Mode", () => {
     expect(evaluateRoadReadiness({ hasActionableJob: true, previewGuide: "not_reviewed", weatherWind: "calm" })).toMatchObject({
       status: "needs_attention",

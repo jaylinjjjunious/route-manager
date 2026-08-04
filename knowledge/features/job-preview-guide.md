@@ -42,6 +42,8 @@ After preparation is committed, the user must explicitly choose **I'm Ready — 
 
 Every actionable job requires a user-reviewed Preview Guide before Ride Mode can start. The Today screen opens the actionable job's Preview Guide directly when review is incomplete. Opening the guide alone does not mark it reviewed. Review completes only after the job's `what-youre-doing`, `questions-youll-answer`, `photos-and-proof`, `warnings`, and `how-to-complete` sections have all been viewed. An unreviewed guide produces `NEEDS ATTENTION`; a failed/unavailable guide produces `BLOCKED`. Extracted pages alone are not sufficient—the summary must have `reviewedByUser: true`.
 
+When an actionable job's review changes from incomplete to complete during the current UI session, the Road Readiness checklist row briefly changes to an explicit green-circle/white-check `Preview Guide reviewed` confirmation, announces completion through an `aria-live` region, then fades, collapses, and is removed. Loading an already-reviewed guide does not replay the feedback. With reduced motion enabled, the accessible completion announcement remains but the row is removed immediately without decorative timing. This feedback state is UI-only; persisted review completion remains owned by the Preview Guide record.
+
 ## State and storage
 
 `JobPreviewGuide` is stored separately from `Job`. Its metadata includes the viewed review-section IDs, persisted per job in the existing Preview Guide localStorage record. Completing all five required section IDs sets `reviewedByUser`; partial progress remains unreviewed and isolated from other jobs. Stages cover no preview, processing, summary selection/review, preparation, travel planning/travel, arrival, and job guide. Load-time guards repair ready-without-pages and block preparation from an unreviewed summary. Each guide and media record carries `jobId`; deletion enumerates only that guide's media.
@@ -82,4 +84,4 @@ Missing/unsupported/oversized/unreadable video, excessive duration, storage pres
 
 ## Last updated
 
-2026-08-03 (five-section review completion)
+2026-08-03 (Road Readiness completion feedback and reduced-motion behavior; real-device iPhone verification remains required)

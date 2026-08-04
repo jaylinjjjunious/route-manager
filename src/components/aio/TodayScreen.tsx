@@ -44,6 +44,7 @@ import {
 } from "./roadReadiness";
 import { useLiveWeather } from "../../services/weather/useLiveWeather";
 import { formatTempF } from "../../services/weather/currentWeather";
+import { PreviewGuideCompletionRow } from "./PreviewGuideCompletionRow";
 
 const WEATHER_WIND_LABELS: Record<string, string> = {
   none: "Wind data off",
@@ -214,7 +215,7 @@ export default function TodayScreen(props: TodayScreenProps) {
             className="pointer-events-none absolute -right-14 -top-20 h-56 w-56 rounded-full bg-[var(--color-aio-purple)] opacity-25 blur-3xl"
           />
 
-          <div className="relative flex items-start justify-between gap-3">
+          <div className="relative flex flex-col items-stretch justify-between gap-3 min-[390px]:flex-row min-[390px]:items-start">
             <div className="flex min-w-0 items-center gap-3">
               <span
                 className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-colors ${weatherTileClass}`}
@@ -226,19 +227,19 @@ export default function TodayScreen(props: TodayScreenProps) {
                 <p className="text-[26px] font-black leading-none tracking-[-0.02em] text-white">
                   {weatherTemp}
                 </p>
-                <p className="mt-1 truncate text-[13px] font-bold text-white/75">
+                <p className="mt-1 break-words text-[13px] font-bold leading-snug text-white/80">
                   {weatherCondition}
                 </p>
                 {weatherFeels && (
-                  <p className="mt-0.5 truncate text-[12px] font-semibold text-white/45">
+                  <p className="mt-0.5 break-words text-[12px] font-semibold text-white/65">
                     {weatherFeels}
                   </p>
                 )}
               </div>
             </div>
 
-            <div className="flex shrink-0 flex-col items-end gap-2">
-              <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-black uppercase tracking-wide backdrop-blur-sm ${
+            <div className="flex w-full shrink-0 flex-col items-stretch gap-2 min-[390px]:w-auto min-[390px]:items-end">
+              <span className={`inline-flex self-start items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-black uppercase tracking-wide backdrop-blur-sm min-[390px]:self-auto ${
                 readiness.status === "blocked" ? "bg-rose-500/25 text-rose-100" : readiness.status === "needs_attention" ? "bg-amber-400/25 text-amber-100" : "bg-white/15 text-white"
               }`}>
                 <StatusIcon size={13} />
@@ -248,7 +249,7 @@ export default function TodayScreen(props: TodayScreenProps) {
                 type="button"
                 onClick={handleReadinessAction}
                 disabled={readiness.primaryAction === "none" || (readiness.primaryAction === "start_ride_mode" && !readiness.rideModeAllowed)}
-                className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-[13px] font-black text-[#4C1D95] transition-transform active:scale-[0.97] disabled:opacity-40"
+                className="inline-flex min-h-11 w-full min-w-0 items-center justify-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-center text-[13px] font-black leading-tight text-[#4C1D95] transition-transform active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:opacity-40 min-[390px]:w-auto"
               >
                 {readiness.primaryAction === "review_preview_guide"
                   ? <BookOpen size={16} strokeWidth={2.4} aria-hidden="true" />
@@ -291,31 +292,11 @@ export default function TodayScreen(props: TodayScreenProps) {
             </div>
           )}
 
-          <div className="relative mt-3 space-y-2 border-t border-white/10 pt-3">
-            <div className="flex items-start gap-2.5">
-              <span
-                className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
-                  props.previewGuideReadiness === "reviewed"
-                    ? "border-white bg-white text-[#4C1D95]"
-                    : "border-white/40 text-transparent"
-                }`}
-                aria-hidden="true"
-              >
-                <Check size={12} strokeWidth={3} />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className={`text-[13px] font-bold ${props.previewGuideReadiness === "reviewed" ? "text-white/45" : "text-white/85"}`}>
-                  Preview guide ready
-                </p>
-                <p className="mt-0.5 text-[12px] font-medium text-white/45">
-                  {props.previewGuideReadiness === "reviewed"
-                    ? "Preview Guide reviewed for the next actionable job"
-                    : props.previewGuideReadiness === "unavailable"
-                      ? "Preview Guide is unavailable"
-                      : "Review is required before Ride Mode"}
-                </p>
-              </div>
-            </div>
+          <div className="relative mt-3 border-t border-white/10 pt-3">
+            <PreviewGuideCompletionRow
+              jobId={props.actionableJob?.id ?? null}
+              readiness={props.previewGuideReadiness}
+            />
             <div className="flex items-start gap-2.5">
               <span
                 className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
@@ -328,10 +309,10 @@ export default function TodayScreen(props: TodayScreenProps) {
                 <Check size={12} strokeWidth={3} />
               </span>
               <div className="min-w-0 flex-1">
-                <p className={`text-[13px] font-bold ${batteryPct >= 15 ? "text-white/45" : "text-white/85"}`}>
+                <p className={`break-words text-[13px] font-bold ${batteryPct >= 15 ? "text-white/70" : "text-white/90"}`}>
                   Battery above 15%
                 </p>
-                <p className="mt-0.5 text-[12px] font-medium text-white/45">
+                <p className="mt-0.5 break-words text-[12px] font-medium leading-snug text-white/65">
                   {batteryRisk === "High" ? "Charge before the next leg" : batteryPct >= 15 ? "Enough range for the route" : "Charge before riding"}
                 </p>
               </div>
