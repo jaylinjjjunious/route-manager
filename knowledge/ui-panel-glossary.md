@@ -8,6 +8,18 @@ Each entry must include a **code locator** so a CLI agent can jump directly to t
 
 ## Today Screen
 
+### Locked Today-screen order
+
+From top to bottom on the Today screen (`src/components/aio/TodayScreen.tsx`, in `#tab-view-today`):
+
+1. Road Readiness Panel — `/* 1. Readiness + weather header */`
+2. Next Best Job / Current Job Panel — `/* 2. Next Best Job / Current Job */`
+3. Today's Other Jobs Panel — `/* 3. Today's Other Jobs */`
+4. Travel Plan Panel — `/* 4. Travel Plan */`
+5. This Week — `/* 5. This Week */`
+
+This order is the locked layout. Do not move a panel to a different position on the Today screen without explicit approval.
+
 ### Road Readiness Panel
 
 - **Location in UI:** Top of the Today screen, directly below the AIØ header.
@@ -49,13 +61,13 @@ Each entry must include a **code locator** so a CLI agent can jump directly to t
 
 ### Today's Other Jobs Panel
 
-- **Location in UI:** On the Today screen, below the Travel Plan panel and above This Week, under the section marker `/* 4. Today's Other Jobs */`.
+- **Location in UI:** On the Today screen, directly below the Next Best Job / Current Job Panel and above the Travel Plan panel, under the section marker `/* 3. Today's Other Jobs */`.
 - **Purpose:** Lists today's remaining jobs (everything except the primary Next Best Job / Current Job card) as compact rows showing store name, address, price, and status badge, each opening the job details on tap. A revision-attention banner sits above the list when revisions need attention, and an empty state reads `Nothing else scheduled for today.`
 - **Current review status:** Panel layout, row height, square size, spacing, text, prices, status badges, chevrons, and behavior are unchanged. This pass replaced the generic job icon square in each row with a matching store logo from the store-logo registry; jobs with no match keep the generic icon. The store-logo system is shared across all job identity squares on the Today screen, including this panel and the Next Best Job / Current Job Panel.
 - **Locked visual direction:** Each row's icon square keeps the existing `h-11 w-11 rounded-[14px]` dimensions and spacing. Matched logos render with `object-contain` (no cropping), restrained internal padding (`p-1.5`), and a neutral `--color-aio-surface-2` background with a subtle `--color-aio-line` border so white-background and transparent logos both read in dark and light mode. Logos are not stretched, recolored, redrawn, or cropped. Meaningful alt text uses the store display name. If no store matches or the logo image fails to load, the current generic `GradientIconTile` icon renders instead. The Next Best Job / Current Job identity square uses the same renderer at `lg` size (`h-14 w-14 rounded-[18px]`).
 - **Primary code file:** `src/components/aio/TodayScreen.tsx`
 - **Primary component:** `TodayScreen`
-- **Code section marker:** `/* 4. Today's Other Jobs */`
+- **Code section marker:** `/* 3. Today's Other Jobs */`
 - **Current root element:** `<section aria-label="Today's other jobs">`
 - **Primary card:** `AioCard className="mt-2.5 p-2"` containing a `divide-y divide-[var(--color-aio-line)]` list of `CompactJobRow`s
 - **Store logo registry:** `src/services/storeLogos.ts` (entries, `normalizeStoreText`, `normalizeCompanyId`, `resolveStoreLogo`) — shared by every job identity square on the Today screen
@@ -64,7 +76,22 @@ Each entry must include a **code locator** so a CLI agent can jump directly to t
 - **Relevant inputs/state:** `otherJobs` (`remainingJobs` filtered to exclude `primaryJob`), `revisionAlerts`, `onOpenJob`, and per-row `job.storeName`/`job.notes` (resolved via the logo registry; stored jobs are never mutated)
 - **Related shared primitives:** `AioSectionLabel`, `AioCard`, `CompactJobRow` (optional `iconSlot` prop) from `src/components/aio/primitives`; `GradientIconTile` and `getJobIconMeta` used for the fallback
 - **Focused tests:** `tests/storeLogos.test.ts`
-- **CLI instruction:** Start in `src/components/aio/TodayScreen.tsx`, locate the comment `/* 4. Today's Other Jobs */`, and edit only that section plus the store-logo module (`src/services/storeLogos.ts`), the `StoreLogo` component (`src/components/aio/StoreLogo.tsx`), and the `CompactJobRow` `iconSlot` hook. Do not modify the Road Readiness Panel, Next Best Job / Current Job Panel, Travel Plan, This Week, bottom navigation, the floating assistant controls, stored job data, or unrelated shared styles. New stores are added to the registry, not hard-coded in the row render.
+- **CLI instruction:** Start in `src/components/aio/TodayScreen.tsx`, locate the comment `/* 3. Today's Other Jobs */`, and edit only that section plus the store-logo module (`src/services/storeLogos.ts`), the `StoreLogo` component (`src/components/aio/StoreLogo.tsx`), and the `CompactJobRow` `iconSlot` hook. Do not modify the Road Readiness Panel, Next Best Job / Current Job Panel, Travel Plan, This Week, bottom navigation, the floating assistant controls, stored job data, or unrelated shared styles. New stores are added to the registry, not hard-coded in the row render.
+
+### Travel Plan Panel
+
+- **Location in UI:** On the Today screen, directly below the Today's Other Jobs Panel and above This Week, under the section marker `/* 4. Travel Plan */`.
+- **Purpose:** Shows the travel plan for the primary job (Next Best Job / Current Job): estimated transit/bike duration, leave-by time to arrive on time, deadline urgency, and the Optimize Route / Open Route actions. A `Speak Route` / `Stop` button in the section header speaks the route aloud (`onSpeakRoute`). Without a primary job it shows the empty state `Add a job to see its travel plan.`
+- **Current review status:** Panel layout, content, spacing, route speech behavior, transit state handling, deadline styling, empty state, and actions are unchanged. This pass only moved the panel's position on the Today screen from directly below Next Best Job / Current Job (section 3) to directly below Today's Other Jobs (section 4).
+- **Primary code file:** `src/components/aio/TodayScreen.tsx`
+- **Primary component:** `TodayScreen`
+- **Code section marker:** `/* 4. Travel Plan */`
+- **Current root element:** `<section aria-label="Travel plan">`
+- **Primary card:** `AioCard className="mt-2.5 p-5"`
+- **Relevant inputs/state:** `primaryJob` (`currentJob || nextJob`), `transit` (`UseTransitTripResult`), `leaveBy` (`formatLeaveByTime`), `deadline` (`deadlineComparison`), `mapsUrl` (`getTransitMapsUrls` full link or `nextStopNavLink`), `nextStopRideMinutes`, `onSpeakRoute`, `isSpeaking`, `onOptimizeRoute`
+- **Related shared primitives:** `AioSectionLabel`, `AioCard`, `AioButton`, `GradientIconTile` (weather-style `CloudSun` icon; not a job identity square and not a store-logo slot), `StatusIndicator` from `src/components/aio/primitives`
+- **Focused tests:** none dedicated; route speech and transit behavior are covered indirectly by the general suite
+- **CLI instruction:** Start in `src/components/aio/TodayScreen.tsx`, locate the comment `/* 4. Travel Plan */`, and edit only that section. Do not modify the Road Readiness Panel, Next Best Job / Current Job Panel, Today's Other Jobs Panel, This Week, route logic, job ranking or sorting, Travel Plan behavior, Today's Other Jobs behavior, the bottom navigation, the floating assistant controls, or unrelated shared styles.
 
 ## Jobs Screen
 

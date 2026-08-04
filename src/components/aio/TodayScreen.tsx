@@ -441,7 +441,35 @@ export default function TodayScreen(props: TodayScreenProps) {
         )}
       </section>
 
-      {/* 3. Travel Plan */}
+      {/* 3. Today's Other Jobs */}
+      <section aria-label="Today's other jobs">
+        <AioSectionLabel trailing={<span className="aio-caption">{otherJobs.length} job{otherJobs.length === 1 ? "" : "s"}</span>}>
+          Today&apos;s Other Jobs
+        </AioSectionLabel>
+        {props.revisionAlerts.length > 0 && (
+          <div className="mt-2.5 flex items-center gap-2 rounded-[16px] bg-[#FF9F0A]/12 px-3 py-2.5 text-[#B25000] dark:text-[#FF9F0A]">
+            <RefreshCw size={15} />
+            <span className="text-[13px] font-bold">
+              {props.revisionAlerts.length} revision{props.revisionAlerts.length === 1 ? "" : "s"} need attention
+            </span>
+          </div>
+        )}
+        <AioCard className="mt-2.5 p-2">
+          {otherJobs.length === 0 ? (
+            <div className="py-4 text-center">
+              <p className="aio-caption">Nothing else scheduled for today.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-[var(--color-aio-line)]">
+              {otherJobs.map(job => (
+                <CompactJobRow key={job.id} job={job} onOpen={props.onOpenJob} iconSlot={<StoreLogo job={job} />} />
+              ))}
+            </div>
+          )}
+        </AioCard>
+      </section>
+
+      {/* 4. Travel Plan */}
       <section aria-label="Travel plan">
         <AioSectionLabel
           trailing={
@@ -518,34 +546,6 @@ export default function TodayScreen(props: TodayScreenProps) {
           ) : (
             <div className="py-2 text-center">
               <p className="aio-caption">Add a job to see its travel plan.</p>
-            </div>
-          )}
-        </AioCard>
-      </section>
-
-      {/* 4. Today's Other Jobs */}
-      <section aria-label="Today's other jobs">
-        <AioSectionLabel trailing={<span className="aio-caption">{otherJobs.length} job{otherJobs.length === 1 ? "" : "s"}</span>}>
-          Today&apos;s Other Jobs
-        </AioSectionLabel>
-        {props.revisionAlerts.length > 0 && (
-          <div className="mt-2.5 flex items-center gap-2 rounded-[16px] bg-[#FF9F0A]/12 px-3 py-2.5 text-[#B25000] dark:text-[#FF9F0A]">
-            <RefreshCw size={15} />
-            <span className="text-[13px] font-bold">
-              {props.revisionAlerts.length} revision{props.revisionAlerts.length === 1 ? "" : "s"} need attention
-            </span>
-          </div>
-        )}
-        <AioCard className="mt-2.5 p-2">
-          {otherJobs.length === 0 ? (
-            <div className="py-4 text-center">
-              <p className="aio-caption">Nothing else scheduled for today.</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-[var(--color-aio-line)]">
-              {otherJobs.map(job => (
-                <CompactJobRow key={job.id} job={job} onOpen={props.onOpenJob} iconSlot={<StoreLogo job={job} />} />
-              ))}
             </div>
           )}
         </AioCard>

@@ -21,7 +21,7 @@
 |-------|-------|
 | **File** | `src/components/aio/TodayScreen.tsx` |
 | **Props** | Theme, username, weather wind, current/next job, remaining jobs, completion state, navigation link, transit result, weekly schedule, battery, earnings, route progress, revision alerts — all derived values passed from `App.tsx` |
-| **Responsibility** | Authoritative route-planning screen (the former Mission Control dashboard) in AIØ style. Its Road Readiness Panel requires a reviewed Preview Guide for every actionable job, applies `BLOCKED` → `NEEDS ATTENTION` → `READY` priority, opens Preview Guide directly when review is needed, requires one confirmation for light headwind, and disables Ride Mode for strong headwind or unavailable Preview Guide. Battery remains visible but informational for this calculation. Other sections are Next Best Job / Current Job, Travel Plan, Today's Other Jobs, and This Week with `ExpandedDayPanel`. |
+| **Responsibility** | Authoritative route-planning screen (the former Mission Control dashboard) in AIØ style. Its Road Readiness Panel requires a reviewed Preview Guide for every actionable job, applies `BLOCKED` → `NEEDS ATTENTION` → `READY` priority, opens Preview Guide directly when review is needed, requires one confirmation for light headwind, and disables Ride Mode for strong headwind or unavailable Preview Guide. Battery remains visible but informational for this calculation. Other sections are Next Best Job / Current Job, Today's Other Jobs, Travel Plan, and This Week with `ExpandedDayPanel`. |
 
 ### JobsScreen
 

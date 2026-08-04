@@ -13,7 +13,7 @@ The All in One 667 uses **three primary tabs** — Today / Jobs / More — rende
 
 | # | Tab | Component | Icon | Responsibility |
 |---|-----|-----------|------|----------------|
-| 1 | Today | `TodayScreen` | CalendarDays | Authoritative route-planning surface: readiness/weather hero, Next Best Job / Current Job, Travel Plan, Today's Other Jobs, This Week strip + expanded day panel |
+| 1 | Today | `TodayScreen` | CalendarDays | Authoritative route-planning surface: readiness/weather hero, Next Best Job / Current Job, Today's Other Jobs, Travel Plan, This Week strip + expanded day panel |
 | 2 | Jobs | `JobsScreen` | ListChecks | Schedule list: Today, later scheduled days, Route B standby, overdue/unscheduled attention section |
 | 3 | More | `MoreScreen` | Ellipsis | Hub for all legacy feature tabs and actions |
 

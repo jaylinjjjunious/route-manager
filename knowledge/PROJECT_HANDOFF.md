@@ -118,13 +118,13 @@ For the future recommendation engine:
 
 Phase One established the AIØ shell and Today-screen structure.
 
-The intended Today-screen order is:
+The locked Today-screen order is:
 
 1. AIØ header
 2. Road Readiness panel
 3. Next Best Job or Current Job
-4. Travel Plan
-5. Other Jobs
+4. Today's Other Jobs
+5. Travel Plan
 6. This Week
 7. Bottom navigation
 
@@ -467,6 +467,15 @@ Decision:
 - Existing saved jobs update automatically at render time via the same resolver (stable companyId first, then normalized store/company/title text); no stored job is migrated or mutated. Future matching jobs show the logo automatically.
 - Visual rules preserved: row/card heights, spacing, rounded corners, text, badges, buttons, prices, and behavior unchanged; logos render `object-contain` on the existing `h-11 w-11 rounded-[14px]` neutral square; unknown stores and failed image loads fall back to the generic icon. Non-job icons are unchanged.
 - The overdue/unscheduled attention card rows have no job identity square and are unchanged.
+
+### 2026-08-04 — Today's Other Jobs / Travel Plan layout swap
+
+Decision:
+
+- Swap the vertical positions of the **Today's Other Jobs Panel** and the **Travel Plan Panel** on the Today screen so the locked order is: Road Readiness Panel, Next Best Job / Current Job Panel, Today's Other Jobs Panel, Travel Plan Panel, This Week.
+- This is a layout-order-only change. Both panels move as complete sections (all content, state, callbacks, styling, spacing, store-logo rendering, revision banner, empty states, and route speech behavior preserved) with no duplication and no fragments left behind. Their aria-labels and canonical names are unchanged.
+- Section-number comments in `src/components/aio/TodayScreen.tsx` were updated to match: Today's Other Jobs is now `/* 3. Today's Other Jobs */` and Travel Plan is now `/* 4. Travel Plan */`.
+- Travel Plan Panel was added to `knowledge/ui-panel-glossary.md` so both panels have a recorded UI location and section marker.
 
 ## Current Next Step
 

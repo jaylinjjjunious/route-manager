@@ -44,7 +44,7 @@ Three AIØ primary tabs plus five legacy feature tabs (reachable from More), def
 
 | Tab | ID | Component | Protected | Purpose |
 |-----|----|-----------|-----------|---------|
-| Today | `dashboard` | `TodayScreen` | No | Authoritative route-planning screen: readiness hero, Next Best Job / Current Job, Travel Plan, Today's Other Jobs, This Week strip + expanded day panel |
+| Today | `dashboard` | `TodayScreen` | No | Authoritative route-planning screen: readiness hero, Next Best Job / Current Job, Today's Other Jobs, Travel Plan, This Week strip + expanded day panel |
 | Jobs | `jobs` | `JobsScreen` | No | Schedule list: Today, later days, Route B standby, overdue/unscheduled review, Optimize/Add |
 | More | `more` | `MoreScreen` | No | Hub for legacy tabs and actions (Proof Vault, Process Serve, Import, Debug Center, Sign Out) |
 | Inventory | `inventory` | legacy | No | Store inventory custody & domains |
