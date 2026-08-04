@@ -12,7 +12,7 @@ Each entry must include a **code locator** so a CLI agent can jump directly to t
 
 - **Location in UI:** Top of the Today screen, directly below the AIØ header.
 - **Purpose:** Answers whether the user is ready to leave, what is blocking departure, whether battery and weather conditions are acceptable, whether the Preview Guide is ready, and what the next action should be.
-- **Current review status:** State/action rules and final panel polish implemented (live weather, compact responsive layout, one-time Preview Guide completion feedback). Real-device signed-in iPhone verification remains.
+- **Current review status:** The current Road Readiness visual, live-weather, Preview Guide gating, five-section review flow, completion feedback, reduced-motion behavior, and responsive layout are implemented and approved in production. The panel is considered functionally complete for the current phase, but not permanently closed because the planned route-aware battery readiness feature remains intentionally deferred for a later phase.
 - **Locked visual direction:** Compact dark black-and-purple card (removed the bright-blue full-card treatment). Live weather sits in the top-left: a polished sun glyph by day, moon glyph at night, plus temperature, condition, and feels-like temperature. Readiness status pill stays in the top-right above a compact white pill primary action. Readiness message, wind chip, and informational battery chip follow below; the Preview Guide and battery checklist rows remain informational. Weather is display-only and never gates Road Readiness/Ride Mode (the manual wind setting is the only weather gate). When live weather is loading or unavailable (offline/denied permission), the glyph fades and the slot shows `…`/`Live weather unavailable` without fabricating values.
 - **Primary code file:** `src/components/aio/TodayScreen.tsx`
 - **Primary component:** `TodayScreen`
@@ -28,6 +28,7 @@ Each entry must include a **code locator** so a CLI agent can jump directly to t
 - **Focused tests:** `tests/roadReadiness.test.ts`, `tests/previewGuideCompletionRow.test.ts`
 - **Related shared primitives:** `ChecklistRow` from `src/components/aio/primitives`
 - **CLI instruction:** Start in `src/components/aio/TodayScreen.tsx`, locate the comment `/* 1. Readiness + weather header */`, and edit only that section plus directly related shared styles or primitives required for this panel. Do not modify the Next Best Job, Travel Plan, Other Jobs, This Week, or bottom navigation sections unless the task explicitly names them.
+- **Deferred-work rule:** Do not reopen this panel during Phase Two or second-panel work unless a production defect is found. The only planned future feature expansion is the separately scoped battery-readiness pass.
 
 ## Naming Rules
 
