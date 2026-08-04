@@ -1,21 +1,25 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  AlertTriangle,
+  Bike,
+  BookOpen,
+  Check,
   CheckCircle2,
   ChevronRight,
+  CloudOff,
   CloudSun,
   Hourglass,
   MapPin,
+  Moon,
   Navigation,
   Plus,
   RefreshCw,
   Route as RouteIcon,
+  Sun,
   Volume2,
   VolumeX,
   Wind,
   Zap,
-  AlertTriangle,
-  Bike,
-  BookOpen,
 } from "lucide-react";
 import type { Job, Coordinates } from "../../types";
 import type { ScheduledDaySummary } from "../../utils/jobSchedule";
@@ -27,7 +31,6 @@ import {
   GradientIconTile,
   StatusIndicator,
   MetricItem,
-  ChecklistRow,
   AioButton,
   CompactJobRow,
   WeekDayIndicator,
@@ -39,6 +42,8 @@ import {
   evaluateRoadReadiness,
   type PreviewGuideReadiness,
 } from "./roadReadiness";
+import { useLiveWeather } from "../../services/weather/useLiveWeather";
+import { formatTempF } from "../../services/weather/currentWeather";
 
 const WEATHER_WIND_LABELS: Record<string, string> = {
   none: "Wind data off",
@@ -155,6 +160,25 @@ export default function TodayScreen(props: TodayScreenProps) {
   });
   const [confirmLightHeadwind, setConfirmLightHeadwind] = useState(false);
 
+  const liveWeatherState = useLiveWeather({
+    latitude: props.startCoord.lat,
+    longitude: props.startCoord.lng,
+  });
+  const liveWeather = liveWeatherState.status === "ready" ? liveWeatherState.weather : null;
+  const WeatherGlyph = liveWeather ? (liveWeather.isDay ? Sun : Moon) : liveWeatherState.status === "loading" ? Sun : CloudOff;
+  const weatherTileClass = liveWeather
+    ? liveWeather.isDay
+      ? "bg-amber-300/20 text-amber-300"
+      : "bg-indigo-300/20 text-indigo-300"
+    : "bg-white/10 text-white/45";
+  const weatherTemp = liveWeather ? formatTempF(liveWeather.temperatureC) : liveWeatherState.status === "loading" ? "…" : "—";
+  const weatherCondition = liveWeather
+    ? liveWeather.condition
+    : liveWeatherState.status === "loading"
+      ? "Loading weather"
+      : "Live weather unavailable";
+  const weatherFeels = liveWeather ? `Feels like ${formatTempF(liveWeather.feelsLikeC)}` : null;
+
   useEffect(() => {
     setConfirmLightHeadwind(false);
   }, [props.actionableJob?.id, props.weatherWind, props.previewGuideReadiness]);
@@ -184,79 +208,134 @@ export default function TodayScreen(props: TodayScreenProps) {
     <div className="space-y-5" id="tab-view-today">
       {/* 1. Readiness + weather header */}
       <section aria-label="Readiness and weather">
-        <div className="aio-hero-gradient rounded-[28px] p-5 text-white shadow-[0_18px_50px_rgba(10,132,255,0.35)]">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-white/80">
-                Road Readiness
-              </p>
-              <h2 className="mt-1 text-[28px] font-black leading-none tracking-[-0.02em]">
-                {readiness.message}
-              </h2>
+        <div className="relative overflow-hidden rounded-[24px] bg-[#0C0A16] p-4 shadow-[0_18px_50px_rgba(88,28,135,0.28)] sm:p-5">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -right-14 -top-20 h-56 w-56 rounded-full bg-[var(--color-aio-purple)] opacity-25 blur-3xl"
+          />
+
+          <div className="relative flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <span
+                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-colors ${weatherTileClass}`}
+                aria-hidden="true"
+              >
+                <WeatherGlyph size={24} strokeWidth={2.2} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[26px] font-black leading-none tracking-[-0.02em] text-white">
+                  {weatherTemp}
+                </p>
+                <p className="mt-1 truncate text-[13px] font-bold text-white/75">
+                  {weatherCondition}
+                </p>
+                {weatherFeels && (
+                  <p className="mt-0.5 truncate text-[12px] font-semibold text-white/45">
+                    {weatherFeels}
+                  </p>
+                )}
+              </div>
             </div>
-            <span className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-black uppercase tracking-wide backdrop-blur-sm ${
-              readiness.status === "blocked" ? "bg-rose-500/25" : readiness.status === "needs_attention" ? "bg-amber-400/25" : "bg-white/20"
-            }`}>
-              <StatusIcon size={14} />
-              {statusLabel}
-            </span>
+
+            <div className="flex shrink-0 flex-col items-end gap-2">
+              <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-black uppercase tracking-wide backdrop-blur-sm ${
+                readiness.status === "blocked" ? "bg-rose-500/25 text-rose-100" : readiness.status === "needs_attention" ? "bg-amber-400/25 text-amber-100" : "bg-white/15 text-white"
+              }`}>
+                <StatusIcon size={13} />
+                {statusLabel}
+              </span>
+              <button
+                type="button"
+                onClick={handleReadinessAction}
+                disabled={readiness.primaryAction === "none" || (readiness.primaryAction === "start_ride_mode" && !readiness.rideModeAllowed)}
+                className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-[13px] font-black text-[#4C1D95] transition-transform active:scale-[0.97] disabled:opacity-40"
+              >
+                {readiness.primaryAction === "review_preview_guide"
+                  ? <BookOpen size={16} strokeWidth={2.4} aria-hidden="true" />
+                  : <Bike size={16} strokeWidth={2.4} aria-hidden="true" />}
+                {readiness.primaryAction === "review_preview_guide"
+                  ? "Review Preview Guide"
+                  : readiness.primaryAction === "none"
+                    ? "Preview Guide Unavailable"
+                    : "Start Ride Mode"}
+              </button>
+            </div>
           </div>
 
-          <div className="mt-5 flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-black/25 px-3 py-1.5 text-[13px] font-bold">
-              <Wind size={15} />
+          <p className="relative mt-3 pr-1 text-[16px] font-black leading-snug tracking-[-0.01em] text-white">
+            {readiness.message}
+          </p>
+
+          <div className="relative mt-3 flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-[13px] font-bold text-white/85">
+              <Wind size={14} aria-hidden="true" />
               {windLabel}
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-black/25 px-3 py-1.5 text-[13px] font-bold">
-              <Zap size={15} />
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-[13px] font-bold text-white/85">
+              <Zap size={14} aria-hidden="true" />
               {batteryPct}% · {batteryMilesLeft} mi left
             </span>
-            <button
-              type="button"
-              onClick={handleReadinessAction}
-              disabled={readiness.primaryAction === "none" || (readiness.primaryAction === "start_ride_mode" && !readiness.rideModeAllowed)}
-              className="ml-auto inline-flex min-h-12 items-center gap-2 rounded-[16px] bg-white px-4 py-3 text-[15px] font-black text-[#0A84FF] transition-transform active:scale-[0.98] disabled:opacity-40"
-            >
-              {readiness.primaryAction === "review_preview_guide"
-                ? <BookOpen size={20} strokeWidth={2.4} />
-                : <Bike size={20} strokeWidth={2.4} />}
-              {readiness.primaryAction === "review_preview_guide"
-                ? "Review Preview Guide"
-                : readiness.primaryAction === "none"
-                  ? "Preview Guide Unavailable"
-                  : "Start Ride Mode"}
-            </button>
           </div>
 
           {confirmLightHeadwind && (
-            <div className="mt-3 rounded-[16px] border border-amber-200/30 bg-black/25 p-3" role="alert">
-              <p className="text-[13px] font-bold">Light headwind is active. Confirm once to start Ride Mode.</p>
+            <div className="relative mt-3 rounded-[16px] border border-amber-200/30 bg-white/10 p-3" role="alert">
+              <p className="text-[13px] font-bold text-amber-100">Light headwind is active. Confirm once to start Ride Mode.</p>
               <div className="mt-2 flex gap-2">
-                <button type="button" onClick={() => setConfirmLightHeadwind(false)} className="min-h-11 flex-1 rounded-xl border border-white/25 px-3 text-sm font-bold">
+                <button type="button" onClick={() => setConfirmLightHeadwind(false)} className="min-h-11 flex-1 rounded-xl border border-white/25 px-3 text-sm font-bold text-white">
                   Cancel
                 </button>
-                <button type="button" onClick={props.onStartRideMode} className="min-h-11 flex-1 rounded-xl bg-white px-3 text-sm font-black text-[#0A84FF]">
+                <button type="button" onClick={props.onStartRideMode} className="min-h-11 flex-1 rounded-xl bg-white px-3 text-sm font-black text-[#4C1D95]">
                   Confirm &amp; Start
                 </button>
               </div>
             </div>
           )}
 
-          <div className="mt-5 border-t border-white/20 pt-4">
-            <ChecklistRow
-              checked={props.previewGuideReadiness === "reviewed"}
-              label="Preview guide ready"
-              detail={props.previewGuideReadiness === "reviewed"
-                ? "Preview Guide reviewed for the next actionable job"
-                : props.previewGuideReadiness === "unavailable"
-                  ? "Preview Guide is unavailable"
-                  : "Review is required before Ride Mode"}
-            />
-            <ChecklistRow
-              checked={batteryPct >= 15}
-              label="Battery above 15%"
-              detail={batteryRisk === "High" ? "Charge before the next leg" : batteryPct >= 15 ? "Enough range for the route" : "Charge before riding"}
-            />
+          <div className="relative mt-3 space-y-2 border-t border-white/10 pt-3">
+            <div className="flex items-start gap-2.5">
+              <span
+                className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
+                  props.previewGuideReadiness === "reviewed"
+                    ? "border-white bg-white text-[#4C1D95]"
+                    : "border-white/40 text-transparent"
+                }`}
+                aria-hidden="true"
+              >
+                <Check size={12} strokeWidth={3} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className={`text-[13px] font-bold ${props.previewGuideReadiness === "reviewed" ? "text-white/45" : "text-white/85"}`}>
+                  Preview guide ready
+                </p>
+                <p className="mt-0.5 text-[12px] font-medium text-white/45">
+                  {props.previewGuideReadiness === "reviewed"
+                    ? "Preview Guide reviewed for the next actionable job"
+                    : props.previewGuideReadiness === "unavailable"
+                      ? "Preview Guide is unavailable"
+                      : "Review is required before Ride Mode"}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <span
+                className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
+                  batteryPct >= 15
+                    ? "border-white bg-white text-[#4C1D95]"
+                    : "border-white/40 text-transparent"
+                }`}
+                aria-hidden="true"
+              >
+                <Check size={12} strokeWidth={3} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className={`text-[13px] font-bold ${batteryPct >= 15 ? "text-white/45" : "text-white/85"}`}>
+                  Battery above 15%
+                </p>
+                <p className="mt-0.5 text-[12px] font-medium text-white/45">
+                  {batteryRisk === "High" ? "Charge before the next leg" : batteryPct >= 15 ? "Enough range for the route" : "Charge before riding"}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
