@@ -216,7 +216,7 @@ export default function TodayScreen(props: TodayScreenProps) {
             className="pointer-events-none absolute -right-14 -top-20 h-56 w-56 rounded-full bg-[var(--color-aio-purple)] opacity-25 blur-3xl"
           />
 
-          <div className="relative flex flex-col items-stretch justify-between gap-3 min-[390px]:flex-row min-[390px]:items-start">
+          <div className="relative flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-start">
             <div className="flex min-w-0 items-center">
               <span
                 className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-colors ${weatherTileClass}`}
@@ -224,17 +224,17 @@ export default function TodayScreen(props: TodayScreenProps) {
               >
                 <WeatherGlyph size={24} strokeWidth={2.2} />
               </span>
-              <p className="ml-3 text-[26px] font-black leading-none tracking-[-0.02em] text-white">
+              <p className="ml-3 whitespace-nowrap text-[26px] font-black leading-none tracking-[-0.02em] text-white">
                 {weatherTemp}
               </p>
-              <span aria-hidden="true" className="ml-1.5 h-8 w-px shrink-0 bg-white/15" />
+              <span aria-hidden="true" className="ml-1.5 h-8 w-px shrink-0 self-center bg-white/15" />
               <div className="min-w-0 pl-3">
                 {weatherFeels && (
-                  <p className="break-words text-[12px] font-semibold leading-tight text-white/65">
+                  <p className="whitespace-nowrap text-[12px] font-semibold leading-tight text-white/65">
                     {weatherFeels}
                   </p>
                 )}
-                <p className="mt-0.5 break-words text-[13px] font-bold leading-snug text-white/80">
+                <p className="mt-0.5 text-[13px] font-bold leading-snug text-white/80">
                   {weatherCondition}
                 </p>
               </div>

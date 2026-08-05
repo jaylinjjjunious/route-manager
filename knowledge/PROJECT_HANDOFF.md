@@ -239,7 +239,7 @@ The panel is currently located at the top of `TodayScreen.tsx`, before the Next 
 
 The state derivation is isolated in `src/components/aio/roadReadiness.ts` and covered by `tests/roadReadiness.test.ts`.
 
-Final panel polish adds a one-time, session-only completion confirmation when Preview Guide review changes from incomplete to complete: the row fills green, displays a white check and `Preview Guide reviewed`, announces through `aria-live`, then fades, collapses, and is removed. Already-reviewed ordinary renders do not replay it. Reduced-motion users receive the announcement and immediate row removal without decorative timing. The 320px header reflows vertically, 390px/430px retain the compact side-by-side layout, active panel controls use at least 44px height, and the battery placeholder remains informational. Signed-in real-device iPhone verification remains required.
+Final panel polish adds a one-time, session-only completion confirmation when Preview Guide review changes from incomplete to complete: the row fills green, displays a white check and `Preview Guide reviewed`, announces through `aria-live`, then fades, collapses, and is removed. Already-reviewed ordinary renders do not replay it. Reduced-motion users receive the announcement and immediate row removal without decorative timing. Responsively, the weather row is always horizontal and never wraps one character at a time (`Feels like XX°` is `whitespace-nowrap`, the condition word-wraps only); below the `sm` breakpoint (640px, covering 320/390/430px) the weather header and readiness actions stack vertically, while at `sm` and up they sit side-by-side. Active panel controls use at least 44px height, and the battery placeholder remains informational. Signed-in real-device iPhone verification remains required.
 
 ## Implemented: Next Best Job / Current Job Panel (refinement pass)
 
@@ -556,6 +556,14 @@ Decision:
 - Header height, `items-end` alignment, and `gap-3` spacing from the profile button are preserved.
 - The profile-picture button, profile navigation, More page account row, Today/Jobs/Job Details screens, store-logo registry, bottom navigation, and global theme logic are unchanged.
 - The invalid/truncated `public/branding/aio-logo-black.png` (IDAT declares 23,589 bytes but the file is only 7,506 bytes, no IEND chunk) is never wired into the app and must not be used.
+
+### 2026-08-05 — Road Readiness responsive weather-row bug fix
+
+Decision:
+
+- The Road Readiness live-weather header row (`[weather icon] [temperature] [short vertical divider] [two-line text stack]`) is kept fully horizontal at every width. The production bug — `Feels like XX°` and the condition wrapping one character per line, a stretched divider, and an over-tall panel at 390/430px — was caused by `break-words` plus `min-w-0` letting the right text stack collapse to near-zero width when the `min-[390px]` side-by-side row starved it of space (weather row received only 130px at 390px and 170px at 430px against ~190px of natural content, while the 192px readiness action column was `shrink-0`).
+- Fix in `src/components/aio/TodayScreen.tsx` (`/* 1. Readiness + weather header */`): `Feels like XX°` is now `whitespace-nowrap`, the condition dropped `break-words` (normal word wrapping only, so no character-by-character wrapping ever), and the divider gained `self-center` (stays short and vertically centered). The outer header changed from `min-[390px]:flex-row` to `sm:flex-row`, so below 640px (including the tested 320/390/430px widths) the weather row takes the full header width with the readiness actions stacking below it, and at `sm`/640px and up the weather row sits top-left beside the top-right status pill and primary action.
+- No weather logic, readiness logic, Preview Guide logic, battery, wind, action button classes, or other Today-screen panels changed. Verified headlessly at 320/390/430/768px: feels-like single-line and nowrap, condition single-line (and the offline `Live weather unavailable` fallback never overflows), divider 1px x 32px centered, zero horizontal overflow, panel height restored (390/430px: 392px vs the buggy 462px). `tests/roadReadiness.test.ts` and `tests/previewGuideCompletionRow.test.ts` pass, `npm run lint` and `npm run build` pass.
 
 ## Current Next Step
 
