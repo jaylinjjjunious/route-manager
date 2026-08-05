@@ -216,8 +216,8 @@ export default function TodayScreen(props: TodayScreenProps) {
             className="pointer-events-none absolute -right-14 -top-20 h-56 w-56 rounded-full bg-[var(--color-aio-purple)] opacity-25 blur-3xl"
           />
 
-          <div className="relative flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-start">
-            <div className="flex min-w-0 items-center">
+          <div className="relative flex flex-col items-stretch justify-between gap-3 min-[410px]:flex-row min-[410px]:flex-wrap min-[410px]:items-start">
+            <div className="flex min-w-0 items-center min-[410px]:shrink-0">
               <span
                 className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-colors ${weatherTileClass}`}
                 aria-hidden="true"
@@ -240,22 +240,22 @@ export default function TodayScreen(props: TodayScreenProps) {
               </div>
             </div>
 
-            <div className="flex w-full shrink-0 flex-col items-stretch gap-2 min-[390px]:w-auto min-[390px]:items-end">
-              <span className={`inline-flex self-start items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-black uppercase tracking-wide backdrop-blur-sm min-[390px]:self-auto ${
+            <div className="flex w-full shrink-0 flex-col items-end gap-2 min-[410px]:ml-auto min-[410px]:w-auto">
+              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-black uppercase tracking-wide backdrop-blur-sm ${
                 readiness.status === "blocked" ? "bg-rose-500/25 text-rose-100" : readiness.status === "needs_attention" ? "bg-amber-400/25 text-amber-100" : "bg-white/15 text-white"
               }`}>
-                <StatusIcon size={13} />
+                <StatusIcon size={12} />
                 {statusLabel}
               </span>
               <button
                 type="button"
                 onClick={handleReadinessAction}
                 disabled={readiness.primaryAction === "none" || (readiness.primaryAction === "start_ride_mode" && !readiness.rideModeAllowed)}
-                className="inline-flex min-h-11 w-full min-w-0 items-center justify-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-center text-[13px] font-black leading-tight text-[#4C1D95] transition-transform active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:opacity-40 min-[390px]:w-auto"
+                className="inline-flex min-h-11 items-center justify-center gap-1 rounded-full bg-white px-2 text-center text-[12px] font-black leading-tight text-[#4C1D95] transition-transform active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:opacity-40"
               >
                 {readiness.primaryAction === "review_preview_guide"
-                  ? <BookOpen size={16} strokeWidth={2.4} aria-hidden="true" />
-                  : <Bike size={16} strokeWidth={2.4} aria-hidden="true" />}
+                  ? <BookOpen size={14} strokeWidth={2.4} aria-hidden="true" />
+                  : <Bike size={14} strokeWidth={2.4} aria-hidden="true" />}
                 {readiness.primaryAction === "review_preview_guide"
                   ? "Review Preview Guide"
                   : readiness.primaryAction === "none"
