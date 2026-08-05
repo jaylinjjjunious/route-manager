@@ -226,6 +226,7 @@ The existing panel uses:
 
 The Today screen renders:
 
+- a live weather header: sun/moon glyph beside the large temperature, a slim vertical divider closer to the temperature, and a right two-line stack with feels-like temperature on top and condition text below
 - a derived `READY`, `NEEDS ATTENTION`, `BLOCKED`, or no-actionable-work status and explanation
 - wind pill
 - battery/range pill

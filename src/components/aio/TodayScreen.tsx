@@ -217,25 +217,26 @@ export default function TodayScreen(props: TodayScreenProps) {
           />
 
           <div className="relative flex flex-col items-stretch justify-between gap-3 min-[390px]:flex-row min-[390px]:items-start">
-            <div className="flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 items-center">
               <span
                 className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-colors ${weatherTileClass}`}
                 aria-hidden="true"
               >
                 <WeatherGlyph size={24} strokeWidth={2.2} />
               </span>
-              <div className="min-w-0">
-                <p className="text-[26px] font-black leading-none tracking-[-0.02em] text-white">
-                  {weatherTemp}
-                </p>
-                <p className="mt-1 break-words text-[13px] font-bold leading-snug text-white/80">
-                  {weatherCondition}
-                </p>
+              <p className="ml-3 text-[26px] font-black leading-none tracking-[-0.02em] text-white">
+                {weatherTemp}
+              </p>
+              <span aria-hidden="true" className="ml-1.5 h-8 w-px shrink-0 bg-white/15" />
+              <div className="min-w-0 pl-3">
                 {weatherFeels && (
-                  <p className="mt-0.5 break-words text-[12px] font-semibold text-white/65">
+                  <p className="break-words text-[12px] font-semibold leading-tight text-white/65">
                     {weatherFeels}
                   </p>
                 )}
+                <p className="mt-0.5 break-words text-[13px] font-bold leading-snug text-white/80">
+                  {weatherCondition}
+                </p>
               </div>
             </div>
 
