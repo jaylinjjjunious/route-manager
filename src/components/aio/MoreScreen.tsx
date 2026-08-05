@@ -19,6 +19,8 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { GradientIconTile } from "./primitives";
 
+const AVATAR_PATH = "/profile/avatar.webp";
+
 type LegacyTab = "inventory" | "battery" | "tracker" | "habits" | "tools" | "settings";
 
 export interface MoreScreenProps {
@@ -91,8 +93,12 @@ export default function MoreScreen(props: MoreScreenProps) {
 
       <section aria-label="Account">
         <div className="aio-card flex items-center gap-3 p-4">
-          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#0A84FF] to-[#5AC8FA] text-[17px] font-black text-white">
-            {(props.userEmail || "?")[0].toUpperCase()}
+          <span className="block h-12 w-12 shrink-0 overflow-hidden rounded-full border border-[var(--color-aio-line)] bg-[var(--color-aio-surface)]">
+            <img
+              src={AVATAR_PATH}
+              alt={`${props.userEmail || "Account"} profile picture`}
+              className="h-full w-full object-cover"
+            />
           </span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-[16px] font-bold text-[var(--color-aio-text)]">{props.userEmail || "Signed in"}</p>

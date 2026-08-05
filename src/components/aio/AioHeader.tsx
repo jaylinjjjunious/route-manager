@@ -1,5 +1,6 @@
 import React from "react";
-import { Moon, Sun, Ellipsis } from "lucide-react";
+
+const AVATAR_PATH = "/profile/avatar.webp";
 
 function getGreeting(hour: number): string {
   if (hour < 5) return "Good evening";
@@ -16,19 +17,15 @@ function formatToday(): string {
 }
 
 export default function AioHeader({
-  theme,
   userName,
-  onToggleTheme,
-  onMore,
+  onOpenProfile,
 }: {
-  theme: "dark" | "light";
   userName?: string;
-  onToggleTheme: () => void;
-  onMore?: () => void;
+  onOpenProfile: () => void;
 }) {
   const hour = new Date().getHours();
   const greetingName = userName ? `, ${userName.trim().split(/\s+/)[0]}` : "";
-  const iconClass = "flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-aio-line)] bg-[var(--color-aio-surface)] text-[var(--color-aio-text-2)] transition-colors hover:text-[var(--color-aio-text)] active:scale-95 touch-manipulation";
+  const profileClass = "flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-[var(--color-aio-line)] bg-[var(--color-aio-surface)] transition-transform hover:scale-[1.03] active:scale-95 touch-manipulation";
 
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--color-aio-line)] bg-[var(--color-aio-bg)]/85 backdrop-blur-xl">
@@ -46,24 +43,17 @@ export default function AioHeader({
         <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
-            onClick={onToggleTheme}
-            className={iconClass}
-            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            onClick={onOpenProfile}
+            className={profileClass}
+            aria-label="Open profile and More menu"
+            title="Profile"
           >
-            {theme === "dark" ? <Sun size={20} strokeWidth={2.2} /> : <Moon size={20} strokeWidth={2.2} />}
+            <img
+              src={AVATAR_PATH}
+              alt="Your profile picture"
+              className="h-full w-full object-cover"
+            />
           </button>
-          {onMore && (
-            <button
-              type="button"
-              onClick={onMore}
-              className={iconClass}
-              aria-label="Open more menu"
-              title="More"
-            >
-              <Ellipsis size={20} strokeWidth={2.4} />
-            </button>
-          )}
         </div>
       </div>
     </header>

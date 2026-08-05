@@ -2811,7 +2811,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
         
         {/* Header */}
         {currentTab === 'dashboard' || currentTab === 'jobs' || currentTab === 'more'
-          ? <AioHeader theme={theme} userName={userName} onToggleTheme={handleToggleTheme} onMore={() => currentTab === 'more' ? undefined : handleTabChange('more')} />
+          ? <AioHeader userName={userName} onOpenProfile={() => handleTabChange('more')} />
           : <Header theme={theme} onToggleTheme={handleToggleTheme} />}
 
         {/* Main Content Body */}

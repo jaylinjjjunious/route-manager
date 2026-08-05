@@ -278,6 +278,40 @@ Road Readiness remains closed after its final polish except for the deferred rou
 - UI rules: the logo square keeps the existing `h-11 w-11 rounded-[14px]` dimensions, renders with `object-contain`, restrained `p-1.5` padding, and a neutral background that works for white-background and transparent logos in dark and light mode. Meaningful alt text uses the display name. A failed image load falls back to the current generic icon. Logos are never stretched, recolored, redrawn, or cropped.
 - Assets live in `public/store-logos/*.svg`; the logo renderer is `src/components/aio/StoreLogo.tsx`, and `CompactJobRow` gained an optional `iconSlot` prop (default rendering unchanged for other screens). `StoreLogo` gained a `size` prop (`md`/`lg`) so the Next Best Job / Current Job identity square shares the same renderer.
 
+## Implemented: AIØ Top Header profile picture + More profile row
+
+### Official name
+
+**AIØ Top Header**
+
+### UI location
+
+The sticky top bar on the Today (`dashboard`), Jobs, and More tabs, above the main content.
+
+### Purpose
+
+Identifies the app (`AIØ`), greets the signed-in user, shows the current date, and gives one-tap access to the profile / More destination.
+
+### Locked decisions
+
+- The header's right-side controls are replaced by a single circular profile-picture button using the local bundled asset `/profile/avatar.webp` (`public/profile/avatar.webp`).
+- The old three-dots (`More`) button and the old header light/dark theme button are removed from the header and must not be re-added.
+- Tapping the header profile picture opens the same destination the three-dots button opened: the More page (`handleTabChange('more')` in `src/App.tsx`).
+- The greeting, `AIØ` logo, and date text are unchanged, and the header keeps its height and right-side `h-11 w-11` tap target (profile image is `overflow-hidden rounded-full` with `object-cover` for a clean circular crop).
+- The More page Account row placeholder (initial-letter gradient circle) is replaced by the exact same `/profile/avatar.webp` at `h-12 w-12 rounded-full` with `object-cover`; name, text, layout, and navigation are unchanged.
+- Dark/light mode support is NOT removed: the theme toggle remains in the More page Account row and in Settings, and the global theme state/logic in `src/App.tsx` is untouched.
+- Profile name and account data are unchanged.
+
+### Code locators
+
+- Header component: `src/components/aio/AioHeader.tsx` (`AioHeader`, root `<header className="sticky top-0 z-40 ...">`), used once in `src/App.tsx` under the `{/* Header */}` marker with `onOpenProfile={() => handleTabChange('more')}`.
+- More profile row: `src/components/aio/MoreScreen.tsx`, `<section aria-label="Account">`, first child of the account card row.
+- Shared asset: `public/profile/avatar.webp`, referenced as `/profile/avatar.webp` by `const AVATAR_PATH` in both files.
+
+### Tests
+
+`tests/aioHeaderProfile.test.ts` covers: header shows the profile image, old three-dots button removed, old header theme button removed, profile picture opens the More/profile destination, the More profile row uses the same image, dark/light mode remains available on the More page, and the avatar asset is local and bundled.
+
 ## Phase Two Planned Direction
 
 Phase Two is intended to build the Next Best Job recommendation engine after Phase One is complete and verified.
@@ -487,9 +521,30 @@ Decision:
 - No duplicate resolver or `StoreLogo` implementation was created; no Clearbit logo URLs or network-dependent logo fetching were introduced; stored job data is never mutated.
 - Registered stores are `foods-co`, `sprouts`, `bevmo`, `walgreens`, `dollar-general`, `family-dollar`, `vons`, `target`, `albertsons` (assets in `public/store-logos/*.svg`), unchanged.
 
+### 2026-08-04 — Job Details Mini Page logo/status square correction
+
+Decision:
+
+- Correct the Job Details Mini Page title row so there is only one square: the shared store logo replaces the old hourglass/status-toggle square in its exact current position (`h-9 w-9 rounded-lg`).
+- The store name and address remain immediately to the right of that square; the extra `md` (`h-11 w-11`) `StoreLogo` identity square that had been added beside the title is removed.
+- The normal pending Hourglass icon is removed; the matched store logo renders in the square (`object-contain`, `p-1`) via the shared `resolveStoreLogo` resolver (`src/services/storeLogos.ts`). Unknown stores and failed image loads fall back to the original Hourglass icon.
+- Completed (`text-blue-500`) and under_review (`text-indigo-500`) states keep the existing `CheckSquare` icons in the same square, preserving status meaning without creating a second identity square.
+- Clicking the square preserves the old status-toggle action (`Mark under review` / `Complete after review` / `Reactivate`).
+- The approved frosted-glass treatment is unchanged. The shared `StoreLogo` component (`md`/`lg`) remains the standard for the Today screen and Jobs page identity squares; the modal resolves logos directly so the artwork fits the smaller `h-9 w-9` square with the Hourglass fallback. Stored job data is never mutated.
+
+### 2026-08-04 — AIØ Top Header profile picture + More profile avatar
+
+Decision:
+
+- The AIØ Top Header's right-side controls are replaced by a single circular profile-picture button using the local bundled asset `public/profile/avatar.webp` (`/profile/avatar.webp`); the three-dots and header theme buttons are removed and must not be re-added.
+- The header profile button navigates to the More page (`handleTabChange('more')`), the same destination the three-dots button used.
+- The More page Account row placeholder is replaced with the exact same avatar asset at `h-12 w-12 rounded-full` with `object-cover`; name, text, layout, and navigation unchanged.
+- Dark/light mode support stays available via the More page theme toggle and Settings; global theme logic in `src/App.tsx` is unchanged.
+- Header height, spacing, and the `h-11 w-11` tap target are preserved.
+
 ## Current Next Step
 
-Validate the shared store-logo system locally (320px, 390px, 430px, dark and light mode): the Job Details Mini Page identity square and status-toggle button, the Next Best Job / Current Job identity square, Today's Other Jobs rows, and Jobs page rows (Today, later days, Route B Standby), matching and non-matching jobs including Family Dollar. Do not move to another panel until the user explicitly changes focus.
+Validate the AIØ Top Header profile picture and the More page profile row (320px, 390px, 430px, dark and light mode): header avatar is circular with `object-cover`, tapping it opens the More page, the More Account row shows the same avatar, the old header three-dots/theme buttons are gone, and dark/light mode is still reachable via the More page and Settings. Then continue validating the shared store-logo system if not already confirmed.
 
 ## Maintenance Rule
 
