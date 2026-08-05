@@ -297,20 +297,23 @@ Identifies the app (`AIØ`), greets the signed-in user, shows the current date, 
 - The header's right-side controls are replaced by a single circular profile-picture button using the local bundled asset `/profile/avatar.webp` (`public/profile/avatar.webp`).
 - The old three-dots (`More`) button and the old header light/dark theme button are removed from the header and must not be re-added.
 - Tapping the header profile picture opens the same destination the three-dots button opened: the More page (`handleTabChange('more')` in `src/App.tsx`).
-- The greeting, `AIØ` logo, and date text are unchanged, and the header keeps its height and right-side `h-11 w-11` tap target (profile image is `overflow-hidden rounded-full` with `object-cover` for a clean circular crop).
+- The greeting and date text are unchanged. The primary AIØ wordmark is now the bundled brand image `/branding/aio-logo-black.svg` (black rounded-rect badge with white `AIØ` lettering), rendered in the same position/alignment with `object-contain` at `h-9 w-9`; the old text wordmark and the truncated `public/branding/aio-logo-black.png` are not used.
+- The header keeps its height, `items-end` bottom alignment, and `gap-3` spacing between the logo and the profile button, plus the right-side `h-11 w-11` profile tap target (profile image is `overflow-hidden rounded-full` with `object-cover` for a clean circular crop).
 - The More page Account row placeholder (initial-letter gradient circle) is replaced by the exact same `/profile/avatar.webp` at `h-12 w-12 rounded-full` with `object-cover`; name, text, layout, and navigation are unchanged.
-- Dark/light mode support is NOT removed: the theme toggle remains in the More page Account row and in Settings, and the global theme state/logic in `src/App.tsx` is untouched.
-- Profile name and account data are unchanged.
+- Dark/light mode support is NOT removed: the theme toggle remains in the More page Account row and in Settings, and the global theme state/logic in `src/App.tsx` is untouched. The logo badge is a fixed black-background/white-lettering image that reads in both modes (no theme-dependent recoloring).
+- Profile name and account data are unchanged. No store-logo paths or other graphics changed.
 
 ### Code locators
 
 - Header component: `src/components/aio/AioHeader.tsx` (`AioHeader`, root `<header className="sticky top-0 z-40 ...">`), used once in `src/App.tsx` under the `{/* Header */}` marker with `onOpenProfile={() => handleTabChange('more')}`.
+- Primary AIØ logo: the single `<img>` inside the `<h1 className="mt-0.5 leading-none">` in `AioHeader.tsx` (`src="/branding/aio-logo-black.svg"`, `alt="AIØ logo"`, `className="block h-9 w-9 object-contain"`), driven by `const LOGO_PATH`.
 - More profile row: `src/components/aio/MoreScreen.tsx`, `<section aria-label="Account">`, first child of the account card row.
-- Shared asset: `public/profile/avatar.webp`, referenced as `/profile/avatar.webp` by `const AVATAR_PATH` in both files.
+- Shared avatar asset: `public/profile/avatar.webp`, referenced as `/profile/avatar.webp` by `const AVATAR_PATH` in both files.
+- Brand asset: `public/branding/aio-logo-black.svg`, referenced as `/branding/aio-logo-black.svg` by `const LOGO_PATH` in `AioHeader.tsx`. The invalid/truncated `aio-logo-black.png` is never used.
 
 ### Tests
 
-`tests/aioHeaderProfile.test.ts` covers: header shows the profile image, old three-dots button removed, old header theme button removed, profile picture opens the More/profile destination, the More profile row uses the same image, dark/light mode remains available on the More page, and the avatar asset is local and bundled.
+`tests/aioHeaderProfile.test.ts` covers: header shows the primary AIØ brand logo image (`/branding/aio-logo-black.svg`, `object-contain`), only one primary AIØ logo appears, the old text logo treatment is removed, the profile picture remains present/functional (opens the More/profile destination), the More profile row uses the same avatar image, dark/light mode remains available on the More page, no store-logo paths appear in the header and the store-logo registry paths are unchanged, and the logo/avatar assets are local and bundled.
 
 ## Phase Two Planned Direction
 
@@ -542,9 +545,19 @@ Decision:
 - Dark/light mode support stays available via the More page theme toggle and Settings; global theme logic in `src/App.tsx` is unchanged.
 - Header height, spacing, and the `h-11 w-11` tap target are preserved.
 
+### 2026-08-04 — AIØ Top Header primary brand logo (bundled SVG)
+
+Decision:
+
+- The primary AIØ brand mark in the AIØ Top Header is now the bundled image `public/branding/aio-logo-black.svg` (`/branding/aio-logo-black.svg`), replacing the former text wordmark in the same position/alignment.
+- Locked direction: black background, white lettering, rendered as-is with `object-contain` — never cropped, stretched, recolored, redrawn, or overlaid with text; reads identically in dark and light mode.
+- Logo display size is `h-9 w-9` in the `<h1 className="mt-0.5 leading-none">`; header height, `items-end` alignment, and `gap-3` spacing from the profile button are preserved.
+- The profile-picture button, profile navigation, More page account row, Today/Jobs/Job Details screens, store-logo registry, bottom navigation, and global theme logic are unchanged.
+- The invalid/truncated `public/branding/aio-logo-black.png` (IDAT declares 23,589 bytes but the file is only 7,506 bytes, no IEND chunk) is never wired into the app and must not be used.
+
 ## Current Next Step
 
-Validate the AIØ Top Header profile picture and the More page profile row (320px, 390px, 430px, dark and light mode): header avatar is circular with `object-cover`, tapping it opens the More page, the More Account row shows the same avatar, the old header three-dots/theme buttons are gone, and dark/light mode is still reachable via the More page and Settings. Then continue validating the shared store-logo system if not already confirmed.
+Validate the AIØ Top Header primary logo and profile picture (320px, 390px, 430px, dark and light mode): the `/branding/aio-logo-black.svg` badge renders with `object-contain` in its original position, header height/alignment/spacing are preserved, tapping the profile avatar opens the More page, the More Account row shows the same avatar, the old header three-dots/theme buttons and text logo are gone, and dark/light mode is still reachable via the More page and Settings. Then continue validating the shared store-logo system if not already confirmed.
 
 ## Maintenance Rule
 

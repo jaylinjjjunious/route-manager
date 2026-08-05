@@ -7,7 +7,10 @@ import { resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AioHeader from "../src/components/aio/AioHeader";
 import MoreScreen from "../src/components/aio/MoreScreen";
+import { resolveStoreLogo } from "../src/services/storeLogos";
 
+const LOGO_PATH = "/branding/aio-logo-black.svg";
+const LOGO_FILE = resolve(process.cwd(), "public/branding/aio-logo-black.svg");
 const AVATAR_PATH = "/profile/avatar.webp";
 const AVATAR_FILE = resolve(process.cwd(), "public/profile/avatar.webp");
 
@@ -59,20 +62,44 @@ afterEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
 });
 
-describe("AIØ top header profile button", () => {
+describe("AIØ top header logo and profile button", () => {
+  it("shows the primary AIØ brand logo image in the header", () => {
+    renderHeader("driver@ai0.app");
+
+    const logo = container.querySelector<HTMLImageElement>("img[alt='AIØ logo']");
+    expect(logo).not.toBeNull();
+    expect(logo?.getAttribute("src")).toBe(LOGO_PATH);
+    expect(logo?.className).toContain("object-contain");
+    expect(logo?.className).toContain("h-9");
+    expect(logo?.className).toContain("w-9");
+  });
+
+  it("renders only one primary AIØ logo in the header", () => {
+    renderHeader();
+
+    expect(container.querySelectorAll("img[alt='AIØ logo']")).toHaveLength(1);
+  });
+
+  it("removes the old text logo treatment from the header", () => {
+    renderHeader("driver@ai0.app");
+
+    expect(container.textContent).not.toContain("AIØ");
+    expect(container.textContent).not.toContain("slashed zero");
+    expect(container.querySelector("h1 span[aria-label]")).toBeNull();
+  });
+
+  it("keeps the greeting and date in the header", () => {
+    renderHeader("driver@ai0.app");
+
+    expect(container.textContent).toMatch(/Good (morning|afternoon|evening)/);
+    expect(container.textContent).toContain(",");
+  });
+
   it("shows the profile image in the header", () => {
     renderHeader("driver@ai0.app");
 
-    expect(images()).toEqual([
-      { src: AVATAR_PATH, alt: "Your profile picture", className: expect.stringContaining("object-cover") as string },
-    ]);
-  });
-
-  it("keeps the AIØ logo and greeting in the header", () => {
-    renderHeader("driver@ai0.app");
-
-    expect(container.textContent).toContain("AI");
-    expect(container.textContent).toContain("Ø");
+    const avatar = container.querySelector<HTMLImageElement>("img[alt='Your profile picture']");
+    expect(avatar?.getAttribute("src")).toBe(AVATAR_PATH);
   });
 
   it("removes the old three-dots button from the header", () => {
@@ -99,7 +126,8 @@ describe("AIØ top header profile button", () => {
     expect(button?.className).toContain("h-11");
     expect(button?.className).toContain("w-11");
     expect(button?.className).toContain("overflow-hidden");
-    expect(container.querySelector("img")?.className).toContain("object-cover");
+    const avatar = container.querySelector<HTMLImageElement>("img[alt='Your profile picture']");
+    expect(avatar?.className).toContain("object-cover");
   });
 
   it("opens the More/profile destination when the profile picture is tapped", () => {
@@ -111,6 +139,19 @@ describe("AIØ top header profile button", () => {
     act(() => button?.click());
 
     expect(onOpenProfile).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not use any store-logo paths in the header", () => {
+    renderHeader();
+
+    const srcs = images().map((img) => img.src);
+    expect(srcs.some((src) => src.includes("/store-logos/"))).toBe(false);
+    expect(srcs.some((src) => src.includes("/branding/"))).toBe(true);
+  });
+
+  it("keeps the store-logo registry paths unchanged", () => {
+    expect(resolveStoreLogo({ companyId: null, texts: ["Vons"] })?.logoPath).toBe("/store-logos/vons.svg");
+    expect(resolveStoreLogo({ companyId: null, texts: ["Target Store 1384"] })?.logoPath).toBe("/store-logos/target.svg");
   });
 });
 
@@ -144,20 +185,21 @@ describe("More page profile row", () => {
   });
 });
 
-describe("avatar asset is local and bundled", () => {
-  it("references the same local public asset path in both locations", () => {
+describe("local bundled assets", () => {
+  it("references the same local avatar asset path in both locations", () => {
     renderHeader();
-    const headerSrc = container.querySelector("img")?.getAttribute("src");
+    const headerSrc = container.querySelector<HTMLImageElement>("img[alt='Your profile picture']")?.getAttribute("src");
 
     renderMoreScreen();
-    const moreSrc = container.querySelector("img")?.getAttribute("src");
+    const moreSrc = container.querySelector<HTMLImageElement>("img[alt$='profile picture']")?.getAttribute("src");
 
     expect(headerSrc).toBe(AVATAR_PATH);
     expect(moreSrc).toBe(AVATAR_PATH);
     expect(headerSrc).toBe(moreSrc);
   });
 
-  it("ships the bundled asset file in the repository", () => {
+  it("ships the bundled logo and avatar asset files in the repository", () => {
+    expect(existsSync(LOGO_FILE)).toBe(true);
     expect(existsSync(AVATAR_FILE)).toBe(true);
   });
 });
