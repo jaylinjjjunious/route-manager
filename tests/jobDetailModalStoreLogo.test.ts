@@ -81,7 +81,7 @@ afterEach(() => {
 });
 
 describe("Job Details Mini Page store logo", () => {
-  it("renders the shared store logo as the identity square beside the store name", async () => {
+  it("renders the shared store logo in the former hourglass square beside the store name", async () => {
     await renderModal(makeJob({ storeName: "Vons" }));
 
     const logos = images();
@@ -89,7 +89,13 @@ describe("Job Details Mini Page store logo", () => {
     expect(document.body.textContent).toContain("Vons");
   });
 
-  it("renders the identity square at the md size with object-contain and no stored-job mutation", async () => {
+  it("shows the Target logo for Target jobs in the status square", async () => {
+    await renderModal(makeJob({ storeName: "Target Store 1384" }));
+
+    expect(images()).toEqual([{ src: "/store-logos/target.svg", alt: "Target logo" }]);
+  });
+
+  it("renders the logo inside the status square at the preserved h-9 w-9 size with object-contain", async () => {
     const job = makeJob({ storeName: "Family Dollar 2151 S Chester Ave", notes: "Revisit #203" });
     const before = JSON.stringify(job);
     await renderModal(job);
@@ -97,29 +103,31 @@ describe("Job Details Mini Page store logo", () => {
     const img = document.querySelector("img");
     expect(img).not.toBeNull();
     expect(img?.className).toContain("object-contain");
-    const tile = img?.closest("span");
-    expect(tile?.className).toContain("h-11");
-    expect(tile?.className).toContain("w-11");
-    expect(tile?.className).toContain("rounded-[14px]");
+    const button = img?.closest("button");
+    expect(button?.className).toContain("h-9");
+    expect(button?.className).toContain("w-9");
+    expect(button?.className).toContain("rounded-lg");
 
     expect(JSON.stringify(job)).toBe(before);
   });
 
-  it("falls back to the existing generic icon for unknown stores", async () => {
+  it("falls back to the original hourglass icon for unknown stores", async () => {
     await renderModal(makeJob({ storeName: "Tractor Supply", notes: "No logo" }));
 
     expect(images()).toEqual([]);
-    expect(document.querySelector("[aria-hidden='true']")).not.toBeNull();
+    const pendingButton = document.querySelector<HTMLButtonElement>("button[title='Mark under review']");
+    expect(pendingButton).not.toBeNull();
+    expect(pendingButton?.querySelector("svg.lucide-hourglass")).not.toBeNull();
     expect(document.body.textContent).toContain("Tractor Supply");
   });
 
-  it("keeps the status-toggle button icons and never places the store logo inside the button", async () => {
+  it("replaces the pending hourglass with the store logo and keeps the status-toggle action", async () => {
     await renderModal(makeJob({ storeName: "Vons", status: "ready" }));
 
     const pendingButton = document.querySelector<HTMLButtonElement>("button[title='Mark under review']");
     expect(pendingButton).not.toBeNull();
-    expect(pendingButton?.querySelector("svg.lucide-hourglass")).not.toBeNull();
-    expect(pendingButton?.querySelector("img")).toBeNull();
+    expect(pendingButton?.querySelector("svg.lucide-hourglass")).toBeNull();
+    expect(pendingButton?.querySelector("img")).not.toBeNull();
   });
 
   it("keeps CheckSquare states for completed and under_review status buttons", async () => {

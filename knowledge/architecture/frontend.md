@@ -94,12 +94,12 @@ Today's route pool, the weekly strip, and the expanded day panel all derive from
 
 ### App Icons
 
-The official application icon source is preserved at `public/branding/all-in-one-667-source-icon.png`. Safari iPhone home-screen installation uses `public/apple-touch-icon.png` through the `<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />` tag in `index.html`. The app also ships `public/manifest.webmanifest` and a no-stale `public/sw.js` service worker for installed Home Screen PWA verification. The app header reuses `public/icons/icon-192.png` for the small logo next to the `All in One 667` title.
+The official application icon source is preserved at `public/branding/all-in-one-667-source-icon.png`. Safari iPhone home-screen installation uses `public/apple-touch-icon.png` through the `<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />` tag in `index.html`. The app also ships `public/manifest.webmanifest` and a no-stale `public/sw.js` service worker for installed Home Screen PWA verification. The AIØ header uses the `AIØ` text wordmark (no logo image); the legacy `Header` component used on non-AIØ tabs reuses `public/icons/aio-icon-192.png` for the small logo next to the `All in One 667` title.
 
-Generated icon outputs:
+Generated icon outputs (black/white AIØ badge):
 - `public/apple-touch-icon.png` - 180x180 for iPhone Safari Add to Home Screen
-- `public/icons/icon-192.png` - 192x192 PNG
-- `public/icons/icon-512.png` - 512x512 PNG
+- `public/icons/aio-icon-192.png` - 192x192 PNG (PWA manifest + legacy header)
+- `public/icons/aio-icon-512.png` - 512x512 PNG (PWA manifest)
 - `public/favicon-32x32.png` - 32x32 PNG
 - `public/favicon-16x16.png` - 16x16 PNG
 

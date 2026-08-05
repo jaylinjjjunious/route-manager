@@ -1,6 +1,5 @@
 import React from "react";
 
-const LOGO_PATH = "/branding/aio-logo-black.svg";
 const AVATAR_PATH = "/profile/avatar.webp";
 
 function getGreeting(hour: number): string {
@@ -36,12 +35,8 @@ export default function AioHeader({
             {getGreeting(hour)}
             {greetingName}
           </p>
-          <h1 className="mt-0.5 leading-none">
-            <img
-              src={LOGO_PATH}
-              alt="AIØ logo"
-              className="block h-9 w-9 object-contain"
-            />
+          <h1 className="mt-0.5 text-[34px] font-black leading-none tracking-[-0.02em] text-[var(--color-aio-text)]">
+            AI<span aria-label="Ø (slashed zero)">Ø</span>
           </h1>
           <p className="mt-1.5 text-[13px] font-medium text-[var(--color-aio-text-2)]">{formatToday()}</p>
         </div>

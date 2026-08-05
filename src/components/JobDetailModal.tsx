@@ -19,7 +19,7 @@ import { formatScheduledDate, isValidScheduledDate } from '../utils/jobSchedule'
 import InventoryCustodyPanel from './InventoryCustodyPanel';
 import { JobTransitSection } from './transit/JobTransitSection';
 import { isTransitApiEnabled } from '../services/transit';
-import { StoreLogo } from './aio/StoreLogo';
+import { resolveStoreLogo } from '../services/storeLogos';
 import PreviewGuideModal from '../features/previewGuide/PreviewGuideModal';
 
 const SCAN_COMPATIBLE_TYPES: JobType[] = ['retail_audit', 'mystery_shop', 'merchandising'];
@@ -94,6 +94,25 @@ const BADGE_LABELS: Record<string, string> = {
   completed: 'DONE',
   postponed: 'TOMORROW',
 };
+
+function JobIdentitySquare({ job }: { job: Job }) {
+  const match = resolveStoreLogo({ companyId: null, texts: [job.storeName, job.notes] });
+  const [failed, setFailed] = useState(false);
+
+  if (!match || failed) {
+    return <Hourglass size={20} />;
+  }
+
+  return (
+    <img
+      src={match.logoPath}
+      alt={`${match.displayName} logo`}
+      className="h-full w-full object-contain p-1"
+      draggable={false}
+      onError={() => setFailed(true)}
+    />
+  );
+}
 
 export default function JobDetailModal({
   job,
@@ -276,11 +295,10 @@ export default function JobDetailModal({
             {/* Job title and pay - stacked on mobile */}
             <div className="min-w-0">
               <div className="flex items-start gap-3">
-                <StoreLogo job={job} />
                 <button
                   onClick={() => handleQuickStatusChange(isDone ? 'ready' : job.status === 'under_review' ? 'completed' : 'under_review')}
                   disabled={jobAccessLocked && !isDone}
-                  className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-500 transition hover:text-emerald-400 disabled:cursor-not-allowed disabled:opacity-45"
+                  className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-white/5 text-slate-500 transition hover:text-emerald-400 disabled:cursor-not-allowed disabled:opacity-45"
                   title={jobAccessLocked ? 'Shower proof required first' : isDone ? 'Reactivate' : job.status === 'under_review' ? 'Complete after review' : 'Mark under review'}
                 >
                   {isDone ? (
@@ -288,7 +306,7 @@ export default function JobDetailModal({
                   ) : job.status === 'under_review' ? (
                     <CheckSquare size={20} className="text-indigo-500" />
                   ) : (
-                    <Hourglass size={20} />
+                    <JobIdentitySquare job={job} />
                   )}
                 </button>
                 <div className="min-w-0 flex-1">
