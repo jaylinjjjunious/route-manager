@@ -23,5 +23,5 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "exclude": ["dist", "node_modules", "all_in_one_667_callable_patch"]
+  "exclude": ["dist", "node_modules", "all_in_one_667_callable_patch", "route-optimizer"]
 }
