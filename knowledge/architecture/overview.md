@@ -50,6 +50,8 @@ route-optimizer-app/
     services/
       showerProofApi.ts  — Proof upload/fetch API
       apiClient.ts       — Auth-fetch wrapper
+    features/
+      habits/HabitsTab.tsx — Presentational Habits tab UI (state lives in App.tsx)
     utils/
       showerCycle.ts     — Reset time, cycle ID, labels
       routeUtils.ts      — Route optimization, metrics
@@ -86,7 +88,7 @@ No external state library. App.tsx uses React useState and useRef for all state:
 - `jobs`, `routeOrder` — Job list and optimized route order
 - `proofVault` — Proof attachments per job
 - `showerProofs` — Array of shower proof records per cycle
-- `showerHabitLogs`, `showerHabitTasks` — Habit tracking state
+- `habitTasks`, `habitLogs` — Habit tracking state
 - `rideModeActive` — Whether Ride Mode is engaged
 - `currentTab` — Active navigation tab
 
@@ -128,4 +130,4 @@ npm run dev
 
 ## Last Updated
 
-2026-07-20 (c12bd44)
+2026-08-06 (ed5d961) — added `src/features/habits/HabitsTab.tsx` to repository structure; corrected habit state names to `habitTasks` and `habitLogs`.

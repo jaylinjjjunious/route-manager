@@ -66,10 +66,17 @@ User Input → Habit Log → localStorage + Backend Sync
 
 ### Key Components
 
+All habit UI elements are rendered by `src/features/habits/HabitsTab.tsx`, a presentational component extracted from `src/App.tsx`:
+
 - **Mandatory Shower Section**: Barcode scanner, proof attachment, confirm button
-- **Custom Task List**: Task cards with sliders for minutes
-- **Date Picker**: Select date for logging
-- **Notes Input**: Free-text notes per log entry
+- **Custom Task List**: Task cards with session counts
+- **Add To Today Panel**: Quick-add task with minutes and note
+- **Log Time Section**: Minutes done, note, and log button
+- **Progress Cards**: Streak, 7-day hit rate, total time, sessions
+- **7-Day Consistency Chart**: Daily bar chart against target minutes
+- **Log History**: All logged sessions with delete actions
+
+Habit state, effects, handlers, and backend synchronization remain in `src/App.tsx`. This was a UI-only extraction with no intended behavior change.
 
 ## Design Rationale
 
@@ -141,7 +148,8 @@ User Input → Habit Log → localStorage + Backend Sync
 
 ## Related Source Files
 
-- `src/App.tsx` — habit state and handlers
+- `src/App.tsx` — habit state, effects, handlers, and backend synchronization
+- `src/features/habits/HabitsTab.tsx` — presentational Habits tab UI (extracted from App.tsx)
 - `worker/index.ts` — backend API for habit sync
 - `server.ts` — Express backend for habit sync
 
@@ -153,4 +161,4 @@ User Input → Habit Log → localStorage + Backend Sync
 
 ## Last Updated
 
-2026-07-20 (commit c12bd44)
+2026-08-06 (commit ed5d961) — extracted Habits tab UI into `src/features/habits/HabitsTab.tsx`; state, effects, handlers, and backend sync remain in `src/App.tsx`.

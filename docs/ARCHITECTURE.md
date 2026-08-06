@@ -28,6 +28,7 @@
 - `src/components/OutlierDetector.tsx`: outlier review.
 - `src/components/RouteScoreGauge.tsx`: route score visualization.
 - `src/components/RouteSummaryCard.tsx`: route metrics summary.
+- `src/features/habits/HabitsTab.tsx`: presentational Habits tab UI (state and handlers remain in `src/App.tsx`).
 
 ## Core Types
 

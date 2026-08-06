@@ -24,7 +24,7 @@ Describes the React application structure, component hierarchy, state management
             <JobsTab />                  (job list, import)
             <BatteryTab />               (e-bike telemetry)
             <TrackerTab />               (end of day summary)
-            <HabitsTab />                (mandatory shower habit)
+            <HabitsTab />                (mandatory shower habit + custom tasks)  → `src/features/habits/HabitsTab.tsx`
             <SettingsTab />              (hub address, theme, debug)
           </main>
           <BottomNav />                  (floating pill navigation)
@@ -61,7 +61,7 @@ Key state groups:
 - **Route**: `routeMetrics`, `routingProvider`, `nextRouteAJob`
 - **Ride Mode**: `rideModeActive`, `currentStopIndex`, `rideSession`
 - **Shower Gate**: `showerProofs`, `showerGateUnlocked`, `barcodeScanSuccess`
-- **Habits**: `showerHabitLogs`, `showerHabitTasks`
+- **Habits**: `habitTasks`, `habitLogs`
 - **Proof Vault**: `proofVault` (keyed by jobId)
 - **Settings**: `startAddress`, `theme`, `debugCenterOpen`
 
@@ -134,4 +134,4 @@ Targets modern mobile browsers (iOS Safari, Android Chrome) and desktop (Chrome,
 
 ## Last Updated
 
-2026-07-30 (phase-1-scheduling)
+2026-08-06 — documented HabitsTab file path (`src/features/habits/HabitsTab.tsx`) and corrected habit state names (`habitTasks`, `habitLogs`).
