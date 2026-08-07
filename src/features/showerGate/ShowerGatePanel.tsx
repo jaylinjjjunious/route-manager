@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, CheckCircle2, Flashlight, FlashlightOff, History, Image as ImageIcon, Loader2, ScanLine, ShieldAlert, ShieldCheck, X } from 'lucide-react';
-import { getBarcodeEnding, getLocalDateKey, REQUIRED_SHOWER_BARCODE } from '../utils/showerCycle';
-import { getCurrentShowerProof, getShowerProofHistory, ShowerProofRecord, uploadShowerProof } from '../services/showerProofApi';
+import { getBarcodeEnding, getLocalDateKey, REQUIRED_SHOWER_BARCODE } from '../../utils/showerCycle';
+import { getCurrentShowerProof, getShowerProofHistory, ShowerProofRecord, uploadShowerProof } from './showerProofApi';
 
 type ShowerGateView = 'current' | 'scanner' | 'today' | 'history';
 type ShowerGateStatus =

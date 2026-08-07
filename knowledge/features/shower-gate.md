@@ -68,19 +68,53 @@ Ensures the user completes a required daily hygiene habit before starting work. 
 
 ## Frontend Implementation
 
-**`src/components/ShowerGatePanel.tsx`** (646 lines)
+**`src/features/showerGate/ShowerGateSection.tsx`**
+- Integrated shower gate UI rendered inside the Habits tab.
+- Props-driven: receives all shower state and action callbacks from `useShowerGate`.
+- Separate from `ShowerGatePanel`; `ShowerGatePanel` is used on the Dashboard for Mission Control verification.
+
+**`src/features/showerGate/showerGateService.ts`**
+- Pure service module: no React imports. Owns all backend communication and file/data processing.
+- `resizeProofImage(file)` — resizes an image to 720px max side, returns JPEG data URL.
+- `loadShowerProofForCycle(cycleKey)` — fetches and normalizes `/api/shower-proof?cycleKey=X`.
+- `saveShowerProofEvent(payload)` — persists shower-proof events via `POST /api/shower-proof`.
+- `normalizeShowerProofRecord(record)` — converts a backend `ShowerProofRecord` into a local `ShowerProof`.
+
+**`src/features/showerGate/useShowerGate.ts`**
+- Custom hook that encapsulates all shower gate React state, effects, derived values, scanner lifecycle, barcode detection, torch control, and proof confirmation.
+- Delegates all backend I/O and pure data normalization to `showerGateService.ts`.
+- Returns read-only state + action methods; no raw setters exposed to App.tsx.
+- Key returned values:
+  - `showerGateUnlocked`, `showerGateAccessReady`
+  - `showerCycleKey`, `showerCycleLabel`
+  - `showerProofForCycle`, `showerProofAttachmentForCycle`
+  - `barcodeVerifiedForCycle`, `barcodeScanMessage`
+  - `barcodeScannerActive`, `barcodePermissionStatus`, `barcodeTorchOn`, `barcodeTorchAvailable`, `barcodeVideoRef`
+  - `showerProofSyncStatus`, `showerProofSyncMessage`, `showerProofBackendFolder`
+  - `missionControlShowerProofRecord`
+- Action methods:
+  - `confirmShower()` — validates barcode + proof, uploads, returns `{ success, proof?, error? }`
+  - `handleMissionControlVerified(record)` — normalizes Mission Control proof, returns `ShowerProof | null`
+  - `handleShowerProofFile(files, key)` — resizes and stages a proof attachment
+  - `startBarcodeScanner()`, `stopBarcodeScanner()`, `toggleBarcodeTorch()`
+
+**`src/features/showerGate/ShowerGatePanel.tsx`** (646 lines)
 - Self-contained component with camera management, barcode detection, proof upload, history.
+- Used on Dashboard for Mission Control verification.
 - Camera: `navigator.mediaDevices.getUserMedia()` with `facingMode: "environment"`.
 - Barcode: `BarcodeDetector` API with `@zxing/browser` fallback.
 - Torch: `MediaTrackConstraints.advanced[{ torch: true }]` or `zxingControls.switchTorch()`.
 - Upload: `uploadShowerProof()` from `showerProofApi`.
 - Focus trapping and Escape key support for accessibility.
 
-**`src/App.tsx`** (lines 1556-1616, 2633-2640)
-- Computes `showerCycleKey` via `getCurrentCycleId(new Date())`.
-- Computes `showerGateUnlocked` from `showerProofForCycle` fields.
-- Renders `ShowerGatePanel` on Dashboard only when `!showerGateUnlocked`.
-- `onVerifiedProof` handler saves proof, updates habit log, triggers refresh.
+**`src/App.tsx`**
+- Instantiates `useShowerGate(now)` where `now = new Date(nowTick)`.
+- Retains cross-cutting wrappers:
+  - `blockJobAccess(action)` — redirects to Dashboard if gate locked.
+  - `handleConfirmDailyShower()` — delegates to `showerGate.confirmShower()`, then logs habit task + habit log + dispatcher message.
+  - `handleMissionControlShowerVerified(record)` — delegates to `showerGate.handleMissionControlVerified()`, then logs habit task + habit log + dispatcher message.
+- Renders `ShowerGatePanel` on Dashboard only when `!showerGate.showerGateUnlocked`.
+- Passes `showerGate.*` props into `HabitsTab` and protected tab overlays.
 
 ## Backend Implementation
 
@@ -186,10 +220,14 @@ No automated tests exist for the Shower Gate feature. Manual testing covers:
 
 ## Related Source Files
 
-- `src/components/ShowerGatePanel.tsx` — Panel component (646 lines)
-- `src/App.tsx` — State management (lines 1556-1616, 2633-2640)
+- `src/features/showerGate/showerGateService.ts` — Backend I/O and pure file/data processing (no React)
+- `src/features/showerGate/useShowerGate.ts` — Shower gate state/effects/scanner hook
+- `src/features/showerGate/ShowerGateSection.tsx` — Shower gate UI rendered in Habits tab
+- `src/features/showerGate/types.ts` — Shared shower gate types (`ShowerProof`, `BarcodePermissionStatus`, `ShowerProofSyncStatus`)
+- `src/features/showerGate/ShowerGatePanel.tsx` — Panel component (646 lines)
+- `src/App.tsx` — Orchestrates `useShowerGate`, cross-cutting habit/dispatcher wiring, protected tab overlays
 - `src/utils/showerCycle.ts` — Cycle calculation (56 lines)
-- `src/services/showerProofApi.ts` — API client (117 lines)
+- `src/features/showerGate/showerProofApi.ts` — API client (117 lines)
 - `server.ts` — Express proof endpoints
 - `worker/index.ts` — Worker proof endpoints
 - `drizzle/0003_shower_proofs.sql` — Legacy schema
@@ -203,4 +241,4 @@ No automated tests exist for the Shower Gate feature. Manual testing covers:
 
 ## Last Updated
 
-2026-07-20 (c12bd44)
+2026-08-06 (refactor/shower-gate-extraction — Step 4: `showerGateService.ts` backend / file-processing extraction)

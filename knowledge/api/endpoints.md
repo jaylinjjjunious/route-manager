@@ -1,7 +1,7 @@
 # API Endpoints Reference
 
 **Last Updated:** 2026-08-02 (transit-trip-stop-accuracy)
-**Related Source Files:** `server.ts`, `worker/index.ts`, `server/transit/transitRoutes.ts`, `src/services/showerProofApi.ts`, `src/services/apiClient.ts`, `src/services/transit/transitApiClient.ts`
+**Related Source Files:** `server.ts`, `worker/index.ts`, `server/transit/transitRoutes.ts`, `src/features/showerGate/showerProofApi.ts`, `src/services/apiClient.ts`, `src/services/transit/transitApiClient.ts`
 
 ---
 

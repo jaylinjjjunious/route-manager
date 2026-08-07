@@ -1,5 +1,5 @@
-import { supabase } from "../lib/supabase";
-import { authFetchJson } from "./apiClient";
+import { supabase } from "../../lib/supabase";
+import { authFetchJson } from "../../services/apiClient";
 
 export type ShowerProofUploadStatus = 'saved' | 'failed';
 export type ShowerProofVerificationStatus = 'verified' | 'rejected';

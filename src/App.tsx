@@ -46,7 +46,7 @@ import AssistantBubble from './assistant/AssistantBubble';
 import AmbientLiquidBackground from './components/backgrounds/AmbientLiquidBackground';
 import JobDetailModal from './components/JobDetailModal';
 import { EndOfDaySummary } from './components/EndOfDaySummary';
-import ShowerGatePanel from './components/ShowerGatePanel';
+import ShowerGatePanel from './features/showerGate/ShowerGatePanel';
 import ScreenshotImportModal from './components/ScreenshotImportModal';
 import SmartAisleScan from './components/SmartAisleScan';
 import InventoryCustodyPanel from './components/InventoryCustodyPanel';
@@ -70,12 +70,14 @@ import { getPreviewGuideReadiness } from './components/aio/roadReadiness';
 import { TransitToolsPanel } from './components/transit/TransitToolsPanel';
 import { TransitStatusCard } from './components/transit/TransitStatusCard';
 import type { TravelMode } from './types';
-import { getCurrentCycleId, getCycleLabel, getNextResetTime, getLocalDateKey } from './utils/showerCycle';
+import { getLocalDateKey } from './utils/showerCycle';
 import HabitsTab from './features/habits/HabitsTab';
 import { useHabits } from './features/habits/useHabits';
 import safeStorage from './utils/safeStorage';
 import { useTextToSpeech } from './hooks/useTextToSpeech';
-import type { ShowerProofRecord } from './services/showerProofApi';
+import type { ShowerProofRecord } from './features/showerGate/showerProofApi';
+import type { ShowerProof } from './features/showerGate/types';
+import { useShowerGate } from './features/showerGate/useShowerGate';
 import { authFetch, authFetchJson } from './services/apiClient';
 import { isTransitApiEnabled } from './services/transit';
 import DebugCenter from './components/settings/DebugCenter';
@@ -113,43 +115,11 @@ interface ProofRecord {
   updatedAt: string;
 }
 
-interface ShowerProof {
-  cycleKey: string;
-  proofId?: string;
-  proofName?: string;
-  proofDataUrl?: string;
-  proofAttachment?: {
-    name: string;
-    dataUrl: string;
-  };
-  storageKey?: string;
-  imageUrl?: string;
-  barcodeValue?: string;
-  scannedBarcode?: string;
-  barcodeVerified?: boolean;
-  barcodeVerifiedAt?: string;
-  confirmedAt?: string;
-  showerConfirmed?: boolean;
-  showerConfirmedAt?: string;
-  backendFolderPath?: string;
-  capturedAt?: string;
-  localDate?: string;
-  uploadStatus?: 'saved' | 'failed';
-  verificationStatus?: 'verified' | 'rejected';
-}
-
 const SHOWER_HABIT_TASK_ID = 'habit-task-mandatory-shower';
 const SHOWER_HABIT_NAME = 'Mandatory Shower';
-const SHOWER_GATE_STORAGE_KEY = 'daily_shower_gate_proofs';
-const REQUIRED_SHOWER_BARCODE = '075371003233';
 // Temporary operational bypass. Set true to restore the scan/access gate without removing its implementation.
 const SHOWER_GATE_REQUIRED = false;
-const SHOWER_PROOF_MANDATORY = true;
-const MAX_SHOWER_PROOF_SIDE = 720;
-const SHOWER_PROOF_JPEG_QUALITY = 0.58;
-const SHOWER_BACKEND_TIMEOUT_MS = 15000;
 
-type BarcodePermissionStatus = 'idle' | 'requesting' | 'granted' | 'denied' | 'unsupported' | 'error';
 type AppTab = 'dashboard' | 'jobs' | 'more' | 'inventory' | 'battery' | 'tracker' | 'habits' | 'tools' | 'settings';
 
 const APP_TABS: AppTab[] = ['dashboard', 'jobs', 'more', 'inventory', 'battery', 'tracker', 'habits', 'tools', 'settings'];
@@ -197,41 +167,6 @@ declare global {
     BarcodeDetector?: BarcodeDetectorConstructor;
   }
 }
-
-const resizeProofImage = (file: File): Promise<string> => {
-  if (typeof window === 'undefined' || !file.type.startsWith('image/')) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result || ''));
-      reader.onerror = () => reject(reader.error || new Error('Could not read proof file'));
-      reader.readAsDataURL(file);
-    });
-  }
-
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const image = new Image();
-      image.onload = () => {
-        const scale = Math.min(1, MAX_SHOWER_PROOF_SIDE / Math.max(image.width, image.height));
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.max(1, Math.round(image.width * scale));
-        canvas.height = Math.max(1, Math.round(image.height * scale));
-        const context = canvas.getContext('2d');
-        if (!context) {
-          resolve(String(reader.result || ''));
-          return;
-        }
-        context.drawImage(image, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', SHOWER_PROOF_JPEG_QUALITY));
-      };
-      image.onerror = () => resolve(String(reader.result || ''));
-      image.src = String(reader.result || '');
-    };
-    reader.onerror = () => reject(reader.error || new Error('Could not read proof file'));
-    reader.readAsDataURL(file);
-  });
-};
 
 const SEED_JOBS: Job[] = [
   {
@@ -402,27 +337,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const [showScheduleReview, setShowScheduleReview] = useState<'overdue' | 'unscheduled' | null>(null);
   const [moveToDayJob, setMoveToDayJob] = useState<Job | null>(null);
   const trackerTimerRef = useRef<number | null>(null);
-  const [showerProofs, setShowerProofs] = useState<ShowerProof[]>(() => {
-    try {
-      const saved = safeStorage.getItem(SHOWER_GATE_STORAGE_KEY);
-      const parsed = saved ? JSON.parse(saved) : [];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  });
-  const [showerProofDraft, setShowerProofDraft] = useState<{ name: string; dataUrl: string } | null>(null);
-  const [showerProofBackendFolder, setShowerProofBackendFolder] = useState('');
-  const [showerProofSyncStatus, setShowerProofSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [showerProofSyncMessage, setShowerProofSyncMessage] = useState('');
-  const [showerProofInputKey, setShowerProofInputKey] = useState(0);
-  const [barcodeScannerActive, setBarcodeScannerActive] = useState(false);
-  const [barcodePermissionStatus, setBarcodePermissionStatus] = useState<BarcodePermissionStatus>('idle');
-  const [barcodeScanMessage, setBarcodeScanMessage] = useState('Scan the product barcode to unlock shower confirmation.');
-  const [barcodeScanSuccess, setBarcodeScanSuccess] = useState(false);
-  const [scannedBarcodeValue, setScannedBarcodeValue] = useState('');
-  const [barcodeTorchAvailable, setBarcodeTorchAvailable] = useState(false);
-  const [barcodeTorchOn, setBarcodeTorchOn] = useState(false);
   const [nowTick, setNowTick] = useState(() => Date.now());
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
   const [addMenuOpen, setAddMenuOpen] = useState(false);
@@ -455,13 +369,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const [simulationStatus, setSimulationStatus] = useState<string>('');
   const [simulatedJobsCompleted, setSimulatedJobsCompleted] = useState<string[]>([]);
   const simTimerRef = useRef<number | null>(null);
-  const barcodeVideoRef = useRef<HTMLVideoElement | null>(null);
-  const barcodeStreamRef = useRef<MediaStream | null>(null);
-  const barcodeScanLoopRef = useRef<number | null>(null);
-  const barcodeScanHandledRef = useRef(false);
-  const showerGateUnlockedRef = useRef(false);
   const mobileActivationRef = useRef({ key: '', time: 0 });
-  const zxingScannerControlsRef = useRef<{ stop: () => void; switchTorch?: (onOff: boolean) => Promise<void> } | null>(null);
 
   // Real-time Optimization Alerts & explains
   const [lastOptimizationLog, setLastOptimizationLog] = useState<{
@@ -649,10 +557,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
-
-  useEffect(() => {
-    safeStorage.setItem(SHOWER_GATE_STORAGE_KEY, JSON.stringify(showerProofs.slice(-14)));
-  }, [showerProofs]);
 
   // Synchronize Operations dashboard message with the latest assistant message
   useEffect(() => {
@@ -1481,197 +1385,12 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const now = new Date(nowTick);
   const todayKey = getDateKey(now);
   const habits = useHabits(todayKey);
-  const showerCycleKey = getCurrentCycleId(now);
-  const showerCycleLabel = getCycleLabel(showerCycleKey);
-  const showerProofForCycle = showerProofs.find(proof => proof.cycleKey === showerCycleKey);
-  const showerProofAttachmentForCycle = showerProofDraft || (
-    showerProofForCycle?.proofAttachment
-      ? { name: showerProofForCycle.proofAttachment.name, dataUrl: showerProofForCycle.proofAttachment.dataUrl }
-      : showerProofForCycle?.proofName && showerProofForCycle?.proofDataUrl
-        ? { name: showerProofForCycle.proofName, dataUrl: showerProofForCycle.proofDataUrl }
-        : null
-  );
-  const persistedBarcodeVerifiedForCycle = Boolean(
-    showerProofForCycle?.barcodeVerified &&
-    showerProofForCycle?.scannedBarcode === REQUIRED_SHOWER_BARCODE &&
-    showerProofForCycle?.barcodeVerifiedAt
-  );
-  const barcodeVerifiedForCycle = Boolean(
-    persistedBarcodeVerifiedForCycle ||
-    (barcodeScanSuccess && scannedBarcodeValue === REQUIRED_SHOWER_BARCODE)
-  );
-  const showerProofRequiredSatisfied = !SHOWER_PROOF_MANDATORY || Boolean(
-    showerProofAttachmentForCycle?.dataUrl ||
-    showerProofForCycle?.imageUrl ||
-    showerProofForCycle?.storageKey ||
-    showerProofForCycle?.proofId
-  );
-  const showerGateUnlocked = Boolean(
-    showerProofForCycle?.showerConfirmed &&
-    showerProofForCycle?.showerConfirmedAt &&
-    showerProofForCycle?.scannedBarcode === REQUIRED_SHOWER_BARCODE &&
-    (
-      !SHOWER_PROOF_MANDATORY ||
-      Boolean(
-        showerProofForCycle?.proofAttachment?.dataUrl ||
-        showerProofForCycle?.proofDataUrl ||
-        showerProofForCycle?.imageUrl ||
-        showerProofForCycle?.storageKey ||
-        showerProofForCycle?.proofId
-      )
-    ) &&
-    (
-      !showerProofForCycle?.uploadStatus ||
-      showerProofForCycle.uploadStatus === 'saved'
-    ) &&
-    (
-      !showerProofForCycle?.verificationStatus ||
-      showerProofForCycle.verificationStatus === 'verified'
-    )
-  );
-  const showerGateStatusText = showerGateUnlocked
-    ? `Shower confirmed ${new Date(showerProofForCycle!.showerConfirmedAt || showerProofForCycle!.confirmedAt || now).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
-    : barcodeVerifiedForCycle && !showerProofRequiredSatisfied
-      ? 'Product verified. Proof missing.'
-      : barcodeVerifiedForCycle
-        ? 'Ready to confirm'
-        : barcodeScannerActive
-          ? 'Scanning'
-          : barcodeScanMessage === 'Incorrect product barcode.'
-          ? 'Incorrect barcode'
-          : 'Barcode not scanned';
-  const showerGateAccessReady = !SHOWER_GATE_REQUIRED || showerGateUnlocked;
-  showerGateUnlockedRef.current = showerGateUnlocked;
-  const missionControlShowerProofRecord: ShowerProofRecord | null = showerProofForCycle?.proofId && showerProofForCycle?.imageUrl
-    ? {
-      id: showerProofForCycle.proofId,
-      cycleId: showerProofForCycle.cycleKey,
-      localDate: showerProofForCycle.localDate || showerProofForCycle.cycleKey,
-      barcode: showerProofForCycle.scannedBarcode || showerProofForCycle.barcodeValue || REQUIRED_SHOWER_BARCODE,
-      barcodeEnding: (showerProofForCycle.scannedBarcode || showerProofForCycle.barcodeValue || REQUIRED_SHOWER_BARCODE).slice(-4),
-      capturedAt: showerProofForCycle.capturedAt || showerProofForCycle.showerConfirmedAt || showerProofForCycle.confirmedAt || new Date().toISOString(),
-      storageKey: showerProofForCycle.storageKey || showerProofForCycle.backendFolderPath || '',
-      imageUrl: showerProofForCycle.imageUrl,
-      uploadStatus: showerProofForCycle.uploadStatus || 'saved',
-      verificationStatus: showerProofForCycle.verificationStatus || 'verified',
-      createdAt: showerProofForCycle.capturedAt || showerProofForCycle.showerConfirmedAt || showerProofForCycle.confirmedAt || new Date().toISOString(),
-      updatedAt: showerProofForCycle.showerConfirmedAt || showerProofForCycle.confirmedAt || showerProofForCycle.capturedAt || new Date().toISOString(),
-    }
-    : null;
+  const showerGate = useShowerGate(now);
   const showerHabitLogs = habits.habitLogs.filter(log => log.taskId === SHOWER_HABIT_TASK_ID || log.taskName === SHOWER_HABIT_NAME);
-  const showerHabitLoggedForCycle = showerHabitLogs.some(log => log.date === showerCycleKey);
-
-  const saveShowerProofToBackend = async (payload: {
-    proofName?: string;
-    proofDataUrl?: string;
-    barcodeValue?: string;
-    confirmedAt?: string;
-    eventType: 'proof_attached' | 'barcode_scanned' | 'barcode_rejected' | 'flash_updated' | 'proof_confirmed';
-    flashAvailable?: boolean;
-    flashUsed?: boolean;
-  }) => {
-    setShowerProofSyncStatus('saving');
-    setShowerProofSyncMessage('Saving shower gate proof to backend...');
-    const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), SHOWER_BACKEND_TIMEOUT_MS);
-
-    try {
-      const response = await authFetch('/api/shower-proof', {
-        method: 'POST',
-        signal: controller.signal,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cycleKey: showerCycleKey,
-          proofName: payload.proofName ?? showerProofDraft?.name ?? showerProofForCycle?.proofName,
-          proofDataUrl: payload.proofDataUrl ?? showerProofDraft?.dataUrl ?? showerProofForCycle?.proofDataUrl,
-          barcodeValue: payload.barcodeValue ?? scannedBarcodeValue,
-          confirmedAt: payload.confirmedAt,
-          eventType: payload.eventType,
-          flashAvailable: payload.flashAvailable ?? barcodeTorchAvailable,
-          flashUsed: payload.flashUsed ?? barcodeTorchOn,
-        })
-      });
-      if (!response.ok) {
-        const detail = await response.text().catch(() => '');
-        throw new Error(detail ? `Backend save failed with ${response.status}: ${detail.slice(0, 120)}` : `Backend save failed with ${response.status}`);
-      }
-      const data = await response.json();
-      const folderPath = data?.proof?.folderPath || '';
-      setShowerProofBackendFolder(folderPath);
-      setShowerProofSyncStatus('saved');
-      setShowerProofSyncMessage(folderPath ? `Backend saved: ${folderPath}` : 'Backend saved.');
-      return folderPath;
-    } catch (error) {
-      setShowerProofSyncStatus('error');
-      setShowerProofSyncMessage(error instanceof DOMException && error.name === 'AbortError'
-        ? 'Backend save timed out. Check signal and try again.'
-        : error instanceof Error && error.message.includes('Session expired')
-          ? 'Your session expired. Please sign in again.'
-          : error instanceof Error ? error.message : 'Could not save shower proof to backend.'
-      );
-      return '';
-    } finally {
-      window.clearTimeout(timeout);
-    }
-  };
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadBackendShowerProof = async () => {
-      try {
-        const response = await authFetch(`/api/shower-proof?cycleKey=${encodeURIComponent(showerCycleKey)}`);
-        if (!response.ok) return;
-        const data = await response.json();
-        const row = data?.proof;
-        if (!isMounted) return;
-        if (!row) {
-          setShowerProofSyncStatus('idle');
-          setShowerProofSyncMessage(`Backend ready for ${showerCycleKey}. No shower proof saved yet.`);
-          return;
-        }
-
-        const proofDataUrl = row.proof_data_url || row.proofDataUrl || '';
-        const proofName = row.proof_name || row.proofName || '';
-        const barcodeValue = row.barcode_value || row.barcodeValue || '';
-        const confirmedAt = row.confirmed_at || row.confirmedAt || '';
-        const folderPath = row.folder_path || row.folderPath || '';
-        setShowerProofBackendFolder(folderPath);
-        if (barcodeValue === REQUIRED_SHOWER_BARCODE || proofDataUrl || confirmedAt) {
-          setShowerProofs(prev => [
-            ...prev.filter(item => item.cycleKey !== showerCycleKey),
-            {
-              ...(prev.find(item => item.cycleKey === showerCycleKey) || {}),
-              cycleKey: showerCycleKey,
-              proofName,
-              proofDataUrl,
-              proofAttachment: proofName && proofDataUrl ? { name: proofName, dataUrl: proofDataUrl } : undefined,
-              barcodeValue,
-              scannedBarcode: barcodeValue,
-              barcodeVerified: barcodeValue === REQUIRED_SHOWER_BARCODE,
-              barcodeVerifiedAt: confirmedAt || row.updated_at?.toString() || row.updatedAt?.toString() || new Date().toISOString(),
-              confirmedAt,
-              showerConfirmed: Boolean(confirmedAt && proofDataUrl && barcodeValue === REQUIRED_SHOWER_BARCODE),
-              showerConfirmedAt: confirmedAt || undefined,
-              backendFolderPath: folderPath,
-            }
-          ]);
-          setShowerProofSyncStatus('saved');
-          setShowerProofSyncMessage(folderPath ? `Backend loaded: ${folderPath}` : 'Backend proof loaded.');
-        }
-      } catch {
-        // Local storage fallback keeps the gate usable if the backend is offline.
-      }
-    };
-
-    loadBackendShowerProof();
-    return () => {
-      isMounted = false;
-    };
-  }, [showerCycleKey]);
+  const showerHabitLoggedForCycle = showerHabitLogs.some(log => log.date === showerGate.showerCycleKey);
 
   const blockJobAccess = (action: string) => {
-    if (showerGateAccessReady) return false;
+    if (showerGate.showerGateAccessReady) return false;
     setCurrentTab('dashboard');
     if (typeof window !== 'undefined') {
       window.history.replaceState(null, '', '#dashboard');
@@ -1680,350 +1399,15 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     return true;
   };
 
-  useEffect(() => {
-    setBarcodeScanSuccess(persistedBarcodeVerifiedForCycle);
-    setScannedBarcodeValue(persistedBarcodeVerifiedForCycle ? REQUIRED_SHOWER_BARCODE : '');
-    setBarcodeScanMessage(persistedBarcodeVerifiedForCycle
-      ? 'Product verified.'
-      : 'Scan the product barcode to unlock shower confirmation.'
-    );
-    if (!persistedBarcodeVerifiedForCycle) {
-      stopBarcodeScanner();
-    }
-  }, [showerCycleKey]);
-
-  const stopBarcodeScanner = () => {
-    if (barcodeScanLoopRef.current !== null) {
-      window.cancelAnimationFrame(barcodeScanLoopRef.current);
-      barcodeScanLoopRef.current = null;
-    }
-    zxingScannerControlsRef.current?.stop();
-    zxingScannerControlsRef.current = null;
-    barcodeStreamRef.current?.getTracks().forEach(track => track.stop());
-    barcodeStreamRef.current = null;
-    setBarcodeScannerActive(false);
-    setBarcodeTorchAvailable(false);
-    setBarcodeTorchOn(false);
-  };
-
-  const rejectScannedBarcode = () => {
-    setBarcodeScanSuccess(false);
-    setScannedBarcodeValue('');
-    setBarcodeScanMessage('Incorrect product barcode.');
-  };
-
-  const acceptScannedProductBarcode = (value: string) => {
-    if (barcodeScanHandledRef.current) return false;
-    if (value === REQUIRED_SHOWER_BARCODE) {
-      barcodeScanHandledRef.current = true;
-      const verifiedAt = new Date().toISOString();
-      setScannedBarcodeValue(value);
-      setBarcodeScanSuccess(true);
-      setBarcodeScanMessage('Product verified.');
-      setShowerProofs(prev => [
-        ...prev.filter(item => item.cycleKey !== showerCycleKey),
-        {
-          ...(prev.find(item => item.cycleKey === showerCycleKey) || {}),
-          cycleKey: showerCycleKey,
-          proofName: showerProofAttachmentForCycle?.name,
-          proofDataUrl: showerProofAttachmentForCycle?.dataUrl,
-          proofAttachment: showerProofAttachmentForCycle || undefined,
-          barcodeValue: value,
-          scannedBarcode: value,
-          barcodeVerified: true,
-          barcodeVerifiedAt: verifiedAt,
-          showerConfirmed: false,
-        }
-      ]);
-      void saveShowerProofToBackend({
-        barcodeValue: value,
-        eventType: 'barcode_scanned',
-        flashAvailable: barcodeTorchAvailable,
-        flashUsed: barcodeTorchOn,
-      });
-      stopBarcodeScanner();
-      return true;
-    }
-
-    barcodeScanHandledRef.current = true;
-    void saveShowerProofToBackend({
-      barcodeValue: value,
-      eventType: 'barcode_rejected',
-      flashAvailable: barcodeTorchAvailable,
-      flashUsed: barcodeTorchOn,
-    });
-    rejectScannedBarcode();
-    window.setTimeout(() => {
-      barcodeScanHandledRef.current = false;
-    }, 1200);
-    return false;
-  };
-
-  const startBarcodeScanner = async () => {
-    stopBarcodeScanner();
-    setBarcodePermissionStatus('requesting');
-    barcodeScanHandledRef.current = false;
-    setBarcodeScanSuccess(false);
-    setScannedBarcodeValue('');
-    setBarcodeScanMessage('Point the camera at the product barcode.');
-    if (barcodeVerifiedForCycle) {
-      setShowerProofs(prev => prev.map(item => item.cycleKey === showerCycleKey
-        ? {
-          ...item,
-          barcodeValue: '',
-          scannedBarcode: '',
-          barcodeVerified: false,
-          barcodeVerifiedAt: undefined,
-          showerConfirmed: false,
-          showerConfirmedAt: undefined,
-          confirmedAt: undefined,
-        }
-        : item
-      ));
-    }
-
-    if (!('mediaDevices' in navigator) || !navigator.mediaDevices?.getUserMedia) {
-      setBarcodePermissionStatus('unsupported');
-      setBarcodeScanMessage('Camera scanning is not supported in this browser.');
-      return;
-    }
-
-    try {
-      const video = barcodeVideoRef.current;
-      if (!video) {
-        setBarcodePermissionStatus('error');
-        setBarcodeScanMessage('Camera preview is not ready. Try again.');
-        return;
-      }
-
-      const supportedFormats = window.BarcodeDetector && typeof window.BarcodeDetector.getSupportedFormats === 'function'
-        ? await window.BarcodeDetector.getSupportedFormats()
-        : [];
-      const canUseNativeBarcodeDetector = Boolean(window.BarcodeDetector && supportedFormats.includes('upc_a'));
-
-      if (!canUseNativeBarcodeDetector) {
-        const [{ BarcodeFormat, BrowserMultiFormatOneDReader }, { DecodeHintType }] = await Promise.all([
-          import('@zxing/browser'),
-          import('@zxing/library')
-        ]);
-        const barcodeReaderHints = new globalThis.Map([
-          [DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.UPC_A]]
-        ]);
-        const fallbackReader = new BrowserMultiFormatOneDReader(barcodeReaderHints);
-        const controls = await fallbackReader.decodeFromConstraints(
-          {
-            video: {
-              facingMode: { ideal: 'environment' },
-              width: { ideal: 1280 },
-              height: { ideal: 720 }
-            },
-            audio: false
-          },
-          video,
-          (result) => {
-            if (!result) return;
-            const isUpcA = result.getBarcodeFormat() === BarcodeFormat.UPC_A;
-            if (!isUpcA) {
-              rejectScannedBarcode();
-              return;
-            }
-            acceptScannedProductBarcode(String(result.getText() ?? ''));
-          }
-        );
-
-        zxingScannerControlsRef.current = controls;
-        setBarcodeTorchAvailable(Boolean(controls.switchTorch));
-        setBarcodePermissionStatus('granted');
-        setBarcodeScannerActive(true);
-        return;
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: 'environment' },
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
-        audio: false
-      });
-      barcodeStreamRef.current = stream;
-      video.srcObject = stream;
-      await video.play();
-
-      const track = stream.getVideoTracks()[0];
-      const capabilities = typeof track.getCapabilities === 'function' ? track.getCapabilities() as MediaTrackCapabilities & { torch?: boolean } : undefined;
-      setBarcodeTorchAvailable(Boolean(capabilities?.torch));
-      setBarcodePermissionStatus('granted');
-      setBarcodeScannerActive(true);
-
-      const detector = new window.BarcodeDetector({ formats: ['upc_a'] });
-      const scanFrame = async () => {
-        const activeStream = barcodeStreamRef.current;
-        const activeVideo = barcodeVideoRef.current;
-        if (!activeStream || !activeVideo || activeVideo.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
-          barcodeScanLoopRef.current = window.requestAnimationFrame(scanFrame);
-          return;
-        }
-
-        try {
-          const codes = await detector.detect(activeVideo);
-          if (codes.length > 0) {
-            const upcCode = codes.find(code => code.format === 'upc_a' || code.format === 'upc-a');
-            if (!upcCode) {
-              rejectScannedBarcode();
-            } else {
-              acceptScannedProductBarcode(String(upcCode.rawValue ?? ''));
-            }
-          }
-        } catch (error) {
-          setBarcodePermissionStatus('error');
-          setBarcodeScanMessage('Barcode scan failed. Try again.');
-        }
-
-        barcodeScanLoopRef.current = window.requestAnimationFrame(scanFrame);
-      };
-
-      barcodeScanLoopRef.current = window.requestAnimationFrame(scanFrame);
-    } catch (error) {
-      const name = error instanceof DOMException ? error.name : '';
-      setBarcodePermissionStatus(name === 'NotAllowedError' || name === 'PermissionDeniedError' ? 'denied' : 'error');
-      setBarcodeScanMessage(name === 'NotAllowedError' || name === 'PermissionDeniedError'
-        ? 'Camera permission denied. Allow camera access to scan the required barcode.'
-        : 'Could not start the camera. Try again.'
-      );
-    }
-  };
-
-  const toggleBarcodeTorch = async () => {
-    if (zxingScannerControlsRef.current?.switchTorch) {
-      const nextTorch = !barcodeTorchOn;
-      try {
-        await zxingScannerControlsRef.current.switchTorch(nextTorch);
-        setBarcodeTorchOn(nextTorch);
-        void saveShowerProofToBackend({ eventType: 'flash_updated', flashAvailable: true, flashUsed: nextTorch });
-      } catch {
-        setBarcodeScanMessage('Flashlight is not available on this camera.');
-        setBarcodeTorchAvailable(false);
-        setBarcodeTorchOn(false);
-      }
-      return;
-    }
-
-    const track = barcodeStreamRef.current?.getVideoTracks()[0];
-    if (!track || !barcodeTorchAvailable) return;
-    const nextTorch = !barcodeTorchOn;
-    try {
-      await track.applyConstraints({ advanced: [{ torch: nextTorch } as MediaTrackConstraintSet] });
-      setBarcodeTorchOn(nextTorch);
-      void saveShowerProofToBackend({ eventType: 'flash_updated', flashAvailable: true, flashUsed: nextTorch });
-    } catch {
-      setBarcodeScanMessage('Flashlight is not available on this camera.');
-      setBarcodeTorchAvailable(false);
-      setBarcodeTorchOn(false);
-    }
-  };
-
-  useEffect(() => {
-    return () => stopBarcodeScanner();
-  }, []);
-
-  const handleShowerProofFile = async (files: FileList | null) => {
-    const file = files?.[0];
-    if (!file) return;
-    try {
-      setShowerProofSyncStatus('saving');
-      setShowerProofSyncMessage('Preparing shower proof image...');
-      const dataUrl = await resizeProofImage(file);
-      setShowerProofDraft({
-        name: file.name,
-        dataUrl
-      });
-      setShowerProofs(prev => [
-        ...prev.filter(item => item.cycleKey !== showerCycleKey),
-        {
-          ...(prev.find(item => item.cycleKey === showerCycleKey) || {}),
-          cycleKey: showerCycleKey,
-          proofName: file.name,
-          proofDataUrl: dataUrl,
-          proofAttachment: {
-            name: file.name,
-            dataUrl,
-          },
-          showerConfirmed: false,
-        }
-      ]);
-      void saveShowerProofToBackend({
-        proofName: file.name,
-        proofDataUrl: dataUrl,
-        eventType: 'proof_attached',
-        flashAvailable: barcodeTorchAvailable,
-        flashUsed: barcodeTorchOn,
-      });
-    } catch (error) {
-      setShowerProofSyncStatus('error');
-      setShowerProofSyncMessage(error instanceof Error ? error.message : 'Could not attach proof image.');
-    }
-  };
-
   const handleConfirmDailyShower = async () => {
-    const proofAttachment = showerProofAttachmentForCycle;
-    const verifiedBarcode = scannedBarcodeValue === REQUIRED_SHOWER_BARCODE
-      ? scannedBarcodeValue
-      : showerProofForCycle?.scannedBarcode || showerProofForCycle?.barcodeValue || '';
-
-    if (!barcodeVerifiedForCycle || verifiedBarcode !== REQUIRED_SHOWER_BARCODE) {
-      rejectScannedBarcode();
-      setDispatcherMessage('Product barcode verification required before shower confirmation.');
-      return;
-    }
-    if (SHOWER_PROOF_MANDATORY && !proofAttachment?.dataUrl) {
-      setDispatcherMessage('Add shower proof first. Jobs stay locked until proof is attached and confirmed.');
-      return;
-    }
-    if (verifiedBarcode !== '075371003233') {
-      rejectScannedBarcode();
-      setDispatcherMessage('Barcode validation failed. Scan the product barcode again.');
+    const result = await showerGate.confirmShower();
+    if (!result.success) {
+      setDispatcherMessage(result.error!);
       return;
     }
 
-    const confirmedAt = new Date().toISOString();
-    const proof: ShowerProof = {
-      cycleKey: showerCycleKey,
-      ...(showerProofForCycle || {}),
-      proofName: proofAttachment?.name,
-      proofDataUrl: proofAttachment?.dataUrl,
-      proofAttachment: proofAttachment || undefined,
-      barcodeValue: verifiedBarcode,
-      scannedBarcode: verifiedBarcode,
-      barcodeVerified: true,
-      barcodeVerifiedAt: showerProofForCycle?.barcodeVerifiedAt || new Date().toISOString(),
-      confirmedAt,
-      showerConfirmed: true,
-      showerConfirmedAt: confirmedAt,
-      backendFolderPath: showerProofBackendFolder,
-    };
-
-    const backendFolderPath = await saveShowerProofToBackend({
-      proofName: proofAttachment?.name,
-      proofDataUrl: proofAttachment?.dataUrl,
-      barcodeValue: verifiedBarcode,
-      confirmedAt,
-      eventType: 'proof_confirmed',
-      flashAvailable: barcodeTorchAvailable,
-      flashUsed: barcodeTorchOn,
-    });
-    if (!backendFolderPath) {
-      setDispatcherMessage('Backend shower proof save failed. Jobs stay locked until the proof is saved.');
-      return;
-    }
-    if (backendFolderPath) {
-      proof.backendFolderPath = backendFolderPath;
-    }
-
-    setShowerProofs(prev => [
-      ...prev.filter(item => item.cycleKey !== showerCycleKey),
-      proof
-    ]);
+    const { proof } = result;
+    const confirmedAt = proof.confirmedAt || new Date().toISOString();
 
     habits.addHabitTask({
       id: SHOWER_HABIT_TASK_ID,
@@ -2034,61 +1418,24 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     });
 
     habits.addHabitLog({
-      id: `habit-shower-${showerCycleKey}-${Date.now()}`,
+      id: `habit-shower-${showerGate.showerCycleKey}-${Date.now()}`,
       taskId: SHOWER_HABIT_TASK_ID,
       taskName: SHOWER_HABIT_NAME,
       minutes: 1,
-      date: showerCycleKey,
-      note: `Proof confirmed: ${proofAttachment?.name || 'attached proof'}. Product barcode verified.`,
+      date: showerGate.showerCycleKey,
+      note: `Proof confirmed: ${proof.proofName || 'attached proof'}. Product barcode verified.`,
       createdAt: confirmedAt
     });
 
-    setShowerProofDraft(null);
-    setShowerProofInputKey(prev => prev + 1);
-    setBarcodeScanSuccess(false);
-    setScannedBarcodeValue('');
-    setBarcodeScanMessage('Scan the product barcode to unlock shower confirmation.');
     habits.setActiveHabitTaskId(SHOWER_HABIT_TASK_ID);
     setDispatcherMessage(`Shower confirmed. Jobs are unlocked for this daily cycle.${proof.backendFolderPath ? ` Backend folder: ${proof.backendFolderPath}` : ''}`);
   };
 
   const handleMissionControlShowerVerified = useCallback((record: ShowerProofRecord) => {
-    if (
-      record.cycleId !== showerCycleKey ||
-      record.barcode !== REQUIRED_SHOWER_BARCODE ||
-      record.uploadStatus !== 'saved' ||
-      record.verificationStatus !== 'verified'
-    ) {
-      return;
-    }
+    const proof = showerGate.handleMissionControlVerified(record);
+    if (!proof) return;
 
-    const confirmedAt = record.capturedAt || new Date().toISOString();
-    setShowerProofs(prev => {
-      const proof: ShowerProof = {
-        cycleKey: showerCycleKey,
-        ...(prev.find(item => item.cycleKey === showerCycleKey) || {}),
-        proofId: record.id,
-        proofName: record.storageKey.split('/').pop() || 'shower-proof.jpg',
-        storageKey: record.storageKey,
-        imageUrl: record.imageUrl,
-        barcodeValue: record.barcode,
-        scannedBarcode: record.barcode,
-        barcodeVerified: true,
-        barcodeVerifiedAt: confirmedAt,
-        confirmedAt,
-        showerConfirmed: true,
-        showerConfirmedAt: confirmedAt,
-        backendFolderPath: record.storageKey,
-        capturedAt: record.capturedAt,
-        localDate: record.localDate,
-        uploadStatus: record.uploadStatus,
-        verificationStatus: record.verificationStatus,
-      };
-      return [
-        ...prev.filter(item => item.cycleKey !== showerCycleKey),
-        proof
-      ];
-    });
+    const confirmedAt = proof.confirmedAt || new Date().toISOString();
 
     habits.addHabitTask({
       id: SHOWER_HABIT_TASK_ID,
@@ -2099,30 +1446,25 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     });
 
     habits.addHabitLog({
-      id: `habit-shower-${showerCycleKey}-${Date.now()}`,
+      id: `habit-shower-${showerGate.showerCycleKey}-${Date.now()}`,
       taskId: SHOWER_HABIT_TASK_ID,
       taskName: SHOWER_HABIT_NAME,
       minutes: 1,
-      date: showerCycleKey,
+      date: showerGate.showerCycleKey,
       note: 'Mission Control shower proof saved. Product barcode verified.',
       createdAt: confirmedAt
     });
 
-    setShowerProofDraft(null);
-    setShowerProofInputKey(prev => prev + 1);
-    setBarcodeScanSuccess(false);
-    setScannedBarcodeValue('');
-    setBarcodeScanMessage('Scan the product barcode to unlock shower confirmation.');
     setDispatcherMessage('Shower verified in Mission Control. Jobs are unlocked for this daily cycle.');
-  }, [showerCycleKey]);
+  }, [showerGate.handleMissionControlVerified, showerGate.showerCycleKey, habits]);
 
   useEffect(() => {
-    if (!showerGateAccessReady && rideModeActive) {
+    if (!showerGate.showerGateAccessReady && rideModeActive) {
       setRideModeActive(false);
       setTrackerStatus('idle');
       setDispatcherMessage('Daily shower gate reset at 6:00 AM. Confirm shower proof before continuing jobs.');
     }
-  }, [showerGateAccessReady, rideModeActive]);
+  }, [showerGate.showerGateAccessReady, rideModeActive]);
 
   const getRideDistance = () => parseFloat(((trackerRideTime / 3600) * ebikeConfig.avgSpeedMph).toFixed(1));
   const getEstimatedBatteryUsed = () => parseFloat((getRideDistance() * learnedBatteryPercentPerMile * batteryFactor).toFixed(1));
@@ -2415,7 +1757,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
       currentBattery={currentBattery}
       ebikeConfig={ebikeConfig}
       activeMetrics={activeMetrics}
-      showerGateUnlocked={showerGateUnlocked}
+      showerGateUnlocked={showerGate.showerGateUnlocked}
       currentTab={currentTab}
       theme={theme}
       weatherWind={weatherWind}
@@ -2437,11 +1779,11 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
 
         {/* Main Content Body */}
         <main className="app-main mx-auto max-w-7xl px-3 py-4 pb-40 sm:px-6 sm:py-6 lg:px-8 space-y-6">
-          {currentTab === 'dashboard' && !rideModeActive && SHOWER_GATE_REQUIRED && !showerGateUnlocked && (
+          {currentTab === 'dashboard' && !rideModeActive && SHOWER_GATE_REQUIRED && !showerGate.showerGateUnlocked && (
             <ShowerGatePanel
-              cycleId={showerCycleKey}
-              cycleLabel={showerCycleLabel}
-              completedProof={null}
+              cycleId={showerGate.showerCycleKey}
+              cycleLabel={showerGate.showerCycleLabel}
+              completedProof={showerGate.missionControlShowerProofRecord}
               onVerifiedProof={handleMissionControlShowerVerified}
             />
           )}
@@ -2579,7 +1921,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                 nextStopDistance={nextStopDistance}
                 nextStopRideMinutes={nextStopRideMinutes}
                 nextStopNavLink={nextStopNavLink}
-                jobAccessLocked={!showerGateAccessReady}
+                jobAccessLocked={!showerGate.showerGateAccessReady}
                 onBlockJobAccess={() => blockJobAccess('navigation')}
                 onToggleJobProgress={handleToggleJobProgress}
                 onOpenJob={(job) => setRouteDetailJobId(job.id)}
@@ -3170,7 +2512,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           )}
 
           {/* Tab 4: Battery Safety Parameters */}
-          {currentTab === 'battery' && !showerGateAccessReady && (
+          {currentTab === 'battery' && !showerGate.showerGateAccessReady && (
             <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-8 text-center dark:border-amber-500/30 dark:bg-amber-500/10">
               <ShieldCheck size={40} className="mx-auto mb-4 text-amber-500" />
               <h3 className="text-lg font-black text-amber-900 dark:text-amber-100">Daily Verification Required</h3>
@@ -3178,7 +2520,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
               <button onClick={() => handleTabChange('dashboard')} className="mt-4 rounded-xl bg-amber-600 px-6 py-2.5 text-sm font-black text-white hover:bg-amber-500 transition-all">Go to Mission Control</button>
             </div>
           )}
-          {currentTab === 'battery' && showerGateAccessReady && (
+          {currentTab === 'battery' && showerGate.showerGateAccessReady && (
             <div className="space-y-6 animate-fade-in" id="tab-view-battery">
               {/* Top Summary Banner */}
               <div className="road-card p-6">
@@ -3726,7 +3068,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           )}
 
           {/* Tab 5: Ride Tracker */}
-          {currentTab === 'tracker' && !showerGateAccessReady && (
+          {currentTab === 'tracker' && !showerGate.showerGateAccessReady && (
             <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-8 text-center dark:border-amber-500/30 dark:bg-amber-500/10">
               <ShieldCheck size={40} className="mx-auto mb-4 text-amber-500" />
               <h3 className="text-lg font-black text-amber-900 dark:text-amber-100">Daily Verification Required</h3>
@@ -3734,7 +3076,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
               <button onClick={() => handleTabChange('dashboard')} className="mt-4 rounded-xl bg-amber-600 px-6 py-2.5 text-sm font-black text-white hover:bg-amber-500 transition-all">Go to Mission Control</button>
             </div>
           )}
-          {currentTab === 'tracker' && showerGateAccessReady && (
+          {currentTab === 'tracker' && showerGate.showerGateAccessReady && (
             <div className="space-y-6 animate-fade-in" id="tab-view-tracker">
               {trackerStatus === 'completed' ? (
                 <EndOfDaySummary
@@ -4142,23 +3484,23 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
               habitLast7Days={habits.habitLast7Days}
               habitRecentLogs={habits.habitRecentLogs}
               showerGateRequired={SHOWER_GATE_REQUIRED}
-              showerGateUnlocked={showerGateUnlocked}
-              barcodeVerifiedForCycle={barcodeVerifiedForCycle}
-              showerProofRequiredSatisfied={showerProofRequiredSatisfied}
-              barcodeScanMessage={barcodeScanMessage}
-              showerCycleLabel={showerCycleLabel}
+              showerGateUnlocked={showerGate.showerGateUnlocked}
+              barcodeVerifiedForCycle={showerGate.barcodeVerifiedForCycle}
+              showerProofRequiredSatisfied={showerGate.showerProofRequiredSatisfied}
+              barcodeScanMessage={showerGate.barcodeScanMessage}
+              showerCycleLabel={showerGate.showerCycleLabel}
               showerHabitLoggedForCycle={showerHabitLoggedForCycle}
-              showerProofForCycle={showerProofForCycle}
-              showerProofAttachmentForCycle={showerProofAttachmentForCycle}
-              showerProofInputKey={showerProofInputKey}
-              showerProofSyncMessage={showerProofSyncMessage}
-              showerProofSyncStatus={showerProofSyncStatus}
-              showerProofBackendFolder={showerProofBackendFolder}
-              barcodeScannerActive={barcodeScannerActive}
-              barcodePermissionStatus={barcodePermissionStatus}
-              barcodeTorchOn={barcodeTorchOn}
-              barcodeTorchAvailable={barcodeTorchAvailable}
-              barcodeVideoRef={barcodeVideoRef}
+              showerProofForCycle={showerGate.showerProofForCycle}
+              showerProofAttachmentForCycle={showerGate.showerProofAttachmentForCycle}
+              showerProofInputKey={showerGate.showerProofInputKey}
+              showerProofSyncMessage={showerGate.showerProofSyncMessage}
+              showerProofSyncStatus={showerGate.showerProofSyncStatus}
+              showerProofBackendFolder={showerGate.showerProofBackendFolder}
+              barcodeScannerActive={showerGate.barcodeScannerActive}
+              barcodePermissionStatus={showerGate.barcodePermissionStatus}
+              barcodeTorchOn={showerGate.barcodeTorchOn}
+              barcodeTorchAvailable={showerGate.barcodeTorchAvailable}
+              barcodeVideoRef={showerGate.barcodeVideoRef}
               setActiveHabitTaskId={habits.setActiveHabitTaskId}
               updateActiveHabitTask={habits.updateActiveHabitTask}
               setHabitLogNote={habits.setHabitLogNote}
@@ -4169,11 +3511,11 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
               handleAddTodayHabitTask={habits.handleAddTodayHabitTask}
               handleLogHabitSession={habits.handleLogHabitSession}
               handleDeleteHabitLog={habits.handleDeleteHabitLog}
-              handleShowerProofFile={handleShowerProofFile}
+              handleShowerProofFile={showerGate.handleShowerProofFile}
               handleConfirmDailyShower={handleConfirmDailyShower}
-              stopBarcodeScanner={stopBarcodeScanner}
-              startBarcodeScanner={startBarcodeScanner}
-              toggleBarcodeTorch={toggleBarcodeTorch}
+              stopBarcodeScanner={showerGate.stopBarcodeScanner}
+              startBarcodeScanner={showerGate.startBarcodeScanner}
+              toggleBarcodeTorch={showerGate.toggleBarcodeTorch}
             />
           )}
 
@@ -4588,7 +3930,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
               rideMinutes={rideMinutes}
               navLink={navLink}
               isOutlier={outlierIds.includes(routeDetailJob.id)}
-              jobAccessLocked={!showerGateAccessReady}
+              jobAccessLocked={!showerGate.showerGateAccessReady}
               onToggleComplete={handleToggleComplete}
               onEdit={handleOpenEditModal}
               onDelete={handleDeleteJob}

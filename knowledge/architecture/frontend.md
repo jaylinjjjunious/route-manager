@@ -66,7 +66,7 @@ Key state groups:
 - **Inventory**: `inventoryDomain`, `inventoryJobId`, domain-filtered job selection
 - **Route**: `routeMetrics`, `routingProvider`, `nextRouteAJob`
 - **Ride Mode**: `rideModeActive`, `currentStopIndex`, `rideSession`
-- **Shower Gate**: `showerProofs`, `showerGateUnlocked`, `barcodeScanSuccess`
+- **Shower Gate**: `useShowerGate(now)` hook in `src/features/showerGate/useShowerGate.ts` encapsulates all shower gate state, barcode scanner lifecycle, proof upload/sync, and cycle management. `src/App.tsx` consumes the hook and passes read-only state + action callbacks to `HabitsTab` and protected tab overlays.
 - **Habits**: `useHabits(todayKey)` hook in `src/features/habits/useHabits.ts` manages `habitTasks`, `habitLogs`, active task, derived stats, localStorage persistence, and backend sync. `src/App.tsx` consumes the hook and passes values to `HabitsTab`.
 - **Proof Vault**: `proofVault` (keyed by jobId)
 - **Settings**: `startAddress`, `theme`, `debugCenterOpen`
@@ -140,4 +140,4 @@ Targets modern mobile browsers (iOS Safari, Android Chrome) and desktop (Chrome,
 
 ## Last Updated
 
-2026-08-06 — merged HabitsTab file path (`src/features/habits/HabitsTab.tsx`), habit state extraction into `useHabits`, and AIØ three-tab redesign (Today/Jobs/More).
+2026-08-06 — extracted shower gate state/effects into `useShowerGate` hook (`src/features/showerGate/useShowerGate.ts`) and UI into `ShowerGateSection` (`src/features/showerGate/ShowerGateSection.tsx`). App.tsx now orchestrates `useShowerGate` and retains only cross-cutting habit/dispatcher wiring.
