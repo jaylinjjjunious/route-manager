@@ -71,6 +71,9 @@ import { TransitToolsPanel } from './components/transit/TransitToolsPanel';
 import { TransitStatusCard } from './components/transit/TransitStatusCard';
 import type { TravelMode } from './types';
 import { getCurrentCycleId, getCycleLabel, getNextResetTime, getLocalDateKey } from './utils/showerCycle';
+import HabitsTab from './features/habits/HabitsTab';
+import { useHabits } from './features/habits/useHabits';
+import safeStorage from './utils/safeStorage';
 import { useTextToSpeech } from './hooks/useTextToSpeech';
 import type { ShowerProofRecord } from './services/showerProofApi';
 import { authFetch, authFetchJson } from './services/apiClient';
@@ -108,24 +111,6 @@ interface ProofRecord {
   notes: string;
   createdAt: string;
   updatedAt: string;
-}
-
-interface HabitLog {
-  id: string;
-  taskId?: string;
-  taskName: string;
-  minutes: number;
-  date: string;
-  note: string;
-  createdAt: string;
-}
-
-interface HabitTask {
-  id: string;
-  name: string;
-  targetMinutes: number;
-  lastMinutes: number;
-  createdAt: string;
 }
 
 interface ShowerProof {
@@ -213,33 +198,6 @@ declare global {
   }
 }
 
-const safeStorage = {
-  getItem(key: string) {
-    if (typeof window === 'undefined') return null;
-    try {
-      return window.localStorage.getItem(key);
-    } catch {
-      return null;
-    }
-  },
-  setItem(key: string, value: string) {
-    if (typeof window === 'undefined') return;
-    try {
-      window.localStorage.setItem(key, value);
-    } catch {
-      // Storage can be unavailable in private or restricted browser contexts.
-    }
-  },
-  removeItem(key: string) {
-    if (typeof window === 'undefined') return;
-    try {
-      window.localStorage.removeItem(key);
-    } catch {
-      // Storage can be unavailable in private or restricted browser contexts.
-    }
-  }
-};
-
 const resizeProofImage = (file: File): Promise<string> => {
   if (typeof window === 'undefined' || !file.type.startsWith('image/')) {
     return new Promise((resolve, reject) => {
@@ -274,14 +232,6 @@ const resizeProofImage = (file: File): Promise<string> => {
     reader.readAsDataURL(file);
   });
 };
-
-const createDefaultHabitTask = (): HabitTask => ({
-  id: 'habit-task-default',
-  name: 'Daily Focus Task',
-  targetMinutes: 30,
-  lastMinutes: 30,
-  createdAt: new Date().toISOString()
-});
 
 const SEED_JOBS: Job[] = [
   {
@@ -452,40 +402,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const [showScheduleReview, setShowScheduleReview] = useState<'overdue' | 'unscheduled' | null>(null);
   const [moveToDayJob, setMoveToDayJob] = useState<Job | null>(null);
   const trackerTimerRef = useRef<number | null>(null);
-  const [habitTasks, setHabitTasks] = useState<HabitTask[]>(() => {
-    try {
-      const savedTasks = safeStorage.getItem('habit_tracker_tasks');
-      if (savedTasks) {
-        const parsedTasks = JSON.parse(savedTasks);
-        if (Array.isArray(parsedTasks) && parsedTasks.length > 0) {
-          return parsedTasks;
-        }
-      }
-    } catch {
-      // Fall through to legacy single-task migration.
-    }
-
-    return [{
-      id: 'habit-task-default',
-      name: safeStorage.getItem('habit_tracker_task_name') || 'Daily Focus Task',
-      targetMinutes: Number(safeStorage.getItem('habit_tracker_target_minutes') || '30'),
-      lastMinutes: Number(safeStorage.getItem('habit_tracker_last_minutes') || '30'),
-      createdAt: new Date().toISOString()
-    }];
-  });
-  const [activeHabitTaskId, setActiveHabitTaskId] = useState<string>(() => safeStorage.getItem('habit_tracker_active_task_id') || 'habit-task-default');
-  const [habitLogNote, setHabitLogNote] = useState('');
-  const [todayHabitTaskName, setTodayHabitTaskName] = useState('');
-  const [todayHabitTaskMinutes, setTodayHabitTaskMinutes] = useState(20);
-  const [todayHabitTaskNote, setTodayHabitTaskNote] = useState('');
-  const [habitLogs, setHabitLogs] = useState<HabitLog[]>(() => {
-    try {
-      const saved = safeStorage.getItem('habit_tracker_logs');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
   const [showerProofs, setShowerProofs] = useState<ShowerProof[]>(() => {
     try {
       const saved = safeStorage.getItem(SHOWER_GATE_STORAGE_KEY);
@@ -508,12 +424,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const [barcodeTorchAvailable, setBarcodeTorchAvailable] = useState(false);
   const [barcodeTorchOn, setBarcodeTorchOn] = useState(false);
   const [nowTick, setNowTick] = useState(() => Date.now());
-  const [habitSyncStatus, setHabitSyncStatus] = useState<'loading' | 'synced' | 'offline' | 'saving'>('loading');
-  const habitBackendLoadedRef = useRef(false);
-  const activeHabitTask = habitTasks.find(task => task.id === activeHabitTaskId) || habitTasks[0] || createDefaultHabitTask();
-  const habitTaskName = activeHabitTask.name;
-  const habitTargetMinutes = Math.max(1, Number(activeHabitTask.targetMinutes) || 30);
-  const habitLogMinutes = Math.max(1, Number(activeHabitTask.lastMinutes) || habitTargetMinutes);
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [proofVault, setProofVault] = useState<Record<string, ProofRecord>>(() => {
@@ -785,141 +695,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     safeStorage.setItem('ride_tracker_start_battery', trackerStartBattery.toString());
     safeStorage.setItem('ride_tracker_jobs_completed', JSON.stringify(trackerJobsCompleted));
   }, [trackerStatus, trackerRideTime, trackerStoreTime, trackerTotalDayTime, trackerStartBattery, trackerJobsCompleted]);
-
-  useEffect(() => {
-    safeStorage.setItem('habit_tracker_tasks', JSON.stringify(habitTasks));
-    safeStorage.setItem('habit_tracker_active_task_id', activeHabitTask.id);
-    safeStorage.setItem('habit_tracker_task_name', habitTaskName);
-    safeStorage.setItem('habit_tracker_target_minutes', habitTargetMinutes.toString());
-    safeStorage.setItem('habit_tracker_last_minutes', habitLogMinutes.toString());
-    safeStorage.setItem('habit_tracker_logs', JSON.stringify(habitLogs));
-  }, [habitTasks, activeHabitTask.id, habitTaskName, habitTargetMinutes, habitLogMinutes, habitLogs]);
-
-  useEffect(() => {
-    if (!habitBackendLoadedRef.current) return;
-    setHabitTasks(prev => {
-      const showerIndex = prev.findIndex(task => task.id === SHOWER_HABIT_TASK_ID || task.name.toLowerCase() === SHOWER_HABIT_NAME.toLowerCase());
-      if (showerIndex >= 0) {
-        const showerTask = prev[showerIndex];
-        if (
-          showerTask.id === SHOWER_HABIT_TASK_ID &&
-          showerTask.name === SHOWER_HABIT_NAME &&
-          showerTask.targetMinutes === 1 &&
-          showerTask.lastMinutes === 1
-        ) {
-          return prev;
-        }
-        return prev.map((task, index) => index === showerIndex
-          ? { ...task, id: SHOWER_HABIT_TASK_ID, name: SHOWER_HABIT_NAME, targetMinutes: 1, lastMinutes: 1 }
-          : task
-        );
-      }
-      return [
-        ...prev,
-        {
-          id: SHOWER_HABIT_TASK_ID,
-          name: SHOWER_HABIT_NAME,
-          targetMinutes: 1,
-          lastMinutes: 1,
-          createdAt: new Date().toISOString()
-        }
-      ];
-    });
-  }, [habitSyncStatus]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadBackendHabits = async () => {
-      try {
-        const response = await authFetch('/api/habits');
-        if (!response.ok) throw new Error('Habit backend unavailable');
-        const backend = await response.json();
-        if (!isMounted) return;
-
-        const legacyBackendTask: HabitTask = {
-          id: 'habit-task-default',
-          name: backend.taskName || 'Daily Focus Task',
-          targetMinutes: Number(backend.targetMinutes || 30),
-          lastMinutes: Number(backend.lastMinutes || backend.targetMinutes || 30),
-          createdAt: backend.updatedAt || new Date().toISOString()
-        };
-        const backendTasks = Array.isArray(backend.tasks) && backend.tasks.length > 0
-          ? backend.tasks as HabitTask[]
-          : [legacyBackendTask];
-        const normalizedBackendTasks = backendTasks.reduce<HabitTask[]>((acc, task) => {
-          if (!task?.id || acc.some(item => item.id === task.id)) return acc;
-          acc.push({
-            id: task.id,
-            name: (task.name || 'Daily Focus Task').toString().trim().slice(0, 120) || 'Daily Focus Task',
-            targetMinutes: Math.max(1, Math.round(Number(task.targetMinutes) || 30)),
-            lastMinutes: Math.max(1, Math.round(Number(task.lastMinutes) || Number(task.targetMinutes) || 30)),
-            createdAt: task.createdAt || new Date().toISOString()
-          });
-          return acc;
-        }, []);
-        const activeId = backend.activeTaskId || normalizedBackendTasks[0]?.id || 'habit-task-default';
-        const backendLogs = Array.isArray(backend.logs) ? backend.logs as HabitLog[] : [];
-        const normalizedBackendLogs = backendLogs.reduce<HabitLog[]>((acc, log) => {
-          if (!log?.id || acc.some(item => item.id === log.id)) return acc;
-          const matchingTask = normalizedBackendTasks.find(task => task.id === log.taskId) || normalizedBackendTasks.find(task => task.name === log.taskName);
-          acc.push({
-            ...log,
-            taskId: log.taskId || matchingTask?.id || activeId,
-            taskName: log.taskName || matchingTask?.name || 'Daily Focus Task'
-          });
-          return acc;
-        }, []);
-        const nextTasks = normalizedBackendTasks.length > 0 ? normalizedBackendTasks : [legacyBackendTask];
-
-        setHabitTasks(nextTasks);
-        setActiveHabitTaskId(nextTasks.some(task => task.id === activeId) ? activeId : nextTasks[0]?.id || 'habit-task-default');
-        setHabitLogs(normalizedBackendLogs);
-        habitBackendLoadedRef.current = true;
-        setHabitSyncStatus('synced');
-      } catch (error) {
-        console.warn('Habit backend sync unavailable. Using local fallback.', error);
-        if (!isMounted) return;
-        habitBackendLoadedRef.current = true;
-        setHabitSyncStatus('offline');
-      }
-    };
-
-    loadBackendHabits();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!habitBackendLoadedRef.current) return;
-
-    const saveTimer = window.setTimeout(async () => {
-      try {
-        setHabitSyncStatus('saving');
-        const response = await authFetch('/api/habits', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            taskName: habitTaskName,
-            targetMinutes: habitTargetMinutes,
-            lastMinutes: habitLogMinutes,
-            activeTaskId: activeHabitTask.id,
-            tasks: habitTasks,
-            logs: habitLogs
-          })
-        });
-        if (!response.ok) throw new Error('Habit backend save failed');
-        setHabitSyncStatus('synced');
-      } catch (error) {
-        console.warn('Habit backend save failed. Local copy is still saved.', error);
-        setHabitSyncStatus('offline');
-      }
-    }, 450);
-
-    return () => window.clearTimeout(saveTimer);
-  }, [habitTaskName, habitTargetMinutes, habitLogMinutes, activeHabitTask.id, habitTasks, habitLogs]);
 
   // Ride Tracker timer interval
   useEffect(() => {
@@ -1705,6 +1480,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
 
   const now = new Date(nowTick);
   const todayKey = getDateKey(now);
+  const habits = useHabits(todayKey);
   const showerCycleKey = getCurrentCycleId(now);
   const showerCycleLabel = getCycleLabel(showerCycleKey);
   const showerProofForCycle = showerProofs.find(proof => proof.cycleKey === showerCycleKey);
@@ -1782,57 +1558,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
       updatedAt: showerProofForCycle.showerConfirmedAt || showerProofForCycle.confirmedAt || showerProofForCycle.capturedAt || new Date().toISOString(),
     }
     : null;
-  const currentHabitLogs = habitLogs.filter(log => log.taskId === activeHabitTask.id || (!log.taskId && log.taskName === habitTaskName));
-  const todayHabitMinutes = currentHabitLogs
-    .filter(log => log.date === todayKey)
-    .reduce((sum, log) => sum + log.minutes, 0);
-  const habitGoalComplete = todayHabitMinutes >= habitTargetMinutes;
-  const habitTotalMinutes = currentHabitLogs.reduce((sum, log) => sum + log.minutes, 0);
-  const habitTotalSessions = currentHabitLogs.length;
-  const habitLast7Days = Array.from({ length: 7 }, (_, index) => {
-    const date = new Date();
-    date.setDate(date.getDate() - (6 - index));
-    const key = getDateKey(date);
-    const minutes = currentHabitLogs
-      .filter(log => log.date === key)
-      .reduce((sum, log) => sum + log.minutes, 0);
-    return {
-      key,
-      label: date.toLocaleDateString([], { weekday: 'short' }),
-      minutes,
-      complete: minutes > 0
-    };
-  });
-  const habitDaysComplete = habitLast7Days.filter(day => day.complete).length;
-  const habitConsistencyPct = Math.round((habitDaysComplete / habitLast7Days.length) * 100);
-  const habitStreakDays = (() => {
-    let streak = 0;
-    for (let offset = 0; offset < 365; offset++) {
-      const date = new Date();
-      date.setDate(date.getDate() - offset);
-      const key = getDateKey(date);
-      const minutes = currentHabitLogs
-        .filter(log => log.date === key)
-        .reduce((sum, log) => sum + log.minutes, 0);
-      if (minutes > 0) {
-        streak += 1;
-      } else {
-        break;
-      }
-    }
-    return streak;
-  })();
-  const habitRecentLogs = [...habitLogs].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  const allHabitMinutesToday = habitLogs
-    .filter(log => log.date === todayKey)
-    .reduce((sum, log) => sum + log.minutes, 0);
-  const habitTasksHitToday = habitTasks.filter(task => {
-    const minutes = habitLogs
-      .filter(log => log.date === todayKey && (log.taskId === task.id || (!log.taskId && log.taskName === task.name)))
-      .reduce((sum, log) => sum + log.minutes, 0);
-    return minutes >= task.targetMinutes;
-  }).length;
-  const showerHabitLogs = habitLogs.filter(log => log.taskId === SHOWER_HABIT_TASK_ID || log.taskName === SHOWER_HABIT_NAME);
+  const showerHabitLogs = habits.habitLogs.filter(log => log.taskId === SHOWER_HABIT_TASK_ID || log.taskName === SHOWER_HABIT_NAME);
   const showerHabitLoggedForCycle = showerHabitLogs.some(log => log.date === showerCycleKey);
 
   const saveShowerProofToBackend = async (payload: {
@@ -2299,36 +2025,22 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
       proof
     ]);
 
-    setHabitTasks(prev => {
-      if (prev.some(task => task.id === SHOWER_HABIT_TASK_ID)) return prev;
-      return [
-        ...prev,
-        {
-          id: SHOWER_HABIT_TASK_ID,
-          name: SHOWER_HABIT_NAME,
-          targetMinutes: 1,
-          lastMinutes: 1,
-          createdAt: confirmedAt
-        }
-      ];
+    habits.addHabitTask({
+      id: SHOWER_HABIT_TASK_ID,
+      name: SHOWER_HABIT_NAME,
+      targetMinutes: 1,
+      lastMinutes: 1,
+      createdAt: confirmedAt
     });
 
-    setHabitLogs(prev => {
-      if (prev.some(log => log.date === showerCycleKey && (log.taskId === SHOWER_HABIT_TASK_ID || log.taskName === SHOWER_HABIT_NAME))) {
-        return prev;
-      }
-      return [
-        {
-          id: `habit-shower-${showerCycleKey}-${Date.now()}`,
-          taskId: SHOWER_HABIT_TASK_ID,
-          taskName: SHOWER_HABIT_NAME,
-          minutes: 1,
-          date: showerCycleKey,
-          note: `Proof confirmed: ${proofAttachment?.name || 'attached proof'}. Product barcode verified.`,
-          createdAt: confirmedAt
-        },
-        ...prev
-      ];
+    habits.addHabitLog({
+      id: `habit-shower-${showerCycleKey}-${Date.now()}`,
+      taskId: SHOWER_HABIT_TASK_ID,
+      taskName: SHOWER_HABIT_NAME,
+      minutes: 1,
+      date: showerCycleKey,
+      note: `Proof confirmed: ${proofAttachment?.name || 'attached proof'}. Product barcode verified.`,
+      createdAt: confirmedAt
     });
 
     setShowerProofDraft(null);
@@ -2336,7 +2048,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     setBarcodeScanSuccess(false);
     setScannedBarcodeValue('');
     setBarcodeScanMessage('Scan the product barcode to unlock shower confirmation.');
-    setActiveHabitTaskId(SHOWER_HABIT_TASK_ID);
+    habits.setActiveHabitTaskId(SHOWER_HABIT_TASK_ID);
     setDispatcherMessage(`Shower confirmed. Jobs are unlocked for this daily cycle.${proof.backendFolderPath ? ` Backend folder: ${proof.backendFolderPath}` : ''}`);
   };
 
@@ -2378,36 +2090,22 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
       ];
     });
 
-    setHabitTasks(prev => {
-      if (prev.some(task => task.id === SHOWER_HABIT_TASK_ID)) return prev;
-      return [
-        ...prev,
-        {
-          id: SHOWER_HABIT_TASK_ID,
-          name: SHOWER_HABIT_NAME,
-          targetMinutes: 1,
-          lastMinutes: 1,
-          createdAt: confirmedAt
-        }
-      ];
+    habits.addHabitTask({
+      id: SHOWER_HABIT_TASK_ID,
+      name: SHOWER_HABIT_NAME,
+      targetMinutes: 1,
+      lastMinutes: 1,
+      createdAt: confirmedAt
     });
 
-    setHabitLogs(prev => {
-      if (prev.some(log => log.date === showerCycleKey && (log.taskId === SHOWER_HABIT_TASK_ID || log.taskName === SHOWER_HABIT_NAME))) {
-        return prev;
-      }
-      return [
-        {
-          id: `habit-shower-${showerCycleKey}-${Date.now()}`,
-          taskId: SHOWER_HABIT_TASK_ID,
-          taskName: SHOWER_HABIT_NAME,
-          minutes: 1,
-          date: showerCycleKey,
-          note: 'Mission Control shower proof saved. Product barcode verified.',
-          createdAt: confirmedAt
-        },
-        ...prev
-      ];
+    habits.addHabitLog({
+      id: `habit-shower-${showerCycleKey}-${Date.now()}`,
+      taskId: SHOWER_HABIT_TASK_ID,
+      taskName: SHOWER_HABIT_NAME,
+      minutes: 1,
+      date: showerCycleKey,
+      note: 'Mission Control shower proof saved. Product barcode verified.',
+      createdAt: confirmedAt
     });
 
     setShowerProofDraft(null);
@@ -2425,83 +2123,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
       setDispatcherMessage('Daily shower gate reset at 6:00 AM. Confirm shower proof before continuing jobs.');
     }
   }, [showerGateAccessReady, rideModeActive]);
-
-  const updateActiveHabitTask = (updates: Partial<Pick<HabitTask, 'name' | 'targetMinutes' | 'lastMinutes'>>) => {
-    setHabitTasks(prev => prev.map(task => task.id === activeHabitTask.id ? {
-      ...task,
-      ...updates,
-      name: updates.name !== undefined ? updates.name : task.name,
-      targetMinutes: updates.targetMinutes !== undefined ? Math.max(1, updates.targetMinutes) : task.targetMinutes,
-      lastMinutes: updates.lastMinutes !== undefined ? Math.max(1, updates.lastMinutes) : task.lastMinutes
-    } : task));
-  };
-
-  const handleAddHabitTask = () => {
-    const newTask: HabitTask = {
-      id: `habit-task-${Date.now()}`,
-      name: `Task ${habitTasks.length + 1}`,
-      targetMinutes: 30,
-      lastMinutes: 30,
-      createdAt: new Date().toISOString()
-    };
-    setHabitTasks(prev => [...prev, newTask]);
-    setActiveHabitTaskId(newTask.id);
-  };
-
-  const handleAddTodayHabitTask = () => {
-    const minutes = Math.max(1, Math.round(Number(todayHabitTaskMinutes) || 20));
-    const taskName = todayHabitTaskName.trim() || `Task ${habitTasks.length + 1}`;
-    const createdAt = new Date().toISOString();
-    const idBase = Date.now();
-    const newTask: HabitTask = {
-      id: `habit-task-${idBase}`,
-      name: taskName,
-      targetMinutes: minutes,
-      lastMinutes: minutes,
-      createdAt
-    };
-
-    setHabitTasks(prev => [...prev, newTask]);
-    setActiveHabitTaskId(newTask.id);
-    setHabitLogs(prev => [
-      {
-        id: `habit-${idBase}`,
-        taskId: newTask.id,
-        taskName,
-        minutes,
-        date: todayKey,
-        note: todayHabitTaskNote.trim(),
-        createdAt
-      },
-      ...prev
-    ]);
-    setTodayHabitTaskName('');
-    setTodayHabitTaskNote('');
-    setTodayHabitTaskMinutes(minutes);
-  };
-
-  const handleLogHabitSession = () => {
-    const minutes = Math.max(1, Math.round(habitLogMinutes || habitTargetMinutes || 30));
-    const taskName = habitTaskName.trim() || 'Daily Focus Task';
-    updateActiveHabitTask({ name: taskName, lastMinutes: minutes });
-    setHabitLogs(prev => [
-      {
-        id: `habit-${Date.now()}`,
-        taskId: activeHabitTask.id,
-        taskName,
-        minutes,
-        date: todayKey,
-        note: habitLogNote.trim(),
-        createdAt: new Date().toISOString()
-      },
-      ...prev
-    ]);
-    setHabitLogNote('');
-  };
-
-  const handleDeleteHabitLog = (id: string) => {
-    setHabitLogs(prev => prev.filter(log => log.id !== id));
-  };
 
   const getRideDistance = () => parseFloat(((trackerRideTime / 3600) * ebikeConfig.avgSpeedMph).toFixed(1));
   const getEstimatedBatteryUsed = () => parseFloat((getRideDistance() * learnedBatteryPercentPerMile * batteryFactor).toFixed(1));
@@ -4496,443 +4117,64 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           )}
 
           {currentTab === 'habits' && (
-            <div className="space-y-6 animate-fade-in" id="tab-view-habits">
-              <div className="rounded-[8px] border-4 border-slate-950 bg-white p-5 shadow-lg dark:border-white dark:bg-[#17181b]">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                  <div>
-                    <p className="text-sm font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Consistency Tracker</p>
-                    <h2 className="mt-1 text-4xl font-black leading-none text-slate-950 dark:text-white sm:text-5xl">
-                      Task time goals
-                    </h2>
-                    <p className="mt-2 max-w-2xl text-sm font-bold text-slate-500 dark:text-slate-300">
-                      Add multiple repeat tasks, log street work or focus time, and track each task separately.
-                    </p>
-                  </div>
-                  <div className={`rounded-[8px] px-4 py-3 text-right ${habitGoalComplete ? 'bg-emerald-600 text-white' : 'bg-amber-400 text-slate-950'}`}>
-                    <p className="text-xs font-black uppercase">Today</p>
-                    <p className="text-3xl font-black">{todayHabitMinutes} / {habitTargetMinutes} min</p>
-                    <p className="mt-1 text-xs font-black uppercase">
-                      {habitSyncStatus === 'synced' && 'Backend saved'}
-                      {habitSyncStatus === 'saving' && 'Saving'}
-                      {habitSyncStatus === 'loading' && 'Loading'}
-                      {habitSyncStatus === 'offline' && 'Local fallback'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {SHOWER_GATE_REQUIRED && !showerGateUnlocked && (
-              <section
-                id="mandatory-shower-habit"
-                className={`rounded-[8px] border-2 p-5 ${
-                  barcodeVerifiedForCycle && showerProofRequiredSatisfied
-                    ? 'border-emerald-300 bg-emerald-50 text-emerald-950 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100'
-                    : barcodeScanMessage === 'Incorrect product barcode.'
-                      ? 'border-rose-300 bg-rose-50 text-rose-950 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-100'
-                      : 'border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100'
-                }`}
-              >
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="max-w-2xl">
-                    <p className="text-sm font-black uppercase tracking-widest">Mandatory Habit</p>
-                    <h3 className="mt-1 text-4xl font-black leading-none">Shower before jobs</h3>
-                    <p className="mt-2 text-sm font-bold opacity-80">
-                      This locks job navigation, ride mode, review, and completion until proof is attached and confirmed. It resets at 6:00 AM every day.
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-2 text-sm font-black uppercase">
-                      <span className="rounded-[8px] bg-white/70 px-3 py-2 text-slate-800 dark:bg-black/20 dark:text-white">
-                        Cycle {showerCycleLabel}
-                      </span>
-                      <span className="rounded-[8px] bg-white/70 px-3 py-2 text-slate-800 dark:bg-black/20 dark:text-white">
-                        {showerHabitLoggedForCycle ? 'Habit logged' : 'Habit open'}
-                      </span>
-                      {showerProofForCycle && (
-                        <span className="rounded-[8px] bg-white/70 px-3 py-2 text-slate-800 dark:bg-black/20 dark:text-white">
-                          Proof: {showerProofAttachmentForCycle?.name || showerProofForCycle.proofName}
-                        </span>
-                      )}
-                      <span className="rounded-[8px] bg-white/70 px-3 py-2 text-slate-800 dark:bg-black/20 dark:text-white">
-                        Product barcode {barcodeVerifiedForCycle ? 'verified' : 'required'}
-                      </span>
-                      <span className="rounded-[8px] bg-white/70 px-3 py-2 text-slate-800 dark:bg-black/20 dark:text-white">
-                        {showerProofRequiredSatisfied ? 'Ready to confirm' : 'Proof missing'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="grid w-full gap-2 lg:max-w-md">
-                    <label className="flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-[8px] border-2 border-current/20 bg-white/70 px-4 text-sm font-black uppercase text-slate-800 shadow-sm dark:bg-black/20 dark:text-white">
-                      <Camera size={20} />
-                      <span>{showerProofAttachmentForCycle?.name || 'Attach Shower Proof'}</span>
-                      <input
-                        key={`shower-proof-habits-${showerProofInputKey}`}
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        onChange={(event) => handleShowerProofFile(event.target.files)}
-                        className="sr-only"
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      onClick={handleConfirmDailyShower}
-                      disabled={!barcodeVerifiedForCycle || !showerProofRequiredSatisfied}
-                      className="flex min-h-14 items-center justify-center gap-2 rounded-[8px] bg-slate-950 px-4 text-lg font-black uppercase text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:bg-white dark:text-slate-950 dark:disabled:bg-white/10 dark:disabled:text-slate-500"
-                    >
-                      <CheckCircle2 size={22} />
-                      <span>Confirm Shower</span>
-                    </button>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={barcodeScannerActive ? stopBarcodeScanner : startBarcodeScanner}
-                        disabled={barcodePermissionStatus === 'requesting'}
-                        className={`flex items-center justify-center gap-2 rounded-[8px] bg-blue-700 px-4 text-sm font-black uppercase text-white shadow-sm transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 ${barcodeVerifiedForCycle ? 'min-h-10 opacity-80' : 'min-h-12'}`}
-                      >
-                        <Camera size={18} />
-                        <span>{barcodeScannerActive ? 'Stop Scan' : barcodePermissionStatus === 'requesting' ? 'Requesting' : barcodeVerifiedForCycle ? 'Scan Again' : 'Scan Barcode'}</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={toggleBarcodeTorch}
-                        disabled={!barcodeScannerActive || !barcodeTorchAvailable}
-                        className="flex min-h-12 items-center justify-center gap-2 rounded-[8px] bg-slate-950 px-4 text-sm font-black uppercase text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:bg-white dark:text-slate-950 dark:disabled:bg-white/10 dark:disabled:text-slate-500"
-                      >
-                        <Zap size={18} />
-                        <span>{barcodeTorchOn ? 'Flash Off' : 'Flash'}</span>
-                      </button>
-                    </div>
-                    <video
-                      ref={barcodeVideoRef}
-                      className={`aspect-video w-full rounded-[8px] border border-current/20 bg-slate-950 object-cover ${barcodeScannerActive ? 'block' : 'hidden'}`}
-                      playsInline
-                      muted
-                    />
-                    <p className={`text-sm font-black ${barcodeVerifiedForCycle ? 'text-emerald-700 dark:text-emerald-200' : barcodeScanMessage === 'Incorrect product barcode.' ? 'text-rose-700 dark:text-rose-200' : ''}`}>
-                      {barcodeVerifiedForCycle ? '✓ Product verified. Barcode ending in 3233.' : barcodeScanMessage}
-                    </p>
-                    {(barcodePermissionStatus === 'denied' || barcodePermissionStatus === 'unsupported' || barcodePermissionStatus === 'error') && (
-                      <p className="text-xs font-bold opacity-80">
-                        Camera status: {barcodePermissionStatus}. You can retry scanning after camera access is available.
-                      </p>
-                    )}
-                    {showerProofSyncMessage && (
-                      <p className={`text-xs font-black ${
-                        showerProofSyncStatus === 'error'
-                          ? 'text-rose-700 dark:text-rose-200'
-                          : showerProofSyncStatus === 'saved'
-                            ? 'text-emerald-700 dark:text-emerald-200'
-                            : 'text-slate-700 dark:text-slate-200'
-                      }`}>
-                        {showerProofSyncMessage}
-                      </p>
-                    )}
-                    {(showerProofBackendFolder || showerProofForCycle?.backendFolderPath) && (
-                      <p className="text-xs font-bold opacity-75">
-                        Backend folder: {showerProofBackendFolder || showerProofForCycle?.backendFolderPath}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </section>
-              )}
-
-              <section className="rounded-[8px] border-2 border-slate-300 bg-white p-4 dark:border-white/20 dark:bg-[#17181b]">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Task Board</p>
-                    <h3 className="text-3xl font-black text-slate-950 dark:text-white">Tracked Tasks</h3>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleAddHabitTask}
-                    className="flex min-h-14 items-center justify-center gap-2 rounded-[8px] bg-slate-950 px-5 text-lg font-black uppercase text-white shadow-lg transition hover:bg-slate-800 dark:bg-white dark:text-slate-950"
-                  >
-                    <Plus size={22} />
-                    <span>Add Task</span>
-                  </button>
-                </div>
-
-                <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
-                  {habitTasks.map(task => {
-                    const taskLogs = habitLogs.filter(log => log.taskId === task.id || (!log.taskId && log.taskName === task.name));
-                    const taskTodayMinutes = taskLogs
-                      .filter(log => log.date === todayKey)
-                      .reduce((sum, log) => sum + log.minutes, 0);
-                    const taskComplete = taskTodayMinutes >= task.targetMinutes;
-                    const isActive = activeHabitTask.id === task.id;
-                    return (
-                      <button
-                        key={task.id}
-                        type="button"
-                        onClick={() => setActiveHabitTaskId(task.id)}
-                        className={`min-w-[220px] rounded-[8px] border-2 p-4 text-left transition ${isActive ? 'border-blue-700 bg-blue-50 dark:bg-blue-500/10' : 'border-slate-200 bg-slate-50 hover:border-blue-300 dark:border-white/10 dark:bg-white/[0.04]'}`}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="truncate text-xl font-black text-slate-950 dark:text-white">{task.name}</p>
-                          <span className={`shrink-0 rounded-[8px] px-2 py-1 text-xs font-black uppercase ${taskComplete ? 'bg-emerald-600 text-white' : 'bg-amber-400 text-slate-950'}`}>
-                            {taskComplete ? 'Done' : 'Open'}
-                          </span>
-                        </div>
-                        <p className="mt-3 text-4xl font-black leading-none text-slate-950 dark:text-white">{taskTodayMinutes}</p>
-                        <p className="text-base font-black uppercase text-slate-500 dark:text-slate-300">of {task.targetMinutes} min today</p>
-                        <p className="mt-2 text-sm font-black uppercase text-blue-700 dark:text-blue-300">{taskLogs.length} sessions</p>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-[8px] bg-slate-950 p-4 text-white">
-                    <p className="text-sm font-black uppercase">Tasks Tracked</p>
-                    <p className="mt-2 text-4xl font-black leading-none">{habitTasks.length}</p>
-                  </div>
-                  <div className="rounded-[8px] bg-emerald-600 p-4 text-white">
-                    <p className="text-sm font-black uppercase">Hit Today</p>
-                    <p className="mt-2 text-4xl font-black leading-none">{habitTasksHitToday}</p>
-                  </div>
-                  <div className="rounded-[8px] bg-blue-700 p-4 text-white">
-                    <p className="text-sm font-black uppercase">Time Today</p>
-                    <p className="mt-2 text-4xl font-black leading-none">{allHabitMinutesToday}m</p>
-                  </div>
-                </div>
-              </section>
-
-              <details
-                data-testid="add-today-task-panel"
-                className="group rounded-[8px] border-2 border-slate-200 bg-white px-4 py-3 dark:border-white/10 dark:bg-[#17181b]"
-              >
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 marker:hidden">
-                  <span className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">
-                    <Plus size={18} className="text-blue-700 dark:text-blue-300" />
-                    Add To Today
-                  </span>
-                  <span className="rounded-[8px] bg-slate-100 px-2 py-1 text-xs font-black uppercase text-slate-600 dark:bg-white/10 dark:text-slate-300">
-                    {new Date(`${todayKey}T12:00:00`).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                  </span>
-                </summary>
-
-                <div className="mt-3 grid gap-2 lg:grid-cols-[1fr_110px_1fr_auto] lg:items-end">
-                  <div>
-                    <label htmlFor="today-habit-task-name" className="block text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                      Task
-                    </label>
-                    <input
-                      id="today-habit-task-name"
-                      value={todayHabitTaskName}
-                      onChange={(event) => setTodayHabitTaskName(event.target.value)}
-                      className="mt-1 min-h-11 w-full rounded-[8px] border-2 border-slate-300 bg-white px-3 text-sm font-black text-slate-950 outline-none focus:border-blue-700 dark:border-white/10 dark:bg-black/20 dark:text-white"
-                      placeholder="Task name"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="today-habit-task-minutes" className="block text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                      Minutes
-                    </label>
-                    <input
-                      id="today-habit-task-minutes"
-                      type="number"
-                      min="1"
-                      value={todayHabitTaskMinutes}
-                      onChange={(event) => setTodayHabitTaskMinutes(Math.max(1, Number(event.target.value) || 1))}
-                      className="mt-1 min-h-11 w-full rounded-[8px] border-2 border-slate-300 bg-white px-3 text-sm font-black text-slate-950 outline-none focus:border-blue-700 dark:border-white/10 dark:bg-black/20 dark:text-white"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="today-habit-task-note" className="block text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                      Note
-                    </label>
-                    <input
-                      id="today-habit-task-note"
-                      value={todayHabitTaskNote}
-                      onChange={(event) => setTodayHabitTaskNote(event.target.value)}
-                      className="mt-1 min-h-11 w-full rounded-[8px] border-2 border-slate-300 bg-white px-3 text-sm font-bold text-slate-950 outline-none focus:border-blue-700 dark:border-white/10 dark:bg-black/20 dark:text-white"
-                      placeholder="Optional"
-                    />
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleAddTodayHabitTask}
-                    className="flex min-h-11 items-center justify-center gap-2 rounded-[8px] bg-slate-950 px-4 text-sm font-black uppercase text-white shadow-sm transition hover:bg-slate-800 dark:bg-white dark:text-slate-950"
-                  >
-                    <Plus size={18} />
-                    <span>Add</span>
-                  </button>
-                </div>
-              </details>
-
-              <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-                <section className="rounded-[8px] border-2 border-slate-300 bg-white p-5 dark:border-white/20 dark:bg-[#17181b]">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <label htmlFor="habit-task-name" className="block text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                        Task
-                      </label>
-                      <input
-                        id="habit-task-name"
-                        value={habitTaskName}
-                        onChange={(event) => updateActiveHabitTask({ name: event.target.value })}
-                        className="mt-2 min-h-14 w-full rounded-[8px] border-2 border-slate-300 bg-white px-4 text-lg font-black text-slate-950 outline-none focus:border-blue-700 dark:border-white/10 dark:bg-black/20 dark:text-white"
-                        placeholder="Example: Street outreach, paperwork, study"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="habit-target-minutes" className="block text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                        Daily Target Minutes
-                      </label>
-                      <input
-                        id="habit-target-minutes"
-                        type="number"
-                        min="1"
-                        value={habitTargetMinutes}
-                        onChange={(event) => updateActiveHabitTask({ targetMinutes: Math.max(1, Number(event.target.value) || 1) })}
-                        className="mt-2 min-h-14 w-full rounded-[8px] border-2 border-slate-300 bg-white px-4 text-lg font-black text-slate-950 outline-none focus:border-blue-700 dark:border-white/10 dark:bg-black/20 dark:text-white"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-5 rounded-[8px] bg-slate-100 p-4 dark:bg-black/20">
-                    <div className="grid gap-3 sm:grid-cols-[180px_1fr]">
-                      <div>
-                        <label htmlFor="habit-log-minutes" className="block text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                          Minutes Done
-                        </label>
-                        <input
-                          id="habit-log-minutes"
-                          type="number"
-                          min="1"
-                          value={habitLogMinutes}
-                          onChange={(event) => updateActiveHabitTask({ lastMinutes: Math.max(1, Number(event.target.value) || 1) })}
-                          className="mt-2 min-h-16 w-full rounded-[8px] border-2 border-slate-300 bg-white px-4 text-3xl font-black text-slate-950 outline-none focus:border-blue-700 dark:border-white/10 dark:bg-[#17181b] dark:text-white"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="habit-log-note" className="block text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                          Note
-                        </label>
-                        <input
-                          id="habit-log-note"
-                          value={habitLogNote}
-                          onChange={(event) => setHabitLogNote(event.target.value)}
-                          className="mt-2 min-h-16 w-full rounded-[8px] border-2 border-slate-300 bg-white px-4 text-lg font-bold text-slate-950 outline-none focus:border-blue-700 dark:border-white/10 dark:bg-[#17181b] dark:text-white"
-                          placeholder="Optional note"
-                        />
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleLogHabitSession}
-                      className="mt-4 flex min-h-20 w-full items-center justify-center gap-3 rounded-[8px] bg-blue-700 px-5 text-3xl font-black uppercase text-white shadow-lg transition hover:bg-blue-600"
-                    >
-                      <CheckCircle2 size={32} />
-                      <span>Log Time</span>
-                    </button>
-                  </div>
-                </section>
-
-                <section className="grid grid-cols-2 gap-3">
-                  <div className="rounded-[8px] bg-slate-950 p-4 text-white">
-                    <p className="text-sm font-black uppercase">Streak</p>
-                    <p className="mt-3 text-5xl font-black leading-none">{habitStreakDays}</p>
-                    <p className="mt-1 text-base font-black">days</p>
-                  </div>
-                  <div className="rounded-[8px] bg-emerald-600 p-4 text-white">
-                    <p className="text-sm font-black uppercase">7-Day Hit Rate</p>
-                    <p className="mt-3 text-5xl font-black leading-none">{habitConsistencyPct}%</p>
-                    <p className="mt-1 text-base font-black">{habitDaysComplete} of 7 days</p>
-                  </div>
-                  <div className="rounded-[8px] bg-blue-700 p-4 text-white">
-                    <p className="text-sm font-black uppercase">Total Time</p>
-                    <p className="mt-3 text-5xl font-black leading-none">{Math.floor(habitTotalMinutes / 60)}h</p>
-                    <p className="mt-1 text-base font-black">{habitTotalMinutes % 60} min</p>
-                  </div>
-                  <div className="rounded-[8px] bg-amber-400 p-4 text-slate-950">
-                    <p className="text-sm font-black uppercase">Sessions</p>
-                    <p className="mt-3 text-5xl font-black leading-none">{habitTotalSessions}</p>
-                    <p className="mt-1 text-base font-black">logged</p>
-                  </div>
-                </section>
-              </div>
-
-              <section className="rounded-[8px] border-2 border-slate-300 bg-white p-5 dark:border-white/20 dark:bg-[#17181b]">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Last 7 Days</p>
-                    <h3 className="text-3xl font-black text-slate-950 dark:text-white">Consistency View</h3>
-                  </div>
-                  <span className="rounded-[8px] bg-slate-950 px-3 py-2 text-sm font-black uppercase text-white dark:bg-white dark:text-slate-950">
-                    Target {habitTargetMinutes} min
-                  </span>
-                </div>
-                <div className="mt-5 grid grid-cols-7 gap-2">
-                  {habitLast7Days.map(day => {
-                    const pct = Math.min(100, Math.round((day.minutes / habitTargetMinutes) * 100));
-                    return (
-                      <div key={day.key} className="rounded-[8px] bg-slate-100 p-2 text-center dark:bg-black/20">
-                        <div className="flex h-32 items-end justify-center rounded-[8px] bg-white p-1 dark:bg-white/10">
-                          <div
-                            className={`w-full rounded-[6px] ${day.complete ? 'bg-emerald-600' : 'bg-blue-700'}`}
-                            style={{ height: `${Math.max(6, pct)}%` }}
-                          />
-                        </div>
-                        <p className="mt-2 text-xs font-black uppercase text-slate-500 dark:text-slate-300">{day.label}</p>
-                        <p className="text-sm font-black text-slate-950 dark:text-white">{day.minutes}m</p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-
-              <section className="rounded-[8px] border-2 border-slate-300 bg-white p-5 dark:border-white/20 dark:bg-[#17181b]">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Log History</p>
-                    <h3 className="text-3xl font-black text-slate-950 dark:text-white">All Logged Sessions</h3>
-                    <p className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-300">
-                      Every habit entry is listed here, no matter which task is selected above.
-                    </p>
-                  </div>
-                  <span className="rounded-[8px] bg-slate-950 px-3 py-2 text-sm font-black uppercase text-white dark:bg-white dark:text-slate-950">
-                    {habitLogs.length} total
-                  </span>
-                </div>
-
-                {habitRecentLogs.length === 0 ? (
-                  <div className="mt-4 rounded-[8px] border-2 border-dashed border-slate-300 p-6 text-center text-lg font-black text-slate-500 dark:border-white/10 dark:text-slate-300">
-                    No habit sessions saved yet. Log any task and it will show up here.
-                  </div>
-                ) : (
-                  <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    {habitRecentLogs.map(log => (
-                      <article key={log.id} className="rounded-[8px] border-2 border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-xl font-black text-slate-950 dark:text-white">{log.minutes} minutes</p>
-                            <p className="text-sm font-black uppercase text-blue-700 dark:text-blue-300">{log.taskName || 'Daily Focus Task'}</p>
-                            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                              {new Date(`${log.date}T12:00:00`).toLocaleDateString([], { month: 'short', day: 'numeric', weekday: 'short' })}
-                              {' '}
-                              {log.createdAt ? `- ${new Date(log.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : ''}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteHabitLog(log.id)}
-                            className="rounded-[8px] bg-slate-200 px-2 py-1 text-xs font-black uppercase text-slate-600 hover:bg-rose-600 hover:text-white dark:bg-white/10 dark:text-slate-300"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                        {log.note && (
-                          <p className="mt-3 text-sm font-bold text-slate-600 dark:text-slate-300">{log.note}</p>
-                        )}
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </section>
-            </div>
+            <HabitsTab
+              habitGoalComplete={habits.habitGoalComplete}
+              todayHabitMinutes={habits.todayHabitMinutes}
+              habitTargetMinutes={habits.habitTargetMinutes}
+              habitSyncStatus={habits.habitSyncStatus}
+              habitTasks={habits.habitTasks}
+              habitLogs={habits.habitLogs}
+              activeHabitTask={habits.activeHabitTask}
+              todayKey={todayKey}
+              habitTasksHitToday={habits.habitTasksHitToday}
+              allHabitMinutesToday={habits.allHabitMinutesToday}
+              todayHabitTaskName={habits.todayHabitTaskName}
+              todayHabitTaskMinutes={habits.todayHabitTaskMinutes}
+              todayHabitTaskNote={habits.todayHabitTaskNote}
+              habitTaskName={habits.habitTaskName}
+              habitLogMinutes={habits.habitLogMinutes}
+              habitLogNote={habits.habitLogNote}
+              habitStreakDays={habits.habitStreakDays}
+              habitConsistencyPct={habits.habitConsistencyPct}
+              habitDaysComplete={habits.habitDaysComplete}
+              habitTotalMinutes={habits.habitTotalMinutes}
+              habitTotalSessions={habits.habitTotalSessions}
+              habitLast7Days={habits.habitLast7Days}
+              habitRecentLogs={habits.habitRecentLogs}
+              showerGateRequired={SHOWER_GATE_REQUIRED}
+              showerGateUnlocked={showerGateUnlocked}
+              barcodeVerifiedForCycle={barcodeVerifiedForCycle}
+              showerProofRequiredSatisfied={showerProofRequiredSatisfied}
+              barcodeScanMessage={barcodeScanMessage}
+              showerCycleLabel={showerCycleLabel}
+              showerHabitLoggedForCycle={showerHabitLoggedForCycle}
+              showerProofForCycle={showerProofForCycle}
+              showerProofAttachmentForCycle={showerProofAttachmentForCycle}
+              showerProofInputKey={showerProofInputKey}
+              showerProofSyncMessage={showerProofSyncMessage}
+              showerProofSyncStatus={showerProofSyncStatus}
+              showerProofBackendFolder={showerProofBackendFolder}
+              barcodeScannerActive={barcodeScannerActive}
+              barcodePermissionStatus={barcodePermissionStatus}
+              barcodeTorchOn={barcodeTorchOn}
+              barcodeTorchAvailable={barcodeTorchAvailable}
+              barcodeVideoRef={barcodeVideoRef}
+              setActiveHabitTaskId={habits.setActiveHabitTaskId}
+              updateActiveHabitTask={habits.updateActiveHabitTask}
+              setHabitLogNote={habits.setHabitLogNote}
+              setTodayHabitTaskName={habits.setTodayHabitTaskName}
+              setTodayHabitTaskMinutes={habits.setTodayHabitTaskMinutes}
+              setTodayHabitTaskNote={habits.setTodayHabitTaskNote}
+              handleAddHabitTask={habits.handleAddHabitTask}
+              handleAddTodayHabitTask={habits.handleAddTodayHabitTask}
+              handleLogHabitSession={habits.handleLogHabitSession}
+              handleDeleteHabitLog={habits.handleDeleteHabitLog}
+              handleShowerProofFile={handleShowerProofFile}
+              handleConfirmDailyShower={handleConfirmDailyShower}
+              stopBarcodeScanner={stopBarcodeScanner}
+              startBarcodeScanner={startBarcodeScanner}
+              toggleBarcodeTorch={toggleBarcodeTorch}
+            />
           )}
 
           {/* Tab 5.5: Tools */}

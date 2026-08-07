@@ -26,7 +26,7 @@ Describes the React application structure, component hierarchy, state management
             <InventoryTab />             (legacy)
             <BatteryTab />               (e-bike telemetry)
             <TrackerTab />               (end of day summary)
-            <HabitsTab />                (mandatory shower habit)
+            <HabitsTab />                (mandatory shower habit + custom tasks)  → `src/features/habits/HabitsTab.tsx`
             <ToolsTab />                 (Smart Aisle Scan, transit tools)
             <SettingsTab />              (hub address, theme, debug)
           </main>
@@ -67,7 +67,7 @@ Key state groups:
 - **Route**: `routeMetrics`, `routingProvider`, `nextRouteAJob`
 - **Ride Mode**: `rideModeActive`, `currentStopIndex`, `rideSession`
 - **Shower Gate**: `showerProofs`, `showerGateUnlocked`, `barcodeScanSuccess`
-- **Habits**: `showerHabitLogs`, `showerHabitTasks`
+- **Habits**: `useHabits(todayKey)` hook in `src/features/habits/useHabits.ts` manages `habitTasks`, `habitLogs`, active task, derived stats, localStorage persistence, and backend sync. `src/App.tsx` consumes the hook and passes values to `HabitsTab`.
 - **Proof Vault**: `proofVault` (keyed by jobId)
 - **Settings**: `startAddress`, `theme`, `debugCenterOpen`
 
@@ -140,4 +140,4 @@ Targets modern mobile browsers (iOS Safari, Android Chrome) and desktop (Chrome,
 
 ## Last Updated
 
-2026-08-02 (aio-three-tab-redesign)
+2026-08-06 — merged HabitsTab file path (`src/features/habits/HabitsTab.tsx`), habit state extraction into `useHabits`, and AIØ three-tab redesign (Today/Jobs/More).
