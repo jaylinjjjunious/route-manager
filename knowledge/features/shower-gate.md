@@ -68,19 +68,45 @@ Ensures the user completes a required daily hygiene habit before starting work. 
 
 ## Frontend Implementation
 
+**`src/features/showerGate/ShowerGateSection.tsx`**
+- Integrated shower gate UI rendered inside the Habits tab.
+- Props-driven: receives all shower state and action callbacks from `useShowerGate`.
+- Wraps legacy `ShowerGatePanel` (still used for Dashboard Mission Control).
+
+**`src/features/showerGate/useShowerGate.ts`**
+- Custom hook that encapsulates all shower gate state, effects, derived values, scanner lifecycle, barcode detection, torch control, backend sync, and proof confirmation.
+- Returns read-only state + action methods; no raw setters exposed to App.tsx.
+- Key returned values:
+  - `showerGateUnlocked`, `showerGateAccessReady`
+  - `showerCycleKey`, `showerCycleLabel`
+  - `showerProofForCycle`, `showerProofAttachmentForCycle`
+  - `barcodeVerifiedForCycle`, `barcodeScanMessage`
+  - `barcodeScannerActive`, `barcodePermissionStatus`, `barcodeTorchOn`, `barcodeTorchAvailable`, `barcodeVideoRef`
+  - `showerProofSyncStatus`, `showerProofSyncMessage`, `showerProofBackendFolder`
+  - `missionControlShowerProofRecord`
+- Action methods:
+  - `confirmShower()` — validates barcode + proof, uploads, returns `{ success, proof?, error? }`
+  - `handleMissionControlVerified(record)` — normalizes Mission Control proof, returns `ShowerProof | null`
+  - `handleShowerProofFile(files, key)` — resizes and stages a proof attachment
+  - `startBarcodeScanner()`, `stopBarcodeScanner()`, `toggleBarcodeTorch()`
+
 **`src/components/ShowerGatePanel.tsx`** (646 lines)
 - Self-contained component with camera management, barcode detection, proof upload, history.
+- Used on Dashboard for Mission Control verification.
 - Camera: `navigator.mediaDevices.getUserMedia()` with `facingMode: "environment"`.
 - Barcode: `BarcodeDetector` API with `@zxing/browser` fallback.
 - Torch: `MediaTrackConstraints.advanced[{ torch: true }]` or `zxingControls.switchTorch()`.
 - Upload: `uploadShowerProof()` from `showerProofApi`.
 - Focus trapping and Escape key support for accessibility.
 
-**`src/App.tsx`** (lines 1556-1616, 2633-2640)
-- Computes `showerCycleKey` via `getCurrentCycleId(new Date())`.
-- Computes `showerGateUnlocked` from `showerProofForCycle` fields.
-- Renders `ShowerGatePanel` on Dashboard only when `!showerGateUnlocked`.
-- `onVerifiedProof` handler saves proof, updates habit log, triggers refresh.
+**`src/App.tsx`**
+- Instantiates `useShowerGate(now)` where `now = new Date(nowTick)`.
+- Retains cross-cutting wrappers:
+  - `blockJobAccess(action)` — redirects to Dashboard if gate locked.
+  - `handleConfirmDailyShower()` — delegates to `showerGate.confirmShower()`, then logs habit task + habit log + dispatcher message.
+  - `handleMissionControlShowerVerified(record)` — delegates to `showerGate.handleMissionControlVerified()`, then logs habit task + habit log + dispatcher message.
+- Renders `ShowerGatePanel` on Dashboard only when `!showerGate.showerGateUnlocked`.
+- Passes `showerGate.*` props into `HabitsTab` and protected tab overlays.
 
 ## Backend Implementation
 
@@ -186,8 +212,11 @@ No automated tests exist for the Shower Gate feature. Manual testing covers:
 
 ## Related Source Files
 
+- `src/features/showerGate/useShowerGate.ts` — Shower gate state/effects/scanner hook
+- `src/features/showerGate/ShowerGateSection.tsx` — Shower gate UI rendered in Habits tab
+- `src/features/showerGate/types.ts` — Shared shower gate types (`ShowerProof`, `BarcodePermissionStatus`, `ShowerProofSyncStatus`)
 - `src/components/ShowerGatePanel.tsx` — Panel component (646 lines)
-- `src/App.tsx` — State management (lines 1556-1616, 2633-2640)
+- `src/App.tsx` — Orchestrates `useShowerGate`, cross-cutting habit/dispatcher wiring, protected tab overlays
 - `src/utils/showerCycle.ts` — Cycle calculation (56 lines)
 - `src/services/showerProofApi.ts` — API client (117 lines)
 - `server.ts` — Express proof endpoints
@@ -203,4 +232,4 @@ No automated tests exist for the Shower Gate feature. Manual testing covers:
 
 ## Last Updated
 
-2026-07-20 (c12bd44)
+2026-08-06 (refactor/shower-gate-extraction — Step 3: `useShowerGate` hook extraction)

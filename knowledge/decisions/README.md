@@ -23,6 +23,7 @@ These decisions are documented in the legacy `docs/DECISIONS.md` file. New ADRs 
 | D015 | Backend-proxied official Transit API integration | Accepted |
 | D016 | Per-job workday scheduling with local calendar days | Accepted |
 | D017 | AIØ three-tab navigation and design system | Accepted |
+| D018 | Extract Shower Gate state into `useShowerGate` hook | Accepted |
 
 ## Creating New ADRs
 
