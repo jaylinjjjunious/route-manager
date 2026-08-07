@@ -76,7 +76,7 @@ All habit UI elements are rendered by `src/features/habits/HabitsTab.tsx`, a pre
 - **7-Day Consistency Chart**: Daily bar chart against target minutes
 - **Log History**: All logged sessions with delete actions
 
-Habit state, effects, handlers, and backend synchronization remain in `src/App.tsx`. This was a UI-only extraction with no intended behavior change.
+Habit state, effects, handlers, derived stats, and backend synchronization were extracted into `src/features/habits/useHabits.ts`. `src/App.tsx` calls `useHabits(todayKey)` and passes the returned values to `HabitsTab`. Shower-gate code in `App.tsx` mutates habit state only through typed integration methods (`addHabitTask`, `addHabitLog`, `ensureHabitTask`, `setActiveHabitTaskId`) exposed by the hook. This was a UI-only extraction followed by a full state/effect extraction with no intended behavior change.
 
 ## Design Rationale
 

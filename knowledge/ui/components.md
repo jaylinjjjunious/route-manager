@@ -278,7 +278,7 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 | **Props** | ~50 props: habit data (`habitTasks`, `habitLogs`, `activeHabitTask`), stats (`habitStreakDays`, `habitConsistencyPct`, `habitTotalMinutes`), shower gate state (`showerGateRequired`, `barcodeVerifiedForCycle`, etc.), input values, and all callback handlers |
 | **Responsibility** | Presentational Habits tab UI extracted from `src/App.tsx`. Renders the Consistency Tracker header, Mandatory Shower section (when required), Task Board with selectable task cards, Add To Today panel, Log Time form, progress stat cards (Streak, 7-Day Hit Rate, Total Time, Sessions), 7-day consistency bar chart, and All Logged Sessions history. Receives all data and callbacks via props; contains zero local state. |
 
-**Note:** Habit state, effects, handlers, and backend synchronization remain in `src/App.tsx`. This was a UI-only extraction with no intended behavior change.
+**Note:** Habit state, effects, handlers, derived stats, and backend synchronization were extracted into `src/features/habits/useHabits.ts`. `src/App.tsx` calls `useHabits(todayKey)` and passes all habit data and callbacks to `HabitsTab`. Shower-gate code in `App.tsx` mutates habit state only through typed integration methods (`addHabitTask`, `addHabitLog`, `ensureHabitTask`, `setActiveHabitTaskId`) exposed by the hook.
 
 ---
 

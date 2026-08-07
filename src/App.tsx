@@ -66,6 +66,8 @@ import { TransitStatusCard } from './components/transit/TransitStatusCard';
 import type { TravelMode } from './types';
 import { getCurrentCycleId, getCycleLabel, getNextResetTime, getLocalDateKey } from './utils/showerCycle';
 import HabitsTab from './features/habits/HabitsTab';
+import { useHabits } from './features/habits/useHabits';
+import safeStorage from './utils/safeStorage';
 import { useTextToSpeech } from './hooks/useTextToSpeech';
 import type { ShowerProofRecord } from './services/showerProofApi';
 import { authFetch, authFetchJson } from './services/apiClient';
@@ -103,24 +105,6 @@ interface ProofRecord {
   notes: string;
   createdAt: string;
   updatedAt: string;
-}
-
-interface HabitLog {
-  id: string;
-  taskId?: string;
-  taskName: string;
-  minutes: number;
-  date: string;
-  note: string;
-  createdAt: string;
-}
-
-interface HabitTask {
-  id: string;
-  name: string;
-  targetMinutes: number;
-  lastMinutes: number;
-  createdAt: string;
 }
 
 interface ShowerProof {
@@ -208,33 +192,6 @@ declare global {
   }
 }
 
-const safeStorage = {
-  getItem(key: string) {
-    if (typeof window === 'undefined') return null;
-    try {
-      return window.localStorage.getItem(key);
-    } catch {
-      return null;
-    }
-  },
-  setItem(key: string, value: string) {
-    if (typeof window === 'undefined') return;
-    try {
-      window.localStorage.setItem(key, value);
-    } catch {
-      // Storage can be unavailable in private or restricted browser contexts.
-    }
-  },
-  removeItem(key: string) {
-    if (typeof window === 'undefined') return;
-    try {
-      window.localStorage.removeItem(key);
-    } catch {
-      // Storage can be unavailable in private or restricted browser contexts.
-    }
-  }
-};
-
 const resizeProofImage = (file: File): Promise<string> => {
   if (typeof window === 'undefined' || !file.type.startsWith('image/')) {
     return new Promise((resolve, reject) => {
@@ -269,14 +226,6 @@ const resizeProofImage = (file: File): Promise<string> => {
     reader.readAsDataURL(file);
   });
 };
-
-const createDefaultHabitTask = (): HabitTask => ({
-  id: 'habit-task-default',
-  name: 'Daily Focus Task',
-  targetMinutes: 30,
-  lastMinutes: 30,
-  createdAt: new Date().toISOString()
-});
 
 const SEED_JOBS: Job[] = [
   {
@@ -447,40 +396,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const [showScheduleReview, setShowScheduleReview] = useState<'overdue' | 'unscheduled' | null>(null);
   const [moveToDayJob, setMoveToDayJob] = useState<Job | null>(null);
   const trackerTimerRef = useRef<number | null>(null);
-  const [habitTasks, setHabitTasks] = useState<HabitTask[]>(() => {
-    try {
-      const savedTasks = safeStorage.getItem('habit_tracker_tasks');
-      if (savedTasks) {
-        const parsedTasks = JSON.parse(savedTasks);
-        if (Array.isArray(parsedTasks) && parsedTasks.length > 0) {
-          return parsedTasks;
-        }
-      }
-    } catch {
-      // Fall through to legacy single-task migration.
-    }
-
-    return [{
-      id: 'habit-task-default',
-      name: safeStorage.getItem('habit_tracker_task_name') || 'Daily Focus Task',
-      targetMinutes: Number(safeStorage.getItem('habit_tracker_target_minutes') || '30'),
-      lastMinutes: Number(safeStorage.getItem('habit_tracker_last_minutes') || '30'),
-      createdAt: new Date().toISOString()
-    }];
-  });
-  const [activeHabitTaskId, setActiveHabitTaskId] = useState<string>(() => safeStorage.getItem('habit_tracker_active_task_id') || 'habit-task-default');
-  const [habitLogNote, setHabitLogNote] = useState('');
-  const [todayHabitTaskName, setTodayHabitTaskName] = useState('');
-  const [todayHabitTaskMinutes, setTodayHabitTaskMinutes] = useState(20);
-  const [todayHabitTaskNote, setTodayHabitTaskNote] = useState('');
-  const [habitLogs, setHabitLogs] = useState<HabitLog[]>(() => {
-    try {
-      const saved = safeStorage.getItem('habit_tracker_logs');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
   const [showerProofs, setShowerProofs] = useState<ShowerProof[]>(() => {
     try {
       const saved = safeStorage.getItem(SHOWER_GATE_STORAGE_KEY);
@@ -503,12 +418,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const [barcodeTorchAvailable, setBarcodeTorchAvailable] = useState(false);
   const [barcodeTorchOn, setBarcodeTorchOn] = useState(false);
   const [nowTick, setNowTick] = useState(() => Date.now());
-  const [habitSyncStatus, setHabitSyncStatus] = useState<'loading' | 'synced' | 'offline' | 'saving'>('loading');
-  const habitBackendLoadedRef = useRef(false);
-  const activeHabitTask = habitTasks.find(task => task.id === activeHabitTaskId) || habitTasks[0] || createDefaultHabitTask();
-  const habitTaskName = activeHabitTask.name;
-  const habitTargetMinutes = Math.max(1, Number(activeHabitTask.targetMinutes) || 30);
-  const habitLogMinutes = Math.max(1, Number(activeHabitTask.lastMinutes) || habitTargetMinutes);
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [proofVault, setProofVault] = useState<Record<string, ProofRecord>>(() => {
@@ -779,141 +688,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     safeStorage.setItem('ride_tracker_start_battery', trackerStartBattery.toString());
     safeStorage.setItem('ride_tracker_jobs_completed', JSON.stringify(trackerJobsCompleted));
   }, [trackerStatus, trackerRideTime, trackerStoreTime, trackerTotalDayTime, trackerStartBattery, trackerJobsCompleted]);
-
-  useEffect(() => {
-    safeStorage.setItem('habit_tracker_tasks', JSON.stringify(habitTasks));
-    safeStorage.setItem('habit_tracker_active_task_id', activeHabitTask.id);
-    safeStorage.setItem('habit_tracker_task_name', habitTaskName);
-    safeStorage.setItem('habit_tracker_target_minutes', habitTargetMinutes.toString());
-    safeStorage.setItem('habit_tracker_last_minutes', habitLogMinutes.toString());
-    safeStorage.setItem('habit_tracker_logs', JSON.stringify(habitLogs));
-  }, [habitTasks, activeHabitTask.id, habitTaskName, habitTargetMinutes, habitLogMinutes, habitLogs]);
-
-  useEffect(() => {
-    if (!habitBackendLoadedRef.current) return;
-    setHabitTasks(prev => {
-      const showerIndex = prev.findIndex(task => task.id === SHOWER_HABIT_TASK_ID || task.name.toLowerCase() === SHOWER_HABIT_NAME.toLowerCase());
-      if (showerIndex >= 0) {
-        const showerTask = prev[showerIndex];
-        if (
-          showerTask.id === SHOWER_HABIT_TASK_ID &&
-          showerTask.name === SHOWER_HABIT_NAME &&
-          showerTask.targetMinutes === 1 &&
-          showerTask.lastMinutes === 1
-        ) {
-          return prev;
-        }
-        return prev.map((task, index) => index === showerIndex
-          ? { ...task, id: SHOWER_HABIT_TASK_ID, name: SHOWER_HABIT_NAME, targetMinutes: 1, lastMinutes: 1 }
-          : task
-        );
-      }
-      return [
-        ...prev,
-        {
-          id: SHOWER_HABIT_TASK_ID,
-          name: SHOWER_HABIT_NAME,
-          targetMinutes: 1,
-          lastMinutes: 1,
-          createdAt: new Date().toISOString()
-        }
-      ];
-    });
-  }, [habitSyncStatus]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadBackendHabits = async () => {
-      try {
-        const response = await authFetch('/api/habits');
-        if (!response.ok) throw new Error('Habit backend unavailable');
-        const backend = await response.json();
-        if (!isMounted) return;
-
-        const legacyBackendTask: HabitTask = {
-          id: 'habit-task-default',
-          name: backend.taskName || 'Daily Focus Task',
-          targetMinutes: Number(backend.targetMinutes || 30),
-          lastMinutes: Number(backend.lastMinutes || backend.targetMinutes || 30),
-          createdAt: backend.updatedAt || new Date().toISOString()
-        };
-        const backendTasks = Array.isArray(backend.tasks) && backend.tasks.length > 0
-          ? backend.tasks as HabitTask[]
-          : [legacyBackendTask];
-        const normalizedBackendTasks = backendTasks.reduce<HabitTask[]>((acc, task) => {
-          if (!task?.id || acc.some(item => item.id === task.id)) return acc;
-          acc.push({
-            id: task.id,
-            name: (task.name || 'Daily Focus Task').toString().trim().slice(0, 120) || 'Daily Focus Task',
-            targetMinutes: Math.max(1, Math.round(Number(task.targetMinutes) || 30)),
-            lastMinutes: Math.max(1, Math.round(Number(task.lastMinutes) || Number(task.targetMinutes) || 30)),
-            createdAt: task.createdAt || new Date().toISOString()
-          });
-          return acc;
-        }, []);
-        const activeId = backend.activeTaskId || normalizedBackendTasks[0]?.id || 'habit-task-default';
-        const backendLogs = Array.isArray(backend.logs) ? backend.logs as HabitLog[] : [];
-        const normalizedBackendLogs = backendLogs.reduce<HabitLog[]>((acc, log) => {
-          if (!log?.id || acc.some(item => item.id === log.id)) return acc;
-          const matchingTask = normalizedBackendTasks.find(task => task.id === log.taskId) || normalizedBackendTasks.find(task => task.name === log.taskName);
-          acc.push({
-            ...log,
-            taskId: log.taskId || matchingTask?.id || activeId,
-            taskName: log.taskName || matchingTask?.name || 'Daily Focus Task'
-          });
-          return acc;
-        }, []);
-        const nextTasks = normalizedBackendTasks.length > 0 ? normalizedBackendTasks : [legacyBackendTask];
-
-        setHabitTasks(nextTasks);
-        setActiveHabitTaskId(nextTasks.some(task => task.id === activeId) ? activeId : nextTasks[0]?.id || 'habit-task-default');
-        setHabitLogs(normalizedBackendLogs);
-        habitBackendLoadedRef.current = true;
-        setHabitSyncStatus('synced');
-      } catch (error) {
-        console.warn('Habit backend sync unavailable. Using local fallback.', error);
-        if (!isMounted) return;
-        habitBackendLoadedRef.current = true;
-        setHabitSyncStatus('offline');
-      }
-    };
-
-    loadBackendHabits();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!habitBackendLoadedRef.current) return;
-
-    const saveTimer = window.setTimeout(async () => {
-      try {
-        setHabitSyncStatus('saving');
-        const response = await authFetch('/api/habits', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            taskName: habitTaskName,
-            targetMinutes: habitTargetMinutes,
-            lastMinutes: habitLogMinutes,
-            activeTaskId: activeHabitTask.id,
-            tasks: habitTasks,
-            logs: habitLogs
-          })
-        });
-        if (!response.ok) throw new Error('Habit backend save failed');
-        setHabitSyncStatus('synced');
-      } catch (error) {
-        console.warn('Habit backend save failed. Local copy is still saved.', error);
-        setHabitSyncStatus('offline');
-      }
-    }, 450);
-
-    return () => window.clearTimeout(saveTimer);
-  }, [habitTaskName, habitTargetMinutes, habitLogMinutes, activeHabitTask.id, habitTasks, habitLogs]);
 
   // Ride Tracker timer interval
   useEffect(() => {
@@ -1699,6 +1473,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
 
   const now = new Date(nowTick);
   const todayKey = getDateKey(now);
+  const habits = useHabits(todayKey);
   const showerCycleKey = getCurrentCycleId(now);
   const showerCycleLabel = getCycleLabel(showerCycleKey);
   const showerProofForCycle = showerProofs.find(proof => proof.cycleKey === showerCycleKey);
@@ -1776,57 +1551,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
       updatedAt: showerProofForCycle.showerConfirmedAt || showerProofForCycle.confirmedAt || showerProofForCycle.capturedAt || new Date().toISOString(),
     }
     : null;
-  const currentHabitLogs = habitLogs.filter(log => log.taskId === activeHabitTask.id || (!log.taskId && log.taskName === habitTaskName));
-  const todayHabitMinutes = currentHabitLogs
-    .filter(log => log.date === todayKey)
-    .reduce((sum, log) => sum + log.minutes, 0);
-  const habitGoalComplete = todayHabitMinutes >= habitTargetMinutes;
-  const habitTotalMinutes = currentHabitLogs.reduce((sum, log) => sum + log.minutes, 0);
-  const habitTotalSessions = currentHabitLogs.length;
-  const habitLast7Days = Array.from({ length: 7 }, (_, index) => {
-    const date = new Date();
-    date.setDate(date.getDate() - (6 - index));
-    const key = getDateKey(date);
-    const minutes = currentHabitLogs
-      .filter(log => log.date === key)
-      .reduce((sum, log) => sum + log.minutes, 0);
-    return {
-      key,
-      label: date.toLocaleDateString([], { weekday: 'short' }),
-      minutes,
-      complete: minutes > 0
-    };
-  });
-  const habitDaysComplete = habitLast7Days.filter(day => day.complete).length;
-  const habitConsistencyPct = Math.round((habitDaysComplete / habitLast7Days.length) * 100);
-  const habitStreakDays = (() => {
-    let streak = 0;
-    for (let offset = 0; offset < 365; offset++) {
-      const date = new Date();
-      date.setDate(date.getDate() - offset);
-      const key = getDateKey(date);
-      const minutes = currentHabitLogs
-        .filter(log => log.date === key)
-        .reduce((sum, log) => sum + log.minutes, 0);
-      if (minutes > 0) {
-        streak += 1;
-      } else {
-        break;
-      }
-    }
-    return streak;
-  })();
-  const habitRecentLogs = [...habitLogs].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  const allHabitMinutesToday = habitLogs
-    .filter(log => log.date === todayKey)
-    .reduce((sum, log) => sum + log.minutes, 0);
-  const habitTasksHitToday = habitTasks.filter(task => {
-    const minutes = habitLogs
-      .filter(log => log.date === todayKey && (log.taskId === task.id || (!log.taskId && log.taskName === task.name)))
-      .reduce((sum, log) => sum + log.minutes, 0);
-    return minutes >= task.targetMinutes;
-  }).length;
-  const showerHabitLogs = habitLogs.filter(log => log.taskId === SHOWER_HABIT_TASK_ID || log.taskName === SHOWER_HABIT_NAME);
+  const showerHabitLogs = habits.habitLogs.filter(log => log.taskId === SHOWER_HABIT_TASK_ID || log.taskName === SHOWER_HABIT_NAME);
   const showerHabitLoggedForCycle = showerHabitLogs.some(log => log.date === showerCycleKey);
 
   const saveShowerProofToBackend = async (payload: {
@@ -2293,36 +2018,22 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
       proof
     ]);
 
-    setHabitTasks(prev => {
-      if (prev.some(task => task.id === SHOWER_HABIT_TASK_ID)) return prev;
-      return [
-        ...prev,
-        {
-          id: SHOWER_HABIT_TASK_ID,
-          name: SHOWER_HABIT_NAME,
-          targetMinutes: 1,
-          lastMinutes: 1,
-          createdAt: confirmedAt
-        }
-      ];
+    habits.addHabitTask({
+      id: SHOWER_HABIT_TASK_ID,
+      name: SHOWER_HABIT_NAME,
+      targetMinutes: 1,
+      lastMinutes: 1,
+      createdAt: confirmedAt
     });
 
-    setHabitLogs(prev => {
-      if (prev.some(log => log.date === showerCycleKey && (log.taskId === SHOWER_HABIT_TASK_ID || log.taskName === SHOWER_HABIT_NAME))) {
-        return prev;
-      }
-      return [
-        {
-          id: `habit-shower-${showerCycleKey}-${Date.now()}`,
-          taskId: SHOWER_HABIT_TASK_ID,
-          taskName: SHOWER_HABIT_NAME,
-          minutes: 1,
-          date: showerCycleKey,
-          note: `Proof confirmed: ${proofAttachment?.name || 'attached proof'}. Product barcode verified.`,
-          createdAt: confirmedAt
-        },
-        ...prev
-      ];
+    habits.addHabitLog({
+      id: `habit-shower-${showerCycleKey}-${Date.now()}`,
+      taskId: SHOWER_HABIT_TASK_ID,
+      taskName: SHOWER_HABIT_NAME,
+      minutes: 1,
+      date: showerCycleKey,
+      note: `Proof confirmed: ${proofAttachment?.name || 'attached proof'}. Product barcode verified.`,
+      createdAt: confirmedAt
     });
 
     setShowerProofDraft(null);
@@ -2330,7 +2041,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     setBarcodeScanSuccess(false);
     setScannedBarcodeValue('');
     setBarcodeScanMessage('Scan the product barcode to unlock shower confirmation.');
-    setActiveHabitTaskId(SHOWER_HABIT_TASK_ID);
+    habits.setActiveHabitTaskId(SHOWER_HABIT_TASK_ID);
     setDispatcherMessage(`Shower confirmed. Jobs are unlocked for this daily cycle.${proof.backendFolderPath ? ` Backend folder: ${proof.backendFolderPath}` : ''}`);
   };
 
@@ -2372,36 +2083,22 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
       ];
     });
 
-    setHabitTasks(prev => {
-      if (prev.some(task => task.id === SHOWER_HABIT_TASK_ID)) return prev;
-      return [
-        ...prev,
-        {
-          id: SHOWER_HABIT_TASK_ID,
-          name: SHOWER_HABIT_NAME,
-          targetMinutes: 1,
-          lastMinutes: 1,
-          createdAt: confirmedAt
-        }
-      ];
+    habits.addHabitTask({
+      id: SHOWER_HABIT_TASK_ID,
+      name: SHOWER_HABIT_NAME,
+      targetMinutes: 1,
+      lastMinutes: 1,
+      createdAt: confirmedAt
     });
 
-    setHabitLogs(prev => {
-      if (prev.some(log => log.date === showerCycleKey && (log.taskId === SHOWER_HABIT_TASK_ID || log.taskName === SHOWER_HABIT_NAME))) {
-        return prev;
-      }
-      return [
-        {
-          id: `habit-shower-${showerCycleKey}-${Date.now()}`,
-          taskId: SHOWER_HABIT_TASK_ID,
-          taskName: SHOWER_HABIT_NAME,
-          minutes: 1,
-          date: showerCycleKey,
-          note: 'Mission Control shower proof saved. Product barcode verified.',
-          createdAt: confirmedAt
-        },
-        ...prev
-      ];
+    habits.addHabitLog({
+      id: `habit-shower-${showerCycleKey}-${Date.now()}`,
+      taskId: SHOWER_HABIT_TASK_ID,
+      taskName: SHOWER_HABIT_NAME,
+      minutes: 1,
+      date: showerCycleKey,
+      note: 'Mission Control shower proof saved. Product barcode verified.',
+      createdAt: confirmedAt
     });
 
     setShowerProofDraft(null);
@@ -2419,83 +2116,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
       setDispatcherMessage('Daily shower gate reset at 6:00 AM. Confirm shower proof before continuing jobs.');
     }
   }, [showerGateAccessReady, rideModeActive]);
-
-  const updateActiveHabitTask = (updates: Partial<Pick<HabitTask, 'name' | 'targetMinutes' | 'lastMinutes'>>) => {
-    setHabitTasks(prev => prev.map(task => task.id === activeHabitTask.id ? {
-      ...task,
-      ...updates,
-      name: updates.name !== undefined ? updates.name : task.name,
-      targetMinutes: updates.targetMinutes !== undefined ? Math.max(1, updates.targetMinutes) : task.targetMinutes,
-      lastMinutes: updates.lastMinutes !== undefined ? Math.max(1, updates.lastMinutes) : task.lastMinutes
-    } : task));
-  };
-
-  const handleAddHabitTask = () => {
-    const newTask: HabitTask = {
-      id: `habit-task-${Date.now()}`,
-      name: `Task ${habitTasks.length + 1}`,
-      targetMinutes: 30,
-      lastMinutes: 30,
-      createdAt: new Date().toISOString()
-    };
-    setHabitTasks(prev => [...prev, newTask]);
-    setActiveHabitTaskId(newTask.id);
-  };
-
-  const handleAddTodayHabitTask = () => {
-    const minutes = Math.max(1, Math.round(Number(todayHabitTaskMinutes) || 20));
-    const taskName = todayHabitTaskName.trim() || `Task ${habitTasks.length + 1}`;
-    const createdAt = new Date().toISOString();
-    const idBase = Date.now();
-    const newTask: HabitTask = {
-      id: `habit-task-${idBase}`,
-      name: taskName,
-      targetMinutes: minutes,
-      lastMinutes: minutes,
-      createdAt
-    };
-
-    setHabitTasks(prev => [...prev, newTask]);
-    setActiveHabitTaskId(newTask.id);
-    setHabitLogs(prev => [
-      {
-        id: `habit-${idBase}`,
-        taskId: newTask.id,
-        taskName,
-        minutes,
-        date: todayKey,
-        note: todayHabitTaskNote.trim(),
-        createdAt
-      },
-      ...prev
-    ]);
-    setTodayHabitTaskName('');
-    setTodayHabitTaskNote('');
-    setTodayHabitTaskMinutes(minutes);
-  };
-
-  const handleLogHabitSession = () => {
-    const minutes = Math.max(1, Math.round(habitLogMinutes || habitTargetMinutes || 30));
-    const taskName = habitTaskName.trim() || 'Daily Focus Task';
-    updateActiveHabitTask({ name: taskName, lastMinutes: minutes });
-    setHabitLogs(prev => [
-      {
-        id: `habit-${Date.now()}`,
-        taskId: activeHabitTask.id,
-        taskName,
-        minutes,
-        date: todayKey,
-        note: habitLogNote.trim(),
-        createdAt: new Date().toISOString()
-      },
-      ...prev
-    ]);
-    setHabitLogNote('');
-  };
-
-  const handleDeleteHabitLog = (id: string) => {
-    setHabitLogs(prev => prev.filter(log => log.id !== id));
-  };
 
   const getRideDistance = () => parseFloat(((trackerRideTime / 3600) * ebikeConfig.avgSpeedMph).toFixed(1));
   const getEstimatedBatteryUsed = () => parseFloat((getRideDistance() * learnedBatteryPercentPerMile * batteryFactor).toFixed(1));
@@ -4782,29 +4402,29 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
 
           {currentTab === 'habits' && (
             <HabitsTab
-              habitGoalComplete={habitGoalComplete}
-              todayHabitMinutes={todayHabitMinutes}
-              habitTargetMinutes={habitTargetMinutes}
-              habitSyncStatus={habitSyncStatus}
-              habitTasks={habitTasks}
-              habitLogs={habitLogs}
-              activeHabitTask={activeHabitTask}
+              habitGoalComplete={habits.habitGoalComplete}
+              todayHabitMinutes={habits.todayHabitMinutes}
+              habitTargetMinutes={habits.habitTargetMinutes}
+              habitSyncStatus={habits.habitSyncStatus}
+              habitTasks={habits.habitTasks}
+              habitLogs={habits.habitLogs}
+              activeHabitTask={habits.activeHabitTask}
               todayKey={todayKey}
-              habitTasksHitToday={habitTasksHitToday}
-              allHabitMinutesToday={allHabitMinutesToday}
-              todayHabitTaskName={todayHabitTaskName}
-              todayHabitTaskMinutes={todayHabitTaskMinutes}
-              todayHabitTaskNote={todayHabitTaskNote}
-              habitTaskName={habitTaskName}
-              habitLogMinutes={habitLogMinutes}
-              habitLogNote={habitLogNote}
-              habitStreakDays={habitStreakDays}
-              habitConsistencyPct={habitConsistencyPct}
-              habitDaysComplete={habitDaysComplete}
-              habitTotalMinutes={habitTotalMinutes}
-              habitTotalSessions={habitTotalSessions}
-              habitLast7Days={habitLast7Days}
-              habitRecentLogs={habitRecentLogs}
+              habitTasksHitToday={habits.habitTasksHitToday}
+              allHabitMinutesToday={habits.allHabitMinutesToday}
+              todayHabitTaskName={habits.todayHabitTaskName}
+              todayHabitTaskMinutes={habits.todayHabitTaskMinutes}
+              todayHabitTaskNote={habits.todayHabitTaskNote}
+              habitTaskName={habits.habitTaskName}
+              habitLogMinutes={habits.habitLogMinutes}
+              habitLogNote={habits.habitLogNote}
+              habitStreakDays={habits.habitStreakDays}
+              habitConsistencyPct={habits.habitConsistencyPct}
+              habitDaysComplete={habits.habitDaysComplete}
+              habitTotalMinutes={habits.habitTotalMinutes}
+              habitTotalSessions={habits.habitTotalSessions}
+              habitLast7Days={habits.habitLast7Days}
+              habitRecentLogs={habits.habitRecentLogs}
               showerGateRequired={SHOWER_GATE_REQUIRED}
               showerGateUnlocked={showerGateUnlocked}
               barcodeVerifiedForCycle={barcodeVerifiedForCycle}
@@ -4823,16 +4443,16 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
               barcodeTorchOn={barcodeTorchOn}
               barcodeTorchAvailable={barcodeTorchAvailable}
               barcodeVideoRef={barcodeVideoRef}
-              setActiveHabitTaskId={setActiveHabitTaskId}
-              updateActiveHabitTask={updateActiveHabitTask}
-              setHabitLogNote={setHabitLogNote}
-              setTodayHabitTaskName={setTodayHabitTaskName}
-              setTodayHabitTaskMinutes={setTodayHabitTaskMinutes}
-              setTodayHabitTaskNote={setTodayHabitTaskNote}
-              handleAddHabitTask={handleAddHabitTask}
-              handleAddTodayHabitTask={handleAddTodayHabitTask}
-              handleLogHabitSession={handleLogHabitSession}
-              handleDeleteHabitLog={handleDeleteHabitLog}
+              setActiveHabitTaskId={habits.setActiveHabitTaskId}
+              updateActiveHabitTask={habits.updateActiveHabitTask}
+              setHabitLogNote={habits.setHabitLogNote}
+              setTodayHabitTaskName={habits.setTodayHabitTaskName}
+              setTodayHabitTaskMinutes={habits.setTodayHabitTaskMinutes}
+              setTodayHabitTaskNote={habits.setTodayHabitTaskNote}
+              handleAddHabitTask={habits.handleAddHabitTask}
+              handleAddTodayHabitTask={habits.handleAddTodayHabitTask}
+              handleLogHabitSession={habits.handleLogHabitSession}
+              handleDeleteHabitLog={habits.handleDeleteHabitLog}
               handleShowerProofFile={handleShowerProofFile}
               handleConfirmDailyShower={handleConfirmDailyShower}
               stopBarcodeScanner={stopBarcodeScanner}

@@ -61,7 +61,7 @@ Key state groups:
 - **Route**: `routeMetrics`, `routingProvider`, `nextRouteAJob`
 - **Ride Mode**: `rideModeActive`, `currentStopIndex`, `rideSession`
 - **Shower Gate**: `showerProofs`, `showerGateUnlocked`, `barcodeScanSuccess`
-- **Habits**: `habitTasks`, `habitLogs`
+- **Habits**: `useHabits(todayKey)` hook in `src/features/habits/useHabits.ts` manages `habitTasks`, `habitLogs`, active task, derived stats, localStorage persistence, and backend sync. `src/App.tsx` consumes the hook and passes values to `HabitsTab`.
 - **Proof Vault**: `proofVault` (keyed by jobId)
 - **Settings**: `startAddress`, `theme`, `debugCenterOpen`
 
