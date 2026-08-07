@@ -20,7 +20,7 @@ export default function Header({ theme, onToggleTheme }: HeaderProps) {
         <div className="flex items-center gap-2.5">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[18px]">
             <img
-              src="/icons/icon-192.png"
+              src="/icons/aio-icon-192.png"
               alt="All in One 667 logo"
               width={48}
               height={48}

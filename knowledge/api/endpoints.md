@@ -1,6 +1,6 @@
 # API Endpoints Reference
 
-**Last Updated:** 2026-07-30 (integrate-official-transit-api)
+**Last Updated:** 2026-08-02 (transit-trip-stop-accuracy)
 **Related Source Files:** `server.ts`, `worker/index.ts`, `server/transit/transitRoutes.ts`, `src/services/showerProofApi.ts`, `src/services/apiClient.ts`, `src/services/transit/transitApiClient.ts`
 
 ---
@@ -235,6 +235,19 @@ Debug endpoint that returns current authentication state and configuration detai
 
 ---
 
+### POST `/api/errors`
+
+| Field | Value |
+|-------|-------|
+| **Auth** | Supabase Bearer token (`requireAuth`) |
+| **Content-Type** | `application/json` |
+| **Body** | `{ "reports": [{ message, category?, source?, pathname?, userAgent? }] }` (max 25) |
+| **Response** | `{ ok: true, received: number }` |
+
+Self-hosted client error reporting sink. Fields are sanitized and bounded server-side (message 300, category 40, source/pathname/userAgent 200 chars; control chars stripped; empty messages dropped). Records are appended to `.local-error-reports/reports.json` (capped at 200) with the owner's user ID. Returns `400 { error }` when no valid reports are provided and `500 { error }` on storage failure.
+
+---
+
 ## Domain: Transit (Express Only)
 
 All routes are mounted at `/api/transit` via `createTransitRouter(requireAuth)` (see `server/transit/transitRoutes.ts`). Every route requires a Supabase Bearer token; unauthenticated calls return `401 { "error": "Authentication required." }`. The server proxies the official Transit API (v4) using `TRANSIT_API_KEY`; the key never reaches the client.
@@ -302,7 +315,7 @@ Live departures for a stop (up to 40, sorted by departure time). Times are Unix-
 | **Body** | `{ origin: { lat, lng }, destination: { lat, lng }, departureTime?: ISO string, arrivalTime?: ISO string }` |
 | **Response** | `{ trip: TransitTrip, alternatives: number, freshness: { source, lastUpdatedAt, ageMs } }` |
 
-Plans a transit trip. `departureTime`/`arrivalTime` set `date`+`time` (arrive-by when `arrivalTime`). Returns the fastest result; `alternatives` counts extra returned trips. TTL 3 min. Returns 404 `TRANSIT_TRIP_NOT_FOUND` when no route exists, 400 `TRANSIT_INVALID_LOCATION` for missing/out-of-range coordinates.
+Plans a transit trip. `departureTime`/`arrivalTime` set `date`+`time` (arrive-by when `arrivalTime`). Returns the fastest result; `alternatives` counts extra returned trips. Transit ride legs include route metadata, scheduled/predicted Unix-second fields, `isRealTime`, and `stopSelectionConfidence` (`exact`, `inferred`, or `unavailable`). Exact boarding/exit stops come from upstream plan offsets and schedule items; fallback stops are explicitly labeled rather than silently presented as exact. TTL 3 min. Returns 404 `TRANSIT_TRIP_NOT_FOUND` when no route exists, 400 `TRANSIT_INVALID_LOCATION` for missing/out-of-range coordinates.
 
 ### GET `/api/transit/alerts`
 
@@ -351,3 +364,15 @@ interface Proof {
   verified?: boolean;
 }
 ```
+
+## POST /api/import/preview-summary
+
+Authenticated selected-page extraction for the per-job Preview Guide.
+
+- Auth: existing Supabase requireAuth Bearer session.
+- Body: pages array with pageId, image, and mimeType; 1–12 image data URLs only.
+- The endpoint does not accept a video or recording field.
+- Total encoded selected-page payload is capped below the global 15 MB JSON limit.
+- Response: structured title/time/pay when visible, beforeYouGo, whatYouWillDo, proofRequirements, warnings, referenceTopics, and uncertainItems.
+- Every returned action item retains valid submitted source page IDs; items without valid source references are dropped.
+- Errors use plain messages and server logs omit image data and extracted text.

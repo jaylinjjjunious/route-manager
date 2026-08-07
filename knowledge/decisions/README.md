@@ -22,15 +22,16 @@ These decisions are documented in the legacy `docs/DECISIONS.md` file. New ADRs 
 | D014 | Temporarily bypass the Shower Gate while preserving reactivation | Accepted |
 | D015 | Backend-proxied official Transit API integration | Accepted |
 | D016 | Per-job workday scheduling with local calendar days | Accepted |
+| D017 | AIØ three-tab navigation and design system | Accepted |
 
 ## Creating New ADRs
 
 Use the template at `knowledge/decisions/adr-template.md`.
 
-Number new ADRs sequentially starting from D016.
+Number new ADRs sequentially starting from D018.
 
 Place new files in `knowledge/decisions/` with the format `adr-XXX-kebab-case-title.md`.
 
 ---
 
-**Last Updated:** 2026-07-30 (phase-1-scheduling)
+**Last Updated:** 2026-08-02 (aio-three-tab-redesign)

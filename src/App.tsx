@@ -58,9 +58,15 @@ import { BusModeToggle } from './components/BusModeToggle';
 import { TransitTripCard } from './components/TransitTripCard';
 import { useTransitTrip } from './hooks/useTransitTrip';
 import { TransitDashboardCard } from './components/transit/TransitDashboardCard';
-import { WeeklyStrip } from './components/WeeklyStrip';
-import { ExpandedDayPanel } from './components/ExpandedDayPanel';
 import { MoveToDaySheet } from './components/MoveToDaySheet';
+import AioHeader from './components/aio/AioHeader';
+import TodayScreen from './components/aio/TodayScreen';
+import JobsScreen from './components/aio/JobsScreen';
+import MoreScreen from './components/aio/MoreScreen';
+import { BottomTabBar } from './components/aio/primitives';
+import { getPreviewGuide } from './features/previewGuide/storage';
+import PreviewGuideModal from './features/previewGuide/PreviewGuideModal';
+import { getPreviewGuideReadiness } from './components/aio/roadReadiness';
 import { TransitToolsPanel } from './components/transit/TransitToolsPanel';
 import { TransitStatusCard } from './components/transit/TransitStatusCard';
 import type { TravelMode } from './types';
@@ -144,12 +150,12 @@ const SHOWER_PROOF_JPEG_QUALITY = 0.58;
 const SHOWER_BACKEND_TIMEOUT_MS = 15000;
 
 type BarcodePermissionStatus = 'idle' | 'requesting' | 'granted' | 'denied' | 'unsupported' | 'error';
-type AppTab = 'dashboard' | 'inventory' | 'battery' | 'tracker' | 'habits' | 'tools' | 'settings';
+type AppTab = 'dashboard' | 'jobs' | 'more' | 'inventory' | 'battery' | 'tracker' | 'habits' | 'tools' | 'settings';
 
-const APP_TABS: AppTab[] = ['dashboard', 'inventory', 'battery', 'tracker', 'habits', 'tools', 'settings'];
+const APP_TABS: AppTab[] = ['dashboard', 'jobs', 'more', 'inventory', 'battery', 'tracker', 'habits', 'tools', 'settings'];
 const SHOWER_PROTECTED_TABS: AppTab[] = ['battery', 'tracker'];
 
-const RETIRED_ROUTE_DESTINATIONS = new Set(['route', 'routes', 'jobs']);
+const RETIRED_ROUTE_DESTINATIONS = new Set(['route', 'routes']);
 
 const isRetiredRouteDestination = (value: string): boolean => {
   const normalized = value.toLowerCase().replace(/^[/#]+/, '').replace(/\/$/, '');
@@ -335,7 +341,7 @@ const SEED_JOBS: Job[] = [
 ];
 
 export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCenter }: { debugCenterOpen?: boolean; onCloseDebugCenter?: () => void; onOpenDebugCenter?: () => void } = {}) {
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [startAddress, setStartAddress] = useState('1951 Golden State Ave');
   const [startCoord, setStartCoord] = useState<Coordinates>({ lat: 35.3904, lng: -119.0255 });
@@ -479,6 +485,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const [isTestLabOpen, setIsTestLabOpen] = useState(false);
   const [routeFilter, setRouteFilter] = useState<RouteFilterType>('today');
   const [routeDetailJobId, setRouteDetailJobId] = useState<string | null>(null);
+  const [previewGuideJobId, setPreviewGuideJobId] = useState<string | null>(null);
   const [inventoryJobId, setInventoryJobId] = useState<string | null>(null);
   const [inventoryDomain, setInventoryDomain] = useState<'merchandising' | 'contract_parts'>('merchandising');
   const [editingJob, setEditingJob] = useState<Job | null>(null);
@@ -2343,6 +2350,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const proofRecords = (Object.values(proofVault) as ProofRecord[]).sort((a, b) => new Date(b.completionTime).getTime() - new Date(a.completionTime).getTime());
   const selectedProofRecord = selectedProofJobId ? proofVault[selectedProofJobId] : null;
   const routeDetailJob = routeDetailJobId ? jobs.find(job => job.id === routeDetailJobId) || null : null;
+  const previewGuideJob = previewGuideJobId ? jobs.find(job => job.id === previewGuideJobId) || null : null;
   const inventoryJobs = jobs.filter(job => getInventoryDomain(job) === inventoryDomain);
   const inventoryJob = inventoryJobs.find(job => job.id === inventoryJobId) || inventoryJobs.find(job => job.routeId === 'A') || inventoryJobs[0] || null;
   const getRouteStopNavLink = (job: Job, idx: number) => {
@@ -2376,6 +2384,29 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
       ? 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100'
       : 'border-rose-300 bg-rose-50 text-rose-900 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-100';
 
+  // AIØ Today screen derivation (reuses existing route/schedule logic — no fabricated scoring).
+  const currentJob = todayRouteJobs.find(job => job.status === 'under_review') || null;
+  const hasCurrentJob = Boolean(currentJob);
+  const nextJob = hasCurrentJob ? null : nextRouteAJob;
+  const previewGuideReadiness = getPreviewGuideReadiness(nextRouteAJob ? getPreviewGuide(nextRouteAJob.id) : null);
+  const userName = user?.email?.split('@')[0] || undefined;
+  const handleToggleJobProgress = (job: Job) => {
+    if (job.status === 'under_review') handleToggleComplete(job.id);
+    else handleMarkUnderReview(job.id);
+  };
+  const handleSpeakRoute = (job: Job | null) => {
+    if (!job) return;
+    if (isSpeaking) {
+      stop();
+      return;
+    }
+    const street = getStreetName(job.address);
+    const minutes = job.id === nextRouteAJob?.id ? nextStopRideMinutes : Math.max(1, Math.round((getDistanceInMiles(nextStopOrigin, job.coordinates) / ebikeConfig.avgSpeedMph) * 60));
+    const text = `Next stop ${job.storeName} at ${street}. Pay ${job.pay.toFixed(2)} dollars. ${minutes} minutes by bike.` +
+      (job.dueTime ? ` Due by ${job.dueTime}.` : ' No fixed due time.');
+    speak(text);
+  };
+
   return (
     <AssistantProvider
       jobs={jobs}
@@ -2400,7 +2431,9 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
         <AmbientLiquidBackground />
         
         {/* Header */}
-        {currentTab !== 'dashboard' && <Header theme={theme} onToggleTheme={handleToggleTheme} />}
+        {currentTab === 'dashboard' || currentTab === 'jobs' || currentTab === 'more'
+          ? <AioHeader userName={userName} onOpenProfile={() => handleTabChange('more')} />
+          : <Header theme={theme} onToggleTheme={handleToggleTheme} />}
 
         {/* Main Content Body */}
         <main className="app-main mx-auto max-w-7xl px-3 py-4 pb-40 sm:px-6 sm:py-6 lg:px-8 space-y-6">
@@ -2526,416 +2559,99 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
             </div>
           )}
 
-          {/* Tab 1: Mission Control Dashboard */}
+          {/* Tab 1: AIØ Today Screen */}
           {currentTab === 'dashboard' && !rideModeActive && (
             <div className="animate-fade-in" id="tab-view-dashboard">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Mission Control</p>
-                  <h2 className="text-4xl font-black leading-none tracking-tight text-slate-950 dark:text-white sm:text-5xl lg:text-4xl">
-                    {nextRouteAJob ? 'Go to the next stop.' : 'Route complete.'}
-                  </h2>
-                </div>
-                <div className="flex shrink-0 flex-col items-end gap-2">
-                  <span className={`hidden rounded-full px-4 py-2 text-base font-black uppercase sm:inline-flex ${reserveColorClass}`}>
-                    {reserveLabel}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleStartRideMode}
-                    disabled={!showerGateAccessReady}
-                    title={showerGateAccessReady ? 'Start ride mode' : 'Shower proof required first'}
-                    className="min-h-14 rounded-[8px] bg-slate-950 px-5 text-xl font-black uppercase text-white shadow-lg transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:bg-white dark:text-slate-950 dark:disabled:bg-white/10 dark:disabled:text-slate-500 sm:min-h-16 sm:text-2xl"
-                  >
-                    🚴 I&apos;m Riding
-                  </button>
-                </div>
-              </div>
+              <TodayScreen
+                theme={theme}
+                userName={userName}
+                onToggleTheme={handleToggleTheme}
+                onOpenMore={() => handleTabChange('more')}
+                jobsTodayCount={todayRouteJobs.length}
+                weatherWind={weatherWind}
+                currentJob={currentJob}
+                hasCurrentJob={hasCurrentJob}
+                nextJob={nextJob}
+                remainingJobs={todayRouteJobs.filter(job => !isJobCompleted(job) && !isJobFinished(job))}
+                completedJobsCount={completedRouteAJobs.length}
+                routeTotalJobs={routeAJobs.length}
+                completingJobIds={completingJobIds}
+                nextStopDistance={nextStopDistance}
+                nextStopRideMinutes={nextStopRideMinutes}
+                nextStopNavLink={nextStopNavLink}
+                jobAccessLocked={!showerGateAccessReady}
+                onBlockJobAccess={() => blockJobAccess('navigation')}
+                onToggleJobProgress={handleToggleJobProgress}
+                onOpenJob={(job) => setRouteDetailJobId(job.id)}
+                onStartRideMode={handleStartRideMode}
+                actionableJob={nextRouteAJob}
+                onOpenPreviewGuide={(job) => setPreviewGuideJobId(job.id)}
+                transit={transit}
+                transitOrigin={transitOrigin}
+                onSpeakRoute={handleSpeakRoute}
+                isSpeaking={isSpeaking}
+                onOptimizeRoute={handleOptimizeRouteSequence}
+                onAddJob={handleOpenAddModal}
+                previewGuideReadiness={previewGuideReadiness}
+                weeklyDays={weeklyDays}
+                today={today}
+                selectedStripDate={selectedStripDate}
+                onSelectStripDate={setSelectedStripDate}
+                overdueCount={overdueJobs.length}
+                unscheduledCount={unscheduledJobs.length}
+                onReviewOverdue={() => handleTabChange('jobs')}
+                onReviewUnscheduled={() => handleTabChange('jobs')}
+                startCoord={startCoord}
+                avgSpeedMph={ebikeConfig.avgSpeedMph}
+                onMoveToDay={setMoveToDayJob}
+                onPlanThisDay={handleOptimizeRouteSequence}
+                onMoveExisting={() => handleTabChange('jobs')}
+                batteryPct={batteryTrackerCurrent}
+                batteryMilesLeft={estimatedMilesRemaining}
+                batteryRisk={batteryRisk}
+                earningsAmount={earningsTileAmount}
+                earningsTitle={earningsTileTitle}
+                earningsFooter={earningsTileFooter}
+                routeProgressPct={routeProgressPct}
+                revisionAlerts={revisionAlertJobs}
+              />
+            </div>
+          )}
 
-              <div className="grid grid-cols-2 gap-4 lg:grid-cols-6 lg:auto-rows-[minmax(128px,auto)]">
-                <section className={`col-span-2 lg:col-span-4 lg:row-span-2 rounded-[8px] border-4 border-slate-950 bg-white p-5 shadow-[0_18px_42px_rgba(15,23,42,0.16)] transition-all duration-500 dark:border-white dark:bg-[#17181b] lg:p-3 ${nextRouteAJob && completingJobIds.includes(nextRouteAJob.id) ? 'scale-[0.99] border-emerald-500 bg-emerald-50 opacity-80 dark:bg-emerald-500/10' : ''}`}>
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="text-base font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Next Stop</p>
-                      <h3 className="mt-2 truncate text-5xl font-black leading-none tracking-tight text-slate-950 dark:text-white sm:text-6xl lg:text-4xl">
-                        {nextRouteAJob?.storeName || 'All Clear'}
-                      </h3>
-                      <p className="mt-2 truncate text-xl font-black text-slate-700 dark:text-slate-200 lg:text-lg">
-                        {nextRouteAJob?.address || 'No remaining stops'}
-                      </p>
-                    </div>
-                    <div className="shrink-0 rounded-[8px] bg-slate-950 px-4 py-3 text-right text-white dark:bg-white dark:text-slate-950">
-                      <p className="text-sm font-black uppercase">Pay</p>
-                      <p className="text-3xl font-black">${(nextRouteAJob?.pay || 0).toFixed(2)}</p>
-                    </div>
-                  </div>
+          {/* Jobs Screen */}
+          {currentTab === 'jobs' && (
+            <div className="animate-fade-in">
+              <JobsScreen
+                today={today}
+                todayJobs={todayRouteJobs}
+                weekDays={weeklyDays}
+                routeBJobs={routeBJobs}
+                overdueJobs={overdueJobs}
+                unscheduledJobs={unscheduledJobs}
+                onOpenJob={(job) => setRouteDetailJobId(job.id)}
+                onAddJob={handleOpenAddModal}
+                onOptimizeRoute={handleOptimizeRouteSequence}
+                onMoveToDay={setMoveToDayJob}
+              />
+            </div>
+          )}
 
-                  <div className="mt-4 grid grid-cols-3 gap-3">
-                    <div className="rounded-[8px] bg-blue-700 p-4 text-white lg:p-2">
-                      <p className="text-sm font-black uppercase">Distance</p>
-                      <p className="mt-1 text-4xl font-black lg:text-2xl">{nextStopDistance.toFixed(1)} mi</p>
-                    </div>
-                    <div className="rounded-[8px] bg-amber-400 p-4 text-slate-950 lg:p-2">
-                      <p className="text-sm font-black uppercase">Ride</p>
-                      <p className="mt-1 text-4xl font-black lg:text-2xl">{nextStopRideMinutes} min</p>
-                    </div>
-                    <div className="rounded-[8px] bg-slate-950 p-4 text-white dark:bg-white dark:text-slate-950 lg:p-2">
-                      <p className="text-sm font-black uppercase">Due</p>
-                      <p className="mt-1 truncate text-3xl font-black lg:text-2xl">{nextRouteAJob?.dueTime || 'Flex'}</p>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    {showerGateAccessReady ? (
-                      <a
-                        href={nextStopNavLink}
-                        target="_blank"
-                        referrerPolicy="no-referrer"
-                        className="flex min-h-20 items-center justify-center gap-3 rounded-[8px] bg-emerald-600 px-5 text-2xl font-black uppercase text-white shadow-lg transition hover:bg-emerald-500 lg:min-h-14 lg:text-xl"
-                      >
-                        <Navigation size={30} />
-                        <span>Navigate</span>
-                        <ExternalLink size={20} />
-                      </a>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => blockJobAccess('navigation')}
-                        className="flex min-h-20 items-center justify-center gap-3 rounded-[8px] bg-slate-300 px-5 text-2xl font-black uppercase text-slate-600 shadow-lg transition dark:bg-white/10 dark:text-slate-400 lg:min-h-14 lg:text-xl"
-                      >
-                        <ShieldCheck size={30} />
-                        <span>Shower Locked</span>
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      disabled={!showerGateAccessReady || !nextRouteAJob || Boolean(nextRouteAJob && completingJobIds.includes(nextRouteAJob.id))}
-                      onClick={() => nextRouteAJob && (nextRouteAJob.status === 'under_review' ? handleToggleComplete(nextRouteAJob.id) : handleMarkUnderReview(nextRouteAJob.id))}
-                      className={`flex min-h-20 items-center justify-center gap-3 rounded-[8px] px-5 text-2xl font-black uppercase text-white shadow-lg transition disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 lg:min-h-14 lg:text-xl ${
-                        nextRouteAJob?.status === 'under_review'
-                          ? 'bg-blue-700 hover:bg-blue-600'
-                          : 'bg-indigo-700 hover:bg-indigo-600'
-                      }`}
-                    >
-                      {nextRouteAJob && completingJobIds.includes(nextRouteAJob.id) ? <CheckCircle2 size={30} /> : nextRouteAJob?.status === 'under_review' ? <CheckSquare size={30} /> : <Hourglass size={30} />}
-                      <span>{nextRouteAJob && completingJobIds.includes(nextRouteAJob.id) ? 'Completed' : nextRouteAJob?.status === 'under_review' ? 'Complete Job' : 'Under Review'}</span>
-                    </button>
-                  </div>
-                </section>
-
-                <section className="col-span-2 lg:col-span-2 lg:row-span-2 rounded-[8px] border-4 border-slate-950 bg-white p-4 shadow-[0_18px_42px_rgba(15,23,42,0.16)] transition-all duration-500 dark:border-white dark:bg-[#17181b] lg:p-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-2xl font-black text-slate-950 dark:text-white">Today&apos;s Route</h3>
-                    <div className="flex items-center gap-2">
-                      <span className="rounded-[8px] bg-blue-700 px-3 py-1 text-lg font-black text-white">{remainingRouteAJobs.length}</span>
-                      <div className="relative" data-add-menu>
-                        <button
-                          type="button"
-                          onClick={() => setAddMenuOpen((prev) => !prev)}
-                          className="flex items-center gap-1 rounded-[8px] bg-blue-600 px-3 py-1.5 text-xs font-black text-white shadow-md hover:bg-blue-500 transition-all"
-                        >
-                          <Plus size={13} />
-                          <span>Add</span>
-                        </button>
-                        {addMenuOpen && (
-                          <div className="absolute right-0 top-full z-50 mt-1 w-52 overflow-y-auto overflow-x-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-white/10 dark:bg-[#17181b]" style={{ maxHeight: 'min(80dvh, 340px)' }}>
-                            <button
-                              type="button"
-                              onClick={() => { setAddMenuOpen(false); handleOpenAddModal(); }}
-                              className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-white/5"
-                            >
-                              <Plus size={14} className="text-blue-500" />
-                              Add Stop
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => { setAddMenuOpen(false); handleOpenProcessServeModal(); }}
-                              className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-white/5"
-                            >
-                              <Briefcase size={14} className="text-red-500" />
-                              Add Process Serve
-                            </button>
-                            <div className="border-t border-slate-200 dark:border-white/10" />
-                            <button
-                              type="button"
-                              onClick={() => { setAddMenuOpen(false); setIsScreenshotImportOpen(true); }}
-                              className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-white/5"
-                            >
-                              <FileImage size={14} className="text-violet-500" />
-                              <span className="flex flex-col">
-                                <span>Import Job Screenshots</span>
-                                <span className="text-[9px] font-bold text-slate-400">Upload screenshots of assignments</span>
-                              </span>
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-3 max-h-[620px] space-y-1.5 overflow-y-auto pr-1">
-                    {routeListStops.length === 0 ? (
-                      <div className="rounded-[8px] bg-emerald-100 p-4 text-xl font-black text-emerald-900 dark:bg-emerald-500/15 dark:text-emerald-100">
-                        Route clear
-                      </div>
-                    ) : (
-                      routeListStops.map((job, idx) => {
-                        const isRevision = isRevisionJob(job);
-                        const isServe = isProcessServeJob(job);
-                        const isCurrentStop = idx === 0;
-                        const routeStopNavLink = getRouteStopNavLink(job, idx);
-                        return (
-                          <React.Fragment key={job.id}>
-                            <div
-                              role="button"
-                              tabIndex={0}
-                              onClick={() => setRouteDetailJobId(job.id)}
-                              onKeyDown={(event) => {
-                                if (event.key === 'Enter' || event.key === ' ') {
-                                  event.preventDefault();
-                                  setRouteDetailJobId(job.id);
-                                }
-                              }}
-                              className={`cursor-pointer rounded-[8px] border-2 p-2 transition-all duration-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-[#0A0A0A] ${completingJobIds.includes(job.id) ? 'scale-[0.98] border-emerald-500 bg-emerald-100 opacity-0 -translate-y-2 dark:bg-emerald-500/20' : ''} ${isCurrentStop ? 'border-blue-700 bg-blue-50 dark:bg-blue-500/10' : 'border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04]'}`}
-                              aria-label={`Open details for ${job.storeName}`}
-                            >
-                              <div className="flex items-start gap-2">
-                                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] text-lg font-black ${isCurrentStop ? 'bg-blue-700 text-white' : 'bg-slate-900 text-white dark:bg-white dark:text-slate-950'}`}>
-                                  {idx + 1}
-                                </span>
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <p className="truncate text-lg font-black leading-tight text-slate-950 dark:text-white lg:text-base">{job.storeName}</p>
-                                    {isRevision && (
-                                      <span className="shrink-0 rounded-[8px] bg-rose-600 px-2 py-0.5 text-sm font-black uppercase text-white">
-                                        Revision
-                                      </span>
-                                    )}
-                                    {isServe && (
-                                      <span className="shrink-0 rounded-[8px] bg-red-600 px-2 py-0.5 text-sm font-black uppercase text-white">
-                                        Process Serve
-                                      </span>
-                                    )}
-                                  </div>
-                                  <p className="truncate text-base font-black text-slate-600 dark:text-slate-300 lg:text-sm">{getStreetName(job.address)}</p>
-                                  {isServe && (
-                                    <p className="mt-1 text-sm font-black leading-tight text-red-700 dark:text-red-300">
-                                      Time-sensitive serve. Proof folder will be created on completion.
-                                    </p>
-                                  )}
-                                  {isRevision && job.smartMergeExplanation && (
-                                    <p className="mt-1 text-sm font-black leading-tight text-rose-700 dark:text-rose-300">
-                                      {job.smartMergeExplanation}
-                                    </p>
-                                  )}
-                                  {isCurrentStop && (
-                                    <p className="mt-0.5 text-sm font-black uppercase text-blue-700 dark:text-blue-300">Current Stop</p>
-                                  )}
-                                </div>
-                              </div>
-
-                              <div className="mt-2 grid grid-cols-3 gap-1.5">
-                                {showerGateAccessReady ? (
-                                  <a
-                                    href={routeStopNavLink}
-                                    target="_blank"
-                                    referrerPolicy="no-referrer"
-                                    onClick={(event) => event.stopPropagation()}
-                                    className="flex min-h-11 items-center justify-center gap-1 rounded-[8px] bg-emerald-600 px-2 text-sm font-black uppercase text-white transition hover:bg-emerald-500"
-                                    title={`Navigate to ${job.storeName}`}
-                                    aria-label={`Navigate to ${job.storeName}`}
-                                  >
-                                    <Navigation size={16} />
-                                    <span>Navigate</span>
-                                  </a>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    onClick={(event) => { event.stopPropagation(); blockJobAccess('navigation'); }}
-                                    className="flex min-h-11 items-center justify-center gap-1 rounded-[8px] bg-slate-300 px-2 text-sm font-black uppercase text-slate-600 transition dark:bg-white/10 dark:text-slate-400"
-                                    title="Shower proof required first"
-                                    aria-label="Shower proof required before navigation"
-                                  >
-                                    <ShieldCheck size={16} />
-                                    <span>Locked</span>
-                                  </button>
-                                )}
-                                <button
-                                  type="button"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    job.status === 'under_review' ? handleToggleComplete(job.id) : handleMarkUnderReview(job.id);
-                                  }}
-                                  disabled={!showerGateAccessReady || completingJobIds.includes(job.id)}
-                                  className={`flex min-h-11 items-center justify-center gap-1 rounded-[8px] px-2 text-sm font-black uppercase text-white transition disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:disabled:bg-white/10 dark:disabled:text-slate-500 ${
-                                    job.status === 'under_review'
-                                      ? 'bg-blue-700 hover:bg-blue-600'
-                                      : 'bg-indigo-700 hover:bg-indigo-600'
-                                  }`}
-                                  title={job.status === 'under_review' ? `Complete ${job.storeName}` : `Mark ${job.storeName} under review`}
-                                  aria-label={job.status === 'under_review' ? `Complete ${job.storeName}` : `Mark ${job.storeName} under review`}
-                                >
-                                  {job.status === 'under_review' ? <CheckSquare size={16} /> : <Hourglass size={16} />}
-                                  <span>{job.status === 'under_review' ? 'Complete' : 'Review'}</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    setMoveToDayJob(job);
-                                  }}
-                                  className="flex min-h-11 items-center justify-center gap-1 rounded-[8px] bg-amber-400 px-2 text-sm font-black uppercase text-slate-950 transition hover:bg-amber-300"
-                                  title={`Move ${job.storeName}`}
-                                  aria-label={`Move ${job.storeName}`}
-                                >
-                                  <ArrowRightLeft size={16} />
-                                  <span>Move</span>
-                                </button>
-                              </div>
-                            </div>
-                            {idx < routeListStops.length - 1 && (
-                              <div className="mx-auto flex w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-50 py-1 text-base font-black leading-none text-slate-400 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-500" aria-hidden="true">
-                                ↓
-                              </div>
-                            )}
-                          </React.Fragment>
-                        );
-                      })
-                    )}
-                  </div>
-                </section>
-
-                <WeeklyStrip
-                  days={weeklyDays}
-                  today={today}
-                  selectedDate={selectedStripDate}
-                  onSelect={setSelectedStripDate}
-                  overdueCount={overdueJobs.length}
-                  unscheduledCount={unscheduledJobs.length}
-                  onReviewOverdue={() => setShowScheduleReview(prev => prev === 'overdue' ? null : 'overdue')}
-                  onReviewUnscheduled={() => setShowScheduleReview(prev => prev === 'unscheduled' ? null : 'unscheduled')}
-                />
-
-                {selectedDay && (
-                  <ExpandedDayPanel
-                    day={selectedDay}
-                    today={today}
-                    todayJobsCount={todayDay?.jobs.length ?? 0}
-                    todayPay={todayDay?.pay ?? 0}
-                    todayWorkMinutes={todayDay?.workMinutes ?? 0}
-                    startCoord={startCoord}
-                    avgSpeedMph={ebikeConfig.avgSpeedMph}
-                    onMoveToDay={(job) => setMoveToDayJob(job)}
-                    onOpenJob={(id) => setRouteDetailJobId(id)}
-                    onPlanThisDay={() => handleOptimizeRouteSequence()}
-                    onAddJob={handleOpenAddModal}
-                    onMoveExisting={() => setShowScheduleReview(prev => prev === 'unscheduled' ? null : 'unscheduled')}
-                    onCollapse={() => setSelectedStripDate(null)}
-                  />
-                )}
-
-                {showScheduleReview && (
-                  <section className="col-span-2 lg:col-span-4 rounded-[8px] border-2 border-amber-300 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-500/10">
-                    <div className="flex items-center justify-between gap-3">
-                      <h3 className="text-sm font-black uppercase text-amber-900 dark:text-amber-100">
-                        {showScheduleReview === 'overdue' ? `${overdueJobs.length} jobs from earlier days` : `${unscheduledJobs.length} unscheduled jobs`}
-                      </h3>
-                      <button
-                        type="button"
-                        onClick={() => setShowScheduleReview(null)}
-                        className="rounded-[8px] bg-slate-200 px-2.5 py-1 text-xs font-black text-slate-600 hover:bg-slate-300 dark:bg-white/10 dark:text-slate-200"
-                      >
-                        Close
-                      </button>
-                    </div>
-                    {showScheduleReview === 'overdue' && overdueJobs.length === 0 && (
-                      <p className="mt-2 text-sm font-bold text-amber-800 dark:text-amber-200">Nothing overdue.</p>
-                    )}
-                    {showScheduleReview === 'unscheduled' && unscheduledJobs.length === 0 && (
-                      <p className="mt-2 text-sm font-bold text-slate-600 dark:text-slate-300">Every job has a day.</p>
-                    )}
-                    <ul className="mt-2 space-y-1.5">
-                      {(showScheduleReview === 'overdue' ? overdueJobs : unscheduledJobs).map(job => (
-                        <li key={job.id} className="flex flex-wrap items-center gap-2 rounded-[8px] bg-white p-2 dark:bg-white/5">
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-sm font-black text-slate-950 dark:text-white">{job.storeName}</span>
-                            <span className="block truncate text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                              {job.scheduledDate ? formatScheduledDate(job.scheduledDate) : 'No date'} · {job.dueTime || 'Flex'}
-                            </span>
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setMoveToDayJob(job)}
-                            className="rounded-[8px] bg-blue-700 px-2.5 py-1 text-[10px] font-black text-white hover:bg-blue-600"
-                          >
-                            Move to a day
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setRouteDetailJobId(job.id)}
-                            className="rounded-[8px] bg-slate-100 px-2.5 py-1 text-[10px] font-black text-slate-600 hover:bg-slate-200 dark:bg-white/10 dark:text-slate-200"
-                          >
-                            Fix
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                )}
-
-                <section className={`col-span-1 rounded-[8px] border-2 p-4 lg:p-3 ${batteryToneClass}`}>
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-black uppercase">Battery Status</p>
-                    <Battery size={24} />
-                  </div>
-                  <p className="mt-3 text-5xl font-black leading-none lg:text-4xl">{batteryTrackerCurrent}%</p>
-                  <p className="mt-2 text-base font-black uppercase">{estimatedMilesRemaining} mi left</p>
-                  <div className="mt-3 space-y-1 text-sm font-black uppercase">
-                    <p>Risk: {batteryRisk}</p>
-                    <p>Finish: {canFinishRoute ? 'Yes' : 'No'}</p>
-                    <p>Recharge: {rechargeRecommended ? 'Yes' : 'No'}</p>
-                  </div>
-                </section>
-
-                <section className="col-span-1 rounded-[8px] border-2 border-blue-300 bg-blue-50 p-4 text-blue-950 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-100 lg:p-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-black uppercase">Jobs Left</p>
-                    <CheckSquare size={24} />
-                  </div>
-                  <p className="mt-3 text-5xl font-black leading-none lg:text-4xl">{remainingRouteAJobs.length}</p>
-                  <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/80 dark:bg-white/10">
-                    <div className="h-full rounded-full bg-blue-700" style={{ width: `${routeProgressPct}%` }} />
-                  </div>
-                </section>
-
-                <section className="col-span-2 rounded-[8px] border-2 border-emerald-300 bg-emerald-50 p-4 text-emerald-950 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100 lg:col-span-2 lg:p-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-black uppercase">{earningsTileTitle}</p>
-                    <DollarSign size={24} />
-                  </div>
-                  <p className="mt-3 text-5xl font-black leading-none lg:text-4xl">${earningsTileAmount.toFixed(2)}</p>
-                  <p className="mt-2 text-base font-black uppercase">{earningsTileFooter}</p>
-                </section>
-
-
-
-                <section className={`col-span-2 lg:col-span-3 rounded-[8px] border-2 p-4 lg:p-3 ${revisionAlertJobs.length > 0 ? 'border-rose-400 bg-rose-50 text-rose-950 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-100' : 'border-emerald-300 bg-emerald-50 text-emerald-950 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100'}`}>
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <AlertTriangle size={28} />
-                      <div>
-                        <p className="text-sm font-black uppercase">Revision Alerts</p>
-                        <p className="text-2xl font-black">{revisionAlertJobs.length > 0 ? `${revisionAlertJobs.length} needs attention` : 'No revisions'}</p>
-                      </div>
-                    </div>
-                    {revisionAlertJobs[0] && (
-                      <span className="max-w-[45%] truncate rounded-[8px] bg-rose-600 px-3 py-2 text-base font-black text-white">
-                        {revisionAlertJobs[0].storeName}
-                      </span>
-                    )}
-                  </div>
-                </section>
-              </div>
-
+          {/* More Screen */}
+          {currentTab === 'more' && (
+            <div className="animate-fade-in">
+              <MoreScreen
+                theme={theme}
+                onToggleTheme={handleToggleTheme}
+                userEmail={user?.email}
+                onNavigate={(tab) => handleTabChange(tab)}
+                onOpenProofHistory={handleOpenProofHistory}
+                onOpenDebugCenter={() => onOpenDebugCenter?.()}
+                onAddProcessServe={handleOpenProcessServeModal}
+                onImportScreenshots={() => setIsScreenshotImportOpen(true)}
+                onSignOut={async () => {
+                  if (window.confirm("Sign out of AIØ?")) await signOut();
+                }}
+              />
             </div>
           )}
 
@@ -4738,46 +4454,13 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
 
         </main>
 
-        {/* Floating Bottom Navigation Bar for Extremely Simple Mobile-First Navigation */}
+        {/* AIØ Bottom Navigation (Today / Jobs / More) */}
         {!rideModeActive && (
-        <div className="mobile-bottom-nav-shell fixed inset-x-0 bottom-0 z-50 mx-auto w-full px-3 pb-3 sm:left-1/2 sm:bottom-5 sm:w-[96%] sm:max-w-3xl sm:-translate-x-1/2 sm:px-0 sm:pb-0">
-          <div 
-            className="mobile-bottom-nav flex w-full snap-x items-center justify-start gap-2 overflow-x-auto whitespace-nowrap rounded-[28px] border bg-white px-2 py-2 shadow-[0_22px_70px_rgba(15,23,42,0.22)] dark:border-white/[0.07] dark:bg-[#0F1218] sm:rounded-[32px] sm:px-3 sm:py-3 md:justify-around"
-            aria-label="Primary app navigation"
-          >
-            {[
-              { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, color: 'text-blue-500' },
-              { id: 'inventory', label: 'Inventory', icon: PackageCheck, color: 'text-cyan-500' },
-              { id: 'battery', label: 'Battery', icon: Battery, color: 'text-lime-600' },
-              { id: 'tracker', label: 'Tracker', icon: Timer, color: 'text-indigo-500' },
-              { id: 'habits', label: 'Habits', icon: Award, color: 'text-amber-500' },
-              { id: 'tools', label: 'Tools', icon: Camera, color: 'text-cyan-500' },
-              { id: 'settings', label: 'Settings', icon: Settings, color: 'text-slate-500' },
-            ].map((tab) => {
-              const IconComponent = tab.icon;
-              const isActive = currentTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  id={`nav-tab-${tab.id}`}
-                  type="button"
-                  onClick={(event) => activateTabFromTap(tab.id as AppTab, event)}
-                  onPointerUp={(event) => activateTabFromTap(tab.id as AppTab, event)}
-                  onTouchEnd={(event) => activateTabFromTap(tab.id as AppTab, event)}
-                  aria-current={isActive ? 'page' : undefined}
-                  className={`flex min-h-[62px] min-w-[78px] touch-manipulation snap-start flex-shrink-0 flex-col items-center justify-center gap-1.5 rounded-[22px] px-2.5 py-2.5 transition-all duration-300 sm:min-w-[82px] ${
-                    isActive
-                      ? 'bg-white text-slate-950 shadow-[0_10px_30px_rgba(15,23,42,0.12)] dark:bg-[#1C1C1E] dark:text-white dark:shadow-[0_4px_16px_rgba(0,0,0,0.3)] scale-[1.03] font-bold'
-                      : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'
-                  }`}
-                >
-                  <IconComponent size={22} className={isActive ? tab.color : 'text-current'} />
-                  <span className="text-[10px] font-black tracking-wide uppercase">{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+          <BottomTabBar
+            current={currentTab === 'dashboard' ? 'today' : currentTab === 'jobs' ? 'jobs' : 'more'}
+            onChange={(tab) => handleTabChange(tab === 'today' ? 'dashboard' : tab === 'jobs' ? 'jobs' : 'more')}
+            jobsCount={todayRouteJobs.filter(job => !isJobCompleted(job) && !isJobFinished(job)).length}
+          />
         )}
 
         {selectedProofRecord && (
@@ -4916,6 +4599,22 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
               transitOrigin={{ latitude: origin.lat, longitude: origin.lng }}
               onMoveToDay={setMoveToDayJob}
               onClose={() => setRouteDetailJobId(null)}
+            />
+          );
+        })()}
+
+        {previewGuideJob && (() => {
+          const routeIndex = routeAJobs.findIndex(job => job.id === previewGuideJob.id);
+          const previousStop = routeIndex <= 0 ? null : routeAJobs[routeIndex - 1];
+          const origin = previousStop?.coordinates || startCoord;
+          const navLink = `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${previewGuideJob.coordinates.lat},${previewGuideJob.coordinates.lng}&travelmode=${travelMode}`;
+
+          return (
+            <PreviewGuideModal
+              job={previewGuideJob}
+              navLink={navLink}
+              transitOrigin={{ latitude: origin.lat, longitude: origin.lng }}
+              onClose={() => setPreviewGuideJobId(null)}
             />
           );
         })()}

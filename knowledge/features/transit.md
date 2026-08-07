@@ -22,7 +22,7 @@ Native bus/short-haul transit assistance for the All in One 667 field app using 
 - `transitCache.ts` — in-memory TTL cache with capacity; `get()` retains expired entries so `getStale()` can serve them (stale-while-revalidate). `POST /api/transit/cache/clear` resets it.
 - `transitRateLimiter.ts` — sliding-window 5/min limiter with pending/in-flight accounting and `release()` on network-level failures.
 - `transitBudget.ts` — durable monthly budget guard (1,500 req/month in `America/Los_Angeles`): `canSpend`/`record` per upstream-reaching request, warning (70%) / reduce (85%) / reserve (95%) thresholds, low-priority categories (`alerts`, `networks`) throttled first, `plan`/`arrivals` reserved, persisted JSON, status snapshot for `/api/transit/status`.
-- `transitService.ts` — orchestration: fresh-cache-first, in-flight dedupe (same key = shared promise), bounded queue (max 8, 45s wait), stale-while-revalidate background refresh, network-id resolution, budget-gated stale fallback, normalizers (`normalizeArrivals`, `normalizeAlert`, `normalizeAlerts`, `normalizePlan` exported for tests), status aggregation.
+- `transitService.ts` — orchestration: fresh-cache-first, in-flight dedupe (same key = shared promise), bounded queue (max 8, 45s wait), stale-while-revalidate background refresh, network-id resolution, budget-gated stale fallback, normalizers (`normalizeArrivals`, `normalizeAlert`, `normalizeAlerts`, `normalizePlan` exported for tests), status aggregation. Trip normalization matches a departure to its route, uses plan stop offsets/schedule items for exact boarding and exit stops, and labels route-list fallbacks as inferred.
 - `transitRoutes.ts` — `createTransitRouter(requireAuth)` exposing the six endpoints (see `api/endpoints.md`).
 
 ### Frontend
@@ -73,6 +73,7 @@ The JWT is validated server-side; the upstream `TRANSIT_API_KEY` never leaves th
 5. Walk legs from trip plans carry `coordinatesAvailable: false` and are rendered as a trip overview (distance/duration) — never as turn-by-turn directions, because upstream plan legs do not expose walking endpoint coordinates.
 6. Saved favorite stops are device-local (localStorage) and not synced.
 7. Trip planning from a job uses the previous stop (or `startCoord`) as origin; the job's stored coordinates are the destination.
+8. Transit ride legs expose `stopSelectionConfidence`: `exact` when plan offsets/schedule items identify both rider stops, `inferred` when only route/schedule fallbacks exist, and `unavailable` when no usable stop reference exists. The UI must disclose inferred/unavailable details and never invent stop ids.
 
 ## Security
 
@@ -91,6 +92,8 @@ The JWT is validated server-side; the upstream `TRANSIT_API_KEY` never leaves th
 - **No transit route found** → 404 `TRANSIT_TRIP_NOT_FOUND`.
 - **Not configured** (no `TRANSIT_API_KEY`) → 503 `TRANSIT_NOT_CONFIGURED`; frontend shows the Tools-tab fallback callout.
 - **Stop missing coordinates** (upstream) → stop retained but marked `coordinatesAvailable: false`; "Plan from here" is disabled for it rather than silently using `0,0`.
+- **Trip plan lacks exact boarding/exit offsets** → route or schedule endpoints are returned with `stopSelectionConfidence: "inferred"` and a visible confirmation warning.
+- **Trip plan lacks all stop references** → empty-id unavailable placeholders preserve the response shape, `stopSelectionConfidence: "unavailable"`, and the UI explicitly directs the rider to confirm in live directions.
 
 ## Failure Modes
 
@@ -105,7 +108,8 @@ The JWT is validated server-side; the upstream `TRANSIT_API_KEY` never leaves th
 ## Known Limitations
 
 - Free-tier quota (1,500 req/month) is the hard ceiling; no automatic provider fallback to Google Routes.
-- Plans return walk legs with placeholder board/exit points (`coordinatesAvailable: false`); the UI shows them as a walking-distance overview, never turn-by-turn directions.
+- Plans return walk legs with placeholder walking endpoints (`coordinatesAvailable: false`); the UI shows them as a walking-distance overview, never turn-by-turn directions.
+- Exact ride-stop selection depends on the upstream response carrying plan offsets or stop schedule items. Route-list fallback stops remain visibly labeled as inferred.
 - Favorites are per-device only.
 - No turn-by-turn voice guidance for transit legs.
 - The monthly counter is a local estimate (`estimated: true`), not the provider's official billing meter.
@@ -135,4 +139,4 @@ The JWT is validated server-side; the upstream `TRANSIT_API_KEY` never leaves th
 
 ## Last Updated
 
-2026-07-31 (transit-audit-remediation: monthly budget guard, 1500m radius clamp, honest walk-leg labeling)
+2026-08-02 (trip-plan stop accuracy: exact/inferred/unavailable rider stops, route metadata, scheduled/realtime timing)

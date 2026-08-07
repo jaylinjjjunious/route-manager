@@ -1,7 +1,49 @@
 # UI Design System
 
-**Last Updated:** 2026-07-20 (c12bd44)
-**Related Source Files:** `src/index.css`
+**Last Updated:** 2026-08-02 (aio-three-tab-redesign)
+**Related Source Files:** `src/index.css`, `src/components/aio/*.tsx`
+
+---
+
+## AIØ Design Tokens
+
+The AIØ surfaces (Today / Jobs / More) use an iOS-style system implemented with CSS custom properties in `src/index.css`. Light defaults are declared on `:root`; `.dark` overrides them under `@layer base`.
+
+| Token | Light | Dark |
+|-------|-------|------|
+| `--color-aio-bg` | `#f2f2f7` | `#000000` |
+| `--color-aio-bg-raised` | `#ffffff` | `#0c0c0e` |
+| `--color-aio-surface` | `#ffffff` | `#0f0f10` |
+| `--color-aio-surface-2` | `#f5f5f7` | `#1c1c1e` |
+| `--color-aio-surface-elev` | `#ffffff` | `#2c2c2e` |
+| `--color-aio-text` | `#1c1c1e` | `#ffffff` |
+| `--color-aio-text-2` | `#8e8e93` | `#98989f` |
+| `--color-aio-text-3` | `#c7c7cc` | `#48484a` |
+| `--color-aio-line` | `rgba(0,0,0,0.06)` | `rgba(255,255,255,0.08)` |
+| `--color-aio-blue` / `blue-2` | `#007aff` / `#0a84ff` | `#0a84ff` / `#3d9bff` |
+| `--color-aio-cyan` | `#5ac8fa` | `#64d2ff` |
+| `--color-aio-green` | `#34c759` | `#30d158` |
+| `--color-aio-orange` | `#ff9f0a` | `#ff9f0a` |
+| `--color-aio-red` | `#ff3b30` | `#ff453a` |
+| `--color-aio-purple` | `#af52de` | `#bf5af2` |
+| `--color-aio-yellow` | `#ffcc00` | `#ffd60a` |
+| `--color-aio-teal` | `#30b0c7` | `#40c8e0` |
+| `--color-aio-pink` | `#ff2d55` | `#ff375f` |
+
+### AIØ Component Classes
+
+| Class | Usage |
+|-------|-------|
+| `.aio-card` | Elevated rounded card (`rounded-[24px]`, surface background, hairline border, soft shadow) |
+| `.aio-card-flat` | Flat secondary surface card |
+| `.aio-hero-gradient` | Blue→teal gradient used for the readiness hero and emphasized cards |
+| `.aio-heading` | Large black-heading text (`17px`, `font-black`, tight tracking) |
+| `.aio-label` | Section label (`13px`, bold, secondary text) |
+| `.aio-caption` | Caption / auxiliary text (`13px`, semibold, tertiary text) |
+
+AIØ primitives live in `src/components/aio/primitives.tsx`: `AioCard`, `AioSectionLabel`, `GradientIconTile`, `StatusIndicator`, `MetricItem`, `ChecklistRow`, `AioButton`, `CompactJobRow`, `WeekDayIndicator`, and `BottomTabBar`. Job icon/type/badge metadata lives in `src/components/aio/jobMeta.ts`.
+
+The legacy "Road" design system classes remain for legacy tabs (Inventory, Battery, Tracker, Habits, Tools, Settings).
 
 ---
 

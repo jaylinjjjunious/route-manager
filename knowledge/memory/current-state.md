@@ -15,27 +15,30 @@ Implemented on top of the existing job system:
 
 ## Features Built
 
-- **6-tab navigation:** Dashboard, Jobs, Battery, Tracker, Habits, Settings — with protected tab support.
+- **AIØ three-tab navigation (Today / Jobs / More):** iOS-style redesign of the primary interface. The former Mission Control dashboard is now the **Today** readiness screen (Road Readiness + Next Best Job/Current Job, Today's Other Jobs, Travel Plan, This Week strip). Road Readiness requires a reviewed Preview Guide for every actionable job, applies exact wind gating, and keeps battery informational. The compact dark Road Readiness panel shows live current weather top-left (sun/moon glyph, temperature, condition, feels-like) from Open-Meteo with permission-respecting location and offline/denied fallbacks; live weather is display-only and never gates readiness. **Jobs** is the schedule list (today, later days, Route B standby, overdue/unscheduled review), and **More** is the hub for all legacy tabs (Inventory, Battery, Tracker, Habits, Tools, Settings) plus Proof Vault, Add Process Serve, Import Screenshots, Debug Center, account, theme, and Sign Out. New AIØ design tokens (`--color-aio-*`) and primitives in `src/components/aio/`. Dev-only screenshot mode (`VITE_TODAY_SCREENSHOT_MODE`) and `scripts/screenshot-today.mjs` for headless layout verification (320/390/430 px, dark/light).
+- **6-tab navigation:** Inventory, Battery, Tracker, Habits, Tools, Settings — now reachable from the More screen, with protected tab support.
 - **Daily Shower Gate:** Barcode scan + proof upload + cycle management with 6:00 AM reset remain implemented, but access enforcement is temporarily bypassed by SHOWER_GATE_REQUIRED = false in src/App.tsx.
 - **Job system:** 5 types, 7 statuses, completion workflow, proof vault.
 - **Route optimization:** Nearest-neighbor algorithm, battery-aware, outlier detection.
-- **Dashboard route interface:** Dashboard is the authoritative route-planning and route-management surface; the standalone Route page has been retired. Today's Route cards open compact per-job detail panels from the card surface.
+- **Today's Route / AIØ Today screen:** The Today screen is the authoritative route-planning and route-management surface; the standalone Route page has been retired. Job rows open compact per-job detail panels from the card surface.
 - **Ride Mode:** Distraction-free execution surface for job completion.
 - **Habit tracker:** Mandatory shower + custom daily tasks with streak tracking.
 - **AI Dispatcher:** Gemini 2 chat integration for route advice.
 - **AI Operations Assistant:** 22-file assistant system with floating chat bubble, tool registry, server-side Gemini integration, and 10 tools (navigation, shower gate, jobs, battery, weather, travel, proof, debug).
 - **Safety News:** Bakersfield area crime/safety via Google News RSS.
 - **Screenshot OCR import:** Extract job data from screenshots.
+- **Per-job Preview Guide:** Local screen-recording extraction, offline ordered pages, selected-page authenticated summary/review, generated Get Ready confirmations, explicit navigation/Transit handoff, and manual arrival/job-guide handoff.
 - **Text-to-speech:** Gemini, OpenAI, ElevenLabs providers.
 - **Debug Center:** Diagnostics and system status.
 - **Supabase authentication:** Magic link and email/password login.
+- **Self-hosted error reporting:** Privacy-safe client reporter (`src/services/errorReporter.ts`) captures window errors/unhandled rejections, batches them, and flushes to authenticated `POST /api/errors`; reports land in `.local-error-reports/reports.json`. Opt-out toggle + "Send Test Error" live in Debug Center. Bounded/sanitized; no third-party service.
 - **Railway deployment:** Autodeploy from main branch.
 - **Cloudflare Worker API variant:** Alternative backend deployment.
 - **Checkpoint and release scripts:** `scripts/checkpoint.cjs`, `scripts/release.cjs`.
 - **Knowledge system:** This documentation directory.
-- **Official app icon:** Preserved source artwork and generated iPhone Safari/Home Screen plus favicon PNG assets.
+- **Official app icon:** Preserved source artwork and generated black/white AIØ favicon/PWA icon assets (`public/icons/aio-icon-192.png`, `public/icons/aio-icon-512.png`). The AIØ header brand mark is the `AIØ` text wordmark, not a logo image.
 - **Inventory custody first slice:** Job-detail camera-first receive-in with part/serial/photo/document capture, automatic time/GPS, receive/install/removal/return event chain, receipt/tracking return linkage, local offline queue, and Background Sync wake-up.
-- **Transit Mode (official Transit API):** Backend-proxied integration with Transit app v4 — server `server/transit/` (router, service, client, cache, 5/min rate limiter, durable 1,500/month budget store persisted to `.local-transit-usage/usage.json`) mounted at `/api/transit` behind `requireAuth`; frontend gated by `VITE_TRANSIT_PROVIDER=transit`; UI in `src/components/transit/` (nearby stops, live arrivals, trip planner, favorites, alerts, job trip section, dashboard card, Settings diagnostic incl. monthly budget). Key stays server-side. Nearby radius is clamped 100–1500 m; trip-plan walk legs are overview-only (`coordinatesAvailable: false`). Depends on Railway env `TRANSIT_API_KEY`; without it the Tools tab shows a fallback callout.
+- **Transit Mode (official Transit API):** Backend-proxied integration with Transit app v4 — server `server/transit/` (router, service, client, cache, 5/min rate limiter, durable 1,500/month budget store persisted to `.local-transit-usage/usage.json`) mounted at `/api/transit` behind `requireAuth`; frontend gated by `VITE_TRANSIT_PROVIDER=transit`; UI in `src/components/transit/` (nearby stops, live arrivals, trip planner, favorites, alerts, job trip section, dashboard card, Settings diagnostic incl. monthly budget). Key stays server-side. Nearby radius is clamped 100–1500 m; trip-plan walk legs are overview-only (`coordinatesAvailable: false`); ride legs use plan offsets/schedule items for exact rider stops and visibly label inferred/unavailable fallbacks. Depends on Railway env `TRANSIT_API_KEY`; without it the Tools tab shows a fallback callout.
 
 ## Infrastructure
 
@@ -48,4 +51,4 @@ Implemented on top of the existing job system:
 
 ---
 
-**Last Updated:** 2026-07-31 (transit-audit-remediation)
+**Last Updated:** 2026-08-03 (Road Readiness live weather panel)

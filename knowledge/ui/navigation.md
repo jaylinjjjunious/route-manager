@@ -1,28 +1,36 @@
 # Navigation System
 
-**Last Updated:** 2026-07-30 (phase-1-scheduling)
-**Related Source Files:** `src/App.tsx`
+**Last Updated:** 2026-08-02 (aio-three-tab-redesign)
+**Related Source Files:** `src/App.tsx`, `src/components/aio/primitives.tsx`
 
 ---
 
-## Bottom Pill Navigation
+## AIØ Three-Tab Navigation
 
-The All in One 667 uses a **floating pill-shaped bottom navigation bar** pinned to the bottom of the viewport on all screen sizes.
+The All in One 667 uses **three primary tabs** — Today / Jobs / More — rendered as a floating rounded bottom bar pinned to the bottom of the viewport on all screen sizes.
 
-### Tab List
+### Primary Tab List
 
-| # | Tab | Icon | Protected |
-|---|-----|------|-----------|
-| 1 | Dashboard | LayoutDashboard | No |
-| 2 | Battery | Battery | **Yes** |
-| 3 | Tracker | Timer | **Yes** |
-| 4 | Habits | Award | No |
-| 5 | Tools | Camera | No |
-| 6 | Settings | Settings | No |
+| # | Tab | Component | Icon | Responsibility |
+|---|-----|-----------|------|----------------|
+| 1 | Today | `TodayScreen` | CalendarDays | Authoritative route-planning surface: readiness/weather hero, Next Best Job / Current Job, Today's Other Jobs, Travel Plan, This Week strip + expanded day panel |
+| 2 | Jobs | `JobsScreen` | ListChecks | Schedule list: Today, later scheduled days, Route B standby, overdue/unscheduled attention section |
+| 3 | More | `MoreScreen` | Ellipsis | Hub for all legacy feature tabs and actions |
 
-### Protected Tabs
+The Jobs tab shows a red count badge for remaining jobs today.
 
-Tabs 2-3 (Battery and Tracker) are **available without verification while the temporary bypass is active**. If SHOWER_GATE_REQUIRED is set to true, they are locked until the shower gate is verified. When locked:
+### Legacy Tabs (reachable from More)
+
+| Tab | Icon | Protected |
+|-----|------|-----------|
+| Inventory | PackageCheck | No |
+| Battery | Battery | **Yes** |
+| Tracker | Timer | **Yes** |
+| Habits | Award | No |
+| Tools | Camera | No |
+| Settings | Settings | No |
+
+Battery and Tracker are **available without verification while the temporary bypass is active**. If SHOWER_GATE_REQUIRED is set to true, they are locked until the shower gate is verified. When locked:
 
 - The tab buttons are visually dimmed or show an amber lock indicator.
 - Clicking a locked tab does not navigate — it may prompt the user to verify their shower proof.
@@ -31,7 +39,8 @@ Tabs 2-3 (Battery and Tracker) are **available without verification while the te
 ### State Management
 
 - Tab state is managed by `currentTab` in `App.tsx`.
-- Changing tabs calls `onTabChange(tabName)` which updates the parent state.
+- The `AppTab` union includes `dashboard | jobs | more` plus the legacy tabs.
+- `BottomTabBar` (in `primitives.tsx`) maps `today`/`jobs`/`more` onto `dashboard`/`jobs`/`more` in `App.tsx`.
 - The current tab determines which content panel is rendered.
 
 ---
@@ -46,44 +55,27 @@ When **Ride Mode** is active:
 
 ---
 
-## Touch-Friendly Scrolling
+## Header Visibility
 
-The bottom nav supports horizontal touch scrolling on small screens:
+The header depends on the active tab:
 
-- `overflow-x-auto` — allows horizontal scroll when tabs overflow
-- `snap-x` — snap-to-tab scrolling behavior
-- `scroll-snap-type: x mandatory` — ensures clean snap alignment
-
-This ensures all 6 tabs are accessible on narrow screens without requiring the user to pinch or zoom.
-
----
-
-## Apple-Style Glassmorphism
-
-The bottom nav uses a glassmorphism effect inspired by Apple's design language:
-
-| Property | Value |
-|----------|-------|
-| Background | `bg-white/72` (72% opacity white) |
-| Blur | `backdrop-blur-2xl` (heavy backdrop blur) |
-| Border | `border-white/75` (semi-transparent white border) |
-
-This creates a frosted glass appearance that sits above the content layer while allowing the background to show through subtly.
+- **Today, Jobs, and More** use the `AioHeader` component (greeting, AIØ wordmark, date, theme toggle, and a More shortcut button).
+- **All legacy tabs** use the original `Header` component (logo, title, e-bike status, user email, theme toggle).
 
 ---
 
 ## Standalone Route Destination
 
-The standalone Route tab was retired. Dashboard is now the authoritative interface for route planning and route management, including Next Stop, Today's Route, compact per-job route details, navigation actions, review/complete actions, move controls, revision alerts, route order, route calculations, and the weekly scheduling strip / expanded day panel (Phase 1 scheduling — integrated into the Mission Control grid, not a new tab).
+The standalone Route tab was retired. Today's Screen (Dashboard) is the authoritative interface for route planning and route management, including Next Best Job, Current Job, per-job detail, navigation actions, review/complete actions, move controls, revision alerts, route order, route calculations, and the weekly scheduling strip / expanded day panel (Phase 1 scheduling).
 
-Retired route destinations (`/route`, `/routes`, and `#route`) redirect to Dashboard. Assistant route requests also open Dashboard and focus Today's Route when possible.
+Retired route destinations (`/route`, `/routes`, and `#route`) redirect to Dashboard. Assistant route requests also open Dashboard and focus Today's Route when possible. The standalone Jobs page destination was retired as well (`jobs` no longer redirects; it is a first-class tab).
 
 ---
 
-## Header Visibility
+## AIØ Header
 
-The `Header` component is conditionally rendered:
+The `AioHeader` component is sticky at the top and conditionally rendered:
 
-- **Hidden** on the Dashboard tab (dashboard has its own header treatment).
-- **Visible** on all other tabs.
-- Provides theme toggle and app title.
+- **Shown** on the Today, Jobs, and More tabs.
+- **Hidden** on legacy tabs (those use the classic `Header`).
+- Provides greeting, AIØ wordmark, formatted date, theme toggle, and a More shortcut.

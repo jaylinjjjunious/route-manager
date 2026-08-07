@@ -67,6 +67,8 @@ async function bootApp() {
   try {
     // Validate Supabase config is available before rendering
     await import('./lib/supabase.ts');
+    const { initErrorReporting } = await import('./services/errorReporter');
+    initErrorReporting();
     root.render(
       <StrictMode>
         <DebugProvider>

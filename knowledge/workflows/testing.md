@@ -26,7 +26,12 @@
 - Habit tracker: `tests/habit-ui-check.cjs` validates UI state and rendering.
 - Smart Aisle Scan Test Lab: `tests/smart-aisle-test-lab-ui-check.cjs` opens a local harness, clicks through practice setup, start capture, hold-for-burst, short tap, pointer cancel/lost-capture interruption, thumbnail review, immediate removal (no confirmation modal), undo restore, sequence recalculation, Reached the End stitching, the real-device verification report route (including new undo/lens fields), import processing, controlled scenarios, markers, diagnostics, cleanup, and verifies test cleanup preserves seeded audit data.
 - TypeScript compilation: lint catches type errors across all source files.
+- Local auth bypass: `tests/localAuthBypass.test.ts` verifies the explicit dev
+  flag and loopback allowlist, plus production, disabled-flag, and remote-host
+  rejection.
 - Inventory custody ledger: `tests/inventoryChain.test.ts` validates lifecycle chaining, local persistence, queueing, and tamper detection.
+- Preview Guide: previewGuide.test.ts validates recording limits, frame signatures/detail scoring, per-job isolation and state guards; previewSummary.test.ts verifies only selected images are uploaded, video is excluded, source IDs remain, and selection limits apply.
+- Road Readiness: `tests/roadReadiness.test.ts` validates mandatory Preview Guide review, unavailable-guide blocking, exact wind mapping, light-headwind confirmation requirements, strong-headwind blocking, and `BLOCKED` → `NEEDS ATTENTION` → `READY` priority.
 - Scheduling: `tests/jobSchedule.test.ts` validates LA-timezone-stable date math, calendar validation, effective-day pooling, legacy migration (schema v4), day grouping, overdue detection, and planning-issue review flags.
 - Transit backend: `tests/transitCache.test.ts` (TTL, stale retention, capacity eviction), `tests/transitRateLimiter.test.ts` (sliding window, release), `tests/transitNormalizers.test.ts` (arrivals/alerts/plan normalization), `tests/transitApiClient.test.ts` (apiKey header, HTTP + 200-with-error mapping, network retry), `tests/transitService.test.ts` (fresh-cache-first, dedupe, stale-while-revalidate, queue bounds, error mapping), `tests/transitFavorites.test.ts` (localStorage favorites), `tests/transitKeyHygiene.test.ts` (bans `VITE_TRANSIT_API_KEY`, real-key leakage, direct upstream URLs in `src/`), `tests/transitProviderSelection.test.ts` (env-gated provider selection).
 - Transit tests mock `fetch`/modules — no live upstream API traffic in CI. The `transitProviderSelection` test can emit a non-fatal "Multiple GoTrueClient instances" stderr warning from importing client modules; it does not fail the suite.
@@ -54,4 +59,4 @@ Returns 200 OK if the server is running.
 
 ---
 
-**Last Updated:** 2026-07-30 (phase-1-scheduling)
+**Last Updated:** 2026-08-03 (Road Readiness tests)

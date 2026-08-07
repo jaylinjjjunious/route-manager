@@ -19,6 +19,7 @@ The key constraint: the Transit API key must never reach the browser, logs, or b
 - Add a durable monthly budget guard (`transitBudget.ts`, persisted to `.local-transit-usage/usage.json`) so the 1,500/month allowance survives restarts: per-category counting, 70%/85%/95% thresholds, low-priority categories (`alerts`, `networks`) throttled first, `plan`/`arrivals` reserved, stale-cache fallback when blocked, and a `monthly` diagnostic on `/api/transit/status`. Only upstream-reaching requests are counted (network-level failures never reached the server and are not charged).
 - Clamp the nearby-stops search radius to the upstream maximum (100–1500 m, default 1000) in the server service and the frontend provider.
 - Label walk legs honestly: trip-plan walk legs get `coordinatesAvailable: false` and are rendered as a walking-distance overview, never turn-by-turn directions, because upstream plan legs do not expose walking endpoint coordinates. Stops without coordinates are marked incomplete and excluded from trip planning instead of silently using `0,0`.
+- Select ride-leg boarding and exit stops from upstream plan offsets and stop schedule items when present. Preserve exact/inferred/unavailable confidence in the normalized contract, warn on non-exact fallbacks, and never fabricate stop identities. Preserve scheduled and realtime Unix-second values separately.
 - Choose `transitApiProvider` (live) over `mockProvider` over `googleRoutesProvider` (which throws for transit methods by design).
 
 ## Alternatives Considered
@@ -50,4 +51,4 @@ The key constraint: the Transit API key must never reach the browser, logs, or b
 
 ---
 
-**Last Updated:** 2026-07-31 (transit-audit-remediation: monthly budget guard, 1500m radius clamp, honest walk-leg labeling)
+**Last Updated:** 2026-08-02 (trip-plan stop accuracy and scheduled/realtime timing)

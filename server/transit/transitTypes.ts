@@ -143,14 +143,32 @@ export interface TransitRideLeg {
   routeShortName?: string;
   routeLongName?: string;
   routeId?: string;
+  modeName?: string;
+  routeColor?: string;
+  routeTextColor?: string;
   headsign?: string;
   agencyName?: string;
   boardingStop: TransitStop;
   exitStop: TransitStop;
+  /**
+   * How confidently the boarding/exit stops match the stops this trip actually
+   * serves. `exact` uses upstream boarding/exit offsets; `inferred` falls back
+   * to schedule items or the route stop list; `unavailable` means no usable
+   * stop reference existed (the UI must say so rather than fabricate a stop).
+   */
+  stopSelectionConfidence?: "exact" | "inferred" | "unavailable";
   departureTime: string;
-  predictedDepartureTime?: string;
+  /** Unix seconds (UTC). */
+  scheduledDepartureTime?: number;
+  /** Unix seconds (UTC); present only when the upstream reported real-time. */
+  predictedDepartureTime?: number;
   arrivalTime: string;
-  predictedArrivalTime?: string;
+  /** Unix seconds (UTC). */
+  scheduledArrivalTime?: number;
+  /** Unix seconds (UTC); present only when the upstream reported real-time. */
+  predictedArrivalTime?: number;
+  /** True only when the upstream response carried a real-time indicator. */
+  isRealTime?: boolean;
   stopCount?: number;
   isCancelled?: boolean;
 }
@@ -314,17 +332,47 @@ export interface UpstreamItinerary {
   merged_headsign?: string;
 }
 
-export interface UpstreamPlanDeparture {
+export interface UpstreamStopScheduleItem {
   arrival_time?: number;
   departure_time?: number;
+  global_stop_id?: string;
   is_cancelled?: boolean;
   is_real_time?: boolean;
-  plan_details?: {
-    arrival_schedule_item?: unknown;
-    global_route_id?: string;
-    internal_itinerary_id?: string;
-    stop_schedule_items?: unknown[];
-  };
+  scheduled_arrival_time?: number;
+  scheduled_departure_time?: number;
+  stop_code?: string;
+  stop_lat?: number;
+  stop_lon?: number;
+  stop_name?: string;
+}
+
+export interface UpstreamPlanDetails {
+  arrival_schedule_item?: UpstreamStopScheduleItem;
+  end_stop_offset?: number;
+  global_route_id?: string;
+  internal_itinerary_id?: string;
+  plan_shape?: string;
+  start_stop_offset?: number;
+  stop_schedule_items?: UpstreamStopScheduleItem[];
+}
+
+export interface UpstreamPlanDeparture {
+  arrival_time?: number;
+  compact_display_short_name?: UpstreamCompactDisplayShortName;
+  departure_time?: number;
+  end_stop_offset?: number;
+  global_stop_id?: string;
+  internal_itinerary_id?: string;
+  is_cancelled?: boolean;
+  is_real_time?: boolean;
+  plan_details?: UpstreamPlanDetails;
+  real_time_route_id?: string;
+  route_display_short_name?: UpstreamCompactDisplayShortName;
+  route_long_name?: string;
+  route_short_name?: string;
+  scheduled_arrival_time?: number;
+  scheduled_departure_time?: number;
+  start_stop_offset?: number;
 }
 
 export interface UpstreamPlanRoute {
@@ -333,6 +381,15 @@ export interface UpstreamPlanRoute {
   fares?: unknown[];
   global_route_id?: string;
   itineraries?: UpstreamItinerary[];
+  mode_name?: string;
+  network_id?: string;
+  network_name?: string;
+  real_time_route_id?: string;
+  route_color?: string;
+  route_display_short_name?: UpstreamCompactDisplayShortName;
+  route_long_name?: string;
+  route_short_name?: string;
+  route_text_color?: string;
   stops?: UpstreamNearbyStop[];
 }
 

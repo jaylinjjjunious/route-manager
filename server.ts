@@ -21,6 +21,8 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPA
 const showerProofRoot = path.join(process.cwd(), ".local-shower-proofs");
 const showerProofImageRoot = path.join(showerProofRoot, "images");
 const showerProofMetadataPath = path.join(showerProofRoot, "proofs.json");
+const errorReportRoot = path.join(process.cwd(), ".local-error-reports");
+const errorReportsPath = path.join(errorReportRoot, "reports.json");
 
 interface LocalShowerProofRecord {
   id: string;
@@ -68,6 +70,34 @@ const writeLocalShowerProofs = async (records: LocalShowerProofRecord[]) => {
 const normalizeLocalCycleId = (value: unknown) => {
   const key = (value || "").toString().trim();
   return /^\d{4}-\d{2}-\d{2}$/.test(key) ? key : new Date().toISOString().slice(0, 10);
+};
+
+interface ErrorReportRecord {
+  id: string;
+  ownerId?: string;
+  timestamp: string;
+  message: string;
+  category: string;
+  source: string;
+  pathname: string;
+  userAgent: string;
+}
+
+const MAX_ERROR_REPORTS = 200;
+const MAX_REPORTS_PER_BATCH = 25;
+const MAX_ERROR_FIELD_LENGTH = 300;
+
+const sanitizeReportField = (value: unknown, maxLength: number): string =>
+  String(value || "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, maxLength);
+
+const readErrorReports = async (): Promise<ErrorReportRecord[]> => {
+  try {
+    const text = await fs.readFile(errorReportsPath, "utf8");
+    const records = JSON.parse(text) as ErrorReportRecord[];
+    return Array.isArray(records) ? records : [];
+  } catch {
+    return [];
+  }
 };
 
 app.use("/shower-proof-assets", express.static(showerProofImageRoot, {
@@ -193,6 +223,43 @@ app.get("/api/debug/auth-check", async (req, res) => {
   const token = authHeader.slice(7);
   const { data: { user }, error } = await serverSupabase.auth.getUser(token);
   res.json({ authenticated: !!user && !error, userPresent: !!user?.id });
+});
+
+// Client error reports: authenticated, sanitized, bounded, local-only storage.
+app.post("/api/errors", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const raw = Array.isArray(req.body?.reports) ? req.body.reports.slice(0, MAX_REPORTS_PER_BATCH) : [];
+    if (raw.length === 0) return res.status(400).json({ error: "No error reports provided." });
+
+    const now = new Date().toISOString();
+    const ownerId = (req as AuthenticatedRequest).userId;
+    const records: ErrorReportRecord[] = [];
+    for (const item of raw) {
+      const message = sanitizeReportField(item?.message, MAX_ERROR_FIELD_LENGTH);
+      if (!message) continue;
+      records.push({
+        id: `err-${crypto.randomUUID()}`,
+        ownerId,
+        timestamp: now,
+        message,
+        category: sanitizeReportField(item?.category, 40) || "app",
+        source: sanitizeReportField(item?.source, 200),
+        pathname: sanitizeReportField(item?.pathname, 200),
+        userAgent: sanitizeReportField(item?.userAgent, 200),
+      });
+    }
+    if (records.length === 0) return res.status(400).json({ error: "No valid error reports provided." });
+
+    const existing = await readErrorReports();
+    await fs.mkdir(errorReportRoot, { recursive: true });
+    await fs.writeFile(errorReportsPath, JSON.stringify([...existing, ...records].slice(-MAX_ERROR_REPORTS), null, 2));
+
+    console.log(`[ERRORS] Stored ${records.length} report(s) from user ${ownerId?.slice(0, 8) || "unknown"}...`);
+    res.json({ ok: true, received: records.length });
+  } catch (error) {
+    console.error("[ERRORS] Failed to store error report:", error);
+    res.status(500).json({ error: "Error report storage failed." });
+  }
 });
 
 app.get("/api/shower-proofs/current", requireAuth, async (req: Request, res: Response) => {
@@ -602,6 +669,101 @@ app.post("/api/dispatcher/tts", requireAuth, async (req: any, res: any) => {
   }
 });
 
+// Selected-page Preview Guide extraction. The recording itself is never accepted.
+app.post("/api/import/preview-summary", requireAuth, async (req: any, res: any) => {
+  try {
+    const pages = Array.isArray(req.body?.pages) ? req.body.pages : [];
+    if (pages.length < 1 || pages.length > 12) return res.status(400).json({ error: "Select between 1 and 12 preview pages." });
+    const validPages = pages.filter((page: any) => typeof page?.pageId === "string" && typeof page?.image === "string" && page.image.startsWith("data:image/"));
+    if (validPages.length !== pages.length) return res.status(400).json({ error: "One or more selected preview pages could not be read." });
+    if (validPages.reduce((total: number, page: any) => total + page.image.length, 0) > 13_000_000) {
+      return res.status(413).json({ error: "Those pages are too large to process together. Select fewer pages and try again." });
+    }
+
+    const ai = getGeminiClient();
+    const sourceIds = new Set(validPages.map((page: any) => page.pageId));
+    const contents = validPages.flatMap((page: any) => [
+      { text: "SOURCE_PAGE_ID: " + page.pageId },
+      { inlineData: { mimeType: typeof page.mimeType === "string" ? page.mimeType : "image/jpeg", data: page.image.split(",").pop() || "" } },
+    ]);
+    contents.push({ text: "Create the structured preparation summary from only these selected pages." });
+    const instruction = [
+      "Create a concise job Preview Guide from selected captured preview pages.",
+      "Preserve source wording where important. Do not infer missing instructions or assume all visible questions will be asked.",
+      "Distinguish instructions from examples, and required actions from optional advice. Identify uncertainty.",
+      "Every item must cite one or more provided SOURCE_PAGE_ID values.",
+      "Never classify something as required solely because it appears in an example image.",
+      "Use confirmationMode photo only for a physical preparation item; one_tap for dress code; review for training or authorization.",
+      "Do not include customer names, phone numbers, login details, or credentials."
+    ].join("\n");
+    const sourcedItem = {
+      type: Type.OBJECT,
+      properties: {
+        id: { type: Type.STRING }, text: { type: Type.STRING },
+        sourcePageIds: { type: Type.ARRAY, items: { type: Type.STRING } },
+        confidence: { type: Type.NUMBER },
+      },
+      required: ["id", "text", "sourcePageIds", "confidence"],
+    };
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents,
+      config: {
+        systemInstruction: instruction,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            estimatedMinutes: { type: Type.INTEGER },
+            payText: { type: Type.STRING },
+            beforeYouGo: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  id: { type: Type.STRING }, text: { type: Type.STRING }, type: { type: Type.STRING },
+                  confirmationMode: { type: Type.STRING }, required: { type: Type.BOOLEAN },
+                  sourcePageIds: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  confidence: { type: Type.NUMBER },
+                },
+                required: ["id", "text", "type", "confirmationMode", "required", "sourcePageIds", "confidence"],
+              },
+            },
+            whatYouWillDo: { type: Type.ARRAY, items: sourcedItem },
+            proofRequirements: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: { ...sourcedItem.properties, required: { type: Type.BOOLEAN } },
+                required: ["id", "text", "required", "sourcePageIds", "confidence"],
+              },
+            },
+            warnings: { type: Type.ARRAY, items: sourcedItem },
+            referenceTopics: { type: Type.ARRAY, items: { type: Type.STRING } },
+            uncertainItems: { type: Type.ARRAY, items: sourcedItem },
+          },
+          required: ["beforeYouGo", "whatYouWillDo", "proofRequirements", "warnings", "referenceTopics", "uncertainItems"],
+        },
+      },
+    });
+    if (!response.text) return res.status(502).json({ error: "No summary was returned. Try selecting clearer pages." });
+    const parsed = JSON.parse(response.text.trim());
+    const sanitizeItems = (items: any[]) => (Array.isArray(items) ? items : []).map(item => ({
+      ...item,
+      sourcePageIds: (Array.isArray(item.sourcePageIds) ? item.sourcePageIds : []).filter((id: string) => sourceIds.has(id)),
+    })).filter(item => item.sourcePageIds.length > 0);
+    parsed.beforeYouGo = sanitizeItems(parsed.beforeYouGo);
+    parsed.whatYouWillDo = sanitizeItems(parsed.whatYouWillDo);
+    parsed.proofRequirements = sanitizeItems(parsed.proofRequirements);
+    parsed.warnings = sanitizeItems(parsed.warnings);
+    parsed.uncertainItems = sanitizeItems(parsed.uncertainItems);
+    return res.json(parsed);
+  } catch (error: any) {
+    console.error("Preview summary endpoint failed:", error?.name || "unknown");
+    return res.status(500).json({ error: "The quick summary could not be created. Try again with fewer clear pages." });
+  }
+});
 // Privacy-First Screenshot OCR Import API
 app.post("/api/import/ocr", requireAuth, async (req: any, res: any) => {
   try {

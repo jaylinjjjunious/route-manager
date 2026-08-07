@@ -3,8 +3,13 @@
 ## Authentication
 
 - Supabase token refresh must be handled explicitly — implement a 401 retry pattern to catch stale tokens before upload requests fail.
+- A local UI bypass must require an explicit development flag and a loopback
+  hostname, compile out of production behavior, and never weaken protected API
+  authentication. A visually hidden control is not a security boundary.
 
 ## Camera and Media
+
+- Long screen recordings should be sampled locally at controlled seek intervals, with conservative duplicate removal and selected-page-only AI processing; uploading or OCRing every frame is wasteful and privacy-hostile.
 
 - iPhone Safari camera requires the `playsInline` attribute on video elements.
 - Camera lifecycle management must account for Safari's aggressive tab recycling.
@@ -27,6 +32,7 @@
 
 ## Application Logic
 
+- A Preview Guide's storage `status: 'ready'` can mean extracted pages are ready; user readiness must instead require `summary.reviewedByUser === true`.
 - Shower gate cycle boundary at exactly 6:00:00 requires careful comparison — use `< boundary`, not `<=`.
 - Bottom navigation on mobile needs `overflow-x-auto` for small screens to prevent tab overflow.
 - Focus trapping improves accessibility for modal-like components.
@@ -52,8 +58,14 @@
 - Sensitive upstream keys must be server-side only; gate the UI with a separate public build-time `VITE_` flag and enforce the separation with a key-hygiene test.
 - Mocking `fetch` in Vitest requires `vi.fn<FetchMock>` typing and reading `init?.headers` (RequestInit) to satisfy TypeScript — cast headers via `new Headers(...)` when asserting.
 - Test upstream module selection with `vi.stubEnv`/`vi.resetModules` (dynamic import) so the chosen provider is actually re-evaluated per test.
+- A route's first and last stops are not necessarily the rider's boarding and exit stops. Prefer plan offsets and stop schedule items, carry confidence in the normalized contract, and visibly label any fallback as inferred or unavailable.
+- Scheduled and predicted transit times are separate facts. Preserve both Unix-second values, use the predicted value for display only when the upstream marks the data realtime, and expose that realtime status to the UI.
+
+## Error Monitoring
+
+- Any service test that imports a module pulling in `src/lib/supabase.ts` must mock it: that module throws at import time when `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` are missing, so the transit provider-selection test needed a hoisted supabase mock to run without env vars.
+- A client error reporter must not import modules that can throw at module scope in a "missing config" startup path; init it only after Supabase config is validated (inside the existing try/catch in `main.tsx`).
 
 ---
 
-**Last Updated:** 2026-07-30 (phase-1-scheduling)
-
+**Last Updated:** 2026-08-03 (Road Readiness rules)

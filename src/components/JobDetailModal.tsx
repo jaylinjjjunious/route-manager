@@ -12,13 +12,15 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Navigation, Clock, MapPin, CheckSquare, Edit2, Trash2, Copy, ArrowRightLeft, ShieldAlert, Calendar, AlertCircle, Sparkles, Hourglass, RefreshCw, CheckCircle2, RotateCcw, Camera } from 'lucide-react';
+import { X, Navigation, Clock, MapPin, CheckSquare, Edit2, Trash2, Copy, ArrowRightLeft, ShieldAlert, Calendar, AlertCircle, Sparkles, Hourglass, RefreshCw, CheckCircle2, RotateCcw, Camera, BookOpen } from 'lucide-react';
 import type { Job, JobType } from '../types';
 import { isJobCompleted, isRevisionJob } from '../utils/jobState';
 import { formatScheduledDate, isValidScheduledDate } from '../utils/jobSchedule';
 import InventoryCustodyPanel from './InventoryCustodyPanel';
 import { JobTransitSection } from './transit/JobTransitSection';
 import { isTransitApiEnabled } from '../services/transit';
+import { resolveStoreLogo } from '../services/storeLogos';
+import PreviewGuideModal from '../features/previewGuide/PreviewGuideModal';
 
 const SCAN_COMPATIBLE_TYPES: JobType[] = ['retail_audit', 'mystery_shop', 'merchandising'];
 
@@ -93,6 +95,25 @@ const BADGE_LABELS: Record<string, string> = {
   postponed: 'TOMORROW',
 };
 
+function JobIdentitySquare({ job }: { job: Job }) {
+  const match = resolveStoreLogo({ companyId: null, texts: [job.storeName, job.notes] });
+  const [failed, setFailed] = useState(false);
+
+  if (!match || failed) {
+    return <Hourglass size={20} />;
+  }
+
+  return (
+    <img
+      src={match.logoPath}
+      alt={`${match.displayName} logo`}
+      className="h-full w-full object-contain p-1"
+      draggable={false}
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 export default function JobDetailModal({
   job,
   routeIndex,
@@ -115,6 +136,7 @@ export default function JobDetailModal({
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [previewGuideOpen, setPreviewGuideOpen] = useState(false);
 
   const category = getCategory(job, isOutlier);
   const isDone = isJobCompleted(job);
@@ -189,7 +211,7 @@ export default function JobDetailModal({
 
   const modalContent = (
     <div
-      className={`fixed inset-0 z-[60] flex items-center justify-center bg-black/45 p-3 backdrop-blur-[10px] [-webkit-backdrop-filter:blur(10px)] transition-opacity duration-200 ease-out ${isOpen ? 'opacity-100' : 'opacity-0'}`}
+      className={`fixed inset-0 z-[60] flex items-center justify-center bg-black/35 p-3 backdrop-blur-[6px] [-webkit-backdrop-filter:blur(6px)] transition-opacity duration-200 ease-out ${isOpen ? 'opacity-100' : 'opacity-0'}`}
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
@@ -197,7 +219,7 @@ export default function JobDetailModal({
     >
       <div
         onClick={handlePanelClick}
-        className={`flex w-full max-w-[430px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#111214] shadow-2xl transition-all duration-200 ease-out ${isOpen ? 'scale-100 opacity-100' : 'scale-[0.97] opacity-0'}`}
+        className={`flex w-full max-w-[430px] flex-col overflow-hidden rounded-2xl border border-white/[0.12] bg-[#111214]/[0.80] shadow-2xl backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)] transition-all duration-200 ease-out ${isOpen ? 'scale-100 opacity-100' : 'scale-[0.97] opacity-0'}`}
         style={{ maxHeight: 'min(82dvh, 560px)' }}
       >
         {/* Compact sticky header */}
@@ -276,7 +298,7 @@ export default function JobDetailModal({
                 <button
                   onClick={() => handleQuickStatusChange(isDone ? 'ready' : job.status === 'under_review' ? 'completed' : 'under_review')}
                   disabled={jobAccessLocked && !isDone}
-                  className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-500 transition hover:text-emerald-400 disabled:cursor-not-allowed disabled:opacity-45"
+                  className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-white/5 text-slate-500 transition hover:text-emerald-400 disabled:cursor-not-allowed disabled:opacity-45"
                   title={jobAccessLocked ? 'Shower proof required first' : isDone ? 'Reactivate' : job.status === 'under_review' ? 'Complete after review' : 'Mark under review'}
                 >
                   {isDone ? (
@@ -284,7 +306,7 @@ export default function JobDetailModal({
                   ) : job.status === 'under_review' ? (
                     <CheckSquare size={20} className="text-indigo-500" />
                   ) : (
-                    <Hourglass size={20} />
+                    <JobIdentitySquare job={job} />
                   )}
                 </button>
                 <div className="min-w-0 flex-1">
@@ -361,6 +383,15 @@ export default function JobDetailModal({
                 Move to a different day
               </button>
             )}
+
+            <button
+              type="button"
+              onClick={() => setPreviewGuideOpen(true)}
+              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3 py-3 text-sm font-black text-cyan-200 transition hover:bg-cyan-500/20"
+            >
+              <BookOpen size={17} />
+              Preview Guide
+            </button>
 
             {isTransitApiEnabled() && transitOrigin && (
               <JobTransitSection job={job} origin={transitOrigin} />
@@ -604,5 +635,12 @@ export default function JobDetailModal({
     </div>
   );
 
-  return createPortal(modalContent, document.body);
+  return createPortal(<>{modalContent}{previewGuideOpen && (
+    <PreviewGuideModal
+      job={job}
+      navLink={navLink}
+      transitOrigin={transitOrigin}
+      onClose={() => setPreviewGuideOpen(false)}
+    />
+  )}</>, document.body);
 }

@@ -68,12 +68,18 @@ function WalkLeg({ leg }: { leg: TransitWalkLeg }) {
 }
 
 function RideLeg({ leg }: { leg: TransitRideLeg }) {
+  const stopDetailMessage = leg.stopSelectionConfidence === 'inferred'
+    ? 'Stop details are inferred from route data. Confirm them in live directions.'
+    : leg.stopSelectionConfidence === 'unavailable'
+      ? 'Boarding and exit stop details are unavailable. Confirm them in live directions.'
+      : null;
+
   return (
     <div className="flex items-start gap-2 text-xs">
       <span className="mt-0.5 text-green-400">🚌</span>
       <div className="flex-1">
         <div className="flex items-center gap-1.5">
-          <span className="font-semibold text-green-300">{leg.routeShortName || leg.routeLongName}</span>
+          <span className="font-semibold text-green-300">{leg.routeShortName || leg.routeLongName || leg.modeName || 'Transit'}</span>
           <span className="text-white/50">→ {leg.headsign}</span>
         </div>
         <div className="mt-0.5 text-white/50">
@@ -84,6 +90,12 @@ function RideLeg({ leg }: { leg: TransitRideLeg }) {
         </div>
         {leg.stopCount && leg.stopCount > 1 && (
           <div className="text-white/40 mt-0.5">{leg.stopCount} stops</div>
+        )}
+        {leg.isRealTime && (
+          <div className="mt-0.5 text-[10px] font-medium text-cyan-300">Live timing</div>
+        )}
+        {stopDetailMessage && (
+          <div className="mt-1 text-[10px] text-amber-300/70">{stopDetailMessage}</div>
         )}
       </div>
     </div>

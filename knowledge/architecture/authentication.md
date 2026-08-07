@@ -53,10 +53,22 @@ local technician identity, not a Supabase session, and contains no records.
 This mode is not compiled into production behavior, does not mint tokens, and
 does not relax `requireAuth()` for protected APIs.
 
+### Local Sign-In Bypass
+
+For local UI inspection without a Supabase session, the login page can turn its
+existing shield logo into a development-only entry control. It is available
+only when all three conditions are true: Vite is running in development mode,
+`VITE_LOCAL_AUTH_BYPASS=true`, and the browser hostname is loopback
+(`localhost`, `127.0.0.1`, or IPv6 loopback). Activating it sets the existing
+client `verificationMode`; it does not mint a Supabase session and does not
+bypass authentication on protected backend APIs. Production builds and
+non-loopback hosts render the shield as a non-interactive brand mark.
+
 **Worker (`worker/index.ts`):**
-- Shower proof endpoints use the same Bearer token pattern.
-- Token is verified via Supabase `getUser()`.
-- Legacy `/api/shower-proof` endpoint had simpler auth.
+- The Worker does not currently validate Supabase bearer tokens.
+- Client requests may include tokens, but Worker routes remain callable without
+  server-side token verification. This is a known deployment-security gap and
+  must not be confused with Express `requireAuth()` behavior.
 
 ### Password Reset Flow
 
@@ -89,7 +101,9 @@ Required env vars:
 ## Related Source Files
 
 - `src/auth/AuthProvider.tsx` — Auth context (141 lines)
+- `src/auth/localAuthBypass.ts` — Development/flag/loopback bypass guard
 - `src/auth/ProtectedApp.tsx` — Auth guard (91 lines)
+- `src/components/LoginPage.tsx` — Login UI and local-only shield entry control
 - `src/lib/supabase.ts` — Supabase client (24 lines)
 - `src/services/apiClient.ts` — Auth-fetch wrapper (61 lines)
 - `src/main.tsx` — Boot sequence (62 lines)
@@ -102,4 +116,4 @@ Required env vars:
 
 ## Last Updated
 
-2026-07-20 (c12bd44)
+2026-08-03 (local sign-in bypass)
