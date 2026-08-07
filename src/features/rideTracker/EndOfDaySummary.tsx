@@ -15,7 +15,7 @@ import {
   RotateCcw,
   CheckSquare
 } from 'lucide-react';
-import { Job, EbikeConfig } from '../types';
+import { Job, EbikeConfig } from '../../types';
 
 interface EndOfDaySummaryProps {
   completedJobs: Job[];
@@ -429,5 +429,4 @@ export const EndOfDaySummary: React.FC<EndOfDaySummaryProps> = ({
     </div>
   );
 };
-
 
