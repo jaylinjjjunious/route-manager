@@ -28,7 +28,9 @@
 - `src/components/OutlierDetector.tsx`: outlier review.
 - `src/components/RouteScoreGauge.tsx`: route score visualization.
 - `src/components/RouteSummaryCard.tsx`: route metrics summary.
-- `src/features/habits/HabitsTab.tsx`: presentational Habits tab UI (state and handlers remain in `src/App.tsx`).
+- `src/features/habits/HabitsTab.tsx`: presentational Habits tab UI.
+- `src/features/habits/useHabits.ts`: custom hook managing normal habit state, effects, handlers, derived stats, and backend sync.
+- `src/App.tsx`: coordinates the Habits feature and retains shower-gate logic.
 
 ## Core Types
 

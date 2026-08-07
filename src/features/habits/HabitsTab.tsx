@@ -4,30 +4,14 @@
  *
  * HabitsTab
  *
- * Extracted Habits tab UI from App.tsx.
- * State, effects, and backend sync remain in App.tsx; this component is purely presentational.
+ * Presentational Habits tab UI.
+ * All state, effects, handlers, and backend sync live in `useHabits.ts`.
+ * Receives data and callbacks via props from `App.tsx`.
  */
 
 import React from 'react';
 import { Camera, CheckCircle2, Plus, Zap } from 'lucide-react';
-
-export interface HabitTask {
-  id: string;
-  name: string;
-  targetMinutes: number;
-  lastMinutes: number;
-  createdAt: string;
-}
-
-export interface HabitLog {
-  id: string;
-  taskId?: string;
-  taskName: string;
-  minutes: number;
-  date: string;
-  note: string;
-  createdAt: string;
-}
+import type { HabitTask, HabitLog } from './types';
 
 export interface ShowerProof {
   cycleKey: string;
