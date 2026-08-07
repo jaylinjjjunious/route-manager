@@ -45,8 +45,10 @@ import AssistantProvider from './assistant/AssistantProvider';
 import AssistantBubble from './assistant/AssistantBubble';
 import AmbientLiquidBackground from './components/backgrounds/AmbientLiquidBackground';
 import JobDetailModal from './components/JobDetailModal';
-import { EndOfDaySummary } from './components/EndOfDaySummary';
 import ShowerGatePanel from './features/showerGate/ShowerGatePanel';
+import RideModeSurface from './features/rideTracker/RideModeSurface';
+import RideTrackerTab from './features/rideTracker/RideTrackerTab';
+import { useRideTracker } from './features/rideTracker/useRideTracker';
 import ScreenshotImportModal from './components/ScreenshotImportModal';
 import SmartAisleScan from './components/SmartAisleScan';
 import InventoryCustodyPanel from './components/InventoryCustodyPanel';
@@ -82,10 +84,10 @@ import { authFetch, authFetchJson } from './services/apiClient';
 import { isTransitApiEnabled } from './services/transit';
 import DebugCenter from './components/settings/DebugCenter';
 import {
-  Plus, Sliders, Play, RotateCcw, Moon, Sun, Layers, ShieldCheck, MapPin, CheckSquare,
+  Plus, Sliders, Play, Moon, Sun, Layers, ShieldCheck, MapPin, CheckSquare,
   LayoutDashboard, Briefcase, Battery, Settings, AlertTriangle, ArrowRightLeft,
   TrendingUp, HelpCircle, ShieldAlert, Sparkles, Compass, ExternalLink, Navigation, CheckCircle2,
-  Pause, Square, Timer, Clock, ChevronDown, ChevronUp, ChevronRight, DollarSign, Zap, Award, Volume2, VolumeX,
+  ChevronDown, ChevronUp, ChevronRight, DollarSign, Zap, Award, Volume2, VolumeX,
   FolderOpen, Camera, FileImage, ReceiptText, StickyNote, X, Hourglass, Bug, FlaskConical, PackageCheck
 } from 'lucide-react';
 
@@ -296,47 +298,11 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
 
   const [activeTab, setActiveTab] = useState<'A' | 'B' | 'all'>('A');
   const [currentTab, setCurrentTab] = useState<AppTab>(() => getTabFromHash() || 'dashboard');
-  
-  // Ride Tracker States
-  const [trackerStatus, setTrackerStatus] = useState<'idle' | 'riding' | 'at_store' | 'completed'>(() => {
-    return (safeStorage.getItem('ride_tracker_status') as any) || 'idle';
-  });
-  const [trackerRideTime, setTrackerRideTime] = useState<number>(() => {
-    return Number(safeStorage.getItem('ride_tracker_ride_time') || '0');
-  });
-  const [trackerStoreTime, setTrackerStoreTime] = useState<number>(() => {
-    return Number(safeStorage.getItem('ride_tracker_store_time') || '0');
-  });
-  const [trackerTotalDayTime, setTrackerTotalDayTime] = useState<number>(() => {
-    return Number(safeStorage.getItem('ride_tracker_total_day_time') || '0');
-  });
-  const [trackerStartBattery, setTrackerStartBattery] = useState<number>(() => {
-    return Number(safeStorage.getItem('ride_tracker_start_battery') || '100');
-  });
-  const [trackerJobsCompleted, setTrackerJobsCompleted] = useState<string[]>(() => {
-    try {
-      const saved = safeStorage.getItem('ride_tracker_jobs_completed');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-  const [rideModeActive, setRideModeActive] = useState(false);
-  const [rideStartedAt, setRideStartedAt] = useState<string | null>(null);
-  const [rideSummary, setRideSummary] = useState<any | null>(null);
-  const [trackerSessions, setTrackerSessions] = useState<any[]>(() => {
-    try {
-      const saved = safeStorage.getItem('ride_tracker_sessions');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+
   const [today, setToday] = useState<string>(() => todayString());
   const [selectedStripDate, setSelectedStripDate] = useState<string | null>(null);
   const [showScheduleReview, setShowScheduleReview] = useState<'overdue' | 'unscheduled' | null>(null);
   const [moveToDayJob, setMoveToDayJob] = useState<Job | null>(null);
-  const trackerTimerRef = useRef<number | null>(null);
   const [nowTick, setNowTick] = useState(() => Date.now());
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
   const [addMenuOpen, setAddMenuOpen] = useState(false);
@@ -590,41 +556,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     safeStorage.setItem('proof_vault_records', JSON.stringify(proofVault));
   }, [proofVault]);
 
-  // Persist Ride Tracker active state variables
-  useEffect(() => {
-    safeStorage.setItem('ride_tracker_status', trackerStatus);
-    safeStorage.setItem('ride_tracker_ride_time', trackerRideTime.toString());
-    safeStorage.setItem('ride_tracker_store_time', trackerStoreTime.toString());
-    safeStorage.setItem('ride_tracker_total_day_time', trackerTotalDayTime.toString());
-    safeStorage.setItem('ride_tracker_start_battery', trackerStartBattery.toString());
-    safeStorage.setItem('ride_tracker_jobs_completed', JSON.stringify(trackerJobsCompleted));
-  }, [trackerStatus, trackerRideTime, trackerStoreTime, trackerTotalDayTime, trackerStartBattery, trackerJobsCompleted]);
-
-  // Ride Tracker timer interval
-  useEffect(() => {
-    if (trackerStatus === 'riding' || trackerStatus === 'at_store') {
-      trackerTimerRef.current = window.setInterval(() => {
-        setTrackerTotalDayTime(prev => prev + 1);
-        if (trackerStatus === 'riding') {
-          setTrackerRideTime(prev => prev + 1);
-        } else if (trackerStatus === 'at_store') {
-          setTrackerStoreTime(prev => prev + 1);
-        }
-      }, 1000);
-    } else {
-      if (trackerTimerRef.current) {
-        clearInterval(trackerTimerRef.current);
-        trackerTimerRef.current = null;
-      }
-    }
-    return () => {
-      if (trackerTimerRef.current) {
-        clearInterval(trackerTimerRef.current);
-        trackerTimerRef.current = null;
-      }
-    };
-  }, [trackerStatus]);
-
   // Computed metrics & analysis
   const routeAJobs = jobs.filter(j => j.routeId === 'A');
   const routeBJobs = jobs.filter(j => j.routeId === 'B');
@@ -675,6 +606,8 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   };
 
   const batteryFactor = getCombinedBatteryFactor();
+
+  const tracker = useRideTracker(ebikeConfig, learnedBatteryPercentPerMile, batteryFactor);
 
   // Metrics are computed based on current order of elements in jobs state.
   // When users click "Optimize Route", they get sequential nearest neighbor, yielding better metrics.
@@ -729,9 +662,8 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const activeRouteAJobs = executableRouteJobs;
   const nextRouteAJob = activeRouteAJobs[0] || null;
   const liveEarnedToday = completedRouteAJobs.reduce((sum, job) => sum + job.pay, 0);
-  const isWorkSessionActive = trackerStatus === 'riding' || trackerStatus === 'at_store';
   const allRouteAJobsCompleted = routeAJobs.length > 0 && completedRouteAJobs.length === routeAJobs.length;
-  const showLiveEarnings = (isWorkSessionActive || completedRouteAJobs.length > 0) && !allRouteAJobsCompleted;
+  const showLiveEarnings = (tracker.isWorkSessionActive || completedRouteAJobs.length > 0) && !allRouteAJobsCompleted;
   const earningsTileAmount = showLiveEarnings ? liveEarnedToday : activeMetrics.totalPay;
   const earningsTileTitle = showLiveEarnings ? 'Earned Today' : 'Estimated Earnings Today';
   const earningsTileSubtext = showLiveEarnings
@@ -1195,9 +1127,8 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
       setCompletingJobIds(prev => prev.includes(id) ? prev : [...prev, id]);
       createProofFolder(targetJob);
       setDispatcherMessage(buildCompletionReadback(targetJob, updated));
-      if (rideModeActive) {
-        setTrackerJobsCompleted(prev => prev.includes(id) ? prev : [...prev, id]);
-        setTrackerStoreTime(prev => prev + (targetJob.estimatedMinutes * 60));
+      if (tracker.rideModeActive) {
+        tracker.trackJobCompletion(id, targetJob.estimatedMinutes);
       }
 
       window.setTimeout(() => {
@@ -1362,15 +1293,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     saveJobsToStorage(updatedJobs);
   };
 
-  const handleResetActiveTracker = () => {
-    setTrackerStatus('idle');
-    setTrackerRideTime(0);
-    setTrackerStoreTime(0);
-    setTrackerTotalDayTime(0);
-    setTrackerJobsCompleted([]);
-    setSelectedStripDate(null);
-  };
-
   const formatDuration = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
@@ -1459,34 +1381,22 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   }, [showerGate.handleMissionControlVerified, showerGate.showerCycleKey, habits]);
 
   useEffect(() => {
-    if (!showerGate.showerGateAccessReady && rideModeActive) {
-      setRideModeActive(false);
-      setTrackerStatus('idle');
+    if (!showerGate.showerGateAccessReady && tracker.rideModeActive) {
+      tracker.exitRideMode();
       setDispatcherMessage('Daily shower gate reset at 6:00 AM. Confirm shower proof before continuing jobs.');
     }
-  }, [showerGate.showerGateAccessReady, rideModeActive]);
-
-  const getRideDistance = () => parseFloat(((trackerRideTime / 3600) * ebikeConfig.avgSpeedMph).toFixed(1));
-  const getEstimatedBatteryUsed = () => parseFloat((getRideDistance() * learnedBatteryPercentPerMile * batteryFactor).toFixed(1));
+  }, [showerGate.showerGateAccessReady, tracker.rideModeActive]);
 
   const handleStartRideMode = () => {
     if (blockJobAccess('ride mode')) return;
-    setRideSummary(null);
-    setRideModeActive(true);
-    setRideStartedAt(new Date().toISOString());
-    setTrackerStatus('riding');
-    setTrackerRideTime(0);
-    setTrackerStoreTime(0);
-    setTrackerTotalDayTime(0);
-    setTrackerStartBattery(currentBattery);
-    setTrackerJobsCompleted([]);
+    tracker.enterRideMode(new Date().toISOString(), currentBattery);
     setDispatcherMessage("Ride Mode active. Start with the next stop and keep the screen focused.");
   };
 
   const handleEndRideMode = () => {
-    const distance = getRideDistance();
-    const batteryUsed = getEstimatedBatteryUsed();
-    const observedBatteryUsed = Math.max(0, trackerStartBattery - currentBattery);
+    const distance = tracker.rideDistance;
+    const batteryUsed = tracker.rideBatteryUsed;
+    const observedBatteryUsed = Math.max(0, tracker.startBattery - currentBattery);
     const learningBatteryUsed = observedBatteryUsed > 0 ? observedBatteryUsed : batteryUsed;
     if (distance > 0 && learningBatteryUsed > 0) {
       const sampleRate = learningBatteryUsed / distance;
@@ -1495,21 +1405,21 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
       safeStorage.setItem('battery_tracker_learned_percent_per_mile', blendedRate.toString());
     }
     const earned = completedRouteAJobs.reduce((sum, job) => sum + job.pay, 0);
-    const elapsedHours = Math.max(trackerTotalDayTime / 3600, 0.01);
-    const avgSpeed = trackerRideTime > 0 ? parseFloat((distance / (trackerRideTime / 3600)).toFixed(1)) : 0;
+    const elapsedHours = Math.max(tracker.totalDayTime / 3600, 0.01);
+    const avgSpeed = tracker.rideTime > 0 ? parseFloat((distance / (tracker.rideTime / 3600)).toFixed(1)) : 0;
     const routeScore = Math.max(0, Math.min(100, Math.round(100 - (activeMetrics.totalDistance * 1.4) - Math.max(0, batteryUsed - 35))));
     const efficiencyScore = Math.max(0, Math.min(100, Math.round((earned / Math.max(activeMetrics.totalPay, 1)) * 55 + routeProgressPct * 0.45)));
     const endedAt = new Date().toISOString();
     const sessionLog = {
       id: `ride-${Date.now()}`,
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      startedAt: rideStartedAt,
+      startedAt: tracker.rideStartedAt,
       endedAt,
-      rideTime: trackerRideTime,
-      storeTime: trackerStoreTime,
-      totalDayTime: trackerTotalDayTime,
-      startBattery: trackerStartBattery,
-      endBattery: Math.max(0, Math.round(trackerStartBattery - batteryUsed)),
+      rideTime: tracker.rideTime,
+      storeTime: tracker.storeTime,
+      totalDayTime: tracker.totalDayTime,
+      startBattery: tracker.startBattery,
+      endBattery: Math.max(0, Math.round(tracker.startBattery - batteryUsed)),
       batteryUsed,
       jobsCompletedCount: completedRouteAJobs.length,
       completedJobNames: completedRouteAJobs.map(job => job.storeName),
@@ -1524,9 +1434,9 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
       learnedRange: batteryUsed > 0 ? parseFloat(((distance / batteryUsed) * 100).toFixed(1)) : null
     };
 
-    setRideSummary({
-      totalRideTime: formatDuration(trackerRideTime),
-      totalStoreTime: formatDuration(trackerStoreTime),
+    tracker.setRideSummary({
+      totalRideTime: formatDuration(tracker.rideTime),
+      totalStoreTime: formatDuration(tracker.storeTime),
       totalJobsCompleted: completedRouteAJobs.length,
       totalDistance: distance,
       estimatedBatteryUsed: batteryUsed,
@@ -1538,17 +1448,56 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
       jobsMovedToTomorrow: tomorrowJobs.length,
       avgRideSpeed: avgSpeed,
       stopsCompleted: completedRouteAJobs.length,
-      startedAt: rideStartedAt,
+      startedAt: tracker.rideStartedAt,
       endedAt
     });
-    const updatedSessions = [sessionLog, ...trackerSessions];
-    setTrackerSessions(updatedSessions);
-    safeStorage.setItem('ride_tracker_sessions', JSON.stringify(updatedSessions));
-
-    setRideModeActive(false);
-    setTrackerStatus('idle');
+    tracker.addSession(sessionLog);
+    tracker.exitRideMode();
     setDispatcherMessage("Ride ended. Summary generated. Planning Mode restored.");
     setCurrentTab('dashboard');
+  };
+
+  const handleStartTrackerRide = () => {
+    tracker.startSession(currentBattery);
+    safeStorage.removeItem('jobs_moved_to_tomorrow');
+  };
+
+  const handleTrackerArrivedAtStore = () => {
+    tracker.setAtStore();
+  };
+
+  const handleTrackerResumeRide = () => {
+    tracker.setRiding();
+  };
+
+  const handleTrackerEndDay = () => {
+    const completedJobNames = routeAJobs
+      .filter(job => tracker.jobsCompleted.includes(job.id) || isJobDone(job))
+      .map(job => job.storeName);
+    const estimatedEarnings = completedRouteAJobs.reduce((sum, job) => sum + job.pay, 0);
+    tracker.finishTrackerDay({
+      endBattery: currentBattery,
+      completedJobNames,
+      estimatedEarnings,
+    });
+  };
+
+  const handleResetCurrentTrackerSession = () => {
+    if (window.confirm('Are you sure you want to reset the current active tracking session? This will not clear saved history.')) {
+      tracker.resetSession();
+      setSelectedStripDate(null);
+    }
+  };
+
+  const handleTrackerToggleJobComplete = (jobId: string) => {
+    handleToggleComplete(jobId);
+    tracker.toggleJobInSession(jobId);
+  };
+
+  const handleClearTrackerHistory = () => {
+    if (window.confirm('Delete all tracked ride history?')) {
+      tracker.clearHistory();
+    }
   };
 
   // Stack to store state snapshots for "Undo" functionality
@@ -1556,7 +1505,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
 
   const handleEndDayFromDispatcher = () => {
     setCurrentTab('tracker');
-    setTrackerStatus('completed');
+    tracker.setCompleted();
   };
 
   const handleExecuteDispatcherAction = (action: DispatcherAction): string | null => {
@@ -1703,11 +1652,11 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     return `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${job.coordinates.lat},${job.coordinates.lng}&travelmode=${travelMode}`;
   };
   const dispatcherBrief = dispatcherMessage.length > 118 ? `${dispatcherMessage.slice(0, 115).trim()}...` : dispatcherMessage;
-  const rideDistance = getRideDistance();
-  const rideBatteryUsed = getEstimatedBatteryUsed();
-  const rideAverageSpeed = trackerRideTime > 0 ? (rideDistance / (trackerRideTime / 3600)).toFixed(1) : '0.0';
+  const rideDistance = tracker.rideDistance;
+  const rideBatteryUsed = tracker.rideBatteryUsed;
+  const rideAverageSpeed = tracker.rideAverageSpeed;
   const rideEarned = completedRouteAJobs.reduce((sum, job) => sum + job.pay, 0);
-  const rideEarningsPerHour = trackerTotalDayTime > 0 ? (rideEarned / (trackerTotalDayTime / 3600)).toFixed(2) : '0.00';
+  const rideEarningsPerHour = tracker.formatRideEarningsPerHour(rideEarned);
   const learnedBatteryRate = learnedBatteryPercentPerMile * batteryFactor;
   const batteryTrackerUsed = rideBatteryUsed;
   const batteryTrackerCurrent = Math.max(0, Math.round(currentBattery - batteryTrackerUsed));
@@ -1779,7 +1728,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
 
         {/* Main Content Body */}
         <main className="app-main mx-auto max-w-7xl px-3 py-4 pb-40 sm:px-6 sm:py-6 lg:px-8 space-y-6">
-          {currentTab === 'dashboard' && !rideModeActive && SHOWER_GATE_REQUIRED && !showerGate.showerGateUnlocked && (
+          {currentTab === 'dashboard' && !tracker.rideModeActive && SHOWER_GATE_REQUIRED && !showerGate.showerGateUnlocked && (
             <ShowerGatePanel
               cycleId={showerGate.showerCycleKey}
               cycleLabel={showerGate.showerCycleLabel}
@@ -1789,120 +1738,35 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           )}
 
           {/* Ride Mode V2: Distraction-free execution surface */}
-          {currentTab === 'dashboard' && rideModeActive && (
-            <div className="animate-fade-in space-y-4" id="ride-mode-v2">
-              <div className="flex flex-col gap-3 rounded-[8px] border-4 border-slate-950 bg-slate-950 p-4 text-white dark:border-white sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-base font-black uppercase tracking-widest text-emerald-300">Ride Mode V2</p>
-                  <h2 className="text-5xl font-black leading-none tracking-tight sm:text-6xl">Execute Route</h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleEndRideMode}
-                  className="min-h-20 rounded-[8px] bg-rose-600 px-6 text-3xl font-black uppercase text-white shadow-lg transition hover:bg-rose-500"
-                >
-                  🏁 End Ride
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
-                <section className={`col-span-2 rounded-[8px] border-4 border-slate-950 bg-white p-4 shadow-lg transition-all duration-500 dark:border-white dark:bg-[#17181b] lg:col-span-4 ${nextRouteAJob && completingJobIds.includes(nextRouteAJob.id) ? 'scale-[0.99] border-emerald-500 bg-emerald-50 opacity-80' : ''}`}>
-                  <p className="text-base font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Next Stop</p>
-                  <h3 className="mt-2 truncate text-6xl font-black leading-none text-slate-950 dark:text-white">
-                    {nextRouteAJob?.storeName || 'Route Clear'}
-                  </h3>
-                  <p className="mt-2 truncate text-2xl font-black text-slate-700 dark:text-slate-200">
-                    {nextRouteAJob?.address || 'No active stop'}
-                  </p>
-                  <div className="mt-4 grid grid-cols-2 gap-3">
-                    <a
-                      href={nextStopNavLink}
-                      target="_blank"
-                      referrerPolicy="no-referrer"
-                      className="flex min-h-24 items-center justify-center gap-3 rounded-[8px] bg-emerald-600 px-4 text-3xl font-black uppercase text-white shadow-lg transition hover:bg-emerald-500"
-                    >
-                      <Navigation size={34} />
-                      <span>Navigate</span>
-                    </a>
-                    <button
-                      type="button"
-                      disabled={!nextRouteAJob || Boolean(nextRouteAJob && completingJobIds.includes(nextRouteAJob.id))}
-                      onClick={() => nextRouteAJob && (nextRouteAJob.status === 'under_review' ? handleToggleComplete(nextRouteAJob.id) : handleMarkUnderReview(nextRouteAJob.id))}
-                      className={`flex min-h-24 items-center justify-center gap-3 rounded-[8px] px-4 text-3xl font-black uppercase text-white shadow-lg transition disabled:bg-emerald-600 ${
-                        nextRouteAJob?.status === 'under_review'
-                          ? 'bg-blue-700 hover:bg-blue-600'
-                          : 'bg-indigo-700 hover:bg-indigo-600'
-                      }`}
-                    >
-                      {nextRouteAJob && completingJobIds.includes(nextRouteAJob.id) ? <CheckCircle2 size={34} /> : nextRouteAJob?.status === 'under_review' ? <CheckSquare size={34} /> : <Hourglass size={34} />}
-                      <span>{nextRouteAJob && completingJobIds.includes(nextRouteAJob.id) ? 'Done' : nextRouteAJob?.status === 'under_review' ? 'Complete Job' : 'Under Review'}</span>
-                    </button>
-                  </div>
-                </section>
-
-                <section className="col-span-2 rounded-[8px] border-4 border-slate-950 bg-white p-4 shadow-[0_18px_42px_rgba(15,23,42,0.16)] transition-all duration-500 dark:border-white dark:bg-[#17181b] lg:col-span-2">
-                  <h3 className="text-3xl font-black text-slate-950 dark:text-white">Current Route</h3>
-                  <div className="mt-3 space-y-2">
-                    {routeListStops.length === 0 ? (
-                      <p className="rounded-[8px] bg-emerald-100 p-4 text-2xl font-black text-emerald-900">Route clear</p>
-                    ) : routeListStops.map((job, idx) => (
-                      <div key={job.id} className={`rounded-[8px] border-2 p-3 ${idx === 0 ? 'border-blue-700 bg-blue-50 dark:bg-blue-500/10' : 'border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.04]'}`}>
-                        <div className="flex items-center gap-3">
-                          <span className={`flex h-11 w-11 items-center justify-center rounded-[8px] text-xl font-black ${idx === 0 ? 'bg-blue-700 text-white' : 'bg-slate-950 text-white dark:bg-white dark:text-slate-950'}`}>{idx + 1}</span>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <p className="truncate text-2xl font-black leading-tight text-slate-950 dark:text-white">{job.storeName}</p>
-                              <span className={`shrink-0 rounded-[8px] px-2 py-0.5 text-xs font-black uppercase ${getRouteBadgeClasses(job)}`}>
-                                {getRouteBadgeLabel(job)}
-                              </span>
-                            </div>
-                            <p className="truncate text-base font-black text-slate-600 dark:text-slate-300">{getStreetName(job.address)}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-
-                <section className="rounded-[8px] bg-slate-950 p-4 text-white">
-                  <p className="text-base font-black uppercase">Ride Timer</p>
-                  <p className="mt-2 text-5xl font-black leading-none">{formatDuration(trackerTotalDayTime)}</p>
-                  <div className="mt-3 grid grid-cols-3 gap-2 text-sm font-black uppercase">
-                    <span>Ride {formatDuration(trackerRideTime)}</span>
-                    <span>Store {formatDuration(trackerStoreTime)}</span>
-                    <span>Used {rideBatteryUsed}%</span>
-                  </div>
-                </section>
-                <section className="rounded-[8px] bg-blue-700 p-4 text-white">
-                  <p className="text-base font-black uppercase">Jobs Left</p>
-                  <p className="mt-2 text-5xl font-black leading-none">{remainingRouteAJobs.length}</p>
-                </section>
-                <section className="rounded-[8px] bg-emerald-600 p-4 text-white">
-                  <p className="text-base font-black uppercase">Completed</p>
-                  <p className="mt-2 text-5xl font-black leading-none">{completedRouteAJobs.length}</p>
-                </section>
-                <section className="rounded-[8px] bg-amber-400 p-4 text-slate-950">
-                  <p className="text-base font-black uppercase">Distance</p>
-                  <p className="mt-2 text-5xl font-black leading-none">{rideDistance}</p>
-                  <p className="text-xl font-black">mi</p>
-                </section>
-                <section className="rounded-[8px] bg-white p-4 text-slate-950 dark:bg-white dark:text-slate-950">
-                  <p className="text-base font-black uppercase">$/Hour</p>
-                  <p className="mt-2 text-5xl font-black leading-none">${rideEarningsPerHour}</p>
-                  <p className="text-xl font-black">{rideAverageSpeed} mph</p>
-                </section>
-
-                <section className="rounded-[8px] bg-slate-950 p-4 text-white">
-                  <p className="text-base font-black uppercase">Earned</p>
-                  <p className="mt-2 text-5xl font-black leading-none">${rideEarned.toFixed(0)}</p>
-                  <p className="text-xl font-black">{trackerJobsCompleted.length} stops</p>
-                </section>
-              </div>
-            </div>
+          {currentTab === 'dashboard' && tracker.rideModeActive && (
+            <RideModeSurface
+              onEndRideMode={handleEndRideMode}
+              nextRouteAJob={nextRouteAJob}
+              completingJobIds={completingJobIds}
+              nextStopNavLink={nextStopNavLink}
+              onToggleComplete={handleToggleComplete}
+              onMarkUnderReview={handleMarkUnderReview}
+              routeListStops={routeListStops}
+              getRouteBadgeClasses={getRouteBadgeClasses}
+              getRouteBadgeLabel={getRouteBadgeLabel}
+              getStreetName={getStreetName}
+              formatDuration={formatDuration}
+              trackerTotalDayTime={tracker.totalDayTime}
+              trackerRideTime={tracker.rideTime}
+              trackerStoreTime={tracker.storeTime}
+              rideBatteryUsed={rideBatteryUsed}
+              remainingRouteAJobs={remainingRouteAJobs}
+              completedRouteAJobs={completedRouteAJobs}
+              rideDistance={rideDistance}
+              rideEarningsPerHour={rideEarningsPerHour}
+              rideAverageSpeed={rideAverageSpeed}
+              rideEarned={rideEarned}
+              trackerJobsCompleted={tracker.jobsCompleted}
+            />
           )}
 
           {/* Tab 1: AIØ Today Screen */}
-          {currentTab === 'dashboard' && !rideModeActive && (
+          {currentTab === 'dashboard' && !tracker.rideModeActive && (
             <div className="animate-fade-in" id="tab-view-dashboard">
               <TodayScreen
                 theme={theme}
@@ -2586,11 +2450,11 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                   </div>
                   <div className="rounded-[8px] bg-white/70 p-4 dark:bg-black/20">
                     <p className="text-sm font-black uppercase opacity-70">Ride Time</p>
-                    <p className="text-3xl font-black">{formatDuration(trackerRideTime)}</p>
+                    <p className="text-3xl font-black">{formatDuration(tracker.rideTime)}</p>
                   </div>
                   <div className="rounded-[8px] bg-white/70 p-4 dark:bg-black/20">
                     <p className="text-sm font-black uppercase opacity-70">Store Time</p>
-                    <p className="text-3xl font-black">{formatDuration(trackerStoreTime)}</p>
+                    <p className="text-3xl font-black">{formatDuration(tracker.storeTime)}</p>
                   </div>
                   <div className="rounded-[8px] bg-white/70 p-4 dark:bg-black/20">
                     <p className="text-sm font-black uppercase opacity-70">Estimated Range</p>
@@ -3077,385 +2941,31 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
             </div>
           )}
           {currentTab === 'tracker' && showerGate.showerGateAccessReady && (
-            <div className="space-y-6 animate-fade-in" id="tab-view-tracker">
-              {trackerStatus === 'completed' ? (
-                <EndOfDaySummary
-                  completedJobs={jobs.filter(j => j.routeId === 'A' && isJobDone(j))}
-                  remainingJobs={jobs.filter(j => j.routeId === 'A' && !isJobDone(j))}
-                  totalMoneyEarned={jobs.filter(j => j.routeId === 'A' && isJobDone(j)).reduce((sum, j) => sum + j.pay, 0)}
-                  rideTime={trackerRideTime}
-                  storeTime={trackerStoreTime}
-                  batteryUsed={Math.max(0, trackerStartBattery - currentBattery)}
-                  distance={parseFloat(((trackerRideTime / 3600) * ebikeConfig.avgSpeedMph).toFixed(1))}
-                  ebikeConfig={ebikeConfig}
-                  jobsMovedToTomorrow={tomorrowJobs}
-                  onMoveUnfinishedToTomorrow={handleMoveUnfinishedToTomorrow}
-                  onResetTracker={handleResetActiveTracker}
-                />
-              ) : (
-                <>
-                  {/* Header and Telemetry */}
-              <div className="road-card p-6">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 rounded-xl bg-indigo-500/10 text-indigo-500">
-                      <Timer className={`w-6 h-6 ${trackerStatus === 'riding' ? 'animate-spin' : ''}`} />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">Active Ride Telemetry Tracker</h2>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">Differentiate active ride tracking from store visits to calibrate real-world range.</p>
-                    </div>
-                  </div>
-                  
-                  {/* Status Indicator */}
-                  <div className="flex items-center gap-3">
-                    {(() => {
-                      let bg = 'bg-slate-100 text-slate-700 dark:bg-white/5 dark:text-slate-300';
-                      let label = 'IDLE / READY';
-                      if (trackerStatus === 'riding') {
-                        bg = 'bg-blue-500/10 text-blue-500 border border-blue-500/20 ';
-                        label = 'TRACKING ACTIVE RIDE';
-                      } else if (trackerStatus === 'at_store') {
-                        bg = 'bg-amber-500/10 text-amber-500 border border-amber-500/20';
-                        label = 'BIKE OFF • PAUSED IN STORE';
-                      }
-                      return (
-                        <span className={`text-[10px] font-black px-3 py-1.5 rounded-full flex items-center gap-1.5 ${bg}`}>
-                          {trackerStatus === 'riding' && <span className="h-1.5 w-1.5 rounded-full bg-blue-500 " />}
-                          {label}
-                        </span>
-                      );
-                    })()}
-                  </div>
-                </div>
-              </div>
-
-              {/* Grid of Main Tracking Controls and Statistics */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* Left/Middle Column: Tracking Controls & Live Telemetry */}
-                <div className="lg:col-span-2 space-y-6">
-                  
-                  {/* MAIN CONTROLS CARD */}
-                  <div className="road-card p-6 space-y-6">
-                    <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest">Tracking Commands</h3>
-                    
-                    {/* BUTTON MATRIX */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {/* Button 1: Start Ride */}
-                      <button
-                        onClick={() => {
-                          setTrackerStatus('riding');
-                          setTrackerStartBattery(currentBattery);
-                          setTrackerRideTime(0);
-                          setTrackerStoreTime(0);
-                          setTrackerTotalDayTime(0);
-                          setTrackerJobsCompleted([]);
-                          safeStorage.removeItem('jobs_moved_to_tomorrow');
-                        }}
-                        disabled={trackerStatus === 'riding'}
-                        className={`road-action-lg ${
-                          trackerStatus === 'riding'
-                            ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20 cursor-not-allowed opacity-50'
-                            : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/15'
-                        }`}
-                      >
-                        <Play size={18} className="fill-white" />
-                        <span>Start Ride</span>
-                      </button>
-
-                      {/* Button 2: Arrived at Store */}
-                      <button
-                        onClick={() => setTrackerStatus('at_store')}
-                        disabled={trackerStatus !== 'riding'}
-                        className={`road-action-lg ${
-                          trackerStatus !== 'riding'
-                            ? 'bg-slate-100 text-slate-400 dark:bg-white/5 dark:text-slate-600 cursor-not-allowed'
-                            : 'bg-amber-500 hover:bg-amber-400 text-white shadow-lg shadow-amber-500/15'
-                        }`}
-                      >
-                        <Pause size={18} className="fill-white" />
-                        <span>Arrived at Store</span>
-                      </button>
-
-                      {/* Button 3: Resume Ride */}
-                      <button
-                        onClick={() => setTrackerStatus('riding')}
-                        disabled={trackerStatus !== 'at_store'}
-                        className={`road-action-lg ${
-                          trackerStatus !== 'at_store'
-                            ? 'bg-slate-100 text-slate-400 dark:bg-white/5 dark:text-slate-600 cursor-not-allowed'
-                            : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/15'
-                        }`}
-                      >
-                        <Play size={18} className="fill-white" />
-                        <span>Resume Ride</span>
-                      </button>
-
-                      {/* Button 4: End Day */}
-                      <button
-                        onClick={() => {
-                          if (trackerStatus === 'idle') return;
-                          
-                          const endBattery = currentBattery;
-                          const batteryUsed = Math.max(0, trackerStartBattery - endBattery);
-                          const distance = parseFloat(((trackerRideTime / 3600) * ebikeConfig.avgSpeedMph).toFixed(1));
-                          const estimatedFullRange = batteryUsed > 0 ? parseFloat(((distance / batteryUsed) * 100).toFixed(1)) : null;
-
-                          const newSession = {
-                            id: `session-${Date.now()}`,
-                            date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-                            startedAt: rideStartedAt,
-                            endedAt: new Date().toISOString(),
-                            rideTime: trackerRideTime,
-                            storeTime: trackerStoreTime,
-                            totalDayTime: trackerTotalDayTime,
-                            startBattery: trackerStartBattery,
-                            endBattery: endBattery,
-                            batteryUsed: batteryUsed,
-                            jobsCompletedCount: trackerJobsCompleted.length,
-                            completedJobNames: routeAJobs
-                              .filter(job => trackerJobsCompleted.includes(job.id) || isJobDone(job))
-                              .map(job => job.storeName),
-                            distance: distance,
-                            estimatedEarnings: completedRouteAJobs.reduce((sum, job) => sum + job.pay, 0),
-                            earningsPerHour: trackerTotalDayTime > 0
-                              ? parseFloat((completedRouteAJobs.reduce((sum, job) => sum + job.pay, 0) / (trackerTotalDayTime / 3600)).toFixed(2))
-                              : 0,
-                            avgRideSpeed: trackerRideTime > 0 ? parseFloat((distance / (trackerRideTime / 3600)).toFixed(1)) : 0,
-                            learnedRange: estimatedFullRange
-                          };
-
-                          const updatedSessions = [newSession, ...trackerSessions];
-                          setTrackerSessions(updatedSessions);
-                          safeStorage.setItem('ride_tracker_sessions', JSON.stringify(updatedSessions));
-                          setTrackerStatus('completed');
-                        }}
-                        disabled={trackerStatus === 'idle'}
-                        className={`road-action-lg ${
-                          trackerStatus === 'idle'
-                            ? 'bg-slate-100 text-slate-400 dark:bg-white/5 dark:text-slate-600 cursor-not-allowed'
-                            : 'bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/15'
-                        }`}
-                      >
-                        <Square size={18} className="fill-white" />
-                        <span>End Day</span>
-                      </button>
-                    </div>
-
-                    {/* Reset button if completed or active */}
-                    {trackerStatus !== 'idle' && (
-                      <div className="flex justify-end pt-2">
-                        <button
-                          onClick={() => {
-                            if (window.confirm('Are you sure you want to reset the current active tracking session? This will not clear saved history.')) {
-                              handleResetActiveTracker();
-                            }
-                          }}
-                          className="text-[10px] font-black uppercase text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all flex items-center gap-1"
-                        >
-                          <RotateCcw size={12} />
-                          <span>Reset Current Tracker Session</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* TELEMETRY READOUT METRICS */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    
-                    {/* STAT 1: RIDE TIME */}
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5  flex flex-col justify-between">
-                      <div className="flex items-center justify-between text-slate-400">
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Ride Time</span>
-                        <Play size={12} className="text-emerald-500" />
-                      </div>
-                      <div className="mt-4">
-                        <span className="block text-xl font-black text-slate-900 dark:text-white font-mono">
-                          {(() => {
-                            const h = Math.floor(trackerRideTime / 3600);
-                            const m = Math.floor((trackerRideTime % 3600) / 60);
-                            const s = trackerRideTime % 60;
-                            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-                          })()}
-                        </span>
-                        <span className="block text-[9px] text-slate-400 mt-0.5 uppercase tracking-wider">Bike on & Moving</span>
-                      </div>
-                    </div>
-
-                    {/* STAT 2: STORE TIME */}
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5  flex flex-col justify-between">
-                      <div className="flex items-center justify-between text-slate-400">
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Store Time</span>
-                        <Pause size={12} className="text-amber-500" />
-                      </div>
-                      <div className="mt-4">
-                        <span className="block text-xl font-black text-slate-900 dark:text-white font-mono">
-                          {(() => {
-                            const h = Math.floor(trackerStoreTime / 3600);
-                            const m = Math.floor((trackerStoreTime % 3600) / 60);
-                            const s = trackerStoreTime % 60;
-                            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-                          })()}
-                        </span>
-                        <span className="block text-[9px] text-slate-400 mt-0.5 uppercase tracking-wider">Bike off & Paused</span>
-                      </div>
-                    </div>
-
-                    {/* STAT 3: TOTAL DAY TIME */}
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5  flex flex-col justify-between">
-                      <div className="flex items-center justify-between text-slate-400">
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Total Session</span>
-                        <Clock size={12} className="text-indigo-500" />
-                      </div>
-                      <div className="mt-4">
-                        <span className="block text-xl font-black text-slate-900 dark:text-white font-mono">
-                          {(() => {
-                            const h = Math.floor(trackerTotalDayTime / 3600);
-                            const m = Math.floor((trackerTotalDayTime % 3600) / 60);
-                            const s = trackerTotalDayTime % 60;
-                            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-                          })()}
-                        </span>
-                        <span className="block text-[9px] text-slate-400 mt-0.5 uppercase tracking-wider">Total elapsed time</span>
-                      </div>
-                    </div>
-
-                    {/* STAT 4: ESTIMATED DISTANCE */}
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5  flex flex-col justify-between">
-                      <div className="flex items-center justify-between text-slate-400">
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Est. Distance</span>
-                        <MapPin size={12} className="text-blue-500" />
-                      </div>
-                      <div className="mt-4">
-                        <span className="block text-xl font-black text-slate-900 dark:text-white font-mono">
-                          {((trackerRideTime / 3600) * ebikeConfig.avgSpeedMph).toFixed(2)} mi
-                        </span>
-                        <span className="block text-[9px] text-slate-400 mt-0.5 uppercase tracking-wider">At {ebikeConfig.avgSpeedMph} MPH avg speed</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ACTIVE JOBS CHECKLIST SECTION */}
-                  {trackerStatus !== 'idle' && (
-                    <div className="rounded-2xl border border-slate-200 bg-white p-6  space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest">Route A Stops & Tasks</h3>
-                          <p className="text-[10px] text-slate-400">Check off stops as you complete them to record data for this session.</p>
-                        </div>
-                        <span className="text-[10px] font-bold px-2 py-1 rounded bg-blue-500/10 text-blue-500 font-mono">
-                          {trackerJobsCompleted.length} Completed
-                        </span>
-                      </div>
-
-                      {routeAJobs.length > 0 ? (
-                        <div className="space-y-2.5">
-                          {routeAJobs.map((job) => {
-                            const isDone = isJobDone(job);
-                            return (
-                              <div
-                                key={job.id}
-                                className={`flex items-center justify-between p-3.5 rounded-xl border transition-all ${
-                                  isDone
-                                    ? 'bg-blue-500/[0.02] border-blue-500/20 text-slate-400 line-through dark:text-slate-500'
-                                    : 'bg-slate-50/50 border-slate-200 dark:bg-white/[0.02] dark:border-white/5'
-                                }`}
-                              >
-                                <div className="flex items-center gap-3">
-                                  <button
-                                    onClick={() => {
-                                      // Toggle globally
-                                      handleToggleComplete(job.id);
-                                      // Track locally inside this session
-                                      if (trackerJobsCompleted.includes(job.id)) {
-                                        setTrackerJobsCompleted(prev => prev.filter(id => id !== job.id));
-                                      } else {
-                                        setTrackerJobsCompleted(prev => [...prev, job.id]);
-                                      }
-                                    }}
-                                    className={`p-1.5 rounded-lg border transition-all ${
-                                      isDone
-                                        ? 'bg-blue-600 text-white border-blue-600'
-                                        : 'bg-white border-slate-300 hover:border-slate-400 dark:bg-neutral-950 dark:border-neutral-800'
-                                    }`}
-                                  >
-                                    <CheckSquare size={16} className={isDone ? 'opacity-100' : 'opacity-0'} />
-                                  </button>
-                                  <div className="flex-1 min-w-0 pr-4">
-                                    <span className="block text-xs font-black truncate">{job.storeName}</span>
-                                    <span className="block text-[10px] opacity-75 font-mono truncate">{job.address}</span>
-                                  </div>
-                                </div>
-                                <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${
-                                  isDone ? 'bg-blue-500/10 text-blue-500' : 'bg-slate-100 text-slate-500 dark:bg-white/5'
-                                }`}>
-                                  ${job.pay.toFixed(2)}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-slate-400 text-center py-4">No stops assigned to Route A yet. Go to the Jobs tab to assign stops.</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Right Column: Ride History */}
-                <div className="space-y-6">
-                  {/* HISTORY LOG OF SAVED DAYS */}
-                  <div className="rounded-2xl border border-slate-200 bg-white p-6  space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest flex items-center gap-1.5">
-                        <TrendingUp size={14} className="text-slate-500" />
-                        <span>Tracked History</span>
-                      </h3>
-                      {trackerSessions.length > 0 && (
-                        <button
-                          onClick={() => {
-                            if (window.confirm('Delete all tracked ride history?')) {
-                              setTrackerSessions([]);
-                              safeStorage.removeItem('ride_tracker_sessions');
-                            }
-                          }}
-                          className="text-[9px] font-bold text-red-500 hover:underline uppercase"
-                        >
-                          Clear
-                        </button>
-                      )}
-                    </div>
-
-                    {trackerSessions.length > 0 ? (
-                      <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-                        {trackerSessions.map((s) => (
-                          <div key={s.id} className="p-3 bg-slate-50 dark:bg-white/[0.01] border border-slate-200/50 dark:border-white/5 rounded-xl space-y-2 text-[11px]">
-                            <div className="flex items-center justify-between">
-                              <span className="font-extrabold text-slate-800 dark:text-slate-200">{s.date}</span>
-                              <span className="text-slate-400 font-black">Saved</span>
-                            </div>
-                            <div className="grid grid-cols-2 gap-x-2 gap-y-1 font-mono text-slate-400 text-[10px]">
-                              <div>Ride: {Math.floor(s.rideTime / 60)} min</div>
-                              <div>Store: {Math.floor(s.storeTime / 60)} min</div>
-                              <div>Dist: {s.distance} mi</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-6 text-slate-400 border border-dashed border-slate-200/60 dark:border-white/5 rounded-xl">
-                        <span className="block text-xs font-bold">No ride logs saved yet</span>
-                        <span className="block text-[10px] text-slate-400 mt-1">Complete a route and click "End Day" to log statistics.</span>
-                      </div>
-                    )}
-                  </div>
-
-                </div>
-              </div>
-                </>
-              )}
-            </div>
+            <RideTrackerTab
+              trackerStatus={tracker.status}
+              trackerRideTime={tracker.rideTime}
+              trackerStoreTime={tracker.storeTime}
+              trackerTotalDayTime={tracker.totalDayTime}
+              trackerStartBattery={tracker.startBattery}
+              currentBattery={currentBattery}
+              trackerJobsCompleted={tracker.jobsCompleted}
+              trackerSessions={tracker.sessions}
+              rideStartedAt={tracker.rideStartedAt}
+              ebikeConfig={ebikeConfig}
+              jobs={jobs}
+              routeAJobs={routeAJobs}
+              completedRouteAJobs={completedRouteAJobs}
+              isJobDone={isJobDone}
+              tomorrowJobs={tomorrowJobs}
+              onStartRide={handleStartTrackerRide}
+              onArrivedAtStore={handleTrackerArrivedAtStore}
+              onResumeRide={handleTrackerResumeRide}
+              onEndDay={handleTrackerEndDay}
+              onResetCurrentSession={handleResetCurrentTrackerSession}
+              onToggleJobComplete={handleTrackerToggleJobComplete}
+              onClearHistory={handleClearTrackerHistory}
+              onMoveUnfinishedToTomorrow={handleMoveUnfinishedToTomorrow}
+            />
           )}
 
           {currentTab === 'habits' && (
@@ -3797,7 +3307,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
         </main>
 
         {/* AIØ Bottom Navigation (Today / Jobs / More) */}
-        {!rideModeActive && (
+        {!tracker.rideModeActive && (
           <BottomTabBar
             current={currentTab === 'dashboard' ? 'today' : currentTab === 'jobs' ? 'jobs' : 'more'}
             onChange={(tab) => handleTabChange(tab === 'today' ? 'dashboard' : tab === 'jobs' ? 'jobs' : 'more')}
