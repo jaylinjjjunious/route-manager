@@ -11,7 +11,7 @@ vi.mock('../src/lib/supabase', () => ({
   supabase: supabaseMock,
 }));
 
-import { uploadShowerProof } from '../src/services/showerProofApi';
+import { uploadShowerProof } from '../src/features/showerGate/showerProofApi';
 
 const NOW = Math.floor(Date.now() / 1000);
 

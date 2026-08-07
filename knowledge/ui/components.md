@@ -191,7 +191,7 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 
 | Field | Value |
 |-------|-------|
-| **File** | `src/components/ShowerGatePanel.tsx` |
+| **File** | `src/features/showerGate/ShowerGatePanel.tsx` |
 | **Props** | `cycleId: string`, `cycleLabel: string`, `completedProof: ShowerProofRecord \| null`, `onVerifiedProof: (proof: ShowerProofRecord) => void` |
 | **Responsibility** | Camera capture, barcode scanning, proof upload, proof history display. Acts as the primary gate — users must verify a shower proof before accessing protected tabs. |
 

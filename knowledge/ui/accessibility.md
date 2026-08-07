@@ -1,7 +1,7 @@
 # Accessibility
 
 **Last Updated:** 2026-07-20 (c12bd44)
-**Related Source Files:** `src/components/ShowerGatePanel.tsx`, `src/components/BottomNav.tsx`, `src/components/*.tsx`
+**Related Source Files:** `src/features/showerGate/ShowerGatePanel.tsx`, `src/components/BottomNav.tsx`, `src/components/*.tsx`
 
 ---
 

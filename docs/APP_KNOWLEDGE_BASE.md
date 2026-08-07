@@ -54,11 +54,11 @@ Current development stage: active prototype / personal daily-use app. Many workf
 - `src/utils/routeUtils.ts`: Bakersfield coordinates, haversine distance, mock routing, route metrics, outlier detection, route scoring, smart revision merge, and routing provider interface.
 - `src/utils/jobState.ts`: canonical job-state normalization helpers.
 - `src/utils/showerCycle.ts`: 6:00 AM cycle helpers and exact required shower barcode constant.
-- `src/services/showerProofApi.ts`: frontend service wrapper for Mission Control shower proof upload/history/current-record APIs.
+- `src/features/showerGate/showerProofApi.ts`: frontend service wrapper for Mission Control shower proof upload/history/current-record APIs.
 - `src/utils/voiceProviders.ts`: browser voice provider and premium TTS wrapper providers.
 - `src/hooks/useTextToSpeech.ts`: text-to-speech React hook.
 - `src/components/AIDispatcher.tsx`: deterministic dispatcher UI, commands, safety news panel, and operation log.
-- `src/components/ShowerGatePanel.tsx`: self-contained Mission Control shower barcode scanner, auto-capture proof upload, today proof, and proof history panel.
+- `src/features/showerGate/ShowerGatePanel.tsx`: self-contained Mission Control shower barcode scanner, auto-capture proof upload, today proof, and proof history panel.
 - `src/components/BakersfieldMapPreview.tsx`: Google Map or SVG route map preview.
 - `src/components/JobCard.tsx`: reusable job cards and quick actions.
 - `src/components/JobModal.tsx`: add/edit job modal, including process-server fields.
@@ -293,7 +293,7 @@ Limitations:
 
 ## 14. Daily Shower Gate
 
-Implemented in `src/components/ShowerGatePanel.tsx`, `src/services/showerProofApi.ts`, `src/utils/showerCycle.ts`, `src/App.tsx`, `/api/shower-proofs`, and legacy `/api/shower-proof`.
+Implemented in `src/features/showerGate/ShowerGatePanel.tsx`, `src/features/showerGate/showerProofApi.ts`, `src/utils/showerCycle.ts`, `src/App.tsx`, `/api/shower-proofs`, and legacy `/api/shower-proof`.
 
 Workflow:
 
@@ -600,7 +600,7 @@ Rollback:
 | P001 | Hosted APIs | `/api/import/ocr` is referenced by the UI but not implemented in the deployed Worker. | Screenshot OCR import can fail on the live Sites app. | High | Open Jobs > Import > OCR, upload image, run OCR on deployed site. | OCR route exists in standalone `server.ts`, not `worker/index.ts`. | `src/components/JobImportSystem.tsx`, `server.ts`, `worker/index.ts` | Use mock templates or manual paste parser. | Port OCR route to Worker or clearly disable live OCR until provider is wired. | 2026-07-18 | 2026-07-18 |
 | P002 | Hosted APIs / Voice | Premium TTS providers call `/api/dispatcher/tts`, but deployed Worker does not expose this route. | Realistic voice engines fail and fall back to browser speech. | Medium | Select premium voice provider and use read-aloud on deployed site. | TTS route exists in standalone `server.ts`, not Worker. | `src/utils/voiceProviders.ts`, `server.ts`, `worker/index.ts` | Use browser voice provider. | Port TTS route to Worker or hide premium providers when endpoint is unavailable. | 2026-07-18 | 2026-07-18 |
 | P003 | Persistence | Jobs, proof vault records, ride sessions, and battery settings are still browser-local. | Data may not sync to phone/other devices and can be lost if browser storage clears. | High | Add jobs/proof on one browser, open app on another device. | No D1 schema/API for job/proof vault/ride state. | `src/App.tsx`, `src/types.ts`, `worker/index.ts` | Use same browser and avoid clearing site data. | Design D1/R2 persistence with export/backup before relying on proof records. | 2026-07-18 | 2026-07-18 |
-| P004 | Proof storage/privacy | Worker Mission Control shower proof images are still stored as D1 data URLs behind an image endpoint, not secure object storage. | Large/private proof images can bloat DB and create privacy risk. | High | Complete Mission Control Shower Gate proof; inspect `shower_proof_records` storage path. | No R2 binding; Worker stores `image_data_url` directly while Express fallback uses ignored local files. | `worker/index.ts`, `src/components/ShowerGatePanel.tsx`, `src/services/showerProofApi.ts` | Use only required proof images; avoid unnecessary private images. | Add R2 or secure file storage; store only metadata/path in D1. | 2026-07-18 | 2026-07-18 |
+| P004 | Proof storage/privacy | Worker Mission Control shower proof images are still stored as D1 data URLs behind an image endpoint, not secure object storage. | Large/private proof images can bloat DB and create privacy risk. | High | Complete Mission Control Shower Gate proof; inspect `shower_proof_records` storage path. | No R2 binding; Worker stores `image_data_url` directly while Express fallback uses ignored local files. | `worker/index.ts`, `src/features/showerGate/ShowerGatePanel.tsx`, `src/features/showerGate/showerProofApi.ts` | Use only required proof images; avoid unnecessary private images. | Add R2 or secure file storage; store only metadata/path in D1. | 2026-07-18 | 2026-07-18 |
 | P005 | Maps/provider config | Google Maps live mode may not work unless the key is exposed in a client-readable way. | User may see setup screen or fallback SVG instead of real map routing. | Medium | Open Route map with only `GOOGLE_MAPS_PLATFORM_KEY` configured server-side. | Vite client usually exposes `VITE_*`; component checks multiple sources but `.env.example` emphasizes non-VITE key. | `src/components/BakersfieldMapPreview.tsx`, `.env.example` | Use SVG/GIS preview. | Clarify/env-wire `VITE_GOOGLE_MAPS_PLATFORM_KEY` or runtime injection. | 2026-07-18 | 2026-07-18 |
 | P006 | Scheduling | Lunch, breaks, fixed appointments, charging stops, and calendar-fit scheduling are not implemented as a formal system. | App can estimate route time but cannot truly plan a whole day schedule. | Medium | Try to set lunch/charging/fixed appointment constraints. | No schedule data model or scheduler. | `src/App.tsx`, `src/utils/routeUtils.ts` | Use due times and manual route adjustments. | Add schedule model after core persistence stabilizes. | 2026-07-18 | 2026-07-18 |
 
@@ -612,7 +612,7 @@ Rollback:
 | R002 | Buttons appeared visible but did nothing on phone. | Mobile browser/webview tap behavior needed touch/pointer handling after click-only nav change. | Added `activateTabFromTap` with `click`, `pointerup`, `touchend`, and duplicate protection; deployed Sites version 30. | `src/App.tsx` | Type check, build, local mobile Playwright tap test, live click test. | 2026-07-18 | Real phone should still be checked after opening fresh URL. |
 | R003 | Daily Shower Gate flow was too large and not aligned with Habits. | Camera preview lived in top gate panel while the full workflow belonged in Habits. | Made top gate compact, moved scanner preview/flash into Habits card, exposed Battery tab, cleaned nav flow; deployed Sites version 28. | `src/App.tsx` | Type check, build, mobile locked-flow Playwright test, live browser check. | 2026-07-18 | Real camera behavior depends on phone permissions and browser support. |
 | R004 | Daily Shower Gate could unlock too loosely. | Proof attachment, barcode verification, and confirmation were not fully separated. | Enforced exact barcode/proof/confirm workflow and backend validation for `proof_confirmed`; deployed earlier commit `57473ab`. | `src/App.tsx`, `worker/index.ts` | Type check, build, intercepted workflow tests. | 2026-07-18 | Proof storage still needs R2/privacy hardening. |
-| R005 | Mission Control Shower Gate lacked the requested contained scan/upload/history flow. | The dashboard gate was only a reminder that opened Habits, and proof attachment was manual. | Added self-contained Mission Control `ShowerGatePanel`, automatic capture after exact barcode match, `/api/shower-proofs` backend record contract, in-panel Today/History views, and Dashboard lock routing. | `src/components/ShowerGatePanel.tsx`, `src/services/showerProofApi.ts`, `src/utils/showerCycle.ts`, `src/App.tsx`, `worker/index.ts`, `server.ts`, `.gitignore` | `npm run lint`, `npm run build`, mobile Playwright UI flow, direct API exact/wrong barcode check. | 2026-07-18 | Real phone barcode/camera success still needs physical Safari/Chrome verification; Worker storage still needs R2. |
+| R005 | Mission Control Shower Gate lacked the requested contained scan/upload/history flow. | The dashboard gate was only a reminder that opened Habits, and proof attachment was manual. | Added self-contained Mission Control `ShowerGatePanel`, automatic capture after exact barcode match, `/api/shower-proofs` backend record contract, in-panel Today/History views, and Dashboard lock routing. | `src/features/showerGate/ShowerGatePanel.tsx`, `src/features/showerGate/showerProofApi.ts`, `src/utils/showerCycle.ts`, `src/App.tsx`, `worker/index.ts`, `server.ts`, `.gitignore` | `npm run lint`, `npm run build`, mobile Playwright UI flow, direct API exact/wrong barcode check. | 2026-07-18 | Real phone barcode/camera success still needs physical Safari/Chrome verification; Worker storage still needs R2. |
 
 ## 27. Known Limitations
 
@@ -871,7 +871,7 @@ Shower proof images are stored on the container filesystem (`/.local-shower-proo
 | `vite.config.standalone.ts` | New file — standalone Vite config without Cloudflare/vinext plugins |
 | `src/main.tsx` | Updated — wraps app with AuthProvider > ProtectedApp |
 | `src/App.tsx` | Updated — Sign Out button in Settings tab |
-| `src/services/showerProofApi.ts` | Updated — uses authFetch/authFetchJson |
+| `src/features/showerGate/showerProofApi.ts` | Updated — uses authFetch/authFetchJson |
 | `server.ts` | Updated — requireAuth middleware, owner ID on proof records |
 | `.env.example` | Updated — Supabase variable names |
 | `docs/APP_KNOWLEDGE_BASE.md` | Updated with auth architecture and variable list |

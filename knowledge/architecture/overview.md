@@ -36,7 +36,7 @@ route-optimizer-app/
       AuthProvider.tsx   — Supabase auth context
       ProtectedApp.tsx   — Auth guard, login routing
     components/
-      ShowerGatePanel.tsx — Daily barcode verification
+      ShowerGatePanel.tsx — Daily barcode verification (in features/showerGate/)
       Header.tsx         — App header
       OutlierDetector.tsx
       BakersfieldMapPreview.tsx
@@ -48,9 +48,10 @@ route-optimizer-app/
     hooks/
       useTextToSpeech.ts
     services/
-      showerProofApi.ts  — Proof upload/fetch API
       apiClient.ts       — Auth-fetch wrapper
     features/
+      showerGate/
+        showerProofApi.ts  — Proof upload/fetch API
       habits/HabitsTab.tsx — Presentational Habits tab UI (state lives in App.tsx)
     utils/
       showerCycle.ts     — Reset time, cycle ID, labels
