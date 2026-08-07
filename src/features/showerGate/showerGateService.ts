@@ -5,11 +5,11 @@
 
 import type { ShowerProof } from './types';
 import { authFetch } from '../../services/apiClient';
+import { REQUIRED_SHOWER_BARCODE } from '../../utils/showerCycle';
 
 const MAX_SHOWER_PROOF_SIDE = 720;
 const SHOWER_PROOF_JPEG_QUALITY = 0.58;
 const SHOWER_BACKEND_TIMEOUT_MS = 15000;
-export const REQUIRED_SHOWER_BARCODE = '075371003233';
 
 /**
  * Resize an image file to a max side of 720px and return as a JPEG data URL.

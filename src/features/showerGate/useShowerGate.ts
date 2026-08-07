@@ -7,13 +7,12 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { ShowerProof, BarcodePermissionStatus, ShowerProofSyncStatus } from './types';
 import type { ShowerProofRecord } from './showerProofApi';
 import {
-  REQUIRED_SHOWER_BARCODE,
   resizeProofImage,
   loadShowerProofForCycle,
   saveShowerProofEvent,
   normalizeShowerProofRecord,
 } from './showerGateService';
-import { getCurrentCycleId, getCycleLabel } from '../../utils/showerCycle';
+import { REQUIRED_SHOWER_BARCODE, getCurrentCycleId, getCycleLabel } from '../../utils/showerCycle';
 import safeStorage from '../../utils/safeStorage';
 
 const SHOWER_GATE_STORAGE_KEY = 'daily_shower_gate_proofs';
