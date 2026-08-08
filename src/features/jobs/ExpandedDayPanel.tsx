@@ -21,11 +21,11 @@ import {
   Wallet,
   X,
 } from 'lucide-react';
-import type { Job } from '../types';
-import type { ScheduledDaySummary } from '../utils/jobSchedule';
-import { formatScheduledDate, planningIssues } from '../utils/jobSchedule';
-import { getDistanceInMiles } from '../utils/routeUtils';
-import type { Coordinates } from '../types';
+import type { Job } from '../../types';
+import type { ScheduledDaySummary } from './jobSchedule';
+import { formatScheduledDate, planningIssues } from './jobSchedule';
+import { getDistanceInMiles } from '../../utils/routeUtils';
+import type { Coordinates } from '../../types';
 
 interface ExpandedDayPanelProps {
   day: ScheduledDaySummary;

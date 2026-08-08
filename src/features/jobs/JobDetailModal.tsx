@@ -13,14 +13,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Navigation, Clock, MapPin, CheckSquare, Edit2, Trash2, Copy, ArrowRightLeft, ShieldAlert, Calendar, AlertCircle, Sparkles, Hourglass, RefreshCw, CheckCircle2, RotateCcw, Camera, BookOpen } from 'lucide-react';
-import type { Job, JobType } from '../types';
-import { isJobCompleted, isRevisionJob } from '../utils/jobState';
-import { formatScheduledDate, isValidScheduledDate } from '../utils/jobSchedule';
-import InventoryCustodyPanel from './InventoryCustodyPanel';
-import { JobTransitSection } from './transit/JobTransitSection';
-import { isTransitApiEnabled } from '../services/transit';
-import { resolveStoreLogo } from '../services/storeLogos';
-import PreviewGuideModal from '../features/previewGuide/PreviewGuideModal';
+import type { Job, JobType } from '../../types';
+import { isJobCompleted, isRevisionJob } from './jobState';
+import { formatScheduledDate, isValidScheduledDate } from './jobSchedule';
+import InventoryCustodyPanel from '../../components/InventoryCustodyPanel';
+import { JobTransitSection } from '../../components/transit/JobTransitSection';
+import { isTransitApiEnabled } from '../../services/transit';
+import { resolveStoreLogo } from '../../services/storeLogos';
+import PreviewGuideModal from '../../features/previewGuide/PreviewGuideModal';
 
 const SCAN_COMPATIBLE_TYPES: JobType[] = ['retail_audit', 'mystery_shop', 'merchandising'];
 

@@ -4,7 +4,7 @@
  */
 
 import { Job, Coordinates, RouteMetrics, OutlierReport, RouteScoreReport, EbikeConfig, OutlierStatus } from '../types';
-import { isJobCompleted, isRevisionJob } from './jobState';
+import { isJobCompleted, isRevisionJob } from '../features/jobs/jobState';
 
 // Real latitude & longitude mapping for Bakersfield landmarks to provide accurate distance calculations
 export const BAKERSFIELD_COORDINATES: Record<string, Coordinates> = {

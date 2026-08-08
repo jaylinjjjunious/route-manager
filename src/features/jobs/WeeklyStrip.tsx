@@ -13,7 +13,7 @@
 
 import React, { useMemo } from 'react';
 import { AlertTriangle, CalendarClock, ChevronRight } from 'lucide-react';
-import type { ScheduledDaySummary } from '../utils/jobSchedule';
+import type { ScheduledDaySummary } from './jobSchedule';
 
 interface WeeklyStripProps {
   days: ScheduledDaySummary[];

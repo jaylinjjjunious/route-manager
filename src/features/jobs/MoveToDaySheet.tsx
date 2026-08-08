@@ -13,8 +13,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CalendarX2, Check, X } from 'lucide-react';
-import type { Job } from '../types';
-import { addDays, formatScheduledDate, isValidScheduledDate, SCHEDULE_MAX_DAYS_AHEAD } from '../utils/jobSchedule';
+import type { Job } from '../../types';
+import { addDays, formatScheduledDate, isValidScheduledDate, SCHEDULE_MAX_DAYS_AHEAD } from './jobSchedule';
 
 interface MoveToDaySheetProps {
   job: Job | null;

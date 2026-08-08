@@ -11,7 +11,7 @@
  * produces the local day string.
  */
 
-import { Job } from '../types';
+import { Job } from '../../types';
 
 export const PLANNING_TIMEZONE = 'America/Los_Angeles';
 export const SCHEDULE_MAX_DAYS_AHEAD = 365;

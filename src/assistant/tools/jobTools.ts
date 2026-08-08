@@ -1,6 +1,6 @@
 import type { AssistantTool } from '../assistantTypes';
 import type { Job } from '../../types';
-import { isJobCompleted } from '../../utils/jobState';
+import { isJobCompleted } from '../../features/jobs/jobState';
 
 export function createJobTools(
   getJobs: () => Job[],

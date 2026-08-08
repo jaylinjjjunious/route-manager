@@ -78,7 +78,7 @@ Missing/unsupported/oversized/unreadable video, excessive duration, storage pres
 ## Related source
 
 - `src/features/previewGuide/` — types, state/media storage, local extraction, summary client, UI
-- `src/components/JobDetailModal.tsx` — job-scoped entry point
+- `src/features/jobs/JobDetailModal.tsx` — job-scoped entry point
 - `server.ts` — authenticated selected-page summary endpoint
 - `tests/previewGuide.test.ts`, `tests/previewSummary.test.ts`
 

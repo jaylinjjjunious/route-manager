@@ -43,11 +43,11 @@ Add `Job.scheduledDate?: string` — the local workday `YYYY-MM-DD` in `America/
 
 ## Related Files
 
-- `src/utils/jobSchedule.ts` — scheduling/migration/grouping helpers
-- `src/utils/jobState.ts` — schema v4 + `migrateJobSchedules`
+- `src/features/jobs/jobSchedule.ts` — scheduling/migration/grouping helpers
+- `src/features/jobs/jobState.ts` — schema v4 + `migrateJobSchedules`
 - `src/types.ts` — `Job.scheduledDate`, `Job.calendar`, `CalendarSourceMeta`
 - `src/App.tsx` — today's pool, rollover effect, `handleMoveJobToDate`
-- `src/components/WeeklyStrip.tsx`, `ExpandedDayPanel.tsx`, `MoveToDaySheet.tsx`
+- `src/features/jobs/WeeklyStrip.tsx`, `ExpandedDayPanel.tsx`, `MoveToDaySheet.tsx`
 - `knowledge/features/job-system.md`, `knowledge/features/route-system.md`
 
 ## Date
@@ -56,4 +56,4 @@ Add `Job.scheduledDate?: string` — the local workday `YYYY-MM-DD` in `America/
 
 ---
 
-**Last Updated:** 2026-07-30 (phase-1-scheduling)
+**Last Updated:** 2026-08-08 (phase-2-extraction: moved into src/features/jobs/)

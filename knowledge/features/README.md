@@ -37,7 +37,7 @@ Index of feature documentation for the All in One 667 application.
 | `src/App.tsx` | Main app, state management, tab routing |
 | `src/types.ts` | TypeScript type definitions |
 | `src/utils/routeUtils.ts` | Route optimization algorithms |
-| `src/utils/jobState.ts` | Job state normalization |
+| `src/features/jobs/jobState.ts` | Job state normalization |
 | `src/utils/showerCycle.ts` | Shower cycle timing logic |
 | `src/components/` | UI components |
 | `server.ts` | Express backend |

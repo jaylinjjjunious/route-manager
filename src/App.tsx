@@ -26,7 +26,7 @@ import {
   normalizeJobsForStorage,
   recordStatusTransition,
   migrateJobSchedules
-} from './utils/jobState';
+} from './features/jobs/jobState';
 import {
   addDays,
   effectiveDay,
@@ -37,14 +37,14 @@ import {
   groupJobsByDay,
   isOverdue,
   SCHEDULE_MAX_DAYS_AHEAD
-} from './utils/jobSchedule';
+} from './features/jobs/jobSchedule';
 import Header from './components/Header';
-import JobCard from './components/JobCard';
-import JobModal from './components/JobModal';
+import JobCard from './features/jobs/JobCard';
+import JobModal from './features/jobs/JobModal';
 import AssistantProvider from './assistant/AssistantProvider';
 import AssistantBubble from './assistant/AssistantBubble';
 import AmbientLiquidBackground from './components/backgrounds/AmbientLiquidBackground';
-import JobDetailModal from './components/JobDetailModal';
+import JobDetailModal from './features/jobs/JobDetailModal';
 import ShowerGatePanel from './features/showerGate/ShowerGatePanel';
 import RideModeSurface from './features/rideTracker/RideModeSurface';
 import RideTrackerTab from './features/rideTracker/RideTrackerTab';
@@ -54,16 +54,16 @@ import SmartAisleScan from './components/SmartAisleScan';
 import InventoryCustodyPanel from './components/InventoryCustodyPanel';
 import { getInventoryDomain, inventoryDomainLabel } from './services/inventory/domain';
 import SmartAisleScanTestLab from './components/SmartAisleScanTestLab';
-import { RouteFilter, filterJobsByType } from './components/RouteFilter';
-import type { RouteFilterType } from './components/RouteFilter';
+import { RouteFilter, filterJobsByType } from './features/jobs/RouteFilter';
+import type { RouteFilterType } from './features/jobs/RouteFilter';
 import { BusModeToggle } from './components/BusModeToggle';
 import { TransitTripCard } from './components/TransitTripCard';
 import { useTransitTrip } from './hooks/useTransitTrip';
 import { TransitDashboardCard } from './components/transit/TransitDashboardCard';
-import { MoveToDaySheet } from './components/MoveToDaySheet';
+import { MoveToDaySheet } from './features/jobs/MoveToDaySheet';
 import AioHeader from './components/aio/AioHeader';
 import TodayScreen from './components/aio/TodayScreen';
-import JobsScreen from './components/aio/JobsScreen';
+import JobsScreen from './features/jobs/JobsScreen';
 import MoreScreen from './components/aio/MoreScreen';
 import { BottomTabBar } from './components/aio/primitives';
 import { getPreviewGuide } from './features/previewGuide/storage';

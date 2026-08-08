@@ -73,7 +73,7 @@ Key state groups:
 
 ### Scheduling derivations
 
-Today's route pool, the weekly strip, and the expanded day panel all derive from `effectiveDay(job, today)` and `groupJobsByDay(jobs, today)` in `src/utils/jobSchedule.ts` (see ADR-016). Only derived filters change on the mid-day rollover — job state is never mutated and active rides are never silently re-sorted.
+Today's route pool, the weekly strip, and the expanded day panel all derive from `effectiveDay(job, today)` and `groupJobsByDay(jobs, today)` in `src/features/jobs/jobSchedule.ts` (see ADR-016). Only derived filters change on the mid-day rollover — job state is never mutated and active rides are never silently re-sorted.
 
 ### Rendering Patterns
 

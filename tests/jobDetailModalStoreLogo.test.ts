@@ -3,7 +3,7 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import JobDetailModal from "../src/components/JobDetailModal";
+import JobDetailModal from "../src/features/jobs/JobDetailModal";
 import type { Job } from "../src/types";
 
 vi.mock("../src/lib/supabase", () => ({

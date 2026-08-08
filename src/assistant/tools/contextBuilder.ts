@@ -1,6 +1,6 @@
 import type { AppContext } from '../assistantTypes';
 import type { Job, EbikeConfig, RouteMetrics } from '../../types';
-import { isJobCompleted } from '../../utils/jobState';
+import { isJobCompleted } from '../../features/jobs/jobState';
 import { getCurrentCycleId, getCycleLabel, getNextResetTime } from '../../utils/showerCycle';
 
 export interface BuildContextInput {

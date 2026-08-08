@@ -128,7 +128,7 @@ The JWT is validated server-side; the upstream `TRANSIT_API_KEY` never leaves th
 - `src/services/transit/` — provider selection, API client, favorites, format, types
 - `src/hooks/useTransit*.ts` — data hooks
 - `src/components/transit/` — UI components
-- `src/components/JobDetailModal.tsx` — `transitOrigin` prop + `JobTransitSection`
+- `src/features/jobs/JobDetailModal.tsx` — `transitOrigin` prop + `JobTransitSection`
 - `src/App.tsx` — Dashboard card, Tools tab, Settings diagnostic wiring
 
 ## Related Knowledge

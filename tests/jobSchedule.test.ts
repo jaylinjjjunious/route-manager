@@ -16,7 +16,7 @@ import {
   planningIssues,
   schedulingNeedsReview,
   SCHEDULE_MAX_DAYS_AHEAD,
-} from '../src/utils/jobSchedule';
+} from '../src/features/jobs/jobSchedule';
 
 const TODAY = '2026-07-30';
 

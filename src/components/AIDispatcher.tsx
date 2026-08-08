@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { Job, RouteMetrics, EbikeConfig, DispatcherAction, ChatMessage } from '../types';
 import { BAKERSFIELD_COORDINATES, getDistanceInMiles } from '../utils/routeUtils';
-import { isJobCompleted } from '../utils/jobState';
+import { isJobCompleted } from '../features/jobs/jobState';
 import { authFetch } from '../services/apiClient';
 
 interface AIDispatcherProps {
