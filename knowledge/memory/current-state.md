@@ -51,4 +51,4 @@ Implemented on top of the existing job system:
 
 ---
 
-**Last Updated:** 2026-08-06 (Shower gate `useShowerGate` hook + `ShowerGateSection` extraction complete)
+**Last Updated:** 2026-08-08 (Jobs feature extraction Steps 1–2 complete: UI components + utilities moved to `src/features/jobs/`)
