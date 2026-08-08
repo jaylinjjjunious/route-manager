@@ -58,11 +58,11 @@ Protected tabs (`battery`, `tracker`) show a "Shower Gate Locked" overlay when `
 
 ### State Management
 
-All state lives in `App.tsx` using `useState` hooks. No Redux, Zustand, or Context for app state (auth uses AuthProvider context).
+`App.tsx` remains the top-level orchestrator for screen composition and cross-feature workflows. Feature-owned state now lives in focused hooks where extracted (`useJobs`, `useShowerGate`, `useHabits`), while App keeps shared settings, route/travel orchestration, proof vault state, dispatcher wiring, and integration state. No Redux or Zustand is used; auth uses AuthProvider context.
 
 Key state groups:
-- **Jobs**: `jobs`, `routeOrder`, `routeAJobs`, `archivedJobs`
-- **Scheduling**: `today` (local LA date string, recomputed on focus/visibility/60s tick), `selectedStripDate`, `showScheduleReview`, `moveToDayJob`
+- **Jobs**: `useJobs(today)` in `src/features/jobs/useJobs.ts` owns the jobs collection, route A/B derivations, schedule review UI state, job editing defaults, completion animation IDs, and pure job mutation actions. `App.tsx` consumes typed mutation results and keeps cross-feature orchestration such as Shower Gate blocking, Proof Vault folders, Dispatcher messages, Ride Tracker completion tracking, and route optimization/storage.
+- **Scheduling**: `today` (local LA date string, recomputed on focus/visibility/60s tick), with strip/review/move-to-day state owned by `useJobs`
 - **Inventory**: `inventoryDomain`, `inventoryJobId`, domain-filtered job selection
 - **Route**: `routeMetrics`, `routingProvider`, `nextRouteAJob`
 - **Ride Mode**: `rideModeActive`, `currentStopIndex`, `rideSession`
@@ -140,4 +140,4 @@ Targets modern mobile browsers (iOS Safari, Android Chrome) and desktop (Chrome,
 
 ## Last Updated
 
-2026-08-06 — extracted shower gate state/effects into `useShowerGate` hook (`src/features/showerGate/useShowerGate.ts`) and UI into `ShowerGateSection` (`src/features/showerGate/ShowerGateSection.tsx`). App.tsx now orchestrates `useShowerGate` and retains only cross-cutting habit/dispatcher wiring.
+2026-08-08 — jobs extraction Step 4 moved pure job-status mutation actions into `useJobs`; `App.tsx` now consumes typed mutation results and retains cross-feature orchestration.

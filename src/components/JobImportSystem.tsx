@@ -22,7 +22,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { Job, JobType } from '../types';
-import { resolveCoordinates } from '../utils/routeUtils';
+import { resolveCoordinates } from '../utils/bakersfieldCoordinates';
 
 interface JobImportSystemProps {
   onImportJobs: (newJobs: Omit<Job, 'id'>[]) => void;

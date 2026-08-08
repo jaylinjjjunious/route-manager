@@ -369,7 +369,7 @@ Important AIØ files currently referenced by the app include:
 
 - `src/components/aio/AioHeader`
 - `src/components/aio/TodayScreen`
-- `src/components/aio/JobsScreen`
+- `src/features/jobs/JobsScreen`
 - `src/components/aio/MoreScreen`
 - `src/components/aio/primitives`
 

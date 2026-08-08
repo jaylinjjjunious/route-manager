@@ -113,7 +113,7 @@ Jobs → optimizeRoute → Optimized List → Ride Mode
 ## Dependencies
 
 - `routeUtils.ts` — core algorithms
-- `BAKERSFIELD_COORDINATES` — 9 reference addresses
+- `BAKERSFIELD_COORDINATES` (`src/utils/bakersfieldCoordinates.ts`) — 9 shared Bakersfield reference addresses used by routing, seed jobs, dispatcher, imports, and transit planning
 - GPS API for live position tracking
 - localStorage for ride session state
 

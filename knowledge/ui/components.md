@@ -27,7 +27,7 @@
 
 | Field | Value |
 |-------|-------|
-| **File** | `src/components/aio/JobsScreen.tsx` |
+| **File** | `src/features/jobs/JobsScreen.tsx` |
 | **Props** | `today`, `todayJobs`, `weekDays`, `routeBJobs`, `overdueJobs`, `unscheduledJobs`, `onOpenJob`, `onAddJob`, `onOptimizeRoute`, `onMoveToDay` |
 | **Responsibility** | Schedule list in AIØ style. Header with Optimize/Add actions, overdue/unscheduled attention card with Move actions, Today section, later scheduled days (with pay totals), and Route B Standby section. |
 

@@ -88,7 +88,8 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 ### Key Functions
 
 - **markComplete**: Captures arrivalTime, completionTime, GPS coordinates; creates/updates ProofRecord in proofVault
-- **Job Normalization**: jobState.ts handles schema versioning and normalization (schema version "2")
+- **Job Normalization**: jobState.ts handles schema versioning and normalization (schema version "4")
+- **useJobs mutations**: `src/features/jobs/useJobs.ts` owns pure job-status mutations (`updateJobStatus`, `toggleJobComplete`, `markJobUnderReview`) and returns `JobMutationResult` so `App.tsx` can run cross-feature side effects without duplicating status mutation logic.
 
 ## Design Rationale
 
@@ -102,7 +103,8 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 - localStorage for state persistence
 - GPS API for coordinate capture
 - File upload APIs for proof attachments
-- routeUtils for distance calculations
+- `src/utils/bakersfieldCoordinates.ts` for shared Bakersfield seed-job coordinates and deterministic address resolution
+- route utilities for distance calculations where jobs are displayed with route/travel context
 
 ## Business Rules
 
@@ -160,6 +162,8 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 
 - `src/App.tsx` — main app state, Dashboard Today's Route cards, compact route job detail panel, and handlers
 - `src/types.ts` — Job type definitions (`scheduledDate`, `calendar`, `CalendarSourceMeta`)
+- `src/features/jobs/useJobs.ts` — jobs state, scheduling derivations, pure job actions, and pure status mutation actions
+- `src/features/jobs/types.ts` — jobs feature-local result types such as `JobMutationResult`
 - `src/features/jobs/jobState.ts` — schema normalization (v4) + `migrateJobSchedules`
 - `src/features/jobs/jobSchedule.ts` — scheduling/migration/grouping helpers
 - `src/features/jobs/WeeklyStrip.tsx` — 7-day scheduling strip on the dashboard
@@ -171,6 +175,7 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 - `src/features/jobs/OutlierDetector.tsx` — outlier detection UI
 - `src/features/jobs/JobsScreen.tsx` — jobs tab screen (list + filter + import)
 - `src/features/jobs/RouteFilter.tsx` — route A/B filter component
+- `src/utils/bakersfieldCoordinates.ts` — shared Bakersfield coordinate presets and deterministic address resolver used by seed jobs and job editing
 
 ## Related Knowledge
 
@@ -180,4 +185,4 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 
 ## Last Updated
 
-2026-08-08 (phase-2-extraction: moved job UI, state, and scheduling into src/features/jobs/)
+2026-08-08 (jobs extraction Step 4: pure job-status mutation actions moved into `useJobs`; App retains cross-feature orchestration)

@@ -1,6 +1,6 @@
 import type { Job, ExtractedJob } from '../types';
 import { authFetch } from './apiClient';
-import { resolveCoordinates } from '../utils/routeUtils';
+import { resolveCoordinates } from '../utils/bakersfieldCoordinates';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_IMAGES = 10;

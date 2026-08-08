@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Job, JobType, JobStatus, ProcessServeDetails } from '../../types';
-import { resolveCoordinates, BAKERSFIELD_COORDINATES } from '../../utils/routeUtils';
+import { resolveCoordinates, BAKERSFIELD_COORDINATES } from '../../utils/bakersfieldCoordinates';
 import { todayString } from './jobSchedule';
 import { X, Sparkles, MapPin, DollarSign, Clock, HelpCircle } from 'lucide-react';
 

@@ -118,7 +118,7 @@ This order is the locked layout. Do not move a panel to a different position on 
 - **Location in UI:** The second tab of the AIØ bottom navigation (`Jobs`). Rendered via `JobsScreen`; the page is anchored by `<div className="space-y-5" id="tab-view-jobs">`.
 - **Purpose:** Lists the user's scheduled jobs: an overdue/unscheduled attention card, the `Today` list, one section per later scheduled day, and a `Route B Standby` section. Every list uses `CompactJobRow` rows that open the job details on tap.
 - **Current review status:** No layout, row height, spacing, text, badges, buttons, prices, filters, search, sorting, or scheduling behavior changed. This pass replaced each row's generic job icon square with the shared store-logo system so every job identity square on the Jobs page renders a matching store logo (`object-contain`, existing `h-11 w-11 rounded-[14px]` square, neutral logo background and border). Unknown stores and failed image loads keep the generic icon. The overdue/unscheduled attention rows have no job identity square and are unchanged.
-- **Primary code file:** `src/components/aio/JobsScreen.tsx`
+- **Primary code file:** `src/features/jobs/JobsScreen.tsx`
 - **Primary component:** `JobsScreen`
 - **Nearest stable anchor:** the root `id="tab-view-jobs"`; sections are labeled `aria-label="Today's jobs"`, `aria-label={dayLabel(day.date)}` (per later day), and `aria-label="Route B standby"`. There is no comment marker in this file.
 - **Root element:** `<div className="space-y-5" id="tab-view-jobs">`
@@ -130,7 +130,7 @@ This order is the locked layout. Do not move a panel to a different position on 
 - **Shared store-logo files:** resolver/registry `src/services/storeLogos.ts`; renderer `src/components/aio/StoreLogo.tsx` (default `size="md"` used here) — the same system used by the Today screen's Next Best Job / Current Job and Today's Other Jobs panels; assets in `public/store-logos/*.svg`
 - **Related shared primitives:** `AioCard`, `AioSectionLabel`, `AioButton`, `CompactJobRow` (optional `iconSlot` prop) from `src/components/aio/primitives`
 - **Focused tests:** `tests/jobsScreenStoreLogo.test.ts`, `tests/storeLogos.test.ts`
-- **CLI instruction:** Start in `src/components/aio/JobsScreen.tsx`, locate the root `id="tab-view-jobs"`, and edit only the job-row squares (the three `CompactJobRow` `iconSlot` usages) plus the shared store-logo module and `StoreLogo` component. Do not modify the Today screen panels, Road Readiness, Travel Plan, job ranking or sorting, job status logic, filters, search, scheduling behavior, job details behavior, bottom navigation, the overdue/unscheduled attention card layout, or unrelated shared styles. New stores are added to the registry, not hard-coded in the row render.
+- **CLI instruction:** Start in `src/features/jobs/JobsScreen.tsx`, locate the root `id="tab-view-jobs"`, and edit only the job-row squares (the three `CompactJobRow` `iconSlot` usages) plus the shared store-logo module and `StoreLogo` component. Do not modify the Today screen panels, Road Readiness, Travel Plan, job ranking or sorting, job status logic, filters, search, scheduling behavior, job details behavior, bottom navigation, the overdue/unscheduled attention card layout, or unrelated shared styles. New stores are added to the registry, not hard-coded in the row render.
 
 ## Job Details Mini Page
 
