@@ -15,7 +15,7 @@ import { sendToAssistant } from './assistantApi';
 import { DEFAULT_ALLOWED_PERMISSIONS, CONFIRMED_ALLOWED_PERMISSIONS, checkPermission } from './permissionPolicy';
 import type { AppContext, AssistantTool, ToolResult } from './assistantTypes';
 import type { Job, EbikeConfig, RouteMetrics } from '../types';
-import { isJobCompleted } from '../utils/jobState';
+import { isJobCompleted } from '../features/jobs/jobState';
 
 export interface AssistantProviderProps {
   children: ReactNode;

@@ -4,9 +4,9 @@
  */
 
 import React from 'react';
-import { Job, JobType } from '../types';
+import { Job, JobType } from '../../types';
 import { Clock, MapPin, CheckSquare, Edit2, Trash2, Copy, ArrowRightLeft, ShieldAlert, Calendar, AlertCircle, Sparkles, Hourglass } from 'lucide-react';
-import { isJobCompleted, isRevisionJob } from '../utils/jobState';
+import { isJobCompleted, isRevisionJob } from './jobState';
 
 interface JobCardProps {
   key?: string;

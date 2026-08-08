@@ -369,7 +369,7 @@ Important AIØ files currently referenced by the app include:
 
 - `src/components/aio/AioHeader`
 - `src/components/aio/TodayScreen`
-- `src/components/aio/JobsScreen`
+- `src/features/jobs/JobsScreen`
 - `src/components/aio/MoreScreen`
 - `src/components/aio/primitives`
 
@@ -520,7 +520,7 @@ Decision:
 
 Decision:
 
-- Apply the approved frosted-glass treatment to the **Job Details Mini Page** (`src/components/JobDetailModal.tsx`): overlay `bg-black/35` with `backdrop-blur-[6px]`; card `bg-[#111214]/[0.80]` with `backdrop-blur-[14px]` and `border-white/[0.12]` (webkit variants included for iOS).
+- Apply the approved frosted-glass treatment to the **Job Details Mini Page** (`src/features/jobs/JobDetailModal.tsx`): overlay `bg-black/35` with `backdrop-blur-[6px]`; card `bg-[#111214]/[0.80]` with `backdrop-blur-[14px]` and `border-white/[0.12]` (webkit variants included for iOS).
 - The job identity square beside the store name uses the existing shared store-logo system (`src/services/storeLogos.ts` + `src/components/aio/StoreLogo.tsx` + `public/store-logos/*.svg`) at the default `md` size (`h-11 w-11 rounded-[14px]`, `object-contain`). Unknown stores and failed image loads keep the existing generic `GradientIconTile` fallback.
 - The status-toggle button keeps its existing icon behavior — Hourglass for the normal pending state, existing `CheckSquare` states for completed and under_review — and the store logo is never placed inside the status button.
 - No duplicate resolver or `StoreLogo` implementation was created; no Clearbit logo URLs or network-dependent logo fetching were introduced; stored job data is never mutated.

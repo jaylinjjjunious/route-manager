@@ -27,7 +27,7 @@
 
 | Field | Value |
 |-------|-------|
-| **File** | `src/components/aio/JobsScreen.tsx` |
+| **File** | `src/features/jobs/JobsScreen.tsx` |
 | **Props** | `today`, `todayJobs`, `weekDays`, `routeBJobs`, `overdueJobs`, `unscheduledJobs`, `onOpenJob`, `onAddJob`, `onOptimizeRoute`, `onMoveToDay` |
 | **Responsibility** | Schedule list in AIØ style. Header with Optimize/Add actions, overdue/unscheduled attention card with Move actions, Today section, later scheduled days (with pay totals), and Route B Standby section. |
 
@@ -72,7 +72,7 @@
 
 | Field | Value |
 |-------|-------|
-| **File** | `src/components/WeeklyStrip.tsx` |
+| **File** | `src/features/jobs/WeeklyStrip.tsx` |
 | **Props** | `days: ScheduledDaySummary[]`, `today: string`, `selectedDate: string \| null`, `onSelect: (date: string) => void`, `overdueCount: number`, `unscheduledCount: number`, `onReviewOverdue: () => void`, `onReviewUnscheduled: () => void` |
 | **Responsibility** | **Superseded** by the AIØ `WeekDayIndicator` strip rendered inside `TodayScreen` (This Week section). The standalone `WeeklyStrip` is no longer mounted by `App.tsx`. The AIØ strip keeps the same data contract (`weeklyDays`) and shows weekday/date/job-count cells with today/selected states plus overdue/unscheduled chips. |
 
@@ -82,7 +82,7 @@
 
 | Field | Value |
 |-------|-------|
-| **File** | `src/components/ExpandedDayPanel.tsx` |
+| **File** | `src/features/jobs/ExpandedDayPanel.tsx` |
 | **Props** | `day: ScheduledDaySummary`, `today: string`, `todayJobsCount`, `todayPay`, `todayWorkMinutes`, `startCoord`, `avgSpeedMph`, `onMoveToDay(job)`, `onOpenJob(id)`, `onPlanThisDay(day)`, `onAddJob()`, `onMoveExisting()`, `onCollapse()` |
 | **Responsibility** | Detail panel shown beneath the strip for the selected day (or today when no day is selected). Stats (Jobs/Pay/Work/Ride), placeholders for Phase 2 weather/transit analysis, Plan This Day (today → re-optimize; future → validation hint), Compare Days table, per-job list with Move actions, Needs Review inline list with Fix/Move, disabled "Hear Summary" (Phase 3), empty-day Add Job / Move Existing Job actions, Collapse. |
 
@@ -92,7 +92,7 @@
 
 | Field | Value |
 |-------|-------|
-| **File** | `src/components/MoveToDaySheet.tsx` |
+| **File** | `src/features/jobs/MoveToDaySheet.tsx` |
 | **Props** | `job: Job \| null`, `today: string`, `onMove(id, date \| null)`, `onClose()` |
 | **Responsibility** | Portal bottom-sheet/modal to reschedule a job. Move to Today, Move to Tomorrow, native date input (min today, max today+365), save-state spinner + error message, Remove scheduled date, Escape/tap-outside close. Past dates disallowed; jobs move in place (no duplicates). |
 
@@ -233,7 +233,7 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 
 | Field | Value |
 |-------|-------|
-| **File** | `src/components/JobCard.tsx` |
+| **File** | `src/features/jobs/JobCard.tsx` |
 | **Props** | `job: Job`, `isOutlier: boolean`, `onToggleComplete`, `onEdit`, `onDelete`, `onDuplicate`, `onToggleRoute`, `onUpdateStatus`, `jobAccessLocked` |
 | **Responsibility** | Shared job-detail card component. Single source of truth for visual design — used on both the Jobs tab list and the Dashboard detail sheet. Renders status badges, type badge, pay, deadline, notes, process-serve info, revision info, smart-merge explanation, quick status controls, and administrative actions (edit/duplicate/delete). |
 
@@ -253,7 +253,7 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 
 | Field | Value |
 |-------|-------|
-| **File** | `src/components/JobModal.tsx` |
+| **File** | `src/features/jobs/JobModal.tsx` |
 | **Props** | `job: Job`, `onSave: (job: Job) => void`, `onClose: () => void` |
 | **Responsibility** | Modal dialog for viewing and editing job details. Provides form fields for job attributes and save/cancel actions. Includes an optional "Schedule For" native date input (min today; future dates go to standby Route B). |
 
@@ -293,7 +293,7 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 
 | Field | Value |
 |-------|-------|
-| **File** | `src/components/OutlierDetector.tsx` |
+| **File** | `src/features/jobs/OutlierDetector.tsx` |
 | **Props** | `jobs: Job[]`, `onExcludeJob: (jobId: string) => void` |
 | **Responsibility** | Identifies and displays outlier jobs (anomalies in route data, timing, or other metrics). Provides ability to exclude outliers from route optimization. |
 
@@ -321,7 +321,7 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 
 **Compatible job types:** `retail_audit`, `mystery_shop`, `merchandising`
 
-**Entry point:** `JobDetailModal` — "Smart Aisle Scan" button appears above admin row for compatible job types.
+**Entry point:** `src/features/jobs/JobDetailModal` — "Smart Aisle Scan" button appears above admin row for compatible job types.
 
 
 ### RealDeviceVerification

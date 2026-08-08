@@ -38,7 +38,7 @@ This is tamper-evident local history, not tamper-proof storage. A user who contr
 - `src/components/InventoryCustodyPanel.tsx` — job detail UI and technician workflow
 - `src/services/inventory/chainOfCustody.ts` — ledger, hash chain, evidence, queue, and GPS helpers
 - `public/sw.js` — Background Sync wake-up message
-- `src/components/JobDetailModal.tsx` — natural integration point
+- `src/features/jobs/JobDetailModal.tsx` — natural integration point
 - `tests/inventoryChain.test.ts` — local persistence, lifecycle, and tamper detection tests
 
 ## Known Limitations

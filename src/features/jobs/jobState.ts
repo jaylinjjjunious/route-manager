@@ -1,4 +1,4 @@
-import { Job, JobStatus, StatusEvent } from '../types';
+import { Job, JobStatus, StatusEvent } from '../../types';
 import { migrateScheduledDates, ScheduleMigrationResult, todayString } from './jobSchedule';
 
 export const JOB_STATE_SCHEMA_VERSION = '4';

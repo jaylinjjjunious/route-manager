@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { OutlierReport, OutlierStatus } from '../types';
+import { OutlierReport, OutlierStatus } from '../../types';
 import { ShieldAlert, CheckCircle, ArrowRightLeft, Sparkles, Compass, Clock, Zap } from 'lucide-react';
 
 interface OutlierDetectorProps {

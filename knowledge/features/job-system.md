@@ -60,7 +60,7 @@ Every job can be pinned to a local workday with `Job.scheduledDate?: string` (`Y
 
 ### Rules
 
-- **`effectiveDay(job, today)`** (src/utils/jobSchedule.ts): a valid `scheduledDate` always wins; an *invalid* date is never coerced and returns `null` so it surfaces as Needs Review; an undated Route A job that is actionable (`ready`/`revisit`/`outlier`) or `under_review` derives `today` (derived only, never persisted). Undated Route B / inactive jobs have no effective day and surface through the unscheduled review list.
+- **`effectiveDay(job, today)`** (src/features/jobs/jobSchedule.ts): a valid `scheduledDate` always wins; an *invalid* date is never coerced and returns `null` so it surfaces as Needs Review; an undated Route A job that is actionable (`ready`/`revisit`/`outlier`) or `under_review` derives `today` (derived only, never persisted). Undated Route B / inactive jobs have no effective day and surface through the unscheduled review list.
 - **Moving jobs**: moving to a future day sets `routeId: 'B'` (standby); moving to today sets `routeId: 'A'` and triggers re-optimization. Moves are in place (same job object) — no duplicates; proof/inventory/notes/statusHistory are preserved.
 - **Past dates are disallowed** in Move-to-Day (native `input type="date"`, `min` today, `max` today+365). Invalid stored dates → Needs Review, never silently coerced.
 - **Today's Route pool** = Route A jobs with `effectiveDay === today` (includes under-review for visibility; `activeRouteAJobs`/next stop excludes them). Postponed jobs are excluded and surfaced via the unscheduled review list.
@@ -69,7 +69,7 @@ Every job can be pinned to a local workday with `Job.scheduledDate?: string` (`Y
 
 ### Migration (schema v4)
 
-`JOB_STATE_SCHEMA_VERSION = '4'` (src/utils/jobState.ts). The legacy `jobs_moved_to_tomorrow` list is read once at boot and migrated into per-job `scheduledDate = tomorrow` + Route B. Completed/finished/under-review jobs are never rewritten. The legacy key is cleared only after a successful migrated write; there are no new writers.
+`JOB_STATE_SCHEMA_VERSION = '4'` (src/features/jobs/jobState.ts). The legacy `jobs_moved_to_tomorrow` list is read once at boot and migrated into per-job `scheduledDate = tomorrow` + Route B. Completed/finished/under-review jobs are never rewritten. The legacy key is cleared only after a successful migrated write; there are no new writers.
 
 ### Grouping
 
@@ -88,7 +88,8 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 ### Key Functions
 
 - **markComplete**: Captures arrivalTime, completionTime, GPS coordinates; creates/updates ProofRecord in proofVault
-- **Job Normalization**: jobState.ts handles schema versioning and normalization (schema version "2")
+- **Job Normalization**: jobState.ts handles schema versioning and normalization (schema version "4")
+- **useJobs mutations**: `src/features/jobs/useJobs.ts` owns pure job-status mutations (`updateJobStatus`, `toggleJobComplete`, `markJobUnderReview`) and returns `JobMutationResult` so `App.tsx` can run cross-feature side effects without duplicating status mutation logic.
 
 ## Design Rationale
 
@@ -102,7 +103,8 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 - localStorage for state persistence
 - GPS API for coordinate capture
 - File upload APIs for proof attachments
-- routeUtils for distance calculations
+- `src/utils/bakersfieldCoordinates.ts` for shared Bakersfield seed-job coordinates and deterministic address resolution
+- route utilities for distance calculations where jobs are displayed with route/travel context
 
 ## Business Rules
 
@@ -160,15 +162,20 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 
 - `src/App.tsx` — main app state, Dashboard Today's Route cards, compact route job detail panel, and handlers
 - `src/types.ts` — Job type definitions (`scheduledDate`, `calendar`, `CalendarSourceMeta`)
-- `src/utils/jobState.ts` — schema normalization (v4) + `migrateJobSchedules`
-- `src/utils/jobSchedule.ts` — scheduling/migration/grouping helpers
-- `src/components/WeeklyStrip.tsx` — 7-day scheduling strip on the dashboard
-- `src/components/ExpandedDayPanel.tsx` — per-day detail panel (jobs, pay, plan, review)
-- `src/components/MoveToDaySheet.tsx` — move-a-job-to-a-day bottom sheet/modal
-- `src/components/JobCard.tsx` — job display component
-- `src/components/JobModal.tsx` — job editing/completion modal (optional schedule field)
-- `src/components/JobDetailModal.tsx` — scheduled row + Move-to-Day action
-- `src/components/OutlierDetector.tsx` — outlier detection UI
+- `src/features/jobs/useJobs.ts` — jobs state, scheduling derivations, pure job actions, and pure status mutation actions
+- `src/features/jobs/types.ts` — jobs feature-local result types such as `JobMutationResult`
+- `src/features/jobs/jobState.ts` — schema normalization (v4) + `migrateJobSchedules`
+- `src/features/jobs/jobSchedule.ts` — scheduling/migration/grouping helpers
+- `src/features/jobs/WeeklyStrip.tsx` — 7-day scheduling strip on the dashboard
+- `src/features/jobs/ExpandedDayPanel.tsx` — per-day detail panel (jobs, pay, plan, review)
+- `src/features/jobs/MoveToDaySheet.tsx` — move-a-job-to-a-day bottom sheet/modal
+- `src/features/jobs/JobCard.tsx` — job display component
+- `src/features/jobs/JobModal.tsx` — job editing/completion modal (optional schedule field)
+- `src/features/jobs/JobDetailModal.tsx` — scheduled row + Move-to-Day action
+- `src/features/jobs/OutlierDetector.tsx` — outlier detection UI
+- `src/features/jobs/JobsScreen.tsx` — jobs tab screen (list + filter + import)
+- `src/features/jobs/RouteFilter.tsx` — route A/B filter component
+- `src/utils/bakersfieldCoordinates.ts` — shared Bakersfield coordinate presets and deterministic address resolver used by seed jobs and job editing
 
 ## Related Knowledge
 
@@ -178,4 +185,4 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 
 ## Last Updated
 
-2026-07-30 (phase-1-scheduling: per-job scheduledDate + weekly strip)
+2026-08-08 (jobs extraction Step 4: pure job-status mutation actions moved into `useJobs`; App retains cross-feature orchestration)

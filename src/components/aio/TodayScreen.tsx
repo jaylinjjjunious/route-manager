@@ -22,7 +22,7 @@ import {
   Zap,
 } from "lucide-react";
 import type { Job, Coordinates } from "../../types";
-import type { ScheduledDaySummary } from "../../utils/jobSchedule";
+import type { ScheduledDaySummary } from "../../features/jobs/jobSchedule";
 import type { UseTransitTripResult } from "../../hooks/useTransitTrip";
 import { getStreetName, getJobTypeLabel } from "./jobMeta";
 import {
@@ -37,7 +37,7 @@ import {
 } from "./primitives";
 import { formatLeaveByTime, deadlineComparison } from "../../services/transit/leaveBy";
 import { getTransitMapsUrls } from "../../services/transit/mapsLinks";
-import { ExpandedDayPanel } from "../ExpandedDayPanel";
+import { ExpandedDayPanel } from "../../features/jobs/ExpandedDayPanel";
 import {
   evaluateRoadReadiness,
   type PreviewGuideReadiness,

@@ -4,7 +4,7 @@ import { X, Navigation, MapPin, Home, Building2, Search, Loader2 } from 'lucide-
 import type { Job, Coordinates, TransitStop } from '../../types';
 import { useTransitTrip } from '../../hooks/useTransitTrip';
 import { useCurrentLocation } from '../../hooks/useCurrentLocation';
-import { resolveCoordinates } from '../../utils/routeUtils';
+import { resolveCoordinates } from '../../utils/bakersfieldCoordinates';
 import { TransitTripCard } from '../TransitTripCard';
 
 interface TransitPlannerSheetProps {

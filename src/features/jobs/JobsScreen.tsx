@@ -1,9 +1,9 @@
 import React from "react";
 import { AlertTriangle, CalendarDays, ChevronRight, Plus, Route as RouteIcon } from "lucide-react";
 import type { Job } from "../../types";
-import type { ScheduledDaySummary } from "../../utils/jobSchedule";
-import { AioCard, AioSectionLabel, AioButton, CompactJobRow } from "./primitives";
-import { StoreLogo } from "./StoreLogo";
+import type { ScheduledDaySummary } from "./jobSchedule";
+import { AioCard, AioSectionLabel, AioButton, CompactJobRow } from "../../components/aio/primitives";
+import { StoreLogo } from "../../components/aio/StoreLogo";
 
 export interface JobsScreenProps {
   today: string;

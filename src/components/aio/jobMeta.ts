@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Job } from "../../types";
-import { isRevisionJob } from "../../utils/jobState";
+import { isRevisionJob } from "../../features/jobs/jobState";
 
 export function getStreetName(address: string): string {
   const trimmed = address.trim();

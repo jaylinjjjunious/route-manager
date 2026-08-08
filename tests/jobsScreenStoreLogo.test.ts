@@ -3,10 +3,10 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import JobsScreen from "../src/components/aio/JobsScreen";
+import JobsScreen from "../src/features/jobs/JobsScreen";
 import { resolveStoreLogo } from "../src/services/storeLogos";
 import type { Job } from "../src/types";
-import type { ScheduledDaySummary } from "../src/utils/jobSchedule";
+import type { ScheduledDaySummary } from "../src/features/jobs/jobSchedule";
 
 let container: HTMLDivElement;
 let root: Root;
