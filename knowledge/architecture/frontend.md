@@ -64,7 +64,7 @@ Key state groups:
 - **Jobs**: `useJobs(today)` in `src/features/jobs/useJobs.ts` owns the jobs collection, route A/B derivations, schedule review UI state, job editing defaults, completion animation IDs, and pure job mutation actions. `App.tsx` consumes typed mutation results and keeps cross-feature orchestration such as Shower Gate blocking, Proof Vault folders, Dispatcher messages, Ride Tracker completion tracking, and route optimization/storage.
 - **Scheduling**: `today` (local LA date string, recomputed on focus/visibility/60s tick), with strip/review/move-to-day state owned by `useJobs`
 - **Inventory**: `inventoryDomain`, `inventoryJobId`, domain-filtered job selection
-- **Route**: `routeMetrics`, `routingProvider`, `nextRouteAJob`
+- **Route**: `useRoutePlanning` in `src/features/routePlanning/useRoutePlanning.ts` owns route metrics, optimization monitor state, next-stop/list derivations, outlier derivations, and simulation state/actions. Route-owned algorithms and route UI live under `src/features/routePlanning/`, with shared Haversine distance math in `src/utils/geoUtils.ts`. `App.tsx` passes route inputs and keeps cross-feature orchestration/config boundaries.
 - **Ride Mode**: `rideModeActive`, `currentStopIndex`, `rideSession`
 - **Shower Gate**: `useShowerGate(now)` hook in `src/features/showerGate/useShowerGate.ts` encapsulates all shower gate state, barcode scanner lifecycle, proof upload/sync, and cycle management. `src/App.tsx` consumes the hook and passes read-only state + action callbacks to `HabitsTab` and protected tab overlays.
 - **Habits**: `useHabits(todayKey)` hook in `src/features/habits/useHabits.ts` manages `habitTasks`, `habitLogs`, active task, derived stats, localStorage persistence, and backend sync. `src/App.tsx` consumes the hook and passes values to `HabitsTab`.
@@ -140,4 +140,4 @@ Targets modern mobile browsers (iOS Safari, Android Chrome) and desktop (Chrome,
 
 ## Last Updated
 
-2026-08-08 — jobs extraction Step 4 moved pure job-status mutation actions into `useJobs`; `App.tsx` now consumes typed mutation results and retains cross-feature orchestration.
+2026-08-08 — route-planning extraction Step 3 moved route-owned state, refs, effects, derived values, and simulation lifecycle into `src/features/routePlanning/useRoutePlanning.ts`; `App.tsx` keeps cross-feature orchestration/config boundaries.

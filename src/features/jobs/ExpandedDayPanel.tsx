@@ -24,7 +24,7 @@ import {
 import type { Job } from '../../types';
 import type { ScheduledDaySummary } from './jobSchedule';
 import { formatScheduledDate, planningIssues } from './jobSchedule';
-import { getDistanceInMiles } from '../../utils/routeUtils';
+import { getDistanceInMiles } from '../../utils/geoUtils';
 import type { Coordinates } from '../../types';
 
 interface ExpandedDayPanelProps {

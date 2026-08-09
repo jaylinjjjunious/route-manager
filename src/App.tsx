@@ -6,15 +6,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './index.css';
 import { useAuth } from './auth/AuthProvider';
-import { Job, Coordinates, RouteMetrics, EbikeConfig, DispatcherAction } from './types';
+import { Job, Coordinates, EbikeConfig, DispatcherAction } from './types';
 import {
   DEFAULT_EBIKE_CONFIG,
-  getDistanceInMiles,
-  optimizeRoute,
   optimizeRouteWithSmartMerge,
-  calculateRouteMetrics,
-  detectOutliers
-} from './utils/routeUtils';
+} from './features/routePlanning/routeUtils';
+import { useRoutePlanning } from './features/routePlanning/useRoutePlanning';
+import { getDistanceInMiles } from './utils/geoUtils';
 import { BAKERSFIELD_COORDINATES, resolveCoordinates } from './utils/bakersfieldCoordinates';
 import {
   isJobCompleted,
@@ -209,29 +207,8 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const [bentoBatteryDetails, setBentoBatteryDetails] = useState(false);
   const [bentoRevisionDetails, setBentoRevisionDetails] = useState(false);
 
-  // Simulation States
-  const [isSimulating, setIsSimulating] = useState(false);
-  const [simulatedDistance, setSimulatedDistance] = useState(0);
-  const [simulatedBattery, setSimulatedBattery] = useState(100);
-  const [simulationStatus, setSimulationStatus] = useState<string>('');
-  const [simulatedJobsCompleted, setSimulatedJobsCompleted] = useState<string[]>([]);
-  const simTimerRef = useRef<number | null>(null);
   const mobileActivationRef = useRef({ key: '', time: 0 });
 
-  // Real-time Optimization Alerts & explains
-  const [lastOptimizationLog, setLastOptimizationLog] = useState<{
-    why: string;
-    minutesSaved: number;
-    batteryDifference: number;
-    earningsDifference: number;
-    timestamp: string;
-  } | null>(null);
-  const [isOptimizing, setIsOptimizing] = useState(false);
-
-  // Refs for tracking changes
-  const prevJobsRef = useRef<Job[]>([]);
-  const prevMetricsRef = useRef<RouteMetrics | null>(null);
-  
   // Modal configurations
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isScreenshotImportOpen, setIsScreenshotImportOpen] = useState(false);
@@ -434,28 +411,48 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
 
   const tracker = useRideTracker(ebikeConfig, learnedBatteryPercentPerMile, batteryFactor);
 
-  // Metrics are computed based on current order of elements in jobs state.
-  // When users click "Optimize Route", they get sequential nearest neighbor, yielding better metrics.
-  const baseStandardMetrics = calculateRouteMetrics(startCoord, jobs.routeAJobs, ebikeConfig);
-  const standardMetrics = {
-    ...baseStandardMetrics,
-    estimatedBatteryUsage: parseFloat((baseStandardMetrics.estimatedBatteryUsage * batteryFactor).toFixed(1))
-  };
-  
+  const {
+    lastOptimizationLog,
+    isOptimizing,
+    isSimulating,
+    simulatedDistance,
+    simulatedBattery,
+    simulationStatus,
+    simulatedJobsCompleted,
+    activeMetrics,
+    projectedBatteryAfterRoute,
+    usableRangeRemaining,
+    reserveLabel,
+    reserveColorClass,
+    completedRouteAJobs,
+    remainingRouteAJobs,
+    nextRouteAJob,
+    routeProgressPct,
+    routeMilesRemaining,
+    outliersReport,
+    outlierIds,
+    nextStopOrigin,
+    nextStopDistance,
+    nextStopRideMinutes,
+    nextStopNavLink,
+    routeListStops,
+    routeListNavLink,
+    handleStartSimulation,
+    handleStopSimulation,
+  } = useRoutePlanning({
+    allJobs: jobs.jobs,
+    routeAJobs: jobs.routeAJobs,
+    todayRouteJobs: jobs.todayRouteJobs,
+    executableRouteJobs: jobs.executableRouteJobs,
+    startAddress,
+    startCoord,
+    ebikeConfig,
+    currentBattery,
+    batteryFactor,
+    rideDistance: tracker.rideDistance,
+    travelMode,
+  });
 
-  const activeMetrics = standardMetrics;
-
-
-  const outliersReport = detectOutliers(startCoord, jobs.routeAJobs, ebikeConfig);
-  const outlierIds = outliersReport.map(r => r.jobId);
-  const projectedBatteryAfterRoute = Math.max(0, Math.round(currentBattery - activeMetrics.estimatedBatteryUsage));
-  const usableRangeRemaining = Math.max(0, (projectedBatteryAfterRoute / 100) * ebikeConfig.maxRangeMiles);
-  const reserveLabel = projectedBatteryAfterRoute >= 25 ? 'OK' : projectedBatteryAfterRoute >= 15 ? 'WATCH' : 'CHARGE';
-  const reserveColorClass = projectedBatteryAfterRoute >= 25
-    ? 'bg-emerald-500 text-white'
-    : projectedBatteryAfterRoute >= 15
-      ? 'bg-amber-400 text-slate-950'
-      : 'bg-rose-600 text-white ';
   const eb5SpecLine = 'Jasion EB5 Standard | 350W | 36V 10Ah | 20 mph cap | PAS 1-5';
   const isJobDone = isJobCompleted;
   const getStreetName = (address: string) => {
@@ -482,10 +479,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     if (isProcessServeJob(job)) return 'Serve';
     return 'Ready';
   };
-  const completedRouteAJobs = jobs.routeAJobs.filter(isJobDone);
-  const remainingRouteAJobs = jobs.todayRouteJobs;
-  const activeRouteAJobs = jobs.executableRouteJobs;
-  const nextRouteAJob = activeRouteAJobs[0] || null;
   const liveEarnedToday = completedRouteAJobs.reduce((sum, job) => sum + job.pay, 0);
   const allRouteAJobsCompleted = jobs.routeAJobs.length > 0 && completedRouteAJobs.length === jobs.routeAJobs.length;
   const showLiveEarnings = (tracker.isWorkSessionActive || completedRouteAJobs.length > 0) && !allRouteAJobsCompleted;
@@ -530,104 +523,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     jobs.replaceJobs(finalized);
   };
 
-  // Continuous Route Optimization & Explanations Monitor
-  useEffect(() => {
-    if (jobs.jobs.length === 0) {
-      prevJobsRef.current = jobs.jobs;
-      prevMetricsRef.current = activeMetrics;
-      return;
-    }
-
-    if (prevJobsRef.current.length === 0) {
-      prevJobsRef.current = jobs.jobs;
-      prevMetricsRef.current = activeMetrics;
-      return;
-    }
-
-    const prevRouteA = prevJobsRef.current.filter(j => j.routeId === 'A');
-    const currRouteA = jobs.jobs.filter(j => j.routeId === 'A');
-
-    const prevIds = prevRouteA.map(j => `${j.id}-${j.status}-${j.routeId}`).join(',');
-    const currIds = currRouteA.map(j => `${j.id}-${j.status}-${j.routeId}`).join(',');
-
-    if (prevIds === currIds) {
-      return;
-    }
-
-    let why = "Continuous Route Optimization executed.";
-    const addedJob = currRouteA.find(j => !prevRouteA.some(p => p.id === j.id));
-    const removedJob = prevRouteA.find(p => !currRouteA.some(j => j.id === p.id));
-    const completedJob = currRouteA.find(j => isJobCompleted(j) && prevRouteA.some(p => p.id === j.id && !isJobCompleted(p)));
-    const uncompletedJob = currRouteA.find(j => !isJobCompleted(j) && prevRouteA.some(p => p.id === j.id && isJobCompleted(p)));
-    const movedRevision = currRouteA.find(j => {
-      const isRevision = isRevisionJob(j);
-      if (!isRevision) return false;
-      const prevIndex = prevRouteA.findIndex(p => p.id === j.id);
-      const currIndex = currRouteA.findIndex(c => c.id === j.id);
-      return prevIndex !== -1 && currIndex !== -1 && prevIndex !== currIndex;
-    });
-
-    if (addedJob) {
-      if (isRevisionJob(addedJob)) {
-        why = addedJob.smartMergeExplanation || `Required revision at '${addedJob.storeName}' was added. Smart Revision Merge automatically slotted it into the optimal position.`;
-      } else {
-        why = `New stop '${addedJob.storeName}' registered. Sequenced into the most efficient slot.`;
-      }
-    } else if (removedJob) {
-      why = `Stop '${removedJob.storeName}' removed from Route A. Sequence recalculated to eliminate empty miles.`;
-    } else if (completedJob) {
-      if (isRevisionJob(completedJob)) {
-        why = `Revision stop at '${completedJob.storeName}' marked completed. Sequence condensed.`;
-      } else {
-        why = `Stop '${completedJob.storeName}' marked completed. Active route updated.`;
-      }
-    } else if (uncompletedJob) {
-      why = `Stop '${uncompletedJob.storeName}' marked pending. Route re-optimized.`;
-    } else if (movedRevision) {
-      why = movedRevision.smartMergeExplanation || `Revision '${movedRevision.storeName}' moved into the lowest-impact slot in today's route.`;
-    } else {
-      const editedJob = currRouteA.find(j => {
-        const prev = prevRouteA.find(p => p.id === j.id);
-        return prev && (prev.address !== j.address || prev.pay !== j.pay || prev.estimatedMinutes !== j.estimatedMinutes);
-      });
-      if (editedJob) {
-        why = `Details for stop '${editedJob.storeName}' were edited. Re-evaluated route efficiency.`;
-      } else {
-        const movedToB = prevRouteA.find(p => !currRouteA.some(j => j.id === p.id) && jobs.jobs.some(j => j.id === p.id && j.routeId === 'B'));
-        if (movedToB) {
-          why = `Outlier stop '${movedToB.storeName}' shifted to standby Route B. Route A recalculated.`;
-        } else {
-          why = `Route A sequence modified. Re-optimized to protect hourly yield.`;
-        }
-      }
-    }
-
-    const prevMetrics = prevMetricsRef.current || standardMetrics;
-    const newMetrics = standardMetrics;
-
-    const rideTimeDiff = Math.round(prevMetrics.totalRideTime - newMetrics.totalRideTime);
-    const batteryDiff = parseFloat((prevMetrics.estimatedBatteryUsage - newMetrics.estimatedBatteryUsage).toFixed(1));
-    const earningsDiff = parseFloat((newMetrics.earningsPerHour - prevMetrics.earningsPerHour).toFixed(2));
-
-    setIsOptimizing(true);
-    const timer = setTimeout(() => {
-      setIsOptimizing(false);
-    }, 1200);
-
-    setLastOptimizationLog({
-      why,
-      minutesSaved: rideTimeDiff,
-      batteryDifference: batteryDiff,
-      earningsDifference: earningsDiff,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-    });
-
-    prevJobsRef.current = jobs.jobs;
-    prevMetricsRef.current = activeMetrics;
-
-    return () => clearTimeout(timer);
-  }, [jobs.jobs, activeMetrics, startCoord, ebikeConfig]);
-
   const handleUpdateStart = (newAddr: string) => {
     setStartAddress(newAddr);
     const resolved = resolveCoordinates(newAddr);
@@ -645,112 +540,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     setTheme(nextTheme);
     safeStorage.setItem('route_optimizer_theme', nextTheme);
   };
-
-  // Ride simulation controls
-  const handleStartSimulation = () => {
-    if (jobs.routeAJobs.length === 0) {
-      alert("No active jobs on Route A to simulate!");
-      return;
-    }
-    
-    if (simTimerRef.current) {
-      clearInterval(simTimerRef.current);
-    }
-    
-    setIsSimulating(true);
-    setSimulatedDistance(0);
-    setSimulatedBattery(currentBattery);
-    setSimulatedJobsCompleted([]);
-    setSimulationStatus("Departing 1951 Golden State Ave Hub...");
-    
-    let currentPos = startCoord;
-    const segments: { name: string; distance: number; jobId?: string }[] = [];
-    
-    for (const job of jobs.routeAJobs) {
-      const dist = getDistanceInMiles(currentPos, job.coordinates);
-      segments.push({
-        name: `${job.storeName} at ${job.address.split(' ').slice(2).join(' ') || job.address}`,
-        distance: dist,
-        jobId: job.id
-      });
-      currentPos = job.coordinates;
-    }
-    
-    const returnDist = getDistanceInMiles(currentPos, startCoord);
-    segments.push({
-      name: "Returning to Bakersfield Hub",
-      distance: returnDist
-    });
-    
-    const totalDistToCover = activeMetrics.totalDistance;
-    let distanceCovered = 0;
-    
-    const interval = window.setInterval(() => {
-      const tickDist = 0.4;
-      distanceCovered += tickDist;
-      
-      if (distanceCovered >= totalDistToCover) {
-        setSimulatedDistance(totalDistToCover);
-        const finalBattery = Math.max(0, currentBattery - (totalDistToCover * ebikeConfig.batteryPercentPerMile * batteryFactor));
-        setSimulatedBattery(parseFloat(finalBattery.toFixed(1)));
-        setSimulationStatus("Route Completed! Returned safely to the Golden State Ave Hub.");
-        setIsSimulating(false);
-        if (simTimerRef.current) clearInterval(simTimerRef.current);
-        return;
-      }
-      
-      let tempCovered = distanceCovered;
-      let activeSeg = segments[0];
-      for (let i = 0; i < segments.length; i++) {
-        if (tempCovered <= segments[i].distance) {
-          activeSeg = segments[i];
-          break;
-        }
-        tempCovered -= segments[i].distance;
-      }
-      
-      const currentSegmentProgressPercent = Math.round((tempCovered / activeSeg.distance) * 100);
-      
-      const newlyCompleted: string[] = [];
-      let accumulatedDist = 0;
-      for (let i = 0; i < segments.length; i++) {
-        accumulatedDist += segments[i].distance;
-        if (distanceCovered >= accumulatedDist && segments[i].jobId) {
-          newlyCompleted.push(segments[i].jobId!);
-        }
-      }
-      setSimulatedJobsCompleted(newlyCompleted);
-      
-      const currentSimBattery = Math.max(0, currentBattery - (distanceCovered * ebikeConfig.batteryPercentPerMile * batteryFactor));
-      
-      setSimulatedDistance(parseFloat(distanceCovered.toFixed(1)));
-      setSimulatedBattery(parseFloat(currentSimBattery.toFixed(1)));
-      
-      if (currentSimBattery <= 0) {
-        setSimulationStatus(`Stranded! Battery depleted at ${parseFloat(distanceCovered.toFixed(1))} mi. Please recharge first.`);
-        setIsSimulating(false);
-        if (simTimerRef.current) clearInterval(simTimerRef.current);
-        return;
-      }
-      
-      setSimulationStatus(`Riding to ${activeSeg.name}... ${currentSegmentProgressPercent}% complete.`);
-    }, 300);
-    
-    simTimerRef.current = interval;
-  };
-
-  const handleStopSimulation = () => {
-    setIsSimulating(false);
-    if (simTimerRef.current) {
-      clearInterval(simTimerRef.current);
-    }
-  };
-
-  useEffect(() => {
-    return () => {
-      if (simTimerRef.current) clearInterval(simTimerRef.current);
-    };
-  }, []);
 
   const createProofFolder = (job: Job) => {
     const now = new Date();
@@ -1318,29 +1107,14 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     return true;
   };
 
-  const nextStopIndex = nextRouteAJob ? jobs.routeAJobs.findIndex(j => j.id === nextRouteAJob.id) : -1;
-  const nextStopOrigin = nextStopIndex <= 0 ? startCoord : jobs.routeAJobs[nextStopIndex - 1].coordinates;
-  const nextStopDistance = nextRouteAJob ? getDistanceInMiles(nextStopOrigin, nextRouteAJob.coordinates) : 0;
-  const nextStopRideMinutes = nextRouteAJob ? Math.max(1, Math.round((nextStopDistance / ebikeConfig.avgSpeedMph) * 60)) : 0;
-  const nextStopNavLink = nextRouteAJob
-    ? `https://www.google.com/maps/dir/?api=1&origin=${nextStopOrigin.lat},${nextStopOrigin.lng}&destination=${nextRouteAJob.coordinates.lat},${nextRouteAJob.coordinates.lng}&travelmode=${travelMode}`
-    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(startAddress)}`;
   const revisionAlertJobs = remainingRouteAJobs.filter(isRevisionJob);
-  const routeProgressPct = jobs.routeAJobs.length > 0 ? Math.round((completedRouteAJobs.length / jobs.routeAJobs.length) * 100) : 100;
-  const routeListStops = remainingRouteAJobs;
   const proofRecords = (Object.values(proofVault) as ProofRecord[]).sort((a, b) => new Date(b.completionTime).getTime() - new Date(a.completionTime).getTime());
   const selectedProofRecord = selectedProofJobId ? proofVault[selectedProofJobId] : null;
   const routeDetailJob = routeDetailJobId ? jobs.jobs.find(job => job.id === routeDetailJobId) || null : null;
   const previewGuideJob = previewGuideJobId ? jobs.jobs.find(job => job.id === previewGuideJobId) || null : null;
   const inventoryJobs = jobs.jobs.filter(job => getInventoryDomain(job) === inventoryDomain);
   const inventoryJob = inventoryJobs.find(job => job.id === inventoryJobId) || inventoryJobs.find(job => job.routeId === 'A') || inventoryJobs[0] || null;
-  const getRouteStopNavLink = (job: Job, idx: number) => {
-    const origin = idx === 0
-      ? startCoord
-      : routeListStops[idx - 1]?.coordinates || startCoord;
-
-    return `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${job.coordinates.lat},${job.coordinates.lng}&travelmode=${travelMode}`;
-  };
+  const getRouteStopNavLink = routeListNavLink;
   const dispatcherBrief = dispatcherMessage.length > 118 ? `${dispatcherMessage.slice(0, 115).trim()}...` : dispatcherMessage;
   const rideDistance = tracker.rideDistance;
   const rideBatteryUsed = tracker.rideBatteryUsed;
@@ -1351,7 +1125,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const batteryTrackerUsed = rideBatteryUsed;
   const batteryTrackerCurrent = Math.max(0, Math.round(currentBattery - batteryTrackerUsed));
   const estimatedMilesRemaining = learnedBatteryRate > 0 ? parseFloat((batteryTrackerCurrent / learnedBatteryRate).toFixed(1)) : 0;
-  const routeMilesRemaining = Math.max(0, activeMetrics.totalDistance - rideDistance);
   const batteryRisk = batteryTrackerCurrent < 15 || estimatedMilesRemaining < routeMilesRemaining
     ? 'High'
     : batteryTrackerCurrent < 25 || estimatedMilesRemaining < routeMilesRemaining + 3
