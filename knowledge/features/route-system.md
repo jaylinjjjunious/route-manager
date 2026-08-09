@@ -55,7 +55,7 @@ interface RoutingProvider {
 
 ### Battery-Aware Routing
 
-**DEFAULT_EBIKE_CONFIG** (`src/features/routePlanning/routeUtils.ts`):
+**DEFAULT_EBIKE_CONFIG** (`src/features/battery/batteryUtils.ts`, re-exported by `src/features/routePlanning/routeUtils.ts` for compatibility):
 ```typescript
 {
   name: 'Jasion EB5',
@@ -106,7 +106,7 @@ Jobs → optimizeRoute → Optimized List → Ride Mode
 - **RouteSummaryCard / RouteScoreGauge / OutlierDetector**: Route-owned UI now lives under `src/features/routePlanning/`
 - **Route List**: Optimized order display with per-job detail via `DashboardJobDetailSheet` on Dashboard
 - **Ride Mode**: Full-screen execution interface
-- **Battery Tab**: Jasion EB5 battery summary
+- **Battery Tab**: Jasion EB5 battery summary (`src/features/battery/BatteryTab.tsx`; state/persistence owned by `src/features/battery/useBattery.ts`)
 
 ## Design Rationale
 
@@ -120,6 +120,8 @@ Jobs → optimizeRoute → Optimized List → Ride Mode
 - `src/features/routePlanning/routeUtils.ts` — core route-planning algorithms
 - `src/features/routePlanning/useRoutePlanning.ts` — route-planning state, monitor, derivations, and simulation lifecycle
 - `src/features/routePlanning/types.ts` — route-planning hook result/support types
+- `src/features/battery/useBattery.ts` — e-bike config, current battery, battery factor/range/risk calculations, persistence, restore, and ride-learning actions
+- `src/features/battery/batteryUtils.ts` — default Jasion EB5 config and pure battery calculations
 - `src/utils/routeUtils.ts` — compatibility re-export shim for old imports during extraction
 - `src/utils/geoUtils.ts` — shared Haversine distance helper used by route planning, Jobs scheduling UI, and Dispatcher
 - `BAKERSFIELD_COORDINATES` (`src/utils/bakersfieldCoordinates.ts`) — 9 shared Bakersfield reference addresses used by routing, seed jobs, dispatcher, imports, and transit planning
@@ -203,4 +205,4 @@ Jobs → optimizeRoute → Optimized List → Ride Mode
 
 ## Last Updated
 
-2026-08-08 (route-planning extraction Step 3: moved route-owned state, refs, effects, derived route values, and simulation lifecycle into `useRoutePlanning`)
+2026-08-08 (battery extraction Step 2: Battery-owned state, persistence, default e-bike config, range/risk calculations, and learning logic moved into `src/features/battery/`; route-planning extraction remains complete)

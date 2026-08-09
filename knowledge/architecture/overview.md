@@ -48,6 +48,10 @@ route-optimizer-app/
     services/
       apiClient.ts       — Auth-fetch wrapper
     features/
+      battery/
+        BatteryTab.tsx    — Presentational legacy Battery tab UI
+        useBattery.ts     — E-bike state, persistence, actions, learned efficiency
+        batteryUtils.ts   — Default Jasion EB5 config and pure battery calculations
       routePlanning/
         BakersfieldMapPreview.tsx
         RouteSummaryCard.tsx
@@ -138,4 +142,4 @@ npm run dev
 
 ## Last Updated
 
-2026-08-08 — route-planning extraction Step 3 moved route-owned state/refs/effects/derivations and simulation lifecycle into `src/features/routePlanning/useRoutePlanning.ts`.
+2026-08-08 — battery extraction Step 2 moved Battery-owned state, persistence, calculations, default e-bike config, and learning logic into `src/features/battery/`.

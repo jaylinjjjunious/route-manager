@@ -5,7 +5,7 @@
 - **Required barcode:** `075371003233`
 - **Cycle reset:** 6:00 AM local time (configurable via `SHOWER_CYCLE_RESET`).
 - **Reset logic:** Comparison uses `< boundary`, not `<=`, to avoid off-by-one at exactly 6:00:00.
-- **Protected tabs:** Route, Jobs, Battery, Tracker are locked until gate is verified.
+- **Protected tabs:** Battery and Tracker are locked until gate is verified when the Shower Gate policy is enabled. The current three-tab flow keeps Today, Jobs, and More available.
 - **Proof mandatory:** `SHOWER_PROOF_MANDATORY = true` — photo proof is required with the scan.
 - **Daily requirement:** One scan per day. Once the cycle resets, the process repeats.
 
@@ -41,4 +41,4 @@
 
 ---
 
-**Last Updated:** 2026-07-20 (c12bd44)
+**Last Updated:** 2026-08-08 (battery extraction audit: corrected protected-tab behavior for the current three-tab flow)
