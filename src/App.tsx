@@ -41,6 +41,8 @@ import RideTrackerTab from './features/rideTracker/RideTrackerTab';
 import { useRideTracker } from './features/rideTracker/useRideTracker';
 import BatteryTab from './features/battery/BatteryTab';
 import { useBattery } from './features/battery/useBattery';
+import ProofVaultModal from './features/proofVault/ProofVaultModal';
+import { useProofVault } from './features/proofVault/useProofVault';
 import ScreenshotImportModal from './components/ScreenshotImportModal';
 import SmartAisleScan from './components/SmartAisleScan';
 import InventoryCustodyPanel from './components/InventoryCustodyPanel';
@@ -79,34 +81,10 @@ import {
   LayoutDashboard, Briefcase, Battery, Settings, AlertTriangle, ArrowRightLeft,
   Sparkles, Compass, ExternalLink, Navigation, CheckCircle2,
   ChevronDown, ChevronUp, ChevronRight, DollarSign, Zap, Award, Volume2, VolumeX,
-  FolderOpen, Camera, FileImage, ReceiptText, StickyNote, X, Hourglass, Bug, FlaskConical, PackageCheck
+  FolderOpen, Camera, FileImage, Hourglass, Bug, FlaskConical, PackageCheck
 } from 'lucide-react';
 
 const isSmartAisleTestLabEnabled = import.meta.env.DEV && import.meta.env.VITE_ENABLE_SMART_AISLE_TEST_LAB === 'true';
-
-type ProofAssetKind = 'photos' | 'screenshots' | 'receipts';
-
-interface ProofAsset {
-  id: string;
-  name: string;
-  dataUrl: string;
-  addedAt: string;
-}
-
-interface ProofRecord {
-  jobId: string;
-  storeName: string;
-  address: string;
-  completionTime: string;
-  arrivalTime: string;
-  gps?: Coordinates;
-  photos: ProofAsset[];
-  screenshots: ProofAsset[];
-  receipts: ProofAsset[];
-  notes: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
 const SHOWER_HABIT_TASK_ID = 'habit-task-mandatory-shower';
 const SHOWER_HABIT_NAME = 'Mandatory Shower';
@@ -186,18 +164,10 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
 
   const [today, setToday] = useState<string>(() => todayString());
   const jobs = useJobs(today);
+  const proofVault = useProofVault({ completedJobs: jobs.jobs.filter(isJobCompleted) });
   const [nowTick, setNowTick] = useState(() => Date.now());
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
   const [addMenuOpen, setAddMenuOpen] = useState(false);
-  const [proofVault, setProofVault] = useState<Record<string, ProofRecord>>(() => {
-    try {
-      const saved = safeStorage.getItem('proof_vault_records');
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  });
-  const [selectedProofJobId, setSelectedProofJobId] = useState<string | null>(null);
 
   // Voice and Dispatcher Sync States
   const { isSpeaking, isLoadingAudio, speak, stop, errorMessage: ttsError } = useTextToSpeech();
@@ -345,20 +315,8 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     safeStorage.setItem('travel_mode', travelMode);
   }, [travelMode]);
 
-  useEffect(() => {
-    safeStorage.setItem('proof_vault_records', JSON.stringify(proofVault));
-  }, [proofVault]);
-
   // Scheduling helper used by cross-feature orchestration
   const tomorrow = addDays(today, 1);
-
-  useEffect(() => {
-    jobs.jobs
-      .filter(isJobCompleted)
-      .forEach(job => {
-        if (!proofVault[job.id]) createProofFolder(job);
-      });
-  }, [jobs.jobs]);
 
   const tracker = useRideTracker(ebikeConfig, learnedBatteryPercentPerMile, batteryFactor);
 
@@ -487,108 +445,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     safeStorage.setItem('route_optimizer_theme', nextTheme);
   };
 
-  const createProofFolder = (job: Job) => {
-    const now = new Date();
-    const completionTime = now.toISOString();
-    const arrivalTime = new Date(now.getTime() - (job.estimatedMinutes * 60 * 1000)).toISOString();
-    const processServeProofNotes = job.jobType === 'process_serve' && job.processServe
-      ? [
-          job.notes,
-          `Company: ${job.processServe.company || 'Process Serve'}`,
-          job.processServe.caseNumber ? `Case/Order: ${job.processServe.caseNumber}` : '',
-          job.processServe.partyName ? `Party: ${job.processServe.partyName}` : '',
-          job.processServe.documentType ? `Documents: ${job.processServe.documentType}` : '',
-          `Attempt Status: ${(job.processServe.attemptStatus || 'not_attempted').replaceAll('_', ' ')}`,
-          `Address Status: ${(job.processServe.addressStatus || 'unknown').replaceAll('_', ' ')}`,
-          job.processServe.proofOfResidence ? `Proof of residence/address: ${job.processServe.proofOfResidence}` : '',
-          job.processServe.recipientDescription ? `Recipient description: ${job.processServe.recipientDescription}` : '',
-          job.processServe.attemptNotes ? `Attempt notes: ${job.processServe.attemptNotes}` : '',
-          `Evidence required: ${[
-            job.processServe.photoRequired ? 'photo' : '',
-            job.processServe.gpsRequired ? 'GPS' : '',
-            job.processServe.printedDocs ? 'printed docs' : '',
-            job.processServe.proofReady ? 'proof ready' : ''
-          ].filter(Boolean).join(', ') || 'none marked'}`
-        ].filter(Boolean).join('\n')
-      : job.notes || '';
-
-    setProofVault(prev => {
-      const existing = prev[job.id];
-      const baseRecord: ProofRecord = existing || {
-        jobId: job.id,
-        storeName: job.storeName,
-        address: job.address,
-        completionTime,
-        arrivalTime,
-        gps: job.coordinates,
-        photos: [],
-        screenshots: [],
-        receipts: [],
-        notes: processServeProofNotes,
-        createdAt: completionTime,
-        updatedAt: completionTime
-      };
-
-      return {
-        ...prev,
-        [job.id]: {
-          ...baseRecord,
-          storeName: job.storeName,
-          address: job.address,
-          completionTime: existing?.completionTime || completionTime,
-          arrivalTime: existing?.arrivalTime || arrivalTime,
-          gps: job.coordinates,
-          updatedAt: completionTime
-        }
-      };
-    });
-  };
-
-  const handleAddProofAssets = (jobId: string, kind: ProofAssetKind, files: FileList | null) => {
-    if (!files || files.length === 0) return;
-
-    Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const asset: ProofAsset = {
-          id: `proof-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-          name: file.name,
-          dataUrl: String(reader.result || ''),
-          addedAt: new Date().toISOString()
-        };
-
-        setProofVault(prev => {
-          const record = prev[jobId];
-          if (!record) return prev;
-          return {
-            ...prev,
-            [jobId]: {
-              ...record,
-              [kind]: [...record[kind], asset],
-              updatedAt: new Date().toISOString()
-            }
-          };
-        });
-      };
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const handleUpdateProofNotes = (jobId: string, notes: string) => {
-    setProofVault(prev => {
-      const record = prev[jobId];
-      if (!record) return prev;
-      return {
-        ...prev,
-        [jobId]: {
-          ...record,
-          notes,
-          updatedAt: new Date().toISOString()
-        }
-      };
-    });
-  };
-
   // Job Actions
   const handleUpdateJobStatus = (id: string, updates: Partial<Job>) => {
     if ((updates.status === 'completed' || updates.status === 'under_review' || updates.status === 'finished' || updates.isCompleted === true) && blockJobAccess('job status changes')) {
@@ -596,7 +452,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     }
     const result = jobs.updateJobStatus(id, updates);
     if (result.becameCompleted && result.updatedJob) {
-      createProofFolder(result.updatedJob);
+      proofVault.ensureProofForJob(result.updatedJob);
       setDispatcherMessage(buildCompletionReadback(result.updatedJob, result.nextJobs));
     }
     if (result.becameFinished && result.updatedJob) {
@@ -650,7 +506,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
 
     if (result.becameCompleted && result.updatedJob) {
       jobs.setCompletingJobIds(prev => prev.includes(id) ? prev : [...prev, id]);
-      createProofFolder(result.previousJob);
+      proofVault.ensureProofForJob(result.previousJob);
       setDispatcherMessage(buildCompletionReadback(result.previousJob, result.nextJobs));
       if (tracker.rideModeActive) {
         tracker.trackJobCompletion(id, result.previousJob.estimatedMinutes);
@@ -690,16 +546,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     jobs.setEditingJob(null);
     jobs.setDefaultJobType('retail_audit');
     setIsModalOpen(true);
-  };
-
-  const handleOpenProofHistory = () => {
-    const records = Object.values(proofVault);
-    if (records.length > 0) {
-      const sorted = [...records].sort(
-        (a, b) => new Date(b.completionTime).getTime() - new Date(a.completionTime).getTime()
-      );
-      setSelectedProofJobId(sorted[0].jobId);
-    }
   };
 
   const handleOpenProcessServeModal = () => {
@@ -1048,8 +894,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   };
 
   const revisionAlertJobs = remainingRouteAJobs.filter(isRevisionJob);
-  const proofRecords = (Object.values(proofVault) as ProofRecord[]).sort((a, b) => new Date(b.completionTime).getTime() - new Date(a.completionTime).getTime());
-  const selectedProofRecord = selectedProofJobId ? proofVault[selectedProofJobId] : null;
+  const selectedProofRecord = proofVault.selectedProofRecord;
   const routeDetailJob = routeDetailJobId ? jobs.jobs.find(job => job.id === routeDetailJobId) || null : null;
   const previewGuideJob = previewGuideJobId ? jobs.jobs.find(job => job.id === previewGuideJobId) || null : null;
   const inventoryJobs = jobs.jobs.filter(job => getInventoryDomain(job) === inventoryDomain);
@@ -1114,7 +959,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
       terrain={terrain}
       dayEarnings={activeMetrics.totalPay}
       onNavigate={(tab) => handleTabChange(tab as AppTab)}
-      onOpenProofHistory={handleOpenProofHistory}
+      onOpenProofHistory={proofVault.openProofHistory}
       onOpenAddJob={handleOpenAddModal}
       onOptimizeRoute={handleOptimizeRouteSequence}
     >
@@ -1251,7 +1096,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                 onToggleTheme={handleToggleTheme}
                 userEmail={user?.email}
                 onNavigate={(tab) => handleTabChange(tab)}
-                onOpenProofHistory={handleOpenProofHistory}
+                onOpenProofHistory={proofVault.openProofHistory}
                 onOpenDebugCenter={() => onOpenDebugCenter?.()}
                 onAddProcessServe={handleOpenProcessServeModal}
                 onImportScreenshots={() => setIsScreenshotImportOpen(true)}
@@ -2214,110 +2059,12 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
         )}
 
         {selectedProofRecord && (
-          <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
-            <div className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-[8px] border-2 border-slate-300 bg-white p-5 shadow-2xl dark:border-white/20 dark:bg-[#17181b]">
-              <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4 dark:border-white/10">
-                <div>
-                  <p className="text-sm font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Proof Folder</p>
-                  <h3 className="text-4xl font-black text-slate-950 dark:text-white">{selectedProofRecord.storeName}</h3>
-                  <p className="text-lg font-black text-slate-600 dark:text-slate-300">{selectedProofRecord.address}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedProofJobId(null)}
-                  className="flex h-12 w-12 items-center justify-center rounded-[8px] bg-slate-950 text-white dark:bg-white dark:text-slate-950"
-                  aria-label="Close proof folder"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-
-              <div className="mt-4 grid gap-3 md:grid-cols-4">
-                <div className="rounded-[8px] bg-slate-100 p-3 dark:bg-white/10">
-                  <p className="text-sm font-black uppercase text-slate-500">Completion Time</p>
-                  <p className="mt-1 text-lg font-black text-slate-950 dark:text-white">{new Date(selectedProofRecord.completionTime).toLocaleString()}</p>
-                </div>
-                <div className="rounded-[8px] bg-slate-100 p-3 dark:bg-white/10">
-                  <p className="text-sm font-black uppercase text-slate-500">Arrival Time</p>
-                  <p className="mt-1 text-lg font-black text-slate-950 dark:text-white">{new Date(selectedProofRecord.arrivalTime).toLocaleString()}</p>
-                </div>
-                <div className="rounded-[8px] bg-slate-100 p-3 dark:bg-white/10">
-                  <p className="text-sm font-black uppercase text-slate-500">GPS</p>
-                  <p className="mt-1 text-lg font-black text-slate-950 dark:text-white">
-                    {selectedProofRecord.gps ? `${selectedProofRecord.gps.lat.toFixed(4)}, ${selectedProofRecord.gps.lng.toFixed(4)}` : 'Optional'}
-                  </p>
-                </div>
-                <div className="rounded-[8px] bg-slate-100 p-3 dark:bg-white/10">
-                  <p className="text-sm font-black uppercase text-slate-500">Evidence Count</p>
-                  <p className="mt-1 text-lg font-black text-slate-950 dark:text-white">
-                    {selectedProofRecord.photos.length + selectedProofRecord.screenshots.length + selectedProofRecord.receipts.length} files
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-5 grid gap-4 lg:grid-cols-3">
-                {([
-                  ['photos', 'Photos', Camera],
-                  ['screenshots', 'Screenshots', FileImage],
-                  ['receipts', 'Receipts', ReceiptText]
-                ] as const).map(([kind, label, Icon]) => (
-                  <section key={kind} className="rounded-[8px] border-2 border-slate-200 p-4 dark:border-white/10">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <Icon size={22} className="text-blue-700 dark:text-blue-300" />
-                        <h4 className="text-xl font-black text-slate-950 dark:text-white">{label}</h4>
-                      </div>
-                      <span className="rounded-[8px] bg-slate-100 px-2 py-1 text-sm font-black dark:bg-white/10">
-                        {selectedProofRecord[kind].length}
-                      </span>
-                    </div>
-                    <label className="mt-3 flex min-h-12 cursor-pointer items-center justify-center rounded-[8px] bg-blue-700 px-3 text-base font-black uppercase text-white transition hover:bg-blue-600">
-                      Add {label}
-                      <input
-                        type="file"
-                        accept="image/*,.pdf"
-                        multiple
-                        className="hidden"
-                        onChange={(event) => {
-                          handleAddProofAssets(selectedProofRecord.jobId, kind, event.target.files);
-                          event.currentTarget.value = '';
-                        }}
-                      />
-                    </label>
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                      {selectedProofRecord[kind].map(asset => (
-                        <a
-                          key={asset.id}
-                          href={asset.dataUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="rounded-[8px] border border-slate-200 bg-slate-50 p-2 text-sm font-black text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200"
-                        >
-                          {asset.dataUrl.startsWith('data:image') && (
-                            <img src={asset.dataUrl} alt={asset.name} className="mb-2 aspect-square w-full rounded-[8px] object-cover" />
-                          )}
-                          <span className="block truncate">{asset.name}</span>
-                        </a>
-                      ))}
-                    </div>
-                  </section>
-                ))}
-              </div>
-
-              <section className="mt-5 rounded-[8px] border-2 border-slate-200 p-4 dark:border-white/10">
-                <div className="mb-3 flex items-center gap-2">
-                  <StickyNote size={22} className="text-blue-700 dark:text-blue-300" />
-                  <h4 className="text-xl font-black text-slate-950 dark:text-white">Notes</h4>
-                </div>
-                <textarea
-                  value={selectedProofRecord.notes}
-                  onChange={(event) => handleUpdateProofNotes(selectedProofRecord.jobId, event.target.value)}
-                  placeholder="Add details, disputes, manager names, app confirmation notes, or anything you may need later."
-                  className="min-h-32 w-full rounded-[8px] border-2 border-slate-300 bg-white p-3 text-base font-bold text-slate-950 outline-none focus:border-blue-700 dark:border-white/10 dark:bg-black/20 dark:text-white"
-                />
-              </section>
-            </div>
-          </div>
+          <ProofVaultModal
+            selectedProofRecord={selectedProofRecord}
+            onClose={proofVault.closeProof}
+            onAddAssets={proofVault.addProofAssets}
+            onUpdateNotes={proofVault.updateProofNotes}
+          />
         )}
 
         {/* Job Detail Mini Page Modal */}

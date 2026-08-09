@@ -69,7 +69,7 @@ Key state groups:
 - **Ride Mode**: `rideModeActive`, `currentStopIndex`, `rideSession`
 - **Shower Gate**: `useShowerGate(now)` hook in `src/features/showerGate/useShowerGate.ts` encapsulates all shower gate state, barcode scanner lifecycle, proof upload/sync, and cycle management. `src/App.tsx` consumes the hook and passes read-only state + action callbacks to `HabitsTab` and protected tab overlays.
 - **Habits**: `useHabits(todayKey)` hook in `src/features/habits/useHabits.ts` manages `habitTasks`, `habitLogs`, active task, derived stats, localStorage persistence, and backend sync. `src/App.tsx` consumes the hook and passes values to `HabitsTab`.
-- **Proof Vault**: `proofVault` (keyed by jobId)
+- **Proof Vault**: `useProofVault` in `src/features/proofVault/useProofVault.ts` owns per-job proof records, selected proof record state, `proof_vault_records` persistence, proof folder creation, file asset insertion, notes updates, sorted/selected derivations, and read-only completed-job backfill. `App.tsx` keeps cross-feature orchestration such as Jobs completion triggers, Assistant/More navigation, and modal composition.
 - **Settings**: `startAddress`, `theme`, `debugCenterOpen`
 
 ### Scheduling derivations
@@ -141,4 +141,4 @@ Targets modern mobile browsers (iOS Safari, Android Chrome) and desktop (Chrome,
 
 ## Last Updated
 
-2026-08-08 — battery extraction Step 2 moved Battery-owned state, persistence, factor/range/risk calculations, default e-bike config, and ride-learning logic into `src/features/battery/useBattery.ts` / `batteryUtils.ts`; `App.tsx` keeps orchestration.
+2026-08-08 — Proof Vault extraction Step 2 moved proof state, persistence, mutations, derivations, and completed-job backfill into `src/features/proofVault/useProofVault.ts`; `App.tsx` keeps cross-feature orchestration/composition.
