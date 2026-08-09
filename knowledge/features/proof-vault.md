@@ -17,11 +17,25 @@ Per-job proof attachment system for completion verification and documentation.
 ### Data Model
 
 ```typescript
+type ProofAssetKind = 'photos' | 'screenshots' | 'receipts';
+
+interface ProofAsset {
+  id: string;
+  name: string;
+  dataUrl: string;
+  addedAt: string;
+}
+
 interface ProofRecord {
   jobId: string;
-  photos: string[]; // base64 or file references
-  screenshots: string[];
-  receipts: string[];
+  storeName: string;
+  address: string;
+  completionTime: string;
+  arrivalTime: string;
+  gps?: Coordinates;
+  photos: ProofAsset[];
+  screenshots: ProofAsset[];
+  receipts: ProofAsset[];
   notes: string;
   createdAt: string;
   updatedAt: string;
@@ -31,14 +45,15 @@ interface ProofRecord {
 ### Storage
 
 - **Location**: localStorage
-- **Key**: `proofVault` (object keyed by jobId)
+- **Key**: `proof_vault_records` (object keyed by jobId)
 - **Format**: Map<jobId, ProofRecord>
+- **Owner**: `src/features/proofVault/useProofVault.ts`
 
 ### UI Components
 
-- Proof attachment UI in job cards
-- File inputs with `accept="image/*"` and `capture` attributes
-- Camera capture for mobile devices
+- Proof folder modal for the selected job record
+- File inputs with `accept="image/*,.pdf"` and `multiple`
+- Images render thumbnails; PDFs/files open through the stored data URL link
 - Notes field for annotations
 
 ## Architecture
@@ -46,7 +61,7 @@ interface ProofRecord {
 ### Data Flow
 
 ```
-Job Completion → markComplete → ProofVault UI Opens
+Job Completion → Jobs handler → ensureProofForJob(job)
                               ↓
                     File Upload → Base64 Encode → localStorage
                               ↓
@@ -55,28 +70,27 @@ Job Completion → markComplete → ProofVault UI Opens
 
 ### Key Components
 
-- **ProofAttachment UI**: File upload interface per asset kind
-- **Job Card Integration**: Shows proof count/icons
-- **Completion Flow**: markComplete opens proof vault automatically
+- **useProofVault**: Owns proof records, record selection, localStorage persistence, completed-job backfill, folder creation, file asset insertion, notes updates, and sorted/selected derivations.
+- **ProofVaultModal**: File upload interface per asset kind and notes editor for the selected record.
+- **Completion Flow**: App-level Jobs completion handlers call `ensureProofForJob(job)` when a job becomes completed. The modal opens through explicit Proof Vault navigation from More or the Assistant.
 
 ## Design Rationale
 
 - **Per-job organization**: Each job has its own proof record
 - **Three asset types**: Photos, screenshots, receipts cover common proof needs
 - **localStorage**: Simple, no server needed for proof storage
-- **Camera capture**: Mobile-first design for field workers
-- **Automatic opening**: Encourages proof attachment at completion time
+- **File picker upload**: Supports images and PDFs through the browser file picker
+- **Explicit opening**: The Proof Vault opens from More or the Assistant and selects the newest proof record
 
 ## Dependencies
 
 - localStorage for persistence
 - File API for upload
-- Camera API (via capture attribute)
 - Job system for jobId linkage
 
 ## Business Rules
 
-1. Proof vault opens automatically after marking job complete
+1. Completed jobs get a Proof Vault record created or refreshed automatically
 2. User can attach any combination of asset types
 3. Multiple files per asset kind allowed
 4. Notes are optional per proof record
@@ -95,28 +109,27 @@ Job Completion → markComplete → ProofVault UI Opens
 - **No proof attached**: Job still completes, proof is optional
 - **Large images**: Base64 encoding increases storage usage
 - **localStorage quota**: Proof data may exceed limits
-- **Image format**: Only image/* accepted (no PDF, no video)
-- **Camera unavailable**: Manual file selection fallback
+- **Accepted formats**: `image/*` and `.pdf` are selectable; video is not supported
 
 ## Failure Modes
 
 - localStorage full → new proof not saved
 - File read fails → upload silently fails
 - Base64 encoding error → file not stored
-- Camera permission denied → falls back to file picker
+- Browser file picker unavailable → user cannot attach new proof assets in the modal
 
 ## Testing
 
 - Manual test: Complete job → attach photo → verify stored
 - Test with multiple files per kind
-- Test camera capture on mobile
+- Test image and PDF selection
 - Test localStorage persistence across refresh
 
 ## Known Limitations
 
 - localStorage only (no server backup)
 - No image compression (storage bloat)
-- No PDF/document support
+- PDF files can be attached, but they are only linked, not preview-rendered inline
 - No video support
 - No proof verification/OCR
 - No bulk proof management
@@ -125,7 +138,7 @@ Job Completion → markComplete → ProofVault UI Opens
 
 - Server-side proof storage
 - Image compression before storage
-- PDF/document support
+- Inline PDF preview and broader document-management support
 - Video proof support
 - OCR verification of receipts
 - Bulk proof management
@@ -134,7 +147,10 @@ Job Completion → markComplete → ProofVault UI Opens
 
 ## Related Source Files
 
-- `src/App.tsx` — proof state and handlers
+- `src/App.tsx` — cross-feature proof orchestration: Jobs completion triggers, Assistant/More navigation, and modal composition
+- `src/features/proofVault/types.ts` — Proof Vault asset and record types
+- `src/features/proofVault/ProofVaultModal.tsx` — selected proof folder modal UI
+- `src/features/proofVault/useProofVault.ts` — Proof Vault state, persistence, mutations, selection, and completed-job backfill
 
 ## Related Knowledge
 
@@ -143,4 +159,4 @@ Job Completion → markComplete → ProofVault UI Opens
 
 ## Last Updated
 
-2026-07-20 (commit c12bd44)
+2026-08-08 (Proof Vault extraction Step 2: moved proof state, persistence, mutations, record selection, derivations, and completed-job backfill into `src/features/proofVault/useProofVault.ts`)

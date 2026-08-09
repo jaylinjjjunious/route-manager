@@ -41,6 +41,9 @@ Index of feature documentation for the All in One 667 application.
 | `src/features/battery/BatteryTab.tsx` | Presentational legacy Battery tab UI |
 | `src/features/battery/useBattery.ts` | E-bike config/current charge state, persistence, actions, range/risk calculations, and learned efficiency |
 | `src/features/battery/batteryUtils.ts` | Default Jasion EB5 config and pure battery calculations |
+| `src/features/proofVault/useProofVault.ts` | Per-job proof state, persistence, actions, selected record, and completed-job backfill |
+| `src/features/proofVault/ProofVaultModal.tsx` | Selected proof folder modal UI |
+| `src/features/proofVault/types.ts` | Proof asset and record types |
 | `src/utils/routeUtils.ts` | Compatibility re-export shim for route utility imports |
 | `src/utils/geoUtils.ts` | Shared geographic distance helper |
 | `src/features/jobs/jobState.ts` | Job state normalization |
@@ -51,4 +54,4 @@ Index of feature documentation for the All in One 667 application.
 
 ## Last Updated
 
-2026-08-08 (battery extraction audit: current three-tab navigation/protected-tab summary and Battery feature source map)
+2026-08-08 (Proof Vault extraction Step 2: added Proof Vault hook/modal/type source map)

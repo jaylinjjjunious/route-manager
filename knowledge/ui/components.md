@@ -1,6 +1,6 @@
 # UI Components
 
-**Last Updated:** 2026-08-08 (battery extraction Step 2: Battery state/persistence moved into `useBattery`)
+**Last Updated:** 2026-08-08 (Proof Vault extraction Step 2: Proof Vault state/persistence moved into `useProofVault`)
 **Related Source Files:** `src/components/*.tsx`, `src/components/aio/*.tsx`, `src/features/*/*.tsx`, `src/assistant/*.tsx`
 
 ---
@@ -46,6 +46,14 @@
 | **File** | `src/features/battery/BatteryTab.tsx` |
 | **Props** | Battery state/config values and action callbacks, route metrics/reserve values, route simulation values/handlers, tracker display durations, outlier reports, and `onMoveOutlierToRouteB(jobId)` |
 | **Responsibility** | Presentational legacy Battery tab UI. Renders current battery controls, PAS/assist controls, rider/cargo weight, wind, terrain, speed config, route simulation console, safety margin audit, outlier battery-cost advice, and conservation playbook. Battery state, persistence, learned-efficiency updates, clamp/restore logic, and range/risk calculations live in `useBattery`; Dispatcher mutation, undo orchestration, Shower Gate protection, Jobs mutation, and Route Planning simulation ownership remain outside this component. |
+
+### ProofVaultModal
+
+| Field | Value |
+|-------|-------|
+| **File** | `src/features/proofVault/ProofVaultModal.tsx` |
+| **Props** | `selectedProofRecord`, `onClose`, `onAddAssets`, `onUpdateNotes` |
+| **Responsibility** | Presentational selected Proof Vault folder modal. Renders header details, completion/arrival/GPS/evidence metrics, photos/screenshots/receipts upload controls, asset previews, and notes. `useProofVault` owns Proof Vault state, persistence, record selection, and proof mutations; `App.tsx` keeps cross-feature creation triggers and modal composition. |
 
 ### AIØ Primitives
 
@@ -164,7 +172,7 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 | `terrain` | `string` | App.tsx state |
 | `dayEarnings` | `number` | `activeMetrics.totalPay` |
 | `onNavigate` | `(tab: string) => void` | `handleTabChange` |
-| `onOpenProofHistory` | `() => void` | Sets `selectedProofJobId` |
+| `onOpenProofHistory` | `() => void` | Opens the latest Proof Vault record through `useProofVault.openProofHistory` |
 | `onOpenAddJob` | `() => void` | `handleOpenAddModal` |
 | `onOptimizeRoute` | `() => void` | `handleOptimizeRouteSequence` |
 

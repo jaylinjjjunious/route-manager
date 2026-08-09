@@ -48,6 +48,10 @@ route-optimizer-app/
     services/
       apiClient.ts       — Auth-fetch wrapper
     features/
+      proofVault/
+        ProofVaultModal.tsx — Selected proof folder modal UI
+        useProofVault.ts    — Per-job proof state, persistence, mutations, selection
+        types.ts            — Proof asset and record types
       battery/
         BatteryTab.tsx    — Presentational legacy Battery tab UI
         useBattery.ts     — E-bike state, persistence, actions, learned efficiency
@@ -84,7 +88,7 @@ route-optimizer-app/
 
 1. User authenticates via Supabase (email/password).
 2. Auth session is stored in-memory (AuthProvider) and localStorage (Supabase).
-3. App.tsx loads jobs, habits, shower proof state from localStorage on mount.
+3. Feature hooks load jobs, habits, shower proof state, and per-job Proof Vault state from localStorage on mount.
 4. Shower gate checks backend via `/api/shower-proofs/current` for the current cycle.
 5. User uploads shower proof via POST `/api/shower-proofs` (multer on Express, FormData on Worker).
 6. Route optimization runs entirely client-side (nearest-neighbor greedy algorithm).
@@ -95,10 +99,10 @@ route-optimizer-app/
 
 ### State Management
 
-No external state library. App.tsx uses React useState and useRef for all state:
+No external state library. `App.tsx` remains the shell/orchestrator, with extracted feature hooks owning focused state:
 
 - `jobs`, `routeOrder` — Job list and optimized route order
-- `proofVault` — Proof attachments per job
+- `useProofVault` — Proof attachments per job
 - `showerProofs` — Array of shower proof records per cycle
 - `habitTasks`, `habitLogs` — Habit tracking state
 - `rideModeActive` — Whether Ride Mode is engaged
@@ -142,4 +146,4 @@ npm run dev
 
 ## Last Updated
 
-2026-08-08 — battery extraction Step 2 moved Battery-owned state, persistence, calculations, default e-bike config, and learning logic into `src/features/battery/`.
+2026-08-08 — Proof Vault extraction Step 2 moved per-job proof state, persistence, mutations, selected record state, and completed-job backfill into `src/features/proofVault/useProofVault.ts`.
