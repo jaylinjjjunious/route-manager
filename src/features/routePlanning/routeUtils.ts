@@ -6,16 +6,9 @@
 import { Job, Coordinates, RouteMetrics, OutlierReport, RouteScoreReport, EbikeConfig, OutlierStatus } from '../../types';
 import { isJobCompleted, isRevisionJob } from '../jobs/jobState';
 import { getDistanceInMiles } from '../../utils/geoUtils';
+import { DEFAULT_EBIKE_CONFIG } from '../battery/batteryUtils';
 export { BAKERSFIELD_COORDINATES, resolveCoordinates } from '../../utils/bakersfieldCoordinates';
-
-// Default e-bike configuration (Jasion EB5 spec: ~360Wh battery, 20 mph top assist)
-export const DEFAULT_EBIKE_CONFIG: EbikeConfig = {
-  model: "Jasion EB5",
-  batteryCapacityWh: 360,
-  avgSpeedMph: 18, // accounting for city stop-and-go
-  batteryPercentPerMile: 2.8, // 100% capacity gives ~35.7 miles range on mid-assist
-  maxRangeMiles: 36
-};
+export { DEFAULT_EBIKE_CONFIG } from '../battery/batteryUtils';
 
 /**
  * Optimizes a list of stops using a Greedy Nearest-Neighbor algorithm starting from a given coordinate.

@@ -24,7 +24,7 @@ Describes the React application structure, component hierarchy, state management
             <JobsScreen />               (jobs tab — schedule list)
             <MoreScreen />               (more tab — legacy feature hub)
             <InventoryTab />             (legacy)
-            <BatteryTab />               (e-bike telemetry)
+            <BatteryTab />               (e-bike telemetry) → `src/features/battery/BatteryTab.tsx`
             <TrackerTab />               (end of day summary)
             <HabitsTab />                (mandatory shower habit + custom tasks)  → `src/features/habits/HabitsTab.tsx`
             <ToolsTab />                 (Smart Aisle Scan, transit tools)
@@ -58,12 +58,13 @@ Protected tabs (`battery`, `tracker`) show a "Shower Gate Locked" overlay when `
 
 ### State Management
 
-`App.tsx` remains the top-level orchestrator for screen composition and cross-feature workflows. Feature-owned state now lives in focused hooks where extracted (`useJobs`, `useShowerGate`, `useHabits`), while App keeps shared settings, route/travel orchestration, proof vault state, dispatcher wiring, and integration state. No Redux or Zustand is used; auth uses AuthProvider context.
+`App.tsx` remains the top-level orchestrator for screen composition and cross-feature workflows. Feature-owned state now lives in focused hooks where extracted (`useJobs`, `useBattery`, `useShowerGate`, `useHabits`), while App keeps shared settings, route/travel orchestration, proof vault state, dispatcher wiring, and integration state. No Redux or Zustand is used; auth uses AuthProvider context.
 
 Key state groups:
 - **Jobs**: `useJobs(today)` in `src/features/jobs/useJobs.ts` owns the jobs collection, route A/B derivations, schedule review UI state, job editing defaults, completion animation IDs, and pure job mutation actions. `App.tsx` consumes typed mutation results and keeps cross-feature orchestration such as Shower Gate blocking, Proof Vault folders, Dispatcher messages, Ride Tracker completion tracking, and route optimization/storage.
 - **Scheduling**: `today` (local LA date string, recomputed on focus/visibility/60s tick), with strip/review/move-to-day state owned by `useJobs`
 - **Inventory**: `inventoryDomain`, `inventoryJobId`, domain-filtered job selection
+- **Battery**: `useBattery` in `src/features/battery/useBattery.ts` owns e-bike config, current battery, assist/weight/wind/terrain inputs, learned consumption rate, battery persistence, factor/range/risk calculations, clamp/update actions, restore, and ride-learning updates. The unlocked legacy Battery tab UI lives in `src/features/battery/BatteryTab.tsx` and receives values/actions as props. `App.tsx` keeps cross-feature orchestration such as Dispatcher `UPDATE_BATTERY`, ride-end learning handoff, undo coordination, Shower Gate protection, and wiring Battery inputs into Route Planning/Ride Tracker.
 - **Route**: `useRoutePlanning` in `src/features/routePlanning/useRoutePlanning.ts` owns route metrics, optimization monitor state, next-stop/list derivations, outlier derivations, and simulation state/actions. Route-owned algorithms and route UI live under `src/features/routePlanning/`, with shared Haversine distance math in `src/utils/geoUtils.ts`. `App.tsx` passes route inputs and keeps cross-feature orchestration/config boundaries.
 - **Ride Mode**: `rideModeActive`, `currentStopIndex`, `rideSession`
 - **Shower Gate**: `useShowerGate(now)` hook in `src/features/showerGate/useShowerGate.ts` encapsulates all shower gate state, barcode scanner lifecycle, proof upload/sync, and cycle management. `src/App.tsx` consumes the hook and passes read-only state + action callbacks to `HabitsTab` and protected tab overlays.
@@ -140,4 +141,4 @@ Targets modern mobile browsers (iOS Safari, Android Chrome) and desktop (Chrome,
 
 ## Last Updated
 
-2026-08-08 — route-planning extraction Step 3 moved route-owned state, refs, effects, derived values, and simulation lifecycle into `src/features/routePlanning/useRoutePlanning.ts`; `App.tsx` keeps cross-feature orchestration/config boundaries.
+2026-08-08 — battery extraction Step 2 moved Battery-owned state, persistence, factor/range/risk calculations, default e-bike config, and ride-learning logic into `src/features/battery/useBattery.ts` / `batteryUtils.ts`; `App.tsx` keeps orchestration.

@@ -1,6 +1,6 @@
 # UI Components
 
-**Last Updated:** 2026-08-08 (route-planning extraction Step 1: route-owned UI moved into `src/features/routePlanning/`)
+**Last Updated:** 2026-08-08 (battery extraction Step 2: Battery state/persistence moved into `useBattery`)
 **Related Source Files:** `src/components/*.tsx`, `src/components/aio/*.tsx`, `src/features/*/*.tsx`, `src/assistant/*.tsx`
 
 ---
@@ -38,6 +38,14 @@
 | **File** | `src/components/aio/MoreScreen.tsx` |
 | **Props** | `theme`, `onToggleTheme`, `userEmail`, `onNavigate(tab)`, `onOpenProofHistory`, `onOpenDebugCenter`, `onAddProcessServe`, `onImportScreenshots`, `onSignOut` |
 | **Responsibility** | Hub for everything outside the primary flow: account card (avatar, email, theme toggle), the six legacy feature tabs (Inventory, Battery, Tracker, Habits, Tools, Settings), action links (Proof Vault, Add Process Serve, Import Job Screenshots, Debug Center), and Sign Out. Legacy screens remain reachable. |
+
+### BatteryTab
+
+| Field | Value |
+|-------|-------|
+| **File** | `src/features/battery/BatteryTab.tsx` |
+| **Props** | Battery state/config values and action callbacks, route metrics/reserve values, route simulation values/handlers, tracker display durations, outlier reports, and `onMoveOutlierToRouteB(jobId)` |
+| **Responsibility** | Presentational legacy Battery tab UI. Renders current battery controls, PAS/assist controls, rider/cargo weight, wind, terrain, speed config, route simulation console, safety margin audit, outlier battery-cost advice, and conservation playbook. Battery state, persistence, learned-efficiency updates, clamp/restore logic, and range/risk calculations live in `useBattery`; Dispatcher mutation, undo orchestration, Shower Gate protection, Jobs mutation, and Route Planning simulation ownership remain outside this component. |
 
 ### AIØ Primitives
 

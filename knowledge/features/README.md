@@ -19,9 +19,9 @@ Index of feature documentation for the All in One 667 application.
 
 **Stack**: React 19 + TypeScript + Vite 8 + Tailwind v4 + Express backend
 
-**Tabs**: Dashboard, Route, Jobs, Battery, Tracker, Habits, Settings
+**Tabs**: Today, Jobs, More, plus legacy Inventory, Battery, Tracker, Habits, Tools, Settings from More
 
-**Protected Tabs**: Route, Jobs, Battery, Tracker (require shower gate unlock)
+**Protected Tabs**: Battery and Tracker when the Shower Gate policy is enabled
 
 **Key Architecture**:
 - Single-page app with client-side routing
@@ -38,6 +38,9 @@ Index of feature documentation for the All in One 667 application.
 | `src/types.ts` | TypeScript type definitions |
 | `src/features/routePlanning/routeUtils.ts` | Route optimization algorithms |
 | `src/features/routePlanning/useRoutePlanning.ts` | Route state, monitor, derived values, and simulation lifecycle |
+| `src/features/battery/BatteryTab.tsx` | Presentational legacy Battery tab UI |
+| `src/features/battery/useBattery.ts` | E-bike config/current charge state, persistence, actions, range/risk calculations, and learned efficiency |
+| `src/features/battery/batteryUtils.ts` | Default Jasion EB5 config and pure battery calculations |
 | `src/utils/routeUtils.ts` | Compatibility re-export shim for route utility imports |
 | `src/utils/geoUtils.ts` | Shared geographic distance helper |
 | `src/features/jobs/jobState.ts` | Job state normalization |
@@ -48,4 +51,4 @@ Index of feature documentation for the All in One 667 application.
 
 ## Last Updated
 
-2026-07-20 (commit c12bd44)
+2026-08-08 (battery extraction audit: current three-tab navigation/protected-tab summary and Battery feature source map)

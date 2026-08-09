@@ -11,7 +11,7 @@ Ensures the user completes a required daily hygiene habit before starting work. 
 ## User Interface
 
 - **Dashboard panel** (`ShowerGatePanel` component): Shows locked state (amber) when incomplete, green verified card after completion.
-- **Protected tab overlay**: When `showerGateUnlocked` is false, Route/Jobs/Battery/Tracker tabs show a "Daily Verification Required" overlay with "Go to Mission Control" button.
+- **Protected tab overlay**: When the Shower Gate policy is enabled and `showerGateUnlocked` is false, Battery and Tracker surfaces show a "Daily Verification Required" overlay with "Go to Mission Control" button. Today, Jobs, and More remain available in the current three-tab flow.
 - **Settings tab**: When the gate is unlocked, the panel renders in Settings for proof history access.
 - **Habits tab**: Has an integrated barcode scanner and proof attachment section for the "Mandatory Shower" habit.
 
@@ -241,4 +241,4 @@ No automated tests exist for the Shower Gate feature. Manual testing covers:
 
 ## Last Updated
 
-2026-08-06 (refactor/shower-gate-extraction — Step 4: `showerGateService.ts` backend / file-processing extraction)
+2026-08-08 (battery extraction audit: corrected protected-tab overlay scope for current three-tab flow)
