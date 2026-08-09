@@ -36,7 +36,10 @@ Index of feature documentation for the All in One 667 application.
 |------|---------|
 | `src/App.tsx` | Main app, state management, tab routing |
 | `src/types.ts` | TypeScript type definitions |
-| `src/utils/routeUtils.ts` | Route optimization algorithms |
+| `src/features/routePlanning/routeUtils.ts` | Route optimization algorithms |
+| `src/features/routePlanning/useRoutePlanning.ts` | Route state, monitor, derived values, and simulation lifecycle |
+| `src/utils/routeUtils.ts` | Compatibility re-export shim for route utility imports |
+| `src/utils/geoUtils.ts` | Shared geographic distance helper |
 | `src/features/jobs/jobState.ts` | Job state normalization |
 | `src/utils/showerCycle.ts` | Shower cycle timing logic |
 | `src/components/` | UI components |

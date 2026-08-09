@@ -96,7 +96,7 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 - **localStorage**: Single-user app, no need for complex persistence layer
 - **Multiple statuses**: Different stages of job lifecycle require different handling
 - **Proof vault integration**: Every completed job can have attached proof (photos, screenshots, receipts)
-- **Outlier detection**: Jobs >4.2 miles from route are flagged for route efficiency analysis
+- **Outlier detection**: Jobs >4.2 miles from route are flagged for route efficiency analysis; the route-planning UI for those alerts lives under `src/features/routePlanning/`
 
 ## Dependencies
 
@@ -172,7 +172,6 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 - `src/features/jobs/JobCard.tsx` — job display component
 - `src/features/jobs/JobModal.tsx` — job editing/completion modal (optional schedule field)
 - `src/features/jobs/JobDetailModal.tsx` — scheduled row + Move-to-Day action
-- `src/features/jobs/OutlierDetector.tsx` — outlier detection UI
 - `src/features/jobs/JobsScreen.tsx` — jobs tab screen (list + filter + import)
 - `src/features/jobs/RouteFilter.tsx` — route A/B filter component
 - `src/utils/bakersfieldCoordinates.ts` — shared Bakersfield coordinate presets and deterministic address resolver used by seed jobs and job editing
@@ -185,4 +184,4 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 
 ## Last Updated
 
-2026-08-08 (jobs extraction Step 4: pure job-status mutation actions moved into `useJobs`; App retains cross-feature orchestration)
+2026-08-08 (route-planning extraction Step 1: removed route-owned OutlierDetector from Jobs related source list; jobs extraction remains complete)

@@ -38,8 +38,6 @@ route-optimizer-app/
     components/
       ShowerGatePanel.tsx — Daily barcode verification (in features/showerGate/)
       Header.tsx         — App header
-      OutlierDetector.tsx
-      BakersfieldMapPreview.tsx
       JobCard.tsx, JobModal.tsx
       AIDispatcher.tsx
       JobImportSystem.tsx
@@ -50,12 +48,21 @@ route-optimizer-app/
     services/
       apiClient.ts       — Auth-fetch wrapper
     features/
+      routePlanning/
+        BakersfieldMapPreview.tsx
+        RouteSummaryCard.tsx
+        RouteScoreGauge.tsx
+        OutlierDetector.tsx
+        routeUtils.ts      — Route optimization, metrics
+        useRoutePlanning.ts — Route state, derived values, monitor, simulation
+        types.ts           — Route-planning feature types
       showerGate/
         showerProofApi.ts  — Proof upload/fetch API
       habits/HabitsTab.tsx — Presentational Habits tab UI (state lives in App.tsx)
     utils/
       showerCycle.ts     — Reset time, cycle ID, labels
-      routeUtils.ts      — Route optimization, metrics
+      routeUtils.ts      — Route utility compatibility re-export shim
+      geoUtils.ts        — Shared coordinate distance helper
       jobState.ts        — Job state normalization
       voiceProviders.ts  — TTS provider selection
     lib/
@@ -131,4 +138,4 @@ npm run dev
 
 ## Last Updated
 
-2026-08-06 (ed5d961) — added `src/features/habits/HabitsTab.tsx` to repository structure; corrected habit state names to `habitTasks` and `habitLogs`.
+2026-08-08 — route-planning extraction Step 3 moved route-owned state/refs/effects/derivations and simulation lifecycle into `src/features/routePlanning/useRoutePlanning.ts`.

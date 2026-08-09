@@ -21,7 +21,7 @@ import {
   Undo2
 } from 'lucide-react';
 import { Job, RouteMetrics, EbikeConfig, DispatcherAction, ChatMessage } from '../types';
-import { getDistanceInMiles } from '../utils/routeUtils';
+import { getDistanceInMiles } from '../utils/geoUtils';
 import { BAKERSFIELD_COORDINATES } from '../utils/bakersfieldCoordinates';
 import { isJobCompleted } from '../features/jobs/jobState';
 import { authFetch } from '../services/apiClient';

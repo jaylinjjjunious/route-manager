@@ -16,11 +16,11 @@ Today's Route pool = Route A jobs whose `effectiveDay(job, today) === today` (`s
 
 Today's Route card surfaces are interactive: tapping the card surface opens a `DashboardJobDetailSheet` bottom-sheet modal that renders the shared `JobCard` component (the same visual design as the Jobs tab). The sheet includes a compact route-info header (stop number, leg distance, ride time) and footer actions (Navigate, Open in Jobs). Existing Navigate, Review, and Move controls on the route card stop event propagation and keep their original behavior.
 
-The underlying route system remains shared: `src/utils/routeUtils.ts`, route state in `src/App.tsx`, route/job types, battery-aware metrics, revision insertion, and Route A/Route B assignment logic are still active. Retired route destinations (`/route`, `/routes`, `#route`) redirect to Dashboard.
+The underlying route planning algorithms live in `src/features/routePlanning/routeUtils.ts`. Route-planning state, derived route values, continuous optimization monitor state, and route simulation lifecycle live in `src/features/routePlanning/useRoutePlanning.ts`. `src/App.tsx` still owns cross-feature orchestration and configuration boundaries such as job mutations/storage, battery config mutation, dispatcher routing, transit fetching, and screen composition. Retired route destinations (`/route`, `/routes`, `#route`) redirect to Dashboard.
 
 ### Route Optimization Algorithm
 
-**optimizeRoute** (src/utils/routeUtils.ts):
+**optimizeRoute** (`src/features/routePlanning/routeUtils.ts`):
 - Greedy nearest-neighbor algorithm
 - Starts from Bakersfield coordinates
 - Iteratively selects closest unvisited stop
@@ -55,7 +55,7 @@ interface RoutingProvider {
 
 ### Battery-Aware Routing
 
-**DEFAULT_EBIKE_CONFIG** (src/utils/routeUtils.ts):
+**DEFAULT_EBIKE_CONFIG** (`src/features/routePlanning/routeUtils.ts`):
 ```typescript
 {
   name: 'Jasion EB5',
@@ -84,6 +84,10 @@ interface RoutingProvider {
 - Shows outlier warnings during ride
 - Allows skipping/completing stops in sequence
 
+### Route Planning Hook
+
+`useRoutePlanning` receives the current jobs, Route A subsets, start coordinates/address, e-bike config, current battery, learned battery factor, live ride distance, and travel mode. It owns route-owned local state (`lastOptimizationLog`, `isOptimizing`, simulation state), route monitor refs, route metrics/outlier/next-stop derivations, Google Maps route URL construction, and simulation timer cleanup/progression. It returns values and command callbacks only; it does not expose raw React setters.
+
 ## Architecture
 
 ### Data Flow
@@ -98,7 +102,8 @@ Jobs → optimizeRoute → Optimized List → Ride Mode
 
 ### Key Components
 
-- **BakersfieldMapPreview**: Visual route preview
+- **BakersfieldMapPreview**: Visual route preview (`src/features/routePlanning/BakersfieldMapPreview.tsx`)
+- **RouteSummaryCard / RouteScoreGauge / OutlierDetector**: Route-owned UI now lives under `src/features/routePlanning/`
 - **Route List**: Optimized order display with per-job detail via `DashboardJobDetailSheet` on Dashboard
 - **Ride Mode**: Full-screen execution interface
 - **Battery Tab**: Jasion EB5 battery summary
@@ -112,7 +117,11 @@ Jobs → optimizeRoute → Optimized List → Ride Mode
 
 ## Dependencies
 
-- `routeUtils.ts` — core algorithms
+- `src/features/routePlanning/routeUtils.ts` — core route-planning algorithms
+- `src/features/routePlanning/useRoutePlanning.ts` — route-planning state, monitor, derivations, and simulation lifecycle
+- `src/features/routePlanning/types.ts` — route-planning hook result/support types
+- `src/utils/routeUtils.ts` — compatibility re-export shim for old imports during extraction
+- `src/utils/geoUtils.ts` — shared Haversine distance helper used by route planning, Jobs scheduling UI, and Dispatcher
 - `BAKERSFIELD_COORDINATES` (`src/utils/bakersfieldCoordinates.ts`) — 9 shared Bakersfield reference addresses used by routing, seed jobs, dispatcher, imports, and transit planning
 - GPS API for live position tracking
 - localStorage for ride session state
@@ -174,10 +183,17 @@ Jobs → optimizeRoute → Optimized List → Ride Mode
 
 ## Related Source Files
 
-- `src/utils/routeUtils.ts` — core algorithms and config
+- `src/features/routePlanning/routeUtils.ts` — core algorithms and config
+- `src/features/routePlanning/useRoutePlanning.ts` — route state, continuous monitor, next-stop/route-list derivations, and simulation actions
+- `src/features/routePlanning/types.ts` — feature-local route planning types
+- `src/utils/routeUtils.ts` — compatibility re-export shim
+- `src/utils/geoUtils.ts` — shared coordinate distance utility
 - `src/features/jobs/jobSchedule.ts` — effective-day pooling that gates today's route
-- `src/App.tsx` — Ride Mode and route state
-- `src/components/BakersfieldMapPreview.tsx` — shared map visualization component, currently not mounted by the retired Route tab
+- `src/App.tsx` — cross-feature route orchestration, configuration ownership, transit fetching handoff, and screen composition
+- `src/features/routePlanning/BakersfieldMapPreview.tsx` — shared map visualization component, currently not mounted by the retired Route tab
+- `src/features/routePlanning/RouteSummaryCard.tsx` — route metrics summary card
+- `src/features/routePlanning/RouteScoreGauge.tsx` — route quality score UI
+- `src/features/routePlanning/OutlierDetector.tsx` — geographic outlier warning UI
 
 ## Related Knowledge
 
@@ -187,4 +203,4 @@ Jobs → optimizeRoute → Optimized List → Ride Mode
 
 ## Last Updated
 
-2026-07-30 (phase-1-scheduling: today's pool + future-day standby)
+2026-08-08 (route-planning extraction Step 3: moved route-owned state, refs, effects, derived route values, and simulation lifecycle into `useRoutePlanning`)

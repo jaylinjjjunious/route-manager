@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { RouteScoreReport } from '../types';
+import { RouteScoreReport } from '../../types';
 import { ShieldCheck, ArrowRight, ChevronDown, ChevronUp, Star } from 'lucide-react';
 
 interface RouteScoreGaugeProps {

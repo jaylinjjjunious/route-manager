@@ -5,8 +5,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Job, Coordinates } from '../types';
-import { getDistanceInMiles } from '../utils/routeUtils';
+import { Job, Coordinates } from '../../types';
+import { getDistanceInMiles } from '../../utils/geoUtils';
 import { MapPin, Navigation, Home, HelpCircle, Eye, Sliders, CheckCircle, Info, Sparkles } from 'lucide-react';
 import { APIProvider, Map, AdvancedMarker, Pin, InfoWindow, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
 

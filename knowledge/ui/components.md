@@ -1,7 +1,7 @@
 # UI Components
 
-**Last Updated:** 2026-08-06 (Habits hook extraction + Road Readiness rules)
-**Related Source Files:** `src/components/*.tsx`, `src/components/aio/*.tsx`, `src/assistant/*.tsx`
+**Last Updated:** 2026-08-08 (route-planning extraction Step 1: route-owned UI moved into `src/features/routePlanning/`)
+**Related Source Files:** `src/components/*.tsx`, `src/components/aio/*.tsx`, `src/features/*/*.tsx`, `src/assistant/*.tsx`
 
 ---
 
@@ -223,9 +223,29 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 
 | Field | Value |
 |-------|-------|
-| **File** | `src/components/BakersfieldMapPreview.tsx` |
+| **File** | `src/features/routePlanning/BakersfieldMapPreview.tsx` |
 | **Props** | `jobs: Job[]`, `routeOrder: number[]`, `selectedJobId: string \| null` |
 | **Responsibility** | Google Maps-like route display showing job locations on a map preview. Highlights the selected job and shows the optimized route order. |
+
+---
+
+### RouteSummaryCard
+
+| Field | Value |
+|-------|-------|
+| **File** | `src/features/routePlanning/RouteSummaryCard.tsx` |
+| **Props** | `metrics: RouteMetrics`, `config: EbikeConfig` |
+| **Responsibility** | Route metrics summary surface for total pay, total route time, distance/battery usage, and estimated hourly pay. |
+
+---
+
+### RouteScoreGauge
+
+| Field | Value |
+|-------|-------|
+| **File** | `src/features/routePlanning/RouteScoreGauge.tsx` |
+| **Props** | `scoreReport: RouteScoreReport` |
+| **Responsibility** | Route quality score display with pay, distance, battery safety, clustering ratings, and expandable optimization suggestions. |
 
 ---
 
@@ -293,7 +313,7 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 
 | Field | Value |
 |-------|-------|
-| **File** | `src/features/jobs/OutlierDetector.tsx` |
+| **File** | `src/features/routePlanning/OutlierDetector.tsx` |
 | **Props** | `jobs: Job[]`, `onExcludeJob: (jobId: string) => void` |
 | **Responsibility** | Identifies and displays outlier jobs (anomalies in route data, timing, or other metrics). Provides ability to exclude outliers from route optimization. |
 

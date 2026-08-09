@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { RouteMetrics, EbikeConfig } from '../types';
+import { RouteMetrics, EbikeConfig } from '../../types';
 import { DollarSign, Clock, Zap, Milestone, TrendingUp, CheckSquare, ShieldCheck, ShieldAlert } from 'lucide-react';
 
 interface RouteSummaryCardProps {
