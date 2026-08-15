@@ -72,6 +72,10 @@ interface Job {
 
 Jobs can carry generic `closeoutRequirements?: JobCloseoutRequirement[]`. The closeout engine in `src/features/jobs/jobCloseout.ts` is pure and React-independent. It supports requirement kinds `required`, `conditional`, `recommended`, and `reference`; active required/conditional items block final lifecycle closeout when unsatisfied, while recommended/reference items are displayed as non-blocking guidance. `JobDetailModal` shows a Closeout section for jobs in `work_complete_pending_closeout` or jobs with attached closeout requirements, highlights missing required items, and disables the Complete Job button until blocking requirements are satisfied. The final Complete Job action calls `useJobs.completeJobCloseout`, preserving lifecycle completion timestamps and leaving legacy `JobStatus` untouched. Customer-specific procedure rules are intentionally not implemented yet; future rule engines should attach generic requirements to jobs before evaluation.
 
+### Procedure Definition Foundation
+
+Generic, customer-agnostic procedure definitions live under `src/features/jobs/procedures/`. Procedure definitions are separate from Job records and are intended to be referenced later by procedure ID plus exact version rather than copied into each job. A procedure includes `id`, `customerKey`/optional `companyKey`, name, description, version, status (`draft`/`active`/`retired`), category, job type, timestamps, and ordered stable-ID steps. Each step carries one underlying data model that supports both Guided Mode (`guidedInstructions`) and Quick Mode (`quickCheckpoint`) without separate procedure copies. Steps can be required, conditional, recommended, or reference, and can include warning text, a generic condition, proof requirements, equipment/serial requirements, testing/validation metadata, and support/escalation metadata. Helper validation returns structured errors instead of throwing for ordinary malformed data. Version helpers treat a procedure version as immutable when a job reference list contains its exact procedure ID/version; editing should clone to a new draft version with deep-copied steps.
+
 ### Development Lifecycle Harness
 
 The lifecycle acceptance harness is development-only and requires `import.meta.env.DEV` plus `VITE_ENABLE_JOB_LIFECYCLE_HARNESS=true`. When enabled, `useJobs` injects a fake Route A technician job with ID `dev-lifecycle-harness-job` into local job storage without adding it to the normal `SEED_JOBS` export. When disabled, the loader strips that harness job from the visible job list. The fake job starts with legacy `status: ready`, lifecycle `planned/not_started`, today's `scheduledDate`, and three fake closeout requirements: two required blockers (proof photo and serial/equipment ID) plus one non-blocking recommended note. More -> Development -> Reset Lifecycle Test Job restores it to the initial planned state and opens Jobs; the Job Detail closeout section includes a harness-only Satisfy Test Requirements button so final closeout can be exercised after first verifying the blocked state. No customer-specific procedure logic is included.
@@ -114,6 +118,7 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 - **useJobs mutations**: `src/features/jobs/useJobs.ts` owns pure job-status mutations (`updateJobStatus`, `toggleJobComplete`, `markJobUnderReview`) and returns `JobMutationResult` so `App.tsx` can run cross-feature side effects without duplicating status mutation logic.
 - **Lifecycle actions**: `useJobs.ts` exposes persisted lifecycle-only actions (`checkInJob`, `markJobReadyToStart`, `blockJobBeforeStart`, `startJob`, `pauseJobWork`, `resumeJobWork`, `awaitJobSupport`, `markJobBlockedOnsite`, `endJobVisit`, `markJobWorkComplete`, `completeJobCloseout`, `reopenCompletedJob`). These delegate to `jobLifecycle.ts`, return `JobLifecycleMutationResult`, block invalid transitions without persisting, preserve visit/event history, preserve lifecycle completion timestamps, and do not update legacy `JobStatus` yet.
 - **Closeout evaluation**: `jobCloseout.ts` evaluates generic job-attached closeout requirements into satisfied required items, missing required items, active conditional requirements, non-blocking warnings/recommended items, references, and a completion-allowed flag.
+- **Procedure definitions**: `procedures/procedureDefinition.ts` validates customer-agnostic procedure definitions, stable step IDs, nested requirement IDs, generic conditions, Guided/Quick text presence, step ordering, immutability checks, and clone-to-next-version behavior.
 - **Lifecycle harness**: `jobLifecycleHarness.ts` owns the dev-only fixture, explicit environment guard, injection/reset helpers, and fake closeout requirement satisfaction helpers. The harness is excluded unless `VITE_ENABLE_JOB_LIFECYCLE_HARNESS=true` in a local dev build.
 - **Job Overview derivation**: `jobOverview.ts` derives lifecycle display labels, Next Action, warnings/blockers, and compact summary metadata for `JobDetailModal`.
 
@@ -195,6 +200,8 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 - `src/features/jobs/jobLifecycle.ts` — lifecycle transition helpers
 - `src/features/jobs/jobCloseoutTypes.ts` — generic closeout requirement and evaluation result types
 - `src/features/jobs/jobCloseout.ts` — pure closeout requirement evaluation
+- `src/features/jobs/procedures/types.ts` — customer-agnostic versioned procedure, step, condition, proof, equipment, validation, and escalation types
+- `src/features/jobs/procedures/procedureDefinition.ts` — pure procedure validation, lookup, ordering, immutability, and version-cloning helpers
 - `src/features/jobs/jobLifecycleHarness.ts` — dev-only lifecycle acceptance fixture and guard helpers
 - `src/features/jobs/jobOverview.ts` — Job Detail overview and Next Action derivation
 - `src/features/jobs/jobSchedule.ts` — scheduling/migration/grouping helpers
@@ -216,4 +223,4 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 
 ## Last Updated
 
-2026-08-15 (Development-only lifecycle acceptance harness added)
+2026-08-15 (Generic versioned procedure definition foundation added)
