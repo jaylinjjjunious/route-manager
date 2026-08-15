@@ -41,20 +41,9 @@ export default function LoginPage({ onForgotPassword }: LoginPageProps) {
         <div className="flex flex-1 flex-col justify-center">
           {/* Brand */}
           <div className="mb-10 text-center">
-            {showLocalAuthBypass ? (
-              <button
-                type="button"
-                onClick={enableLocalAuthBypass}
-                className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600 shadow-lg shadow-blue-600/30 outline-none focus-visible:ring-2 focus-visible:ring-blue-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
-                aria-label="Enter local development workspace"
-              >
-                <ShieldCheck size={32} className="text-white" />
-              </button>
-            ) : (
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600 shadow-lg shadow-blue-600/30">
-                <ShieldCheck size={32} className="text-white" />
-              </div>
-            )}
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600 shadow-lg shadow-blue-600/30">
+              <ShieldCheck size={32} className="text-white" />
+            </div>
             <h1 className="text-3xl font-black tracking-tight text-white">
               All in One 667
             </h1>
@@ -141,6 +130,19 @@ export default function LoginPage({ onForgotPassword }: LoginPageProps) {
                 "Sign In"
               )}
             </button>
+
+            {showLocalAuthBypass && (
+              <button
+                type="button"
+                onClick={enableLocalAuthBypass}
+                disabled={submitting}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3.5 text-sm font-black uppercase tracking-wide text-amber-200 transition hover:bg-amber-400/15 active:scale-[0.98] disabled:opacity-50"
+                style={{ minHeight: "48px" }}
+              >
+                <ShieldCheck size={18} />
+                Enter Local Workspace (Bypass)
+              </button>
+            )}
 
             {/* Forgot Password */}
             <div className="text-center">
