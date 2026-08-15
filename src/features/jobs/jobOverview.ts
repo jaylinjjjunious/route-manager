@@ -123,23 +123,27 @@ export function buildJobOverview(job: Job, options: { isOutlier?: boolean; jobAc
       };
     }
   } else if (status === 'ready' && workState === 'ready_to_start') {
+    const secondaryActions: JobOverviewSecondaryAction[] = [{ id: 'blocked_before_start', label: 'Blocked Before Start' }];
+    if (activeVisit) secondaryActions.push({ id: 'end_visit', label: 'End Visit' });
     nextAction = {
       title: 'Start the job',
       description: 'You are checked in and ready to begin the work.',
       primaryActionId: 'start_job',
       primaryLabel: 'Start Job',
-      secondaryActions: [{ id: 'blocked_before_start', label: 'Blocked Before Start' }],
-      secondaryLabels: ['Blocked Before Start'],
+      secondaryActions,
+      secondaryLabels: secondaryActions.map(action => action.label),
       tone: 'ready',
     };
   } else if (activeVisit || status === 'arrived') {
+    const secondaryActions: JobOverviewSecondaryAction[] = [{ id: 'blocked_before_start', label: 'Blocked Before Start' }];
+    if (activeVisit) secondaryActions.push({ id: 'end_visit', label: 'End Visit' });
     nextAction = {
       title: 'Confirm readiness',
       description: 'You are onsite. Mark ready to start, or capture why work cannot begin.',
       primaryActionId: 'ready_to_start',
       primaryLabel: 'Ready to Start',
-      secondaryActions: [{ id: 'blocked_before_start', label: 'Blocked Before Start' }],
-      secondaryLabels: ['Blocked Before Start'],
+      secondaryActions,
+      secondaryLabels: secondaryActions.map(action => action.label),
       tone: workState === 'blocked_before_start' ? 'blocked' : 'ready',
     };
   } else if (status === 'cancelled') {

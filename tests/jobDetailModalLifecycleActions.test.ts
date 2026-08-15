@@ -245,4 +245,38 @@ describe('JobDetailModal lifecycle action wiring', () => {
     await clickButton('Save');
     expect(onEndJobVisit).toHaveBeenCalledWith('job-1', 'access_denied', 'Need manager unlock');
   });
+
+  it('shows compact visit history with visit numbers, timing, reasons, and visit ids', async () => {
+    await renderModal(propsFor(makeJob({
+      lifecycle: lifecycle({
+        status: 'arrived',
+        workState: 'not_started',
+        activeVisitId: 'visit-2',
+        visits: [
+          {
+            id: 'visit-1',
+            visitNumber: 1,
+            arrivedAt: '2026-08-15T09:00:00.000Z',
+            startedWorkAt: '2026-08-15T09:10:00.000Z',
+            endedAt: '2026-08-15T10:05:00.000Z',
+            endReason: 'missing_part',
+          },
+          {
+            id: 'visit-2',
+            visitNumber: 2,
+            arrivedAt: '2026-08-15T13:00:00.000Z',
+          },
+        ],
+      }),
+    })));
+
+    expect(document.body.textContent).toContain('Visit History');
+    expect(document.body.textContent).toContain('Onsite now');
+    expect(document.body.textContent).toContain('Visit 1');
+    expect(document.body.textContent).toContain('Visit 2');
+    expect(document.body.textContent).toContain('missing part');
+    expect(document.body.textContent).toContain('Started: Aug 15');
+    expect(document.querySelector('[data-visit-id="visit-1"]')).not.toBeNull();
+    expect(document.querySelector('[data-visit-id="visit-2"]')).not.toBeNull();
+  });
 });

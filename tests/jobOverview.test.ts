@@ -46,7 +46,7 @@ describe('buildJobOverview', () => {
     });
     expect(buildJobOverview(makeJob({ lifecycle: arrived })).nextAction).toMatchObject({
       primaryLabel: 'Ready to Start',
-      secondaryLabels: ['Blocked Before Start'],
+      secondaryLabels: ['Blocked Before Start', 'End Visit'],
     });
 
     const readyToStart = lifecycle({
@@ -55,7 +55,10 @@ describe('buildJobOverview', () => {
       activeVisitId: 'visit-1',
       visits: [{ id: 'visit-1', visitNumber: 1, arrivedAt: '2026-08-15T09:00:00.000Z' }],
     });
-    expect(buildJobOverview(makeJob({ lifecycle: readyToStart })).nextAction.primaryLabel).toBe('Start Job');
+    expect(buildJobOverview(makeJob({ lifecycle: readyToStart })).nextAction).toMatchObject({
+      primaryLabel: 'Start Job',
+      secondaryLabels: ['Blocked Before Start', 'End Visit'],
+    });
   });
 
   it('derives operational choices for active work states', () => {

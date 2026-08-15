@@ -14,7 +14,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Navigation, Clock, MapPin, CheckSquare, Edit2, Trash2, Copy, ArrowRightLeft, ShieldAlert, Calendar, AlertCircle, Sparkles, Hourglass, RefreshCw, CheckCircle2, RotateCcw, Camera, BookOpen } from 'lucide-react';
 import type { Job, JobType } from '../../types';
-import { isJobCompleted, isRevisionJob } from './jobState';
+import { isJobCompleted, isRevisionJob, normalizeJobLifecycleState } from './jobState';
 import { formatScheduledDate, isValidScheduledDate } from './jobSchedule';
 import { buildJobOverview, type JobOverviewActionId } from './jobOverview';
 import type { JobLifecycleMutationResult } from './types';
@@ -133,6 +133,22 @@ const WARNING_STYLES = {
   info: 'border-cyan-500/20 bg-cyan-500/10 text-cyan-200',
 };
 
+const formatVisitTimestamp = (value?: string) => {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Needs review';
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
+
+const formatVisitReason = (reason?: VisitEndReason) =>
+  reason ? reason.replaceAll('_', ' ') : '—';
+
 function JobIdentitySquare({ job }: { job: Job }) {
   const match = resolveStoreLogo({ companyId: null, texts: [job.storeName, job.notes] });
   const [failed, setFailed] = useState(false);
@@ -194,6 +210,7 @@ export default function JobDetailModal({
   const isDone = isJobCompleted(job);
   const needsRevision = isRevisionJob(job);
   const overview = buildJobOverview(job, { isOutlier, jobAccessLocked });
+  const lifecycle = normalizeJobLifecycleState(job);
 
   // Lock body scroll while modal is open — no position:fixed trick
   useEffect(() => {
@@ -592,6 +609,41 @@ export default function JobDetailModal({
                 )}
               </div>
             </section>
+
+            {lifecycle.visits.length > 0 && (
+              <section aria-labelledby="visit-history-title" className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <h5 id="visit-history-title" className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                    Visit History
+                  </h5>
+                  <span className="text-[10px] font-black text-slate-500">
+                    {lifecycle.activeVisitId ? 'Onsite now' : 'Offsite'}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {lifecycle.visits.map(visit => (
+                    <div
+                      key={visit.id}
+                      data-visit-id={visit.id}
+                      className="rounded-lg border border-white/10 bg-black/10 px-2.5 py-2"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs font-black text-white">Visit {visit.visitNumber}</p>
+                        <p className="truncate text-[9px] font-semibold text-slate-600" title={`Visit ID: ${visit.id}`}>
+                          ID {visit.id}
+                        </p>
+                      </div>
+                      <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-1 text-[10px] font-semibold text-slate-400">
+                        <p><span className="text-slate-600">Arrived:</span> {formatVisitTimestamp(visit.arrivedAt)}</p>
+                        <p><span className="text-slate-600">Started:</span> {formatVisitTimestamp(visit.startedWorkAt)}</p>
+                        <p><span className="text-slate-600">Ended:</span> {formatVisitTimestamp(visit.endedAt)}</p>
+                        <p className="capitalize"><span className="text-slate-600">Reason:</span> {formatVisitReason(visit.endReason)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {isTransitApiEnabled() && transitOrigin && (
               <JobTransitSection job={job} origin={transitOrigin} />
