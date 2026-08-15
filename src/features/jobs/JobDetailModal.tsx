@@ -747,14 +747,14 @@ export default function JobDetailModal({
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-[9px] font-black uppercase text-slate-500">Procedure</p>
-                    <p className="mt-0.5 truncate text-xs font-black text-slate-200">
+                    <p className="mt-0.5 text-xs font-black leading-tight text-slate-200 break-words">
                       {procedureOverview.procedure
                         ? `${procedureOverview.procedure.name} v${procedureOverview.procedure.version}`
                         : procedureOverview.resolution.status === 'unassigned'
                           ? 'Not assigned'
                           : 'Assigned procedure unresolved'}
                     </p>
-                    <p className="mt-0.5 truncate text-[10px] font-bold text-slate-500">
+                    <p className="mt-0.5 text-[10px] font-bold leading-tight text-slate-500 break-words">
                       {procedureOverview.procedure
                         ? `Next: ${procedureOverview.summary.nextStep?.step.title ?? 'Review complete'}`
                         : procedureOverview.resolution.reason}

@@ -202,11 +202,12 @@ describe('procedure workspace progress derivation', () => {
   it('derives 100 percent when required external evidence is present', () => {
     const arrivalStepId = scopedProcedureRequirementId(procedure, 'step', 'arrival-context');
     const equipmentStepId = scopedProcedureRequirementId(procedure, 'step', 'equipment-identity');
-    const model = deriveProcedureWorkspaceModel(assignedJob(), {
+    const model = deriveProcedureWorkspaceModel(assignedJob({ priority: 'low' }), {
       context: {
         proofRecords: [proofRecord()],
         inventoryLedgers: [inventoryLedger()],
         satisfiedRequirementIds: [arrivalStepId, equipmentStepId],
+        deviceType: 'terminal',
       },
     });
     expect(model.summary.percentComplete).toBe(100);

@@ -434,7 +434,12 @@ export default function ProcedureWorkspace({
             </div>
             <div className="rounded-lg border border-white/10 bg-black/10 px-2 py-2 text-center">
               <p className="text-[8px] font-black uppercase text-slate-500">Next</p>
-              <p className="mt-0.5 truncate text-[11px] font-black text-slate-200">{model.summary.nextStep?.step.title ?? 'Review'}</p>
+              <p
+                className="mt-0.5 truncate text-[11px] font-black text-slate-200"
+                title={model.summary.nextStep?.step.title ?? 'Review'}
+              >
+                {model.summary.nextStep?.step.title ?? 'Review'}
+              </p>
             </div>
           </div>
 
