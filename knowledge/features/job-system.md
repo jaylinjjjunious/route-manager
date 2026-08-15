@@ -72,7 +72,7 @@ interface Job {
 
 ### Closeout Gate Foundation
 
-Jobs can carry generic `closeoutRequirements?: JobCloseoutRequirement[]`. The closeout engine in `src/features/jobs/jobCloseout.ts` is pure and React-independent. It supports requirement kinds `required`, `conditional`, `recommended`, and `reference`; active required/conditional items block final lifecycle closeout when unsatisfied, while recommended/reference items are displayed as non-blocking guidance. `JobDetailModal` shows a Closeout section for jobs in `work_complete_pending_closeout` or jobs with attached closeout requirements, highlights missing required items, and disables the Complete Job button until blocking requirements are satisfied. The final Complete Job action calls `useJobs.completeJobCloseout`, preserving lifecycle completion timestamps and leaving legacy `JobStatus` untouched. Customer-specific procedure rules are intentionally not implemented yet; future rule engines should attach generic requirements to jobs before evaluation.
+Jobs can carry generic `closeoutRequirements?: JobCloseoutRequirement[]`. The closeout engine in `src/features/jobs/jobCloseout.ts` is pure and React-independent. It supports requirement kinds `required`, `conditional`, `recommended`, and `reference`; active required/conditional items block final lifecycle closeout when unsatisfied, while recommended/reference items are displayed as non-blocking guidance. The effective closeout boundary can now resolve an exact assigned procedure, derive procedure-based closeout requirements, merge them with manual job requirements, and then run the same generic evaluator. `JobDetailModal` consumes this evaluation through the closeout boundary rather than performing procedure catalog lookups or mapping itself. `JobDetailModal` shows a Closeout section for jobs in `work_complete_pending_closeout` or jobs with attached/effective closeout requirements, highlights missing required items, and disables the Complete Job button until blocking requirements are satisfied. The final Complete Job action calls `useJobs.completeJobCloseout`, preserving lifecycle completion timestamps and leaving legacy `JobStatus` untouched. Customer-specific procedure rules are intentionally not implemented yet.
 
 ### Procedure Definition Foundation
 
@@ -81,6 +81,14 @@ Generic, customer-agnostic procedure definitions live under `src/features/jobs/p
 ### Procedure Assignment
 
 Jobs can optionally carry `procedureAssignment?: JobProcedureAssignment`, which stores only `{ procedureId, procedureVersion, assignedAt, assignmentSource, assignedBy?, note? }`. Full `ProcedureDefinition` objects remain separate from Job records. Assignment helpers in `src/features/jobs/procedures/jobProcedureAssignment.ts` validate stable procedure IDs, positive versions, assignment source, and optional supplied procedure definition ID/version matches. Pre-work jobs can assign, replace, or remove procedures directly. Jobs with started work or completed jobs return a structured `confirmation_required` result on normal change attempts; the confirmed helper path allows the change while preserving lifecycle, visits, proofs, inventory, notes, closeout requirements, timestamps, and revision-related fields. Same ID/version reassignment is idempotent and does not append duplicate history. Actual assignment/replacement/removal events are recorded in `procedureAssignmentHistory` as a focused audit trail and do not replace legacy `statusHistory` or legacy `JobStatus` behavior.
+
+### Procedure Resolution and Derived Closeout
+
+Procedure catalog helpers in `src/features/jobs/procedures/procedureCatalog.ts` resolve assignments by exact `procedureId` + `procedureVersion` only. They return structured statuses (`resolved`, `unassigned`, `not_found`, `invalid_assignment`) and never fall back to the latest version. The default local catalog is currently empty; future persistent/backend catalogs should be isolated behind the same resolver boundary.
+
+Procedure closeout helpers in `src/features/jobs/procedures/procedureCloseout.ts` derive generic `JobCloseoutRequirement[]` from procedure steps, proof requirements, equipment/serial requirements, testing/validation requirements, and support escalations that require a reference/case number. Derived IDs are deterministic and scoped as procedure-sourced IDs while retaining the stable procedure step/requirement ID in the suffix. Required items block closeout; conditional items block only when their condition evaluates active; recommended/reference items never block. Manual job requirements are preserved and merged before derived requirements. Exact duplicate IDs are deterministic first-wins, so repeated derivation/merge does not grow requirements.
+
+The minimal condition evaluator in `src/features/jobs/procedures/procedureConditions.ts` supports `device_type_equals`, `job_field_equals`, `previous_answer_equals`, `equipment_present`, `equipment_missing`, `issue_present`, and `blocker_present`. Missing context returns unresolved/inactive rather than active. If a job has a procedure assignment that cannot be resolved or is malformed, effective closeout adds a synthetic unsatisfied required requirement and blocks final completion because procedure-dependent obligations cannot be verified safely.
 
 ### Development Lifecycle Harness
 
@@ -126,6 +134,7 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 - **Closeout evaluation**: `jobCloseout.ts` evaluates generic job-attached closeout requirements into satisfied required items, missing required items, active conditional requirements, non-blocking warnings/recommended items, references, and a completion-allowed flag.
 - **Procedure definitions**: `procedures/procedureDefinition.ts` validates customer-agnostic procedure definitions, stable step IDs, nested requirement IDs, generic conditions, Guided/Quick text presence, step ordering, immutability checks, and clone-to-next-version behavior.
 - **Procedure assignment**: `procedures/jobProcedureAssignment.ts` assigns/removes exact procedure ID/version references on jobs, requires explicit confirmation after work starts or completion, validates optional procedure definition matches, and records idempotent assignment history without changing legacy job status.
+- **Procedure resolution/closeout derivation**: `procedures/procedureCatalog.ts`, `procedureConditions.ts`, and `procedureCloseout.ts` resolve exact assigned procedure versions, evaluate minimal generic conditions, derive procedure closeout requirements, merge them with manual requirements, and safely block closeout when an assigned procedure cannot be resolved.
 - **Lifecycle harness**: `jobLifecycleHarness.ts` owns the dev-only fixture, explicit environment guard, injection/reset helpers, and fake closeout requirement satisfaction helpers. The harness is excluded unless `VITE_ENABLE_JOB_LIFECYCLE_HARNESS=true` in a local dev build.
 - **Job Overview derivation**: `jobOverview.ts` derives lifecycle display labels, Next Action, warnings/blockers, and compact summary metadata for `JobDetailModal`.
 
@@ -210,6 +219,9 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 - `src/features/jobs/procedures/types.ts` — customer-agnostic versioned procedure, step, condition, proof, equipment, validation, and escalation types
 - `src/features/jobs/procedures/procedureDefinition.ts` — pure procedure validation, lookup, ordering, immutability, and version-cloning helpers
 - `src/features/jobs/procedures/jobProcedureAssignment.ts` — pure version-specific procedure assignment, confirmation policy, validation, and assignment-history helpers
+- `src/features/jobs/procedures/procedureCatalog.ts` — exact-version procedure catalog composition and assignment resolution helpers
+- `src/features/jobs/procedures/procedureConditions.ts` — minimal pure procedure condition evaluation boundary
+- `src/features/jobs/procedures/procedureCloseout.ts` — pure procedure-derived closeout requirement derivation and manual/effective requirement merge helpers
 - `src/features/jobs/jobLifecycleHarness.ts` — dev-only lifecycle acceptance fixture and guard helpers
 - `src/features/jobs/jobOverview.ts` — Job Detail overview and Next Action derivation
 - `src/features/jobs/jobSchedule.ts` — scheduling/migration/grouping helpers
@@ -231,4 +243,4 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 
 ## Last Updated
 
-2026-08-15 (Version-specific job procedure assignment helpers added)
+2026-08-15 (Procedure resolution and derived closeout requirements added)
