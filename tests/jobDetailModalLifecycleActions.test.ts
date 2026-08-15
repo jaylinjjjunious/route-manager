@@ -279,4 +279,44 @@ describe('JobDetailModal lifecycle action wiring', () => {
     expect(document.querySelector('[data-visit-id="visit-1"]')).not.toBeNull();
     expect(document.querySelector('[data-visit-id="visit-2"]')).not.toBeNull();
   });
+
+  it('shows compact lifecycle time summary and hides zero secondary buckets', async () => {
+    await renderModal(propsFor(makeJob({
+      lifecycle: lifecycle({
+        status: 'ready',
+        workState: 'offsite',
+        visits: [
+          {
+            id: 'visit-1',
+            visitNumber: 1,
+            arrivedAt: '2026-08-15T09:00:00.000Z',
+            startedWorkAt: '2026-08-15T09:10:00.000Z',
+            endedAt: '2026-08-15T10:00:00.000Z',
+            endReason: 'completed_work',
+          },
+        ],
+        events: [
+          { id: 'event-1', type: 'arrived', timestamp: '2026-08-15T09:00:00.000Z', visitId: 'visit-1' },
+          { id: 'event-2', type: 'started_work', timestamp: '2026-08-15T09:10:00.000Z', visitId: 'visit-1' },
+          { id: 'event-3', type: 'paused', timestamp: '2026-08-15T09:20:00.000Z', visitId: 'visit-1' },
+          { id: 'event-4', type: 'resumed_work', timestamp: '2026-08-15T09:30:00.000Z', visitId: 'visit-1' },
+          { id: 'event-5', type: 'awaiting_support', timestamp: '2026-08-15T09:40:00.000Z', visitId: 'visit-1' },
+          { id: 'event-6', type: 'resumed_work', timestamp: '2026-08-15T09:50:00.000Z', visitId: 'visit-1' },
+          { id: 'event-7', type: 'ended_visit', timestamp: '2026-08-15T10:00:00.000Z', visitId: 'visit-1' },
+        ],
+      }),
+    })));
+
+    const summary = document.querySelector('[aria-label="Lifecycle time summary"]');
+    expect(summary).not.toBeNull();
+    expect(summary?.textContent).toContain('Time Summary');
+    expect(summary?.textContent).toContain('Recorded');
+    expect(summary?.textContent).toContain('Onsite');
+    expect(summary?.textContent).toContain('1h');
+    expect(summary?.textContent).toContain('Active Work');
+    expect(summary?.textContent).toContain('30m');
+    expect(summary?.textContent).toContain('Paused');
+    expect(summary?.textContent).toContain('Support');
+    expect(summary?.textContent).not.toContain('Blocked');
+  });
 });

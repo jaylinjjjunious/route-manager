@@ -16,6 +16,7 @@ import { X, Navigation, Clock, MapPin, CheckSquare, Edit2, Trash2, Copy, ArrowRi
 import type { Job, JobType } from '../../types';
 import { isJobCompleted, isRevisionJob, normalizeJobLifecycleState } from './jobState';
 import { formatScheduledDate, isValidScheduledDate } from './jobSchedule';
+import { summarizeJobTime } from './jobLifecycle';
 import { buildJobOverview, type JobOverviewActionId } from './jobOverview';
 import type { JobLifecycleMutationResult } from './types';
 import type { VisitEndReason } from './jobLifecycleTypes';
@@ -149,6 +150,26 @@ const formatVisitTimestamp = (value?: string) => {
 const formatVisitReason = (reason?: VisitEndReason) =>
   reason ? reason.replaceAll('_', ' ') : '—';
 
+const formatTimeSummaryMinutes = (minutes: number) => {
+  const rounded = Math.round(minutes);
+  if (rounded <= 0 && minutes > 0) return '<1m';
+  if (rounded < 60) return `${rounded}m`;
+  const hours = Math.floor(rounded / 60);
+  const remainingMinutes = rounded % 60;
+  return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+};
+
+function TimeSummaryTile({ label, minutes, primary = false }: { label: string; minutes: number; primary?: boolean }) {
+  return (
+    <div className={`min-w-0 rounded-lg border px-2 py-2 ${primary ? 'border-cyan-500/20 bg-cyan-500/10' : 'border-white/10 bg-white/[0.03]'}`}>
+      <p className="text-[8px] font-black uppercase text-slate-500">{label}</p>
+      <p className={`mt-0.5 text-sm font-black ${primary ? 'text-cyan-200' : 'text-slate-300'}`}>
+        {formatTimeSummaryMinutes(minutes)}
+      </p>
+    </div>
+  );
+}
+
 function JobIdentitySquare({ job }: { job: Job }) {
   const match = resolveStoreLogo({ companyId: null, texts: [job.storeName, job.notes] });
   const [failed, setFailed] = useState(false);
@@ -211,6 +232,12 @@ export default function JobDetailModal({
   const needsRevision = isRevisionJob(job);
   const overview = buildJobOverview(job, { isOutlier, jobAccessLocked });
   const lifecycle = normalizeJobLifecycleState(job);
+  const timeSummary = summarizeJobTime(lifecycle);
+  const secondaryTimeBuckets = [
+    { label: 'Paused', minutes: timeSummary.pausedMinutes },
+    { label: 'Support', minutes: timeSummary.awaitingSupportMinutes },
+    { label: 'Blocked', minutes: timeSummary.blockedOnsiteMinutes },
+  ].filter(bucket => bucket.minutes > 0);
 
   // Lock body scroll while modal is open — no position:fixed trick
   useEffect(() => {
@@ -578,6 +605,24 @@ export default function JobDetailModal({
                   </div>
                 ))}
               </div>
+
+              {lifecycle.visits.length > 0 && (
+                <div aria-label="Lifecycle time summary" className="rounded-xl border border-white/10 bg-black/10 px-3 py-3">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-slate-500">Time Summary</p>
+                    <p className="text-[9px] font-black uppercase text-slate-600">
+                      {lifecycle.activeVisitId ? 'Through now' : 'Recorded'}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <TimeSummaryTile label="Onsite" minutes={timeSummary.totalOnsiteMinutes} primary />
+                    <TimeSummaryTile label="Active Work" minutes={timeSummary.activeWorkMinutes} primary />
+                    {secondaryTimeBuckets.map(bucket => (
+                      <TimeSummaryTile key={bucket.label} label={bucket.label} minutes={bucket.minutes} />
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-2">
                 <button

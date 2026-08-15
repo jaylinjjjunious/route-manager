@@ -80,4 +80,26 @@ describe('job lifecycle', () => {
     expect(summary.activeWorkMinutes).toBe(35);
     expect(summary.awaitingSupportMinutes).toBe(15);
   });
+
+  it('summarizes currently active states through now', () => {
+    let state = createJobLifecycle();
+    state = arriveAtJob(state, '2026-08-14T09:00:00.000Z');
+    state = startJobWork(state, '2026-08-14T09:05:00.000Z');
+    state = setJobWorkState(state, 'paused', undefined, '2026-08-14T09:20:00.000Z');
+
+    let summary = summarizeJobTime(state, '2026-08-14T09:35:00.000Z');
+    expect(summary.totalOnsiteMinutes).toBe(35);
+    expect(summary.activeWorkMinutes).toBe(15);
+    expect(summary.pausedMinutes).toBe(15);
+    expect(summary.blockedOnsiteMinutes).toBe(0);
+
+    state = setJobWorkState(state, 'working', undefined, '2026-08-14T09:35:00.000Z');
+    state = setJobWorkState(state, 'blocked_onsite', undefined, '2026-08-14T09:45:00.000Z');
+
+    summary = summarizeJobTime(state, '2026-08-14T10:00:00.000Z');
+    expect(summary.totalOnsiteMinutes).toBe(60);
+    expect(summary.activeWorkMinutes).toBe(25);
+    expect(summary.pausedMinutes).toBe(15);
+    expect(summary.blockedOnsiteMinutes).toBe(15);
+  });
 });
