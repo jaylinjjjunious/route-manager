@@ -4,6 +4,7 @@ export type CustodyEventType = 'receive_in' | 'install' | 'removal' | 'return';
 export type CustodyItemStatus = 'received' | 'installed' | 'removed' | 'returned';
 export type CustodyEvidenceKind = 'photo' | 'document' | 'receipt';
 export type CustodySyncStatus = 'queued' | 'synced' | 'failed';
+export type CustodyRequirementRole = 'assigned_item' | 'installed_item' | 'removed_item' | 'return_item' | 'serial_capture';
 
 export interface CustodyCoordinates {
   lat: number;
@@ -21,7 +22,7 @@ export interface CustodyEvidence {
 
 export interface CustodyEvent {
   domain: InventoryDomain;
-  integrityVersion?: 1 | 2 | 3;
+  integrityVersion?: 1 | 2 | 3 | 4;
   id: string;
   jobId: string;
   itemId: string;
@@ -38,6 +39,12 @@ export interface CustodyEvent {
   packageContents?: string;
   equipmentLabel?: string;
   sourceContext?: string;
+  requirementId?: string;
+  procedureId?: string;
+  procedureVersion?: string;
+  procedureStepId?: string;
+  visitId?: string;
+  requirementRole?: CustodyRequirementRole;
   previousHash: string;
   hash: string;
   syncStatus: CustodySyncStatus;
@@ -53,6 +60,12 @@ export interface CustodyItem {
   packageContents?: string;
   equipmentLabel?: string;
   sourceContext?: string;
+  requirementId?: string;
+  procedureId?: string;
+  procedureVersion?: string;
+  procedureStepId?: string;
+  visitId?: string;
+  requirementRole?: CustodyRequirementRole;
   status: CustodyItemStatus;
   evidence: CustodyEvidence[];
   eventIds: string[];
@@ -124,7 +137,17 @@ function canonicalEvent(event: Omit<CustodyEvent, 'hash'>): string {
     packageContents: event.packageContents || null,
   };
   if (event.integrityVersion === 2) return JSON.stringify(domainFields);
-  return JSON.stringify({ ...domainFields, equipmentLabel: event.equipmentLabel || null, sourceContext: event.sourceContext || null });
+  const inventoryFields = { ...domainFields, equipmentLabel: event.equipmentLabel || null, sourceContext: event.sourceContext || null };
+  if (event.integrityVersion === 3) return JSON.stringify(inventoryFields);
+  return JSON.stringify({
+    ...inventoryFields,
+    requirementId: event.requirementId || null,
+    procedureId: event.procedureId || null,
+    procedureVersion: event.procedureVersion || null,
+    procedureStepId: event.procedureStepId || null,
+    visitId: event.visitId || null,
+    requirementRole: event.requirementRole || null,
+  });
 }
 
 async function digest(value: string): Promise<string> {
@@ -227,6 +250,12 @@ export async function createCustodyEvent(input: {
   packageContents?: string;
   equipmentLabel?: string;
   sourceContext?: string;
+  requirementId?: string;
+  procedureId?: string;
+  procedureVersion?: string;
+  procedureStepId?: string;
+  visitId?: string;
+  requirementRole?: CustodyRequirementRole;
 }): Promise<CustodyEvent> {
   const domain = input.domain || 'merchandising';
   const eventWithoutHash: Omit<CustodyEvent, 'hash'> = {
@@ -235,7 +264,7 @@ export async function createCustodyEvent(input: {
     itemId: input.itemId,
     type: input.type,
     domain,
-    integrityVersion: 3,
+    integrityVersion: 4,
     occurredAt: new Date().toISOString(),
     partNumber: input.partNumber.trim(),
     serialNumber: input.serialNumber.trim(),
@@ -248,6 +277,12 @@ export async function createCustodyEvent(input: {
     packageContents: input.packageContents?.trim() || undefined,
     equipmentLabel: input.equipmentLabel?.trim() || undefined,
     sourceContext: input.sourceContext?.trim() || undefined,
+    requirementId: input.requirementId?.trim() || undefined,
+    procedureId: input.procedureId?.trim() || undefined,
+    procedureVersion: input.procedureVersion?.trim() || undefined,
+    procedureStepId: input.procedureStepId?.trim() || undefined,
+    visitId: input.visitId?.trim() || undefined,
+    requirementRole: input.requirementRole,
     previousHash: input.previousHash || GENESIS_HASH,
     syncStatus: 'queued',
   };
@@ -262,6 +297,12 @@ export function appendCustodyEvent(ledger: CustodyLedger, event: CustodyEvent, i
     eventIds: [...item.eventIds, event.id],
     evidence: [...item.evidence],
     updatedAt: event.occurredAt,
+    requirementId: event.requirementId ?? item.requirementId,
+    procedureId: event.procedureId ?? item.procedureId,
+    procedureVersion: event.procedureVersion ?? item.procedureVersion,
+    procedureStepId: event.procedureStepId ?? item.procedureStepId,
+    visitId: event.visitId ?? item.visitId,
+    requirementRole: event.requirementRole ?? item.requirementRole,
   };
   const next = {
     ...ledger,
@@ -322,6 +363,72 @@ export function fileToCustodyEvidence(file: File, kind: CustodyEvidenceKind): Pr
     reader.onerror = () => reject(reader.error || new Error('Could not read evidence file'));
     reader.readAsDataURL(file);
   });
+}
+
+export interface ProcedureInventoryRequirementContext {
+  requirementId: string;
+  procedureId: string;
+  procedureVersion: string;
+  procedureStepId: string;
+  visitId?: string;
+  requirementRole?: CustodyRequirementRole;
+}
+
+export async function recordInventoryForRequirement(input: {
+  ledger: CustodyLedger;
+  item?: CustodyItem;
+  type: CustodyEventType;
+  itemId?: string;
+  partNumber: string;
+  serialNumber: string;
+  requirementContext: ProcedureInventoryRequirementContext;
+  coordinates?: CustodyCoordinates;
+  evidence?: CustodyEvidence[];
+  receiptNumber?: string;
+  trackingNumber?: string;
+  notes?: string;
+  packageId?: string;
+  packageContents?: string;
+  equipmentLabel?: string;
+  sourceContext?: string;
+}): Promise<CustodyLedger> {
+  const itemId = input.item?.id ?? input.itemId ?? randomId('inventory-item');
+  const event = await createCustodyEvent({
+    jobId: input.ledger.jobId,
+    itemId,
+    type: input.type,
+    domain: input.ledger.domain,
+    partNumber: input.partNumber,
+    serialNumber: input.serialNumber,
+    coordinates: input.coordinates,
+    evidenceIds: input.evidence?.map(entry => entry.id),
+    receiptNumber: input.receiptNumber,
+    trackingNumber: input.trackingNumber,
+    notes: input.notes,
+    packageId: input.packageId,
+    packageContents: input.packageContents,
+    equipmentLabel: input.equipmentLabel,
+    sourceContext: input.sourceContext,
+    previousHash: input.ledger.events.at(-1)?.hash,
+    ...input.requirementContext,
+  });
+  const item: CustodyItem = input.item ?? {
+    domain: input.ledger.domain,
+    id: itemId,
+    jobId: input.ledger.jobId,
+    partNumber: input.partNumber.trim(),
+    serialNumber: input.serialNumber.trim(),
+    packageId: input.packageId?.trim() || undefined,
+    packageContents: input.packageContents?.trim() || undefined,
+    equipmentLabel: input.equipmentLabel?.trim() || undefined,
+    sourceContext: input.sourceContext?.trim() || undefined,
+    status: event.type === 'receive_in' ? 'received' : event.type === 'install' ? 'installed' : event.type === 'removal' ? 'removed' : 'returned',
+    evidence: input.evidence ?? [],
+    eventIds: [],
+    updatedAt: event.occurredAt,
+    ...input.requirementContext,
+  };
+  return appendCustodyEvent(input.ledger, event, { ...item, evidence: [...item.evidence, ...(input.evidence ?? [])] });
 }
 
 export { GENESIS_HASH };

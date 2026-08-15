@@ -18,6 +18,7 @@ Job-scoped inventory tracking for receiving, installation, removal, and return o
 - Events and evidence metadata are persisted per job in localStorage. Photo/document data is kept as data URLs for offline use.
 - Events are also copied to a local sync queue. The page retries when online and registers the `inventory-custody-sync` Background Sync tag; the service worker wakes controlled clients to retry the queue.
 - The queue currently has no durable authenticated server endpoint. Until that backend slice exists, queued events remain local and are not reported as server-synced.
+- Custody items and events can optionally carry procedure requirement identity: `requirementId`, `procedureId`, `procedureVersion`, `procedureStepId`, `visitId`, and `requirementRole` (`assigned_item`, `installed_item`, `removed_item`, `return_item`, `serial_capture`). These fields are optional for legacy compatibility and allow procedure-derived equipment requirements to be evaluated against real inventory evidence.
 
 ## Workflow
 
@@ -33,13 +34,21 @@ The local ledger key is `inventory_custody_ledger_v2:<domain>:<jobId>`. Sync que
 
 This is tamper-evident local history, not tamper-proof storage. A user who controls browser storage can alter both records and hashes. Durable server verification, user identity, conflict handling, and append-only server persistence are the next required vertical slice.
 
+### Procedure Equipment Evidence
+
+Procedure definitions describe required equipment/serial/return obligations, while Inventory Custody remains the source of truth for actual devices and custody events. Pure helpers in `src/services/inventory/procedureInventory.ts` flatten job ledgers into inventory evidence and evaluate exact `requirementId`, `procedureId`, `procedureVersion`, `procedureStepId`, optional `visitId`, quantity, serial roles, removal tracking, and return completion.
+
+Serial semantics are generic: `none` requires no serial; `single` requires one serial value; `old` requires a removed/original serial; `new` requires an assigned/installed replacement serial; `old_and_new` requires both old and new serials and they must be distinguishable. Removed-equipment tracking requires an actual removal/removed custody state. `returnRequired` is satisfied only by a return custody event/state with receipt and tracking data, not by removal alone. Legacy inventory without procedure identity remains readable but does not satisfy new procedure requirements through fuzzy model/name matching.
+
 ## Related Source Files
 
 - `src/components/InventoryCustodyPanel.tsx` — job detail UI and technician workflow
 - `src/services/inventory/chainOfCustody.ts` — ledger, hash chain, evidence, queue, and GPS helpers
+- `src/services/inventory/procedureInventory.ts` — pure procedure equipment/serial/removal/return satisfaction helpers for closeout
 - `public/sw.js` — Background Sync wake-up message
 - `src/features/jobs/JobDetailModal.tsx` — natural integration point
 - `tests/inventoryChain.test.ts` — local persistence, lifecycle, and tamper detection tests
+- `tests/procedureInventoryCloseout.test.ts` — procedure equipment closeout satisfaction tests
 
 ## Known Limitations
 
@@ -54,4 +63,4 @@ This is tamper-evident local history, not tamper-proof storage. A user who contr
 
 ---
 
-**Last Updated:** 2026-07-29 (inventory-domains-and-package-flow)
+**Last Updated:** 2026-08-15 (Procedure equipment requirements connected to Inventory Custody evidence)

@@ -1,5 +1,6 @@
 import type { Job } from '../../../types';
 import type { ProofRecord } from '../../proofVault/types';
+import type { CustodyLedger } from '../../../services/inventory/chainOfCustody';
 import type { ProcedureCondition } from './types';
 
 export interface ProcedureRequirementContext {
@@ -13,6 +14,7 @@ export interface ProcedureRequirementContext {
   satisfiedRequirementIds?: string[];
   requirementSatisfaction?: Record<string, boolean>;
   proofRecords?: ProofRecord[] | Record<string, ProofRecord>;
+  inventoryLedgers?: CustodyLedger[] | Record<string, CustodyLedger>;
   visitId?: string;
   requiredVisitIds?: string[];
 }

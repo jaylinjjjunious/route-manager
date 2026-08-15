@@ -46,6 +46,7 @@ export interface ProcedureEquipmentRequirement {
   trackRemovedEquipment?: boolean;
   returnRequired?: boolean;
   classification: ProcedureRequirementClassification;
+  visitScope?: ProcedureVisitScope;
 }
 
 export type ProcedureValidationType =

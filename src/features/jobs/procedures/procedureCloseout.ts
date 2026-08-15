@@ -1,5 +1,6 @@
 import type { Job } from '../../../types';
 import { evaluateProofRequirement, getProofForJob } from '../../proofVault/procedureProof';
+import { evaluateEquipmentRequirement, getInventoryForJob } from '../../../services/inventory/procedureInventory';
 import type { JobCloseoutRequirement, JobCloseoutRequirementKind } from '../jobCloseoutTypes';
 import { getProcedureStepsInOrder } from './procedureDefinition';
 import type { ProcedureResolutionResult } from './procedureCatalog';
@@ -144,9 +145,10 @@ function deriveEquipmentRequirement(
     `Serial requirement: ${requirement.serialRequirement}.`,
     requirement.trackRemovedEquipment ? 'Removed equipment tracking required.' : undefined,
     requirement.returnRequired ? 'Return required.' : undefined,
+    requirement.visitScope ? `Scope: ${requirement.visitScope}.` : undefined,
   ].filter(Boolean).join(' ');
 
-  return createRequirement(
+  const closeoutRequirement = createRequirement(
     procedure,
     'equipment',
     requirement.id,
@@ -156,6 +158,14 @@ function deriveEquipmentRequirement(
     context,
     activeForStep(step, context),
   );
+  const inventoryEvidence = context.job
+    ? getInventoryForJob(context.inventoryLedgers, context.job.id)
+    : [];
+  const equipmentEvaluation = evaluateEquipmentRequirement(inventoryEvidence, procedure, step, requirement, context);
+  return {
+    ...closeoutRequirement,
+    satisfied: equipmentEvaluation.satisfied,
+  };
 }
 
 function deriveTestingRequirement(
