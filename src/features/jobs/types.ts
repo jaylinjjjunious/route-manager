@@ -7,3 +7,8 @@ export interface JobMutationResult {
   becameCompleted: boolean;
   becameFinished: boolean;
 }
+
+export interface JobLifecycleMutationResult extends JobMutationResult {
+  lifecycleChanged: boolean;
+  transitionBlocked: boolean;
+}

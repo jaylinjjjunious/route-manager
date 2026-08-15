@@ -181,6 +181,8 @@ export function markJobWorkComplete(
   state: JobLifecycleState,
   timestamp = new Date().toISOString(),
 ): JobLifecycleState {
+  if (!state.activeVisitId || !['arrived', 'ready', 'in_progress'].includes(state.status)) return state;
+
   return appendEvent(
     {
       ...state,
@@ -197,6 +199,8 @@ export function completeJobCloseout(
   state: JobLifecycleState,
   timestamp = new Date().toISOString(),
 ): JobLifecycleState {
+  if (state.status !== 'work_complete_pending_closeout') return state;
+
   const next: JobLifecycleState = {
     ...state,
     status: 'completed',

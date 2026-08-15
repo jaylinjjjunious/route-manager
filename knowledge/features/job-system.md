@@ -99,6 +99,7 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 - **markComplete**: Captures arrivalTime, completionTime, GPS coordinates; creates/updates ProofRecord in proofVault
 - **Job Normalization**: jobState.ts handles schema versioning and normalization (schema version "5"), including lifecycle overlay defaults for legacy jobs.
 - **useJobs mutations**: `src/features/jobs/useJobs.ts` owns pure job-status mutations (`updateJobStatus`, `toggleJobComplete`, `markJobUnderReview`) and returns `JobMutationResult` so `App.tsx` can run cross-feature side effects without duplicating status mutation logic.
+- **Lifecycle actions**: `useJobs.ts` exposes persisted lifecycle-only actions (`checkInJob`, `markJobReadyToStart`, `blockJobBeforeStart`, `startJob`, `pauseJobWork`, `resumeJobWork`, `awaitJobSupport`, `markJobBlockedOnsite`, `endJobVisit`, `markJobWorkComplete`, `completeJobCloseout`, `reopenCompletedJob`). These delegate to `jobLifecycle.ts`, return `JobLifecycleMutationResult`, block invalid transitions without persisting, preserve visit/event history, and do not update legacy `JobStatus` yet.
 
 ## Design Rationale
 
@@ -172,7 +173,7 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 - `src/App.tsx` — main app state, Dashboard Today's Route cards, compact route job detail panel, and handlers
 - `src/types.ts` — Job type definitions (`scheduledDate`, `calendar`, `CalendarSourceMeta`, optional `lifecycle`)
 - `src/features/jobs/useJobs.ts` — jobs state, scheduling derivations, pure job actions, and pure status mutation actions
-- `src/features/jobs/types.ts` — jobs feature-local result types such as `JobMutationResult`
+- `src/features/jobs/types.ts` — jobs feature-local result types such as `JobMutationResult` and `JobLifecycleMutationResult`
 - `src/features/jobs/jobState.ts` — schema normalization (v5), lifecycle defaults, and `migrateJobSchedules`
 - `src/features/jobs/jobLifecycleTypes.ts` — v1 lifecycle state/event/visit types
 - `src/features/jobs/jobLifecycle.ts` — lifecycle transition helpers
@@ -195,4 +196,4 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 
 ## Last Updated
 
-2026-08-15 (schema v5: optional Job lifecycle overlay added with backward-compatible load/storage normalization)
+2026-08-15 (lifecycle transition actions exposed from `useJobs.ts` with persisted, invalid-transition-safe results)

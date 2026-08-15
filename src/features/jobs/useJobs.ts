@@ -4,6 +4,18 @@ import type { Job, JobType } from '../../types';
 import safeStorage from '../../utils/safeStorage';
 import { BAKERSFIELD_COORDINATES } from '../../utils/bakersfieldCoordinates';
 import {
+  arriveAtJob as applyArriveAtJob,
+  blockBeforeStart as applyBlockBeforeStart,
+  completeJobCloseout as applyCompleteJobCloseout,
+  endJobVisit as applyEndJobVisit,
+  markJobWorkComplete as applyMarkJobWorkComplete,
+  markReadyToStart as applyMarkReadyToStart,
+  reopenCompletedJob as applyReopenCompletedJob,
+  setJobWorkState,
+  startJobWork as applyStartJobWork,
+} from './jobLifecycle';
+import type { JobLifecycleState, VisitEndReason } from './jobLifecycleTypes';
+import {
   JOB_STATE_SCHEMA_VERSION,
   isJobCompleted,
   isJobFinished,
@@ -24,7 +36,7 @@ import {
 } from './jobSchedule';
 import type { RouteFilterType } from './RouteFilter';
 import { filterJobsByType } from './RouteFilter';
-import type { JobMutationResult } from './types';
+import type { JobLifecycleMutationResult, JobMutationResult } from './types';
 
 export const SEED_JOBS: Job[] = [
   {
@@ -169,6 +181,18 @@ export interface UseJobsReturn {
   updateJobStatus: (id: string, updates: Partial<Job>) => JobMutationResult;
   toggleJobComplete: (id: string) => JobMutationResult;
   markJobUnderReview: (id: string) => JobMutationResult;
+  checkInJob: (id: string, timestamp?: string) => JobLifecycleMutationResult;
+  markJobReadyToStart: (id: string, timestamp?: string) => JobLifecycleMutationResult;
+  blockJobBeforeStart: (id: string, note: string, timestamp?: string) => JobLifecycleMutationResult;
+  startJob: (id: string, timestamp?: string) => JobLifecycleMutationResult;
+  pauseJobWork: (id: string, note?: string, timestamp?: string) => JobLifecycleMutationResult;
+  resumeJobWork: (id: string, timestamp?: string) => JobLifecycleMutationResult;
+  awaitJobSupport: (id: string, note?: string, timestamp?: string) => JobLifecycleMutationResult;
+  markJobBlockedOnsite: (id: string, note?: string, timestamp?: string) => JobLifecycleMutationResult;
+  endJobVisit: (id: string, reason: VisitEndReason, note?: string, timestamp?: string) => JobLifecycleMutationResult;
+  markJobWorkComplete: (id: string, timestamp?: string) => JobLifecycleMutationResult;
+  completeJobCloseout: (id: string, timestamp?: string) => JobLifecycleMutationResult;
+  reopenCompletedJob: (id: string, reason: string, timestamp?: string) => JobLifecycleMutationResult;
 
   /* ── Derived job / scheduling values ── */
   routeAJobs: Job[];
@@ -197,11 +221,16 @@ export function useJobs(today: string): UseJobsReturn {
   const [completingJobIds, setCompletingJobIds] = useState<string[]>([]);
 
   /* ── Persistence boundary ── */
-  const replaceJobs = (nextJobs: Job[]) => {
+  const persistJobs = (nextJobs: Job[]): Job[] => {
     const normalized = normalizeJobsForStorage(nextJobs);
     setJobs(normalized);
     safeStorage.setItem('route_optimizer_jobs', JSON.stringify(normalized));
     safeStorage.setItem('route_optimizer_jobs_schema_version', JOB_STATE_SCHEMA_VERSION);
+    return normalized;
+  };
+
+  const replaceJobs = (nextJobs: Job[]) => {
+    persistJobs(nextJobs);
   };
 
   useEffect(() => {
@@ -371,6 +400,48 @@ export function useJobs(today: string): UseJobsReturn {
     becameFinished: false,
   });
 
+  const missingLifecycleMutation = (): JobLifecycleMutationResult => ({
+    ...missingJobMutation(),
+    lifecycleChanged: false,
+    transitionBlocked: true,
+  });
+
+  const buildLifecycleMutationResult = (
+    previousJob: Job,
+    nextJobs: Job[],
+    lifecycleChanged: boolean,
+    transitionBlocked: boolean,
+  ): JobLifecycleMutationResult => ({
+    ...buildMutationResult(previousJob, nextJobs),
+    lifecycleChanged,
+    transitionBlocked,
+  });
+
+  const applyJobLifecycleTransition = (
+    id: string,
+    transition: (state: JobLifecycleState) => JobLifecycleState,
+  ): JobLifecycleMutationResult => {
+    const previousJob = jobs.find(job => job.id === id) || null;
+    if (!previousJob) return missingLifecycleMutation();
+
+    const normalizedPreviousJob = normalizeJobState(previousJob);
+    const previousLifecycle = normalizedPreviousJob.lifecycle;
+    if (!previousLifecycle) return missingLifecycleMutation();
+
+    const nextLifecycle = transition(previousLifecycle);
+    if (nextLifecycle === previousLifecycle) {
+      return buildLifecycleMutationResult(previousJob, jobs, false, true);
+    }
+
+    const updatedJobs = jobs.map(job =>
+      job.id === id
+        ? normalizeJobState({ ...normalizedPreviousJob, lifecycle: nextLifecycle })
+        : job
+    );
+    const nextJobs = persistJobs(updatedJobs);
+    return buildLifecycleMutationResult(previousJob, nextJobs, true, false);
+  };
+
   const updateJobStatus = (id: string, updates: Partial<Job>): JobMutationResult => {
     const previousJob = jobs.find(job => job.id === id) || null;
     if (!previousJob) return missingJobMutation();
@@ -413,6 +484,42 @@ export function useJobs(today: string): UseJobsReturn {
     isRevisionRequired: false,
     revisionStatus: 'Under Review'
   });
+
+  const checkInJob = (id: string, timestamp?: string): JobLifecycleMutationResult =>
+    applyJobLifecycleTransition(id, lifecycle => applyArriveAtJob(lifecycle, timestamp));
+
+  const markJobReadyToStart = (id: string, timestamp?: string): JobLifecycleMutationResult =>
+    applyJobLifecycleTransition(id, lifecycle => applyMarkReadyToStart(lifecycle, timestamp));
+
+  const blockJobBeforeStart = (id: string, note: string, timestamp?: string): JobLifecycleMutationResult =>
+    applyJobLifecycleTransition(id, lifecycle => applyBlockBeforeStart(lifecycle, note, timestamp));
+
+  const startJob = (id: string, timestamp?: string): JobLifecycleMutationResult =>
+    applyJobLifecycleTransition(id, lifecycle => applyStartJobWork(lifecycle, timestamp));
+
+  const pauseJobWork = (id: string, note?: string, timestamp?: string): JobLifecycleMutationResult =>
+    applyJobLifecycleTransition(id, lifecycle => setJobWorkState(lifecycle, 'paused', note, timestamp));
+
+  const resumeJobWork = (id: string, timestamp?: string): JobLifecycleMutationResult =>
+    applyJobLifecycleTransition(id, lifecycle => setJobWorkState(lifecycle, 'working', undefined, timestamp));
+
+  const awaitJobSupport = (id: string, note?: string, timestamp?: string): JobLifecycleMutationResult =>
+    applyJobLifecycleTransition(id, lifecycle => setJobWorkState(lifecycle, 'awaiting_support', note, timestamp));
+
+  const markJobBlockedOnsite = (id: string, note?: string, timestamp?: string): JobLifecycleMutationResult =>
+    applyJobLifecycleTransition(id, lifecycle => setJobWorkState(lifecycle, 'blocked_onsite', note, timestamp));
+
+  const endJobVisit = (id: string, reason: VisitEndReason, note?: string, timestamp?: string): JobLifecycleMutationResult =>
+    applyJobLifecycleTransition(id, lifecycle => applyEndJobVisit(lifecycle, reason, note, timestamp));
+
+  const markJobWorkComplete = (id: string, timestamp?: string): JobLifecycleMutationResult =>
+    applyJobLifecycleTransition(id, lifecycle => applyMarkJobWorkComplete(lifecycle, timestamp));
+
+  const completeJobCloseout = (id: string, timestamp?: string): JobLifecycleMutationResult =>
+    applyJobLifecycleTransition(id, lifecycle => applyCompleteJobCloseout(lifecycle, timestamp));
+
+  const reopenCompletedJob = (id: string, reason: string, timestamp?: string): JobLifecycleMutationResult =>
+    applyJobLifecycleTransition(id, lifecycle => applyReopenCompletedJob(lifecycle, reason, timestamp));
 
   /* ── Derived job / scheduling values ── */
   const routeAJobs = jobs.filter(j => j.routeId === 'A');
@@ -469,6 +576,18 @@ export function useJobs(today: string): UseJobsReturn {
     updateJobStatus,
     toggleJobComplete,
     markJobUnderReview,
+    checkInJob,
+    markJobReadyToStart,
+    blockJobBeforeStart,
+    startJob,
+    pauseJobWork,
+    resumeJobWork,
+    awaitJobSupport,
+    markJobBlockedOnsite,
+    endJobVisit,
+    markJobWorkComplete,
+    completeJobCloseout,
+    reopenCompletedJob,
 
     routeAJobs,
     routeBJobs,
