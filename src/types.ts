@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import type { JobLifecycleState } from './features/jobs/jobLifecycleTypes';
+
 export type JobType = 'retail_audit' | 'merchandising' | 'mystery_shop' | 'field_task' | 'process_serve';
 
 export type JobStatus = 'ready' | 'revisit' | 'under_review' | 'completed' | 'pending' | 'postponed' | 'outlier' | 'finished';
@@ -81,6 +83,8 @@ export interface Job {
   calendar?: CalendarSourceMeta;
   /** Existing jobs default to merchandising; contract-parts jobs must opt in explicitly. */
   inventoryDomain?: 'merchandising' | 'contract_parts';
+  /** Optional v1 lifecycle overlay. Legacy JobStatus remains authoritative until the lifecycle migration is complete. */
+  lifecycle?: JobLifecycleState;
 }
 
 export interface RouteMetrics {

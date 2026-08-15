@@ -39,18 +39,27 @@ interface Job {
   id: string;
   storeName: string;
   address: string;
-  coordinates: { lat: number; lng: number } | null;
   pay: number;
-  estimatedMinutes: number;
+  estimatedMinutes: number; // Time spent inside store
   jobType: JobType;
+  dueTime: string;
+  notes: string;
   status: JobStatus;
-  isCompleted: boolean;
-  isRevisionRequired: boolean;
-  priority: number;
-  arrivalTime?: string;
-  completionTime?: string;
-  notes?: string;
-  gpsCapture?: { lat: number; lng: number; timestamp: string };
+  routeId: 'A' | 'B';
+  coordinates: Coordinates;
+  priority?: 'low' | 'medium' | 'high';
+  isRevisionRequired?: boolean;
+  isCompleted?: boolean;
+  deadline?: string;
+  revisionStatus?: string;
+  statusHistory?: StatusEvent[];
+  processServe?: ProcessServeDetails;
+  captureMode?: 'single_photo' | 'manual_multiple' | 'smart_aisle_scan';
+  scanSessionId?: string;
+  scheduledDate?: string;
+  calendar?: CalendarSourceMeta;
+  inventoryDomain?: 'merchandising' | 'contract_parts';
+  lifecycle?: JobLifecycleState;
 }
 ```
 
@@ -67,9 +76,9 @@ Every job can be pinned to a local workday with `Job.scheduledDate?: string` (`Y
 - **Midday rollover**: local date is recomputed on mount/focus/visibilitychange/60s tick; only derived filters change, no job mutation, and active rides are never silently re-sorted.
 - **Overdue**: an active job (`actionable` or `under_review`) pinned to a date strictly before today is surfaced in the strip's overdue review — never auto-moved.
 
-### Migration (schema v4)
+### Migration (schema v5)
 
-`JOB_STATE_SCHEMA_VERSION = '4'` (src/features/jobs/jobState.ts). The legacy `jobs_moved_to_tomorrow` list is read once at boot and migrated into per-job `scheduledDate = tomorrow` + Route B. Completed/finished/under-review jobs are never rewritten. The legacy key is cleared only after a successful migrated write; there are no new writers.
+`JOB_STATE_SCHEMA_VERSION = '5'` (src/features/jobs/jobState.ts). Schema v4 introduced the legacy `jobs_moved_to_tomorrow` one-time migration into per-job `scheduledDate = tomorrow` + Route B. Schema v5 adds a backward-compatible optional `Job.lifecycle?: JobLifecycleState` overlay. Load/storage normalization preserves valid existing lifecycle state, creates deterministic defaults for jobs without lifecycle data, and keeps the legacy `JobStatus` system authoritative until the lifecycle migration is completed. Completed/finished legacy jobs map to lifecycle `completed`/`offsite`; under-review legacy jobs map to `work_complete_pending_closeout`/`offsite`; ready/revisit/outlier jobs map to lifecycle `ready`/`offsite`. The migration is idempotent and existing jobs without lifecycle data continue to load normally.
 
 ### Grouping
 
@@ -88,7 +97,7 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 ### Key Functions
 
 - **markComplete**: Captures arrivalTime, completionTime, GPS coordinates; creates/updates ProofRecord in proofVault
-- **Job Normalization**: jobState.ts handles schema versioning and normalization (schema version "4")
+- **Job Normalization**: jobState.ts handles schema versioning and normalization (schema version "5"), including lifecycle overlay defaults for legacy jobs.
 - **useJobs mutations**: `src/features/jobs/useJobs.ts` owns pure job-status mutations (`updateJobStatus`, `toggleJobComplete`, `markJobUnderReview`) and returns `JobMutationResult` so `App.tsx` can run cross-feature side effects without duplicating status mutation logic.
 
 ## Design Rationale
@@ -161,10 +170,12 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 ## Related Source Files
 
 - `src/App.tsx` — main app state, Dashboard Today's Route cards, compact route job detail panel, and handlers
-- `src/types.ts` — Job type definitions (`scheduledDate`, `calendar`, `CalendarSourceMeta`)
+- `src/types.ts` — Job type definitions (`scheduledDate`, `calendar`, `CalendarSourceMeta`, optional `lifecycle`)
 - `src/features/jobs/useJobs.ts` — jobs state, scheduling derivations, pure job actions, and pure status mutation actions
 - `src/features/jobs/types.ts` — jobs feature-local result types such as `JobMutationResult`
-- `src/features/jobs/jobState.ts` — schema normalization (v4) + `migrateJobSchedules`
+- `src/features/jobs/jobState.ts` — schema normalization (v5), lifecycle defaults, and `migrateJobSchedules`
+- `src/features/jobs/jobLifecycleTypes.ts` — v1 lifecycle state/event/visit types
+- `src/features/jobs/jobLifecycle.ts` — lifecycle transition helpers
 - `src/features/jobs/jobSchedule.ts` — scheduling/migration/grouping helpers
 - `src/features/jobs/WeeklyStrip.tsx` — 7-day scheduling strip on the dashboard
 - `src/features/jobs/ExpandedDayPanel.tsx` — per-day detail panel (jobs, pay, plan, review)
@@ -184,4 +195,4 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 
 ## Last Updated
 
-2026-08-08 (route-planning extraction Step 1: removed route-owned OutlierDetector from Jobs related source list; jobs extraction remains complete)
+2026-08-15 (schema v5: optional Job lifecycle overlay added with backward-compatible load/storage normalization)
