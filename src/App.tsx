@@ -2104,6 +2104,15 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
               onOpenScan={(jobId) => { setScanJobId(jobId); setIsScanOpen(true); }}
               transitOrigin={{ latitude: origin.lat, longitude: origin.lng }}
               onMoveToDay={jobs.setMoveToDayJob}
+              onCheckInJob={jobs.checkInJob}
+              onMarkJobReadyToStart={jobs.markJobReadyToStart}
+              onBlockJobBeforeStart={jobs.blockJobBeforeStart}
+              onStartJob={jobs.startJob}
+              onPauseJobWork={jobs.pauseJobWork}
+              onResumeJobWork={jobs.resumeJobWork}
+              onAwaitJobSupport={jobs.awaitJobSupport}
+              onMarkJobBlockedOnsite={jobs.markJobBlockedOnsite}
+              onEndJobVisit={jobs.endJobVisit}
               onClose={() => setRouteDetailJobId(null)}
             />
           );

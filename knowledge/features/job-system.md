@@ -34,7 +34,7 @@ Dashboard Today's Route cards open a `DashboardJobDetailSheet` bottom-sheet moda
 
 ### Job Detail Overview
 
-`JobDetailModal` now opens with a compact Job Overview section before specialized panels. The overview answers what the job is, what matters now, what should happen next, and what is missing. It shows store/customer identity, address, schedule/due time, pay, lifecycle status/work state, a derived Next Action card, warning/blocker callouts, progress chips, and quick operational controls. The Next Action is derived by `src/features/jobs/jobOverview.ts` from lifecycle state; lifecycle buttons are display-only until a later UI wiring pass. Transit, InventoryCustodyPanel, notes, process-serve details, Preview Guide, Smart Aisle Scan, admin controls, and the legacy status UI remain available below the overview.
+`JobDetailModal` now opens with a compact Job Overview section before specialized panels. The overview answers what the job is, what matters now, what should happen next, and what is missing. It shows store/customer identity, address, schedule/due time, pay, lifecycle status/work state, a derived Next Action card, warning/blocker callouts, progress chips, and quick operational controls. The Next Action is derived by `src/features/jobs/jobOverview.ts` from lifecycle state. The Arrive/Check In, Ready to Start, Blocked Before Start, Start Job, Pause/Resume, Await Support, Blocked Onsite, and End Visit buttons call `useJobs` lifecycle actions; blocker/support/end-visit flows use an in-modal note sheet instead of `window.prompt`. Closeout/Reopen remain intentionally unwired until the Closeout Gate pass. Transit, InventoryCustodyPanel, notes, process-serve details, Preview Guide, Smart Aisle Scan, admin controls, and the legacy status UI remain available below the overview.
 
 ### Job Interface (src/types.ts)
 
@@ -202,4 +202,4 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 
 ## Last Updated
 
-2026-08-15 (JobDetailModal refactored to a lifecycle-aware Job Overview first layout)
+2026-08-15 (JobDetailModal lifecycle buttons wired for check-in/work-state/visit flows; Closeout Gate deferred)

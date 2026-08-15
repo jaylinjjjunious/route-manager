@@ -2,10 +2,31 @@ import type { Job } from '../../types';
 import { isJobCompleted, isRevisionJob, normalizeJobLifecycleState } from './jobState';
 import { isValidScheduledDate } from './jobSchedule';
 
+export type JobOverviewActionId =
+  | 'check_in'
+  | 'ready_to_start'
+  | 'blocked_before_start'
+  | 'start_job'
+  | 'pause_work'
+  | 'resume_work'
+  | 'await_support'
+  | 'blocked_onsite'
+  | 'end_visit'
+  | 'closeout'
+  | 'reopen'
+  | 'review_details';
+
+export interface JobOverviewSecondaryAction {
+  id: JobOverviewActionId;
+  label: string;
+}
+
 export interface JobOverviewAction {
   title: string;
   description: string;
+  primaryActionId: JobOverviewActionId;
   primaryLabel: string;
+  secondaryActions: JobOverviewSecondaryAction[];
   secondaryLabels: string[];
   tone: 'ready' | 'working' | 'blocked' | 'complete';
 }
@@ -43,7 +64,9 @@ export function buildJobOverview(job: Job, options: { isOutlier?: boolean; jobAc
     nextAction = {
       title: 'Closeout complete',
       description: 'This lifecycle is completed. Reopen only if new work or missing proof is found.',
+      primaryActionId: 'reopen',
       primaryLabel: 'Reopen if necessary',
+      secondaryActions: [],
       secondaryLabels: [],
       tone: 'complete',
     };
@@ -51,7 +74,9 @@ export function buildJobOverview(job: Job, options: { isOutlier?: boolean; jobAc
     nextAction = {
       title: 'Finish the closeout',
       description: 'Work is marked complete. Confirm proof, notes, and any required wrap-up.',
+      primaryActionId: 'closeout',
       primaryLabel: 'Closeout',
+      secondaryActions: activeVisit ? [{ id: 'end_visit', label: 'End Visit' }] : [],
       secondaryLabels: activeVisit ? ['End Visit'] : [],
       tone: 'complete',
     };
@@ -60,7 +85,9 @@ export function buildJobOverview(job: Job, options: { isOutlier?: boolean; jobAc
       nextAction = {
         title: 'Waiting on support',
         description: 'Resume when support clears the issue, or end this visit if you need to return later.',
+        primaryActionId: 'resume_work',
         primaryLabel: 'Resume Work',
+        secondaryActions: [{ id: 'end_visit', label: 'End Visit' }],
         secondaryLabels: ['End Visit'],
         tone: 'blocked',
       };
@@ -68,7 +95,9 @@ export function buildJobOverview(job: Job, options: { isOutlier?: boolean; jobAc
       nextAction = {
         title: 'Blocked onsite',
         description: 'Resolve or document the blocker before continuing.',
+        primaryActionId: 'resume_work',
         primaryLabel: 'Resume Work',
+        secondaryActions: [{ id: 'await_support', label: 'Await Support' }, { id: 'end_visit', label: 'End Visit' }],
         secondaryLabels: ['Await Support', 'End Visit'],
         tone: 'blocked',
       };
@@ -76,7 +105,9 @@ export function buildJobOverview(job: Job, options: { isOutlier?: boolean; jobAc
       nextAction = {
         title: 'Work paused',
         description: 'Resume the active visit when you are ready to continue.',
+        primaryActionId: 'resume_work',
         primaryLabel: 'Resume Work',
+        secondaryActions: [{ id: 'await_support', label: 'Await Support' }, { id: 'end_visit', label: 'End Visit' }],
         secondaryLabels: ['Await Support', 'End Visit'],
         tone: 'working',
       };
@@ -84,8 +115,10 @@ export function buildJobOverview(job: Job, options: { isOutlier?: boolean; jobAc
       nextAction = {
         title: 'Continue onsite work',
         description: 'You are checked in and actively working this job.',
+        primaryActionId: 'pause_work',
         primaryLabel: 'Pause Work',
-        secondaryLabels: ['Await Support', 'End Visit'],
+        secondaryActions: [{ id: 'await_support', label: 'Await Support' }, { id: 'blocked_onsite', label: 'Blocked Onsite' }, { id: 'end_visit', label: 'End Visit' }],
+        secondaryLabels: ['Await Support', 'Blocked Onsite', 'End Visit'],
         tone: 'working',
       };
     }
@@ -93,7 +126,9 @@ export function buildJobOverview(job: Job, options: { isOutlier?: boolean; jobAc
     nextAction = {
       title: 'Start the job',
       description: 'You are checked in and ready to begin the work.',
+      primaryActionId: 'start_job',
       primaryLabel: 'Start Job',
+      secondaryActions: [{ id: 'blocked_before_start', label: 'Blocked Before Start' }],
       secondaryLabels: ['Blocked Before Start'],
       tone: 'ready',
     };
@@ -101,7 +136,9 @@ export function buildJobOverview(job: Job, options: { isOutlier?: boolean; jobAc
     nextAction = {
       title: 'Confirm readiness',
       description: 'You are onsite. Mark ready to start, or capture why work cannot begin.',
+      primaryActionId: 'ready_to_start',
       primaryLabel: 'Ready to Start',
+      secondaryActions: [{ id: 'blocked_before_start', label: 'Blocked Before Start' }],
       secondaryLabels: ['Blocked Before Start'],
       tone: workState === 'blocked_before_start' ? 'blocked' : 'ready',
     };
@@ -109,7 +146,9 @@ export function buildJobOverview(job: Job, options: { isOutlier?: boolean; jobAc
     nextAction = {
       title: 'Review cancelled job',
       description: 'This lifecycle is cancelled. Confirm whether it should stay closed or be restored.',
+      primaryActionId: 'review_details',
       primaryLabel: 'Review Details',
+      secondaryActions: [],
       secondaryLabels: [],
       tone: 'blocked',
     };
@@ -117,7 +156,9 @@ export function buildJobOverview(job: Job, options: { isOutlier?: boolean; jobAc
     nextAction = {
       title: 'Go to the location',
       description: 'This job has not been checked in yet.',
+      primaryActionId: 'check_in',
       primaryLabel: 'Arrive / Check In',
+      secondaryActions: [],
       secondaryLabels: [],
       tone: 'ready',
     };

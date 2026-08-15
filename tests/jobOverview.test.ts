@@ -65,7 +65,7 @@ describe('buildJobOverview', () => {
       lifecycle: lifecycle({ status: 'in_progress', workState: 'working', activeVisitId: 'visit-1', visits: [activeVisit] }),
     })).nextAction).toMatchObject({
       primaryLabel: 'Pause Work',
-      secondaryLabels: ['Await Support', 'End Visit'],
+      secondaryLabels: ['Await Support', 'Blocked Onsite', 'End Visit'],
     });
 
     expect(buildJobOverview(makeJob({

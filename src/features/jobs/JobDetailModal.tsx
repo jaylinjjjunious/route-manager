@@ -16,7 +16,9 @@ import { X, Navigation, Clock, MapPin, CheckSquare, Edit2, Trash2, Copy, ArrowRi
 import type { Job, JobType } from '../../types';
 import { isJobCompleted, isRevisionJob } from './jobState';
 import { formatScheduledDate, isValidScheduledDate } from './jobSchedule';
-import { buildJobOverview } from './jobOverview';
+import { buildJobOverview, type JobOverviewActionId } from './jobOverview';
+import type { JobLifecycleMutationResult } from './types';
+import type { VisitEndReason } from './jobLifecycleTypes';
 import InventoryCustodyPanel from '../../components/InventoryCustodyPanel';
 import { JobTransitSection } from '../../components/transit/JobTransitSection';
 import { isTransitApiEnabled } from '../../services/transit';
@@ -42,8 +44,30 @@ interface JobDetailModalProps {
   onOpenScan?: (jobId: string) => void;
   transitOrigin?: { latitude: number; longitude: number };
   onMoveToDay?: (job: Job) => void;
+  onCheckInJob?: (id: string) => JobLifecycleMutationResult;
+  onMarkJobReadyToStart?: (id: string) => JobLifecycleMutationResult;
+  onBlockJobBeforeStart?: (id: string, note: string) => JobLifecycleMutationResult;
+  onStartJob?: (id: string) => JobLifecycleMutationResult;
+  onPauseJobWork?: (id: string, note?: string) => JobLifecycleMutationResult;
+  onResumeJobWork?: (id: string) => JobLifecycleMutationResult;
+  onAwaitJobSupport?: (id: string, note: string) => JobLifecycleMutationResult;
+  onMarkJobBlockedOnsite?: (id: string, note: string) => JobLifecycleMutationResult;
+  onEndJobVisit?: (id: string, reason: VisitEndReason, note?: string) => JobLifecycleMutationResult;
   onClose: () => void;
 }
+
+type LifecycleNoteAction = Extract<JobOverviewActionId, 'blocked_before_start' | 'await_support' | 'blocked_onsite' | 'end_visit' | 'pause_work'>;
+
+const END_VISIT_REASON_OPTIONS: Array<{ value: VisitEndReason; label: string }> = [
+  { value: 'completed_work', label: 'Completed work' },
+  { value: 'missing_part', label: 'Missing part' },
+  { value: 'awaiting_support', label: 'Awaiting support' },
+  { value: 'customer_not_ready', label: 'Customer not ready' },
+  { value: 'access_denied', label: 'Access denied' },
+  { value: 'reschedule_required', label: 'Reschedule required' },
+  { value: 'safety_issue', label: 'Safety issue' },
+  { value: 'other', label: 'Other' },
+];
 
 function getJobTypeStyle(type: JobType) {
   switch (type) {
@@ -145,12 +169,26 @@ export default function JobDetailModal({
   onOpenScan,
   transitOrigin,
   onMoveToDay,
+  onCheckInJob,
+  onMarkJobReadyToStart,
+  onBlockJobBeforeStart,
+  onStartJob,
+  onPauseJobWork,
+  onResumeJobWork,
+  onAwaitJobSupport,
+  onMarkJobBlockedOnsite,
+  onEndJobVisit,
   onClose,
 }: JobDetailModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const noteTextRef = useRef<HTMLTextAreaElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [previewGuideOpen, setPreviewGuideOpen] = useState(false);
+  const [noteAction, setNoteAction] = useState<LifecycleNoteAction | null>(null);
+  const [noteText, setNoteText] = useState('');
+  const [endVisitReason, setEndVisitReason] = useState<VisitEndReason>('other');
+  const [lifecycleError, setLifecycleError] = useState<string | null>(null);
 
   const category = getCategory(job, isOutlier);
   const isDone = isJobCompleted(job);
@@ -223,6 +261,104 @@ export default function JobDetailModal({
         break;
     }
   };
+
+  const handleLifecycleResult = (result: JobLifecycleMutationResult | undefined) => {
+    if (!result) {
+      setLifecycleError('This action is not available yet.');
+      return;
+    }
+    if (result.transitionBlocked) {
+      setLifecycleError('That lifecycle step is not available from the current state.');
+      return;
+    }
+    setLifecycleError(null);
+  };
+
+  const openNoteSheet = (action: LifecycleNoteAction) => {
+    setNoteAction(action);
+    setNoteText('');
+    setEndVisitReason(action === 'end_visit' ? 'other' : endVisitReason);
+    setLifecycleError(null);
+  };
+
+  const closeNoteSheet = () => {
+    setNoteAction(null);
+    setNoteText('');
+    setLifecycleError(null);
+  };
+
+  const runLifecycleAction = (actionId: JobOverviewActionId) => {
+    setLifecycleError(null);
+    switch (actionId) {
+      case 'check_in':
+        handleLifecycleResult(onCheckInJob?.(job.id));
+        break;
+      case 'ready_to_start':
+        handleLifecycleResult(onMarkJobReadyToStart?.(job.id));
+        break;
+      case 'start_job':
+        handleLifecycleResult(onStartJob?.(job.id));
+        break;
+      case 'pause_work':
+        openNoteSheet('pause_work');
+        break;
+      case 'resume_work':
+        handleLifecycleResult(onResumeJobWork?.(job.id));
+        break;
+      case 'blocked_before_start':
+      case 'await_support':
+      case 'blocked_onsite':
+      case 'end_visit':
+        openNoteSheet(actionId);
+        break;
+      case 'closeout':
+        setLifecycleError('Closeout gate is not wired yet.');
+        break;
+      case 'reopen':
+      case 'review_details':
+        setLifecycleError('This lifecycle action is not wired yet.');
+        break;
+    }
+  };
+
+  const submitNoteAction = () => {
+    if (!noteAction) return;
+    const noteField = noteTextRef.current || document.querySelector<HTMLTextAreaElement>('[data-lifecycle-note="true"]');
+    const note = (noteField?.value ?? noteText).trim();
+    if (noteAction !== 'pause_work' && !note) {
+      setLifecycleError('Add a short reason before saving.');
+      return;
+    }
+
+    if (noteAction === 'blocked_before_start') {
+      handleLifecycleResult(onBlockJobBeforeStart?.(job.id, note));
+    } else if (noteAction === 'await_support') {
+      handleLifecycleResult(onAwaitJobSupport?.(job.id, note));
+    } else if (noteAction === 'blocked_onsite') {
+      handleLifecycleResult(onMarkJobBlockedOnsite?.(job.id, note));
+    } else if (noteAction === 'pause_work') {
+      handleLifecycleResult(onPauseJobWork?.(job.id, note || undefined));
+    } else if (noteAction === 'end_visit') {
+      handleLifecycleResult(onEndJobVisit?.(job.id, endVisitReason, note));
+    }
+
+    setNoteAction(null);
+    setNoteText('');
+  };
+
+  const noteSheetTitle =
+    noteAction === 'blocked_before_start' ? 'Why is work blocked before start?'
+    : noteAction === 'await_support' ? 'What support are you waiting on?'
+    : noteAction === 'blocked_onsite' ? 'What is blocking work onsite?'
+    : noteAction === 'end_visit' ? 'End this visit'
+    : 'Pause work';
+
+  const notePlaceholder =
+    noteAction === 'blocked_before_start' ? 'Example: manager unavailable, access denied, site not ready'
+    : noteAction === 'await_support' ? 'Example: waiting for approval, remote support, missing answer'
+    : noteAction === 'blocked_onsite' ? 'Example: locked case, unsafe area, missing equipment'
+    : noteAction === 'end_visit' ? 'Add any handoff details for the next visit'
+    : 'Optional note';
 
   const modalContent = (
     <div
@@ -376,28 +512,34 @@ export default function JobDetailModal({
               <div className={`rounded-xl border px-3 py-3 ${NEXT_ACTION_STYLES[overview.nextAction.tone]}`}>
                 <p className="text-[9px] font-black uppercase tracking-wider opacity-70">Next Action</p>
                 <h5 className="mt-1 text-base font-black leading-tight">{overview.nextAction.title}</h5>
+                <p className="mt-1 text-[11px] font-black uppercase tracking-wide opacity-75">
+                  Current work state: {overview.workStateLabel}
+                </p>
                 <p className="mt-1 text-xs font-semibold leading-relaxed opacity-80">{overview.nextAction.description}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button
                     type="button"
-                    disabled
-                    className="min-h-10 rounded-lg bg-white/15 px-3 py-2 text-xs font-black text-white opacity-70"
-                    title="Lifecycle action wiring is coming in a later UI pass"
+                    onClick={() => runLifecycleAction(overview.nextAction.primaryActionId)}
+                    className="min-h-10 rounded-lg bg-white/20 px-3 py-2 text-xs font-black text-white transition hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-white/40"
                   >
                     {overview.nextAction.primaryLabel}
                   </button>
-                  {overview.nextAction.secondaryLabels.map(label => (
+                  {overview.nextAction.secondaryActions.map(action => (
                     <button
-                      key={label}
+                      key={action.id}
                       type="button"
-                      disabled
-                      className="min-h-10 rounded-lg border border-white/15 px-3 py-2 text-xs font-black opacity-70"
-                      title="Lifecycle action wiring is coming in a later UI pass"
+                      onClick={() => runLifecycleAction(action.id)}
+                      className="min-h-10 rounded-lg border border-white/15 px-3 py-2 text-xs font-black transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
                     >
-                      {label}
+                      {action.label}
                     </button>
                   ))}
                 </div>
+                {lifecycleError && (
+                  <p className="mt-2 text-[11px] font-bold text-amber-100" role="alert">
+                    {lifecycleError}
+                  </p>
+                )}
               </div>
 
               {overview.warnings.length > 0 && (
@@ -675,6 +817,74 @@ export default function JobDetailModal({
             )}
           </div>
         </div>
+
+        {noteAction && (
+          <div className="border-t border-white/10 bg-[#15171a] px-4 py-3" role="dialog" aria-modal="false" aria-labelledby="lifecycle-note-title">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h5 id="lifecycle-note-title" className="text-sm font-black text-white">{noteSheetTitle}</h5>
+                <p className="mt-0.5 text-[11px] font-semibold text-slate-400">
+                  {noteAction === 'pause_work' ? 'A note is optional.' : 'A short reason is required.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeNoteSheet}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-slate-300 hover:bg-white/15"
+                aria-label="Cancel lifecycle note"
+              >
+                <X size={15} />
+              </button>
+            </div>
+            {noteAction === 'end_visit' && (
+              <label className="mt-3 block">
+                <span className="text-[10px] font-black uppercase tracking-wide text-slate-500">Reason</span>
+                <select
+                  value={endVisitReason}
+                  onChange={(event) => setEndVisitReason(event.target.value as VisitEndReason)}
+                  className="mt-1 min-h-11 w-full rounded-lg border border-white/10 bg-black/20 px-3 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
+                >
+                  {END_VISIT_REASON_OPTIONS.map(option => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <label className="mt-3 block">
+              <span className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+                {noteAction === 'pause_work' ? 'Note' : 'Reason / note'}
+              </span>
+              <textarea
+                key={noteAction}
+                ref={noteTextRef}
+                data-lifecycle-note="true"
+                defaultValue=""
+                placeholder={notePlaceholder}
+                rows={3}
+                className="mt-1 w-full resize-none rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm font-semibold text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
+              />
+            </label>
+            {lifecycleError && (
+              <p className="mt-2 text-[11px] font-bold text-amber-300" role="alert">{lifecycleError}</p>
+            )}
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={closeNoteSheet}
+                className="min-h-11 rounded-lg border border-white/10 px-3 py-2 text-xs font-black text-slate-300 hover:bg-white/10"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitNoteAction}
+                className="min-h-11 rounded-lg bg-cyan-600 px-3 py-2 text-xs font-black text-white hover:bg-cyan-500"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Fixed sticky footer */}
         <div className="flex shrink-0 items-center gap-2 border-t border-white/10 px-4 py-3">
