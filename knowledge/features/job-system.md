@@ -64,8 +64,13 @@ interface Job {
   calendar?: CalendarSourceMeta;
   inventoryDomain?: 'merchandising' | 'contract_parts';
   lifecycle?: JobLifecycleState;
+  closeoutRequirements?: JobCloseoutRequirement[];
 }
 ```
+
+### Closeout Gate Foundation
+
+Jobs can carry generic `closeoutRequirements?: JobCloseoutRequirement[]`. The closeout engine in `src/features/jobs/jobCloseout.ts` is pure and React-independent. It supports requirement kinds `required`, `conditional`, `recommended`, and `reference`; active required/conditional items block final lifecycle closeout when unsatisfied, while recommended/reference items are displayed as non-blocking guidance. `JobDetailModal` shows a Closeout section for jobs in `work_complete_pending_closeout` or jobs with attached closeout requirements, highlights missing required items, and disables the Complete Job button until blocking requirements are satisfied. The final Complete Job action calls `useJobs.completeJobCloseout`, preserving lifecycle completion timestamps and leaving legacy `JobStatus` untouched. Customer-specific procedure rules are intentionally not implemented yet; future rule engines should attach generic requirements to jobs before evaluation.
 
 ## Scheduling (Phase 1 — per-job workday)
 
@@ -103,7 +108,8 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 - **markComplete**: Captures arrivalTime, completionTime, GPS coordinates; creates/updates ProofRecord in proofVault
 - **Job Normalization**: jobState.ts handles schema versioning and normalization (schema version "5"), including lifecycle overlay defaults for legacy jobs.
 - **useJobs mutations**: `src/features/jobs/useJobs.ts` owns pure job-status mutations (`updateJobStatus`, `toggleJobComplete`, `markJobUnderReview`) and returns `JobMutationResult` so `App.tsx` can run cross-feature side effects without duplicating status mutation logic.
-- **Lifecycle actions**: `useJobs.ts` exposes persisted lifecycle-only actions (`checkInJob`, `markJobReadyToStart`, `blockJobBeforeStart`, `startJob`, `pauseJobWork`, `resumeJobWork`, `awaitJobSupport`, `markJobBlockedOnsite`, `endJobVisit`, `markJobWorkComplete`, `completeJobCloseout`, `reopenCompletedJob`). These delegate to `jobLifecycle.ts`, return `JobLifecycleMutationResult`, block invalid transitions without persisting, preserve visit/event history, and do not update legacy `JobStatus` yet.
+- **Lifecycle actions**: `useJobs.ts` exposes persisted lifecycle-only actions (`checkInJob`, `markJobReadyToStart`, `blockJobBeforeStart`, `startJob`, `pauseJobWork`, `resumeJobWork`, `awaitJobSupport`, `markJobBlockedOnsite`, `endJobVisit`, `markJobWorkComplete`, `completeJobCloseout`, `reopenCompletedJob`). These delegate to `jobLifecycle.ts`, return `JobLifecycleMutationResult`, block invalid transitions without persisting, preserve visit/event history, preserve lifecycle completion timestamps, and do not update legacy `JobStatus` yet.
+- **Closeout evaluation**: `jobCloseout.ts` evaluates generic job-attached closeout requirements into satisfied required items, missing required items, active conditional requirements, non-blocking warnings/recommended items, references, and a completion-allowed flag.
 - **Job Overview derivation**: `jobOverview.ts` derives lifecycle display labels, Next Action, warnings/blockers, and compact summary metadata for `JobDetailModal`.
 
 ## Design Rationale
@@ -182,6 +188,8 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 - `src/features/jobs/jobState.ts` — schema normalization (v5), lifecycle defaults, and `migrateJobSchedules`
 - `src/features/jobs/jobLifecycleTypes.ts` — v1 lifecycle state/event/visit types
 - `src/features/jobs/jobLifecycle.ts` — lifecycle transition helpers
+- `src/features/jobs/jobCloseoutTypes.ts` — generic closeout requirement and evaluation result types
+- `src/features/jobs/jobCloseout.ts` — pure closeout requirement evaluation
 - `src/features/jobs/jobOverview.ts` — Job Detail overview and Next Action derivation
 - `src/features/jobs/jobSchedule.ts` — scheduling/migration/grouping helpers
 - `src/features/jobs/WeeklyStrip.tsx` — 7-day scheduling strip on the dashboard
@@ -202,4 +210,4 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 
 ## Last Updated
 
-2026-08-15 (JobDetailModal Work Complete Pending Closeout state wired; full Closeout Gate deferred)
+2026-08-15 (Generic Job Closeout Gate foundation added; customer-specific rules deferred)

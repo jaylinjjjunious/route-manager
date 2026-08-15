@@ -281,6 +281,63 @@ describe('JobDetailModal lifecycle action wiring', () => {
     expect(document.body.textContent).not.toContain('End Visit');
   });
 
+  it('blocks final closeout when required items are missing but not for recommended or reference items', async () => {
+    const onCompleteJobCloseout = vi.fn(() => mutationResult);
+    await renderModal(propsFor(makeJob({
+      lifecycle: lifecycle({
+        status: 'work_complete_pending_closeout',
+        workState: 'offsite',
+        visits: [{ id: 'visit-1', visitNumber: 1, arrivedAt: '2026-08-15T09:00:00.000Z', endedAt: '2026-08-15T10:00:00.000Z' }],
+      }),
+      closeoutRequirements: [
+        { id: 'proof', kind: 'required', label: 'Upload required proof', satisfied: false },
+        { id: 'receipt', kind: 'recommended', label: 'Attach receipt', satisfied: false },
+        { id: 'policy', kind: 'reference', label: 'Review program notes' },
+      ],
+    }), { onCompleteJobCloseout }));
+
+    expect(document.body.textContent).toContain('Closeout');
+    expect(document.body.textContent).toContain('1 required item missing.');
+    expect(document.body.textContent).toContain('Upload required proof');
+    expect(document.body.textContent).toContain('Attach receipt');
+    expect(document.body.textContent).toContain('Review program notes');
+    const completeButton = Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(button => button.textContent?.trim() === 'Complete Job');
+    expect(completeButton).toBeTruthy();
+    expect(completeButton?.disabled).toBe(true);
+    expect(onCompleteJobCloseout).not.toHaveBeenCalled();
+  });
+
+  it('allows final closeout when required items are satisfied and preserves lifecycle completion through the action', async () => {
+    const onCompleteJobCloseout = vi.fn(() => ({
+      ...mutationResult,
+      updatedJob: makeJob({
+        lifecycle: lifecycle({
+          status: 'completed',
+          workState: 'offsite',
+          completedAt: '2026-08-15T10:10:00.000Z',
+          originalCompletedAt: '2026-08-15T10:10:00.000Z',
+        }),
+      }),
+    }));
+
+    await renderModal(propsFor(makeJob({
+      lifecycle: lifecycle({
+        status: 'work_complete_pending_closeout',
+        workState: 'offsite',
+        visits: [{ id: 'visit-1', visitNumber: 1, arrivedAt: '2026-08-15T09:00:00.000Z', endedAt: '2026-08-15T10:00:00.000Z' }],
+      }),
+      closeoutRequirements: [
+        { id: 'proof', kind: 'required', label: 'Upload required proof', satisfied: true },
+        { id: 'receipt', kind: 'recommended', label: 'Attach receipt', satisfied: false },
+      ],
+    }), { onCompleteJobCloseout }));
+
+    expect(document.body.textContent).toContain('Ready for final completion.');
+    await clickButton('Complete Job');
+    expect(onCompleteJobCloseout).toHaveBeenCalledWith('job-1');
+    expect(onCompleteJobCloseout.mock.results[0].value.updatedJob.lifecycle.completedAt).toBe('2026-08-15T10:10:00.000Z');
+  });
+
   it('shows compact visit history with visit numbers, timing, reasons, and visit ids', async () => {
     await renderModal(propsFor(makeJob({
       lifecycle: lifecycle({

@@ -17,9 +17,11 @@ import type { Job, JobType } from '../../types';
 import { isJobCompleted, isRevisionJob, normalizeJobLifecycleState } from './jobState';
 import { formatScheduledDate, isValidScheduledDate } from './jobSchedule';
 import { summarizeJobTime } from './jobLifecycle';
+import { evaluateJobCloseout } from './jobCloseout';
 import { buildJobOverview, type JobOverviewActionId } from './jobOverview';
 import type { JobLifecycleMutationResult } from './types';
 import type { VisitEndReason } from './jobLifecycleTypes';
+import type { JobCloseoutRequirement, JobCloseoutRequirementKind } from './jobCloseoutTypes';
 import InventoryCustodyPanel from '../../components/InventoryCustodyPanel';
 import { JobTransitSection } from '../../components/transit/JobTransitSection';
 import { isTransitApiEnabled } from '../../services/transit';
@@ -55,6 +57,7 @@ interface JobDetailModalProps {
   onMarkJobBlockedOnsite?: (id: string, note: string) => JobLifecycleMutationResult;
   onEndJobVisit?: (id: string, reason: VisitEndReason, note?: string) => JobLifecycleMutationResult;
   onMarkJobWorkComplete?: (id: string) => JobLifecycleMutationResult;
+  onCompleteJobCloseout?: (id: string) => JobLifecycleMutationResult;
   onClose: () => void;
 }
 
@@ -151,6 +154,9 @@ const formatVisitTimestamp = (value?: string) => {
 const formatVisitReason = (reason?: VisitEndReason) =>
   reason ? reason.replaceAll('_', ' ') : '—';
 
+const formatCloseoutKind = (kind: JobCloseoutRequirementKind) =>
+  kind.charAt(0).toUpperCase() + kind.slice(1);
+
 const formatTimeSummaryMinutes = (minutes: number) => {
   const rounded = Math.round(minutes);
   if (rounded <= 0 && minutes > 0) return '<1m';
@@ -167,6 +173,42 @@ function TimeSummaryTile({ label, minutes, primary = false }: { label: string; m
       <p className={`mt-0.5 text-sm font-black ${primary ? 'text-cyan-200' : 'text-slate-300'}`}>
         {formatTimeSummaryMinutes(minutes)}
       </p>
+    </div>
+  );
+}
+
+function CloseoutRequirementRow({ requirement, blocking }: { requirement: JobCloseoutRequirement; blocking: boolean }) {
+  const satisfied = requirement.satisfied === true;
+  const iconClass = blocking
+    ? 'text-rose-300'
+    : satisfied
+      ? 'text-emerald-300'
+      : requirement.kind === 'reference'
+        ? 'text-cyan-300'
+        : 'text-amber-300';
+
+  return (
+    <div className={`rounded-lg border px-2.5 py-2 ${blocking ? 'border-rose-500/25 bg-rose-500/10' : 'border-white/10 bg-white/[0.03]'}`}>
+      <div className="flex items-start gap-2">
+        {satisfied ? (
+          <CheckCircle2 size={14} className={`mt-0.5 shrink-0 ${iconClass}`} />
+        ) : (
+          <AlertCircle size={14} className={`mt-0.5 shrink-0 ${iconClass}`} />
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <p className="text-xs font-black text-slate-200">{requirement.label}</p>
+            <span className={`rounded-full border px-1.5 py-0.5 text-[8px] font-black uppercase ${blocking ? 'border-rose-400/30 text-rose-200' : 'border-white/10 text-slate-500'}`}>
+              {blocking ? 'Missing' : formatCloseoutKind(requirement.kind)}
+            </span>
+          </div>
+          {requirement.description && (
+            <p className="mt-0.5 text-[10px] font-semibold leading-relaxed text-slate-500">
+              {requirement.description}
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -217,6 +259,7 @@ export default function JobDetailModal({
   onMarkJobBlockedOnsite,
   onEndJobVisit,
   onMarkJobWorkComplete,
+  onCompleteJobCloseout,
   onClose,
 }: JobDetailModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -234,6 +277,14 @@ export default function JobDetailModal({
   const needsRevision = isRevisionJob(job);
   const overview = buildJobOverview(job, { isOutlier, jobAccessLocked });
   const lifecycle = normalizeJobLifecycleState(job);
+  const closeoutEvaluation = evaluateJobCloseout(job);
+  const closeoutRequirements = [
+    ...closeoutEvaluation.missingRequiredItems,
+    ...closeoutEvaluation.satisfiedRequiredItems,
+    ...closeoutEvaluation.recommendedItems,
+    ...closeoutEvaluation.referenceItems,
+  ];
+  const shouldShowCloseout = lifecycle.status === 'work_complete_pending_closeout' || closeoutRequirements.length > 0;
   const timeSummary = summarizeJobTime(lifecycle);
   const secondaryTimeBuckets = [
     { label: 'Paused', minutes: timeSummary.pausedMinutes },
@@ -361,7 +412,11 @@ export default function JobDetailModal({
         handleLifecycleResult(onMarkJobWorkComplete?.(job.id));
         break;
       case 'closeout':
-        setLifecycleError('Closeout gate is not wired yet.');
+        if (!closeoutEvaluation.completionAllowed) {
+          setLifecycleError('Complete the missing required closeout items first.');
+          return;
+        }
+        handleLifecycleResult(onCompleteJobCloseout?.(job.id));
         break;
       case 'reopen':
       case 'review_details':
@@ -692,6 +747,50 @@ export default function JobDetailModal({
                     </div>
                   ))}
                 </div>
+              </section>
+            )}
+
+            {shouldShowCloseout && (
+              <section aria-labelledby="closeout-gate-title" className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3">
+                <div className="mb-2 flex items-start justify-between gap-3">
+                  <div>
+                    <h5 id="closeout-gate-title" className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                      Closeout
+                    </h5>
+                    <p className="mt-0.5 text-xs font-bold text-slate-300">
+                      {closeoutEvaluation.completionAllowed ? 'Ready for final completion.' : `${closeoutEvaluation.missingRequiredItems.length} required item${closeoutEvaluation.missingRequiredItems.length === 1 ? '' : 's'} missing.`}
+                    </p>
+                  </div>
+                  <span className={`rounded-full border px-2 py-1 text-[9px] font-black uppercase ${closeoutEvaluation.completionAllowed ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-200' : 'border-rose-500/25 bg-rose-500/10 text-rose-200'}`}>
+                    {closeoutEvaluation.completionAllowed ? 'Allowed' : 'Blocked'}
+                  </span>
+                </div>
+
+                {closeoutRequirements.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {closeoutRequirements.map(requirement => (
+                      <CloseoutRequirementRow
+                        key={requirement.id}
+                        requirement={requirement}
+                        blocking={closeoutEvaluation.missingRequiredItems.some(item => item.id === requirement.id)}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-2.5 py-2 text-[11px] font-bold text-cyan-200">
+                    No closeout requirements attached.
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  disabled={!closeoutEvaluation.completionAllowed || lifecycle.status !== 'work_complete_pending_closeout'}
+                  onClick={() => runLifecycleAction('closeout')}
+                  className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white/15 px-3 py-2 text-xs font-black text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-45 focus:outline-none focus:ring-2 focus:ring-white/30"
+                >
+                  <CheckCircle2 size={15} />
+                  Complete Job
+                </button>
               </section>
             )}
 

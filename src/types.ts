@@ -4,6 +4,7 @@
  */
 
 import type { JobLifecycleState } from './features/jobs/jobLifecycleTypes';
+import type { JobCloseoutRequirement } from './features/jobs/jobCloseoutTypes';
 
 export type JobType = 'retail_audit' | 'merchandising' | 'mystery_shop' | 'field_task' | 'process_serve';
 
@@ -85,6 +86,8 @@ export interface Job {
   inventoryDomain?: 'merchandising' | 'contract_parts';
   /** Optional v1 lifecycle overlay. Legacy JobStatus remains authoritative until the lifecycle migration is complete. */
   lifecycle?: JobLifecycleState;
+  /** Generic closeout checklist requirements. Customer-specific rule engines may attach these later. */
+  closeoutRequirements?: JobCloseoutRequirement[];
 }
 
 export interface RouteMetrics {
