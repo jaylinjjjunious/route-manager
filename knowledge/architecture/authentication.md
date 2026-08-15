@@ -73,8 +73,13 @@ non-loopback hosts render the shield as a non-interactive brand mark.
 ### Password Reset Flow
 
 1. User clicks "Forgot Password" → `resetPasswordForEmail` sends reset email.
-2. User clicks link → lands on `/reset-password` with access_token in URL.
-3. `updatePassword({ password })` completes the flow.
+2. The reset email uses `redirectTo: ${window.location.origin}/reset-password`, so local development redirects to `http://localhost:3000/reset-password` and production redirects to the active production origin.
+3. User clicks link → lands on `/reset-password` with the Supabase recovery session in the URL.
+4. `updatePassword({ password })` completes the flow.
+
+### Authenticated Password Change
+
+Signed-in Supabase users can also change their password from More → Account → Change Password. `ChangePasswordPanel.tsx` validates the new password and confirmation locally, then calls the existing `AuthProvider.updatePassword()` method. It never asks for or stores the old password, never logs password values, and does not touch user email, jobs, lifecycle, proof, inventory, procedure, or other local app data. The panel is disabled with explanatory copy when the app is running in local development bypass mode because that mode is not a real Supabase session.
 
 ### Secrets and Environment
 
@@ -104,6 +109,7 @@ Required env vars:
 - `src/auth/localAuthBypass.ts` — Development/flag/loopback bypass guard
 - `src/auth/ProtectedApp.tsx` — Auth guard (91 lines)
 - `src/components/LoginPage.tsx` — Login UI and local-only shield entry control
+- `src/components/auth/ChangePasswordPanel.tsx` — authenticated in-app password change form
 - `src/lib/supabase.ts` — Supabase client (24 lines)
 - `src/services/apiClient.ts` — Auth-fetch wrapper (61 lines)
 - `src/main.tsx` — Boot sequence (62 lines)
@@ -116,4 +122,4 @@ Required env vars:
 
 ## Last Updated
 
-2026-08-03 (local sign-in bypass)
+2026-08-15 (authenticated Change Password panel and localhost reset redirect verification)

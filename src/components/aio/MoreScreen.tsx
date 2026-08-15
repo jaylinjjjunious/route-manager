@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { GradientIconTile } from "./primitives";
+import ChangePasswordPanel from "../auth/ChangePasswordPanel";
 
 const AVATAR_PATH = "/profile/avatar.webp";
 
@@ -95,28 +96,31 @@ export default function MoreScreen(props: MoreScreenProps) {
       </div>
 
       <section aria-label="Account">
-        <div className="aio-card flex items-center gap-3 p-4">
-          <span className="block h-12 w-12 shrink-0 overflow-hidden rounded-full border border-[var(--color-aio-line)] bg-[var(--color-aio-surface)]">
-            <img
-              src={AVATAR_PATH}
-              alt={`${props.userEmail || "Account"} profile picture`}
-              className="h-full w-full object-cover"
-            />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[16px] font-bold text-[var(--color-aio-text)]">{props.userEmail || "Signed in"}</p>
-            <p className="flex items-center gap-1 text-[12px] font-medium text-[var(--color-aio-text-2)]">
-              <ShieldCheck size={13} /> Authenticated
-            </p>
+        <div className="space-y-3">
+          <div className="aio-card flex items-center gap-3 p-4">
+            <span className="block h-12 w-12 shrink-0 overflow-hidden rounded-full border border-[var(--color-aio-line)] bg-[var(--color-aio-surface)]">
+              <img
+                src={AVATAR_PATH}
+                alt={`${props.userEmail || "Account"} profile picture`}
+                className="h-full w-full object-cover"
+              />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[16px] font-bold text-[var(--color-aio-text)]">{props.userEmail || "Signed in"}</p>
+              <p className="flex items-center gap-1 text-[12px] font-medium text-[var(--color-aio-text-2)]">
+                <ShieldCheck size={13} /> Authenticated
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={props.onToggleTheme}
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-aio-line)] bg-[var(--color-aio-surface)] text-[var(--color-aio-text-2)]"
+              aria-label={props.theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {props.theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={props.onToggleTheme}
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-aio-line)] bg-[var(--color-aio-surface)] text-[var(--color-aio-text-2)]"
-            aria-label={props.theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-          >
-            {props.theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
+          <ChangePasswordPanel />
         </div>
       </section>
 
