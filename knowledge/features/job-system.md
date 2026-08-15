@@ -32,6 +32,10 @@ Job-based field work management system with proof vault, multiple job types, and
 
 Dashboard Today's Route cards open a `DashboardJobDetailSheet` bottom-sheet modal when the card surface is tapped. The sheet renders the shared `JobCard` component — the same card used on the Jobs tab — so the detail view is visually identical to the full job card. A compact route-info header shows the stop number, leg distance, and ride time from the previous stop. Footer actions include a Navigate button (opens Google Maps) and an "Open in Jobs" button (navigates to the Jobs tab). The sheet resolves the selected job from current app state by job ID, so each route stop shows its own live data. Existing card action controls (Navigate, Review, Move) stop event propagation and do not open the detail panel.
 
+### Job Detail Overview
+
+`JobDetailModal` now opens with a compact Job Overview section before specialized panels. The overview answers what the job is, what matters now, what should happen next, and what is missing. It shows store/customer identity, address, schedule/due time, pay, lifecycle status/work state, a derived Next Action card, warning/blocker callouts, progress chips, and quick operational controls. The Next Action is derived by `src/features/jobs/jobOverview.ts` from lifecycle state; lifecycle buttons are display-only until a later UI wiring pass. Transit, InventoryCustodyPanel, notes, process-serve details, Preview Guide, Smart Aisle Scan, admin controls, and the legacy status UI remain available below the overview.
+
 ### Job Interface (src/types.ts)
 
 ```typescript
@@ -100,6 +104,7 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 - **Job Normalization**: jobState.ts handles schema versioning and normalization (schema version "5"), including lifecycle overlay defaults for legacy jobs.
 - **useJobs mutations**: `src/features/jobs/useJobs.ts` owns pure job-status mutations (`updateJobStatus`, `toggleJobComplete`, `markJobUnderReview`) and returns `JobMutationResult` so `App.tsx` can run cross-feature side effects without duplicating status mutation logic.
 - **Lifecycle actions**: `useJobs.ts` exposes persisted lifecycle-only actions (`checkInJob`, `markJobReadyToStart`, `blockJobBeforeStart`, `startJob`, `pauseJobWork`, `resumeJobWork`, `awaitJobSupport`, `markJobBlockedOnsite`, `endJobVisit`, `markJobWorkComplete`, `completeJobCloseout`, `reopenCompletedJob`). These delegate to `jobLifecycle.ts`, return `JobLifecycleMutationResult`, block invalid transitions without persisting, preserve visit/event history, and do not update legacy `JobStatus` yet.
+- **Job Overview derivation**: `jobOverview.ts` derives lifecycle display labels, Next Action, warnings/blockers, and compact summary metadata for `JobDetailModal`.
 
 ## Design Rationale
 
@@ -177,6 +182,7 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 - `src/features/jobs/jobState.ts` — schema normalization (v5), lifecycle defaults, and `migrateJobSchedules`
 - `src/features/jobs/jobLifecycleTypes.ts` — v1 lifecycle state/event/visit types
 - `src/features/jobs/jobLifecycle.ts` — lifecycle transition helpers
+- `src/features/jobs/jobOverview.ts` — Job Detail overview and Next Action derivation
 - `src/features/jobs/jobSchedule.ts` — scheduling/migration/grouping helpers
 - `src/features/jobs/WeeklyStrip.tsx` — 7-day scheduling strip on the dashboard
 - `src/features/jobs/ExpandedDayPanel.tsx` — per-day detail panel (jobs, pay, plan, review)
@@ -196,4 +202,4 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 
 ## Last Updated
 
-2026-08-15 (lifecycle transition actions exposed from `useJobs.ts` with persisted, invalid-transition-safe results)
+2026-08-15 (JobDetailModal refactored to a lifecycle-aware Job Overview first layout)

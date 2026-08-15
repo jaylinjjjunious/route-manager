@@ -16,6 +16,7 @@ import { X, Navigation, Clock, MapPin, CheckSquare, Edit2, Trash2, Copy, ArrowRi
 import type { Job, JobType } from '../../types';
 import { isJobCompleted, isRevisionJob } from './jobState';
 import { formatScheduledDate, isValidScheduledDate } from './jobSchedule';
+import { buildJobOverview } from './jobOverview';
 import InventoryCustodyPanel from '../../components/InventoryCustodyPanel';
 import { JobTransitSection } from '../../components/transit/JobTransitSection';
 import { isTransitApiEnabled } from '../../services/transit';
@@ -95,6 +96,19 @@ const BADGE_LABELS: Record<string, string> = {
   postponed: 'TOMORROW',
 };
 
+const NEXT_ACTION_STYLES = {
+  ready: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-200',
+  working: 'border-cyan-500/20 bg-cyan-500/10 text-cyan-200',
+  blocked: 'border-amber-500/25 bg-amber-500/10 text-amber-200',
+  complete: 'border-blue-500/20 bg-blue-500/10 text-blue-200',
+};
+
+const WARNING_STYLES = {
+  warning: 'border-amber-500/20 bg-amber-500/10 text-amber-200',
+  danger: 'border-rose-500/25 bg-rose-500/10 text-rose-200',
+  info: 'border-cyan-500/20 bg-cyan-500/10 text-cyan-200',
+};
+
 function JobIdentitySquare({ job }: { job: Job }) {
   const match = resolveStoreLogo({ companyId: null, texts: [job.storeName, job.notes] });
   const [failed, setFailed] = useState(false);
@@ -141,6 +155,7 @@ export default function JobDetailModal({
   const category = getCategory(job, isOutlier);
   const isDone = isJobCompleted(job);
   const needsRevision = isRevisionJob(job);
+  const overview = buildJobOverview(job, { isOutlier, jobAccessLocked });
 
   // Lock body scroll while modal is open — no position:fixed trick
   useEffect(() => {
@@ -267,33 +282,8 @@ export default function JobDetailModal({
           style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
         >
           <div className="min-w-0 space-y-4">
-            {/* Status badge */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className={`road-pill min-h-7 px-2.5 py-0.5 text-[10px] shadow-xs border ${BADGE_STYLES[category]}`}>
-                {category === 'ready' && <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 mr-1" />}
-                {BADGE_LABELS[category]}
-              </span>
-              {job.priority && (
-                <span className="road-pill min-h-7 px-2.5 py-0.5 text-[10px] shadow-xs border bg-slate-800/40 text-slate-400 border-slate-700/20">
-                  {job.priority} Priority
-                </span>
-              )}
-              {job.revisionStatus && job.revisionStatus !== 'None' && (
-                <span className={`road-pill min-h-7 px-2.5 py-0.5 text-[10px] shadow-xs border flex items-center gap-0.5 ${
-                  job.revisionStatus === 'Needs Revision'
-                    ? 'bg-rose-950/40 text-rose-400 border-rose-500/20'
-                    : job.revisionStatus === 'Approved'
-                    ? 'bg-emerald-950/40 text-emerald-400 border-emerald-500/20'
-                    : 'bg-indigo-950/40 text-indigo-400 border-indigo-500/20'
-                }`}>
-                  <Sparkles size={9} />
-                  <span>{job.revisionStatus}</span>
-                </span>
-              )}
-            </div>
-
-            {/* Job title and pay - stacked on mobile */}
-            <div className="min-w-0">
+            {/* Job overview */}
+            <section aria-labelledby="job-overview-title" className="space-y-3">
               <div className="flex items-start gap-3">
                 <button
                   onClick={() => handleQuickStatusChange(isDone ? 'ready' : job.status === 'under_review' ? 'completed' : 'under_review')}
@@ -318,80 +308,148 @@ export default function JobDetailModal({
                   >
                     {job.storeName}
                   </h4>
+                  <p id="job-overview-title" className="sr-only">Job overview</p>
                   <div className="mt-1 flex items-start gap-1 text-sm font-bold text-slate-400">
                     <MapPin size={13} className="mt-0.5 shrink-0" />
                     <span className="break-words">{job.address}</span>
                   </div>
                 </div>
               </div>
-              {/* Pay block - dedicated area below title */}
-              <div className="mt-3 flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-                <span className={`text-2xl font-black tracking-tight whitespace-nowrap ${
-                  category === 'completed' ? 'text-blue-400' : 'text-emerald-400'
-                }`}>
-                  ${job.pay.toFixed(2)}
-                </span>
-                <span className="text-[10px] font-black uppercase text-slate-500">Pay</span>
-              </div>
-            </div>
 
-            {/* Info grid - responsive 2-col with minmax */}
-            <div className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-2">
-              <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-                <p className="text-[9px] font-black uppercase text-slate-500">Type</p>
-                <p className={`mt-0.5 text-xs font-black ${getJobTypeStyle(job.jobType)}`}>
-                  <span className="inline-block rounded-md border px-1.5 py-0.5">{formatJobType(job.jobType)}</span>
-                </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`road-pill min-h-7 px-2.5 py-0.5 text-[10px] shadow-xs border ${BADGE_STYLES[category]}`}>
+                  {category === 'ready' && <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 mr-1" />}
+                  {BADGE_LABELS[category]}
+                </span>
+                <span className="road-pill min-h-7 px-2.5 py-0.5 text-[10px] shadow-xs border bg-cyan-950/30 text-cyan-300 border-cyan-500/20">
+                  {overview.lifecycleStatusLabel} / {overview.workStateLabel}
+                </span>
+                {job.priority && (
+                  <span className="road-pill min-h-7 px-2.5 py-0.5 text-[10px] shadow-xs border bg-slate-800/40 text-slate-400 border-slate-700/20">
+                    {job.priority} Priority
+                  </span>
+                )}
+                {job.revisionStatus && job.revisionStatus !== 'None' && (
+                  <span className={`road-pill min-h-7 px-2.5 py-0.5 text-[10px] shadow-xs border flex items-center gap-0.5 ${
+                    job.revisionStatus === 'Needs Revision'
+                      ? 'bg-rose-950/40 text-rose-400 border-rose-500/20'
+                      : job.revisionStatus === 'Approved'
+                      ? 'bg-emerald-950/40 text-emerald-400 border-emerald-500/20'
+                      : 'bg-indigo-950/40 text-indigo-400 border-indigo-500/20'
+                  }`}>
+                    <Sparkles size={9} />
+                    <span>{job.revisionStatus}</span>
+                  </span>
+                )}
               </div>
-              <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-                <p className="text-[9px] font-black uppercase text-slate-500">Duration</p>
-                <div className="mt-0.5 flex items-center gap-1 text-xs font-black text-slate-300">
-                  <Clock size={11} />
-                  <span>{job.estimatedMinutes} mins</span>
-                </div>
-              </div>
-              {job.deadline ? (
+
+              <div className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-2">
                 <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-                  <p className="text-[9px] font-black uppercase text-slate-500">Deadline</p>
-                  <p className="mt-0.5 text-xs font-bold text-slate-300 break-words">{job.deadline}</p>
+                  <p className="text-[9px] font-black uppercase text-slate-500">Schedule</p>
+                  <p className="mt-0.5 text-xs font-bold text-slate-300 break-words">
+                    {job.scheduledDate && isValidScheduledDate(job.scheduledDate)
+                      ? formatScheduledDate(job.scheduledDate)
+                      : job.deadline || job.dueTime || 'Needs schedule'}
+                  </p>
                 </div>
-              ) : job.dueTime ? (
                 <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-                  <p className="text-[9px] font-black uppercase text-slate-500">Due</p>
-                  <p className="mt-0.5 text-xs font-bold text-slate-300 break-words">{job.dueTime}</p>
+                  <p className="text-[9px] font-black uppercase text-slate-500">Pay</p>
+                  <p className={`mt-0.5 text-lg font-black ${category === 'completed' ? 'text-blue-400' : 'text-emerald-400'}`}>
+                    ${job.pay.toFixed(2)}
+                  </p>
                 </div>
-              ) : null}
-              {job.scheduledDate && (
                 <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-                  <p className="text-[9px] font-black uppercase text-slate-500">Scheduled</p>
+                  <p className="text-[9px] font-black uppercase text-slate-500">Type</p>
+                  <p className={`mt-0.5 text-xs font-black ${getJobTypeStyle(job.jobType)}`}>
+                    <span className="inline-block rounded-md border px-1.5 py-0.5">{formatJobType(job.jobType)}</span>
+                  </p>
+                </div>
+                <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                  <p className="text-[9px] font-black uppercase text-slate-500">Duration</p>
                   <div className="mt-0.5 flex items-center gap-1 text-xs font-black text-slate-300">
-                    <Calendar size={11} />
-                    <span className={isValidScheduledDate(job.scheduledDate) ? '' : 'text-amber-400'}>
-                      {formatScheduledDate(job.scheduledDate)}
-                    </span>
+                    <Clock size={11} />
+                    <span>{job.estimatedMinutes} mins</span>
                   </div>
                 </div>
+              </div>
+
+              <div className={`rounded-xl border px-3 py-3 ${NEXT_ACTION_STYLES[overview.nextAction.tone]}`}>
+                <p className="text-[9px] font-black uppercase tracking-wider opacity-70">Next Action</p>
+                <h5 className="mt-1 text-base font-black leading-tight">{overview.nextAction.title}</h5>
+                <p className="mt-1 text-xs font-semibold leading-relaxed opacity-80">{overview.nextAction.description}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled
+                    className="min-h-10 rounded-lg bg-white/15 px-3 py-2 text-xs font-black text-white opacity-70"
+                    title="Lifecycle action wiring is coming in a later UI pass"
+                  >
+                    {overview.nextAction.primaryLabel}
+                  </button>
+                  {overview.nextAction.secondaryLabels.map(label => (
+                    <button
+                      key={label}
+                      type="button"
+                      disabled
+                      className="min-h-10 rounded-lg border border-white/15 px-3 py-2 text-xs font-black opacity-70"
+                      title="Lifecycle action wiring is coming in a later UI pass"
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {overview.warnings.length > 0 && (
+                <div className="space-y-1.5" aria-label="Important job warnings">
+                  {overview.warnings.slice(0, 4).map(warning => (
+                    <div key={warning.label} className={`flex items-start gap-2 rounded-lg border px-2.5 py-2 text-[11px] font-bold ${WARNING_STYLES[warning.tone]}`}>
+                      <AlertCircle size={13} className="mt-0.5 shrink-0" />
+                      <span>{warning.label}</span>
+                    </div>
+                  ))}
+                </div>
               )}
-            </div>
 
-            {onMoveToDay && !isDone && (
-              <button
-                type="button"
-                onClick={() => onMoveToDay(job)}
-                className="mt-2 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-black text-slate-200 hover:bg-white/[0.08]"
-              >
-                Move to a different day
-              </button>
-            )}
+              <div className="grid grid-cols-4 gap-1.5">
+                {overview.summaryItems.map(item => (
+                  <div key={item.label} className="min-w-0 rounded-lg border border-white/10 bg-white/[0.03] px-2 py-2 text-center">
+                    <p className="text-[8px] font-black uppercase text-slate-500">{item.label}</p>
+                    <p className="mt-0.5 truncate text-[11px] font-black text-slate-300">{item.value}</p>
+                  </div>
+                ))}
+              </div>
 
-            <button
-              type="button"
-              onClick={() => setPreviewGuideOpen(true)}
-              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3 py-3 text-sm font-black text-cyan-200 transition hover:bg-cyan-500/20"
-            >
-              <BookOpen size={17} />
-              Preview Guide
-            </button>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPreviewGuideOpen(true)}
+                  className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs font-black text-cyan-200 transition hover:bg-cyan-500/20"
+                >
+                  <BookOpen size={15} />
+                  Preview Guide
+                </button>
+                {onMoveToDay && !isDone ? (
+                  <button
+                    type="button"
+                    onClick={() => onMoveToDay(job)}
+                    className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-black text-slate-200 hover:bg-white/[0.08]"
+                  >
+                    <Calendar size={15} />
+                    Move Day
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onEdit(job)}
+                    className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-black text-slate-200 hover:bg-white/[0.08]"
+                  >
+                    <Edit2 size={15} />
+                    Edit
+                  </button>
+                )}
+              </div>
+            </section>
 
             {isTransitApiEnabled() && transitOrigin && (
               <JobTransitSection job={job} origin={transitOrigin} />
@@ -439,7 +497,7 @@ export default function JobDetailModal({
             {/* Quick status controls — context-aware */}
             <div>
               <p className="mb-2 text-[9px] font-black uppercase tracking-wider text-slate-500">
-                {job.status === 'finished' ? 'Job Finished' : 'Quick Status'}
+                {job.status === 'finished' ? 'Legacy Job Finished' : 'Legacy Status'}
               </p>
               {job.status === 'finished' ? (
                 <div className="rounded-xl border border-gray-600/20 bg-gray-500/5 p-3">
