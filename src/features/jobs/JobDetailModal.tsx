@@ -54,6 +54,7 @@ interface JobDetailModalProps {
   onAwaitJobSupport?: (id: string, note: string) => JobLifecycleMutationResult;
   onMarkJobBlockedOnsite?: (id: string, note: string) => JobLifecycleMutationResult;
   onEndJobVisit?: (id: string, reason: VisitEndReason, note?: string) => JobLifecycleMutationResult;
+  onMarkJobWorkComplete?: (id: string) => JobLifecycleMutationResult;
   onClose: () => void;
 }
 
@@ -215,6 +216,7 @@ export default function JobDetailModal({
   onAwaitJobSupport,
   onMarkJobBlockedOnsite,
   onEndJobVisit,
+  onMarkJobWorkComplete,
   onClose,
 }: JobDetailModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -354,6 +356,9 @@ export default function JobDetailModal({
       case 'blocked_onsite':
       case 'end_visit':
         openNoteSheet(actionId);
+        break;
+      case 'work_complete':
+        handleLifecycleResult(onMarkJobWorkComplete?.(job.id));
         break;
       case 'closeout':
         setLifecycleError('Closeout gate is not wired yet.');

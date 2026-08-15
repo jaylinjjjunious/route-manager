@@ -56,6 +56,14 @@ describe('job lifecycle', () => {
     state = markJobWorkComplete(state, '2026-08-14T10:00:00.000Z');
 
     expect(state.status).toBe('work_complete_pending_closeout');
+    expect(state.workState).toBe('offsite');
+    expect(state.activeVisitId).toBeUndefined();
+    expect(state.visits[0].endedAt).toBe('2026-08-14T10:00:00.000Z');
+    expect(state.visits[0].endReason).toBe('completed_work');
+    expect(summarizeJobTime(state, '2026-08-14T11:00:00.000Z')).toMatchObject({
+      totalOnsiteMinutes: 60,
+      activeWorkMinutes: 55,
+    });
 
     state = completeJobCloseout(state, '2026-08-14T10:10:00.000Z');
     expect(state.status).toBe('completed');

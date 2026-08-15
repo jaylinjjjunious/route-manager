@@ -183,15 +183,24 @@ export function markJobWorkComplete(
 ): JobLifecycleState {
   if (!state.activeVisitId || !['arrived', 'ready', 'in_progress'].includes(state.status)) return state;
 
+  const visitId = state.activeVisitId;
+  const visits = state.visits.map(visit =>
+    visit.id === visitId
+      ? { ...visit, endedAt: visit.endedAt ?? timestamp, endReason: visit.endReason ?? 'completed_work' }
+      : visit,
+  );
+
   return appendEvent(
     {
       ...state,
       status: 'work_complete_pending_closeout',
-      workState: state.activeVisitId ? state.workState : 'offsite',
+      workState: 'offsite',
+      activeVisitId: undefined,
+      visits,
     },
     'work_complete',
     timestamp,
-    state.activeVisitId,
+    visitId,
   );
 }
 
@@ -243,7 +252,7 @@ function accumulateWorkStateMinutes(
 ): Pick<JobTimeSummary, 'activeWorkMinutes' | 'pausedMinutes' | 'awaitingSupportMinutes' | 'blockedOnsiteMinutes'> {
   const relevant = state.events
     .filter(event => event.visitId === visit.id)
-    .filter(event => ['started_work', 'resumed_work', 'paused', 'awaiting_support', 'blocked_onsite', 'ended_visit'].includes(event.type))
+    .filter(event => ['started_work', 'resumed_work', 'paused', 'awaiting_support', 'blocked_onsite', 'ended_visit', 'work_complete'].includes(event.type))
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
   let activeWorkMinutes = 0;
@@ -269,7 +278,7 @@ function accumulateWorkStateMinutes(
     if (event.type === 'paused') currentState = 'paused';
     if (event.type === 'awaiting_support') currentState = 'awaiting_support';
     if (event.type === 'blocked_onsite') currentState = 'blocked_onsite';
-    if (event.type === 'ended_visit') {
+    if (event.type === 'ended_visit' || event.type === 'work_complete') {
       currentState = 'offsite';
       currentStart = null;
     }

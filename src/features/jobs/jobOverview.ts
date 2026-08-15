@@ -12,6 +12,7 @@ export type JobOverviewActionId =
   | 'await_support'
   | 'blocked_onsite'
   | 'end_visit'
+  | 'work_complete'
   | 'closeout'
   | 'reopen'
   | 'review_details';
@@ -72,12 +73,12 @@ export function buildJobOverview(job: Job, options: { isOutlier?: boolean; jobAc
     };
   } else if (status === 'work_complete_pending_closeout') {
     nextAction = {
-      title: 'Finish the closeout',
+      title: 'Work Complete — Pending Closeout',
       description: 'Work is marked complete. Confirm proof, notes, and any required wrap-up.',
       primaryActionId: 'closeout',
       primaryLabel: 'Closeout',
-      secondaryActions: activeVisit ? [{ id: 'end_visit', label: 'End Visit' }] : [],
-      secondaryLabels: activeVisit ? ['End Visit'] : [],
+      secondaryActions: [],
+      secondaryLabels: [],
       tone: 'complete',
     };
   } else if (status === 'in_progress') {
@@ -87,8 +88,8 @@ export function buildJobOverview(job: Job, options: { isOutlier?: boolean; jobAc
         description: 'Resume when support clears the issue, or end this visit if you need to return later.',
         primaryActionId: 'resume_work',
         primaryLabel: 'Resume Work',
-        secondaryActions: [{ id: 'end_visit', label: 'End Visit' }],
-        secondaryLabels: ['End Visit'],
+        secondaryActions: [{ id: 'work_complete', label: 'Work Complete' }, { id: 'end_visit', label: 'End Visit' }],
+        secondaryLabels: ['Work Complete', 'End Visit'],
         tone: 'blocked',
       };
     } else if (workState === 'blocked_onsite') {
@@ -97,8 +98,8 @@ export function buildJobOverview(job: Job, options: { isOutlier?: boolean; jobAc
         description: 'Resolve or document the blocker before continuing.',
         primaryActionId: 'resume_work',
         primaryLabel: 'Resume Work',
-        secondaryActions: [{ id: 'await_support', label: 'Await Support' }, { id: 'end_visit', label: 'End Visit' }],
-        secondaryLabels: ['Await Support', 'End Visit'],
+        secondaryActions: [{ id: 'await_support', label: 'Await Support' }, { id: 'work_complete', label: 'Work Complete' }, { id: 'end_visit', label: 'End Visit' }],
+        secondaryLabels: ['Await Support', 'Work Complete', 'End Visit'],
         tone: 'blocked',
       };
     } else if (workState === 'paused') {
@@ -107,8 +108,8 @@ export function buildJobOverview(job: Job, options: { isOutlier?: boolean; jobAc
         description: 'Resume the active visit when you are ready to continue.',
         primaryActionId: 'resume_work',
         primaryLabel: 'Resume Work',
-        secondaryActions: [{ id: 'await_support', label: 'Await Support' }, { id: 'end_visit', label: 'End Visit' }],
-        secondaryLabels: ['Await Support', 'End Visit'],
+        secondaryActions: [{ id: 'await_support', label: 'Await Support' }, { id: 'work_complete', label: 'Work Complete' }, { id: 'end_visit', label: 'End Visit' }],
+        secondaryLabels: ['Await Support', 'Work Complete', 'End Visit'],
         tone: 'working',
       };
     } else {
@@ -117,8 +118,8 @@ export function buildJobOverview(job: Job, options: { isOutlier?: boolean; jobAc
         description: 'You are checked in and actively working this job.',
         primaryActionId: 'pause_work',
         primaryLabel: 'Pause Work',
-        secondaryActions: [{ id: 'await_support', label: 'Await Support' }, { id: 'blocked_onsite', label: 'Blocked Onsite' }, { id: 'end_visit', label: 'End Visit' }],
-        secondaryLabels: ['Await Support', 'Blocked Onsite', 'End Visit'],
+        secondaryActions: [{ id: 'await_support', label: 'Await Support' }, { id: 'blocked_onsite', label: 'Blocked Onsite' }, { id: 'work_complete', label: 'Work Complete' }, { id: 'end_visit', label: 'End Visit' }],
+        secondaryLabels: ['Await Support', 'Blocked Onsite', 'Work Complete', 'End Visit'],
         tone: 'working',
       };
     }

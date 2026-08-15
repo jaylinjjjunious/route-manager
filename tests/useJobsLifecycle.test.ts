@@ -116,11 +116,12 @@ describe('useJobs lifecycle actions', () => {
     expect(result.updatedJob?.lifecycle?.workState).toBe('blocked_onsite');
 
     result = await runLifecycleAction(() => current().markJobWorkComplete('job-1', '2026-08-15T10:00:00.000Z'));
+    expect(result.updatedJob?.status).toBe('ready');
+    expect(result.becameCompleted).toBe(false);
     expect(result.updatedJob?.lifecycle?.status).toBe('work_complete_pending_closeout');
-
-    result = await runLifecycleAction(() => current().endJobVisit('job-1', 'completed_work', undefined, '2026-08-15T10:05:00.000Z'));
     expect(result.updatedJob?.lifecycle?.activeVisitId).toBeUndefined();
-    expect(result.updatedJob?.lifecycle?.visits[0].endedAt).toBe('2026-08-15T10:05:00.000Z');
+    expect(result.updatedJob?.lifecycle?.workState).toBe('offsite');
+    expect(result.updatedJob?.lifecycle?.visits[0].endedAt).toBe('2026-08-15T10:00:00.000Z');
     expect(result.updatedJob?.lifecycle?.visits[0].endReason).toBe('completed_work');
 
     result = await runLifecycleAction(() => current().completeJobCloseout('job-1', '2026-08-15T10:10:00.000Z'));
@@ -158,7 +159,6 @@ describe('useJobs lifecycle actions', () => {
       'awaiting_support',
       'blocked_onsite',
       'work_complete',
-      'ended_visit',
       'closeout_completed',
       'reopened',
       'arrived',

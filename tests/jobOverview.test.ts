@@ -68,21 +68,26 @@ describe('buildJobOverview', () => {
       lifecycle: lifecycle({ status: 'in_progress', workState: 'working', activeVisitId: 'visit-1', visits: [activeVisit] }),
     })).nextAction).toMatchObject({
       primaryLabel: 'Pause Work',
-      secondaryLabels: ['Await Support', 'Blocked Onsite', 'End Visit'],
+      secondaryLabels: ['Await Support', 'Blocked Onsite', 'Work Complete', 'End Visit'],
     });
 
     expect(buildJobOverview(makeJob({
       lifecycle: lifecycle({ status: 'in_progress', workState: 'awaiting_support', activeVisitId: 'visit-1', visits: [activeVisit] }),
     })).nextAction).toMatchObject({
       primaryLabel: 'Resume Work',
-      secondaryLabels: ['End Visit'],
+      secondaryLabels: ['Work Complete', 'End Visit'],
     });
   });
 
   it('derives closeout and reopen actions for completion states', () => {
-    expect(buildJobOverview(makeJob({
+    const pendingCloseout = buildJobOverview(makeJob({
       lifecycle: lifecycle({ status: 'work_complete_pending_closeout', workState: 'offsite' }),
-    })).nextAction.primaryLabel).toBe('Closeout');
+    })).nextAction;
+    expect(pendingCloseout).toMatchObject({
+      title: 'Work Complete — Pending Closeout',
+      primaryLabel: 'Closeout',
+      secondaryLabels: [],
+    });
 
     expect(buildJobOverview(makeJob({
       lifecycle: lifecycle({ status: 'completed', workState: 'offsite', completedAt: '2026-08-15T10:10:00.000Z' }),

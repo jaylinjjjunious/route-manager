@@ -246,6 +246,41 @@ describe('JobDetailModal lifecycle action wiring', () => {
     expect(onEndJobVisit).toHaveBeenCalledWith('job-1', 'access_denied', 'Need manager unlock');
   });
 
+  it('maps Work Complete and shows pending closeout without active-work controls', async () => {
+    const onMarkJobWorkComplete = vi.fn(() => mutationResult);
+
+    await renderModal(propsFor(makeJob({ lifecycle: activeLifecycle() }), { onMarkJobWorkComplete }));
+    expect(document.body.textContent).toContain('Work Complete');
+    await clickButton('Work Complete');
+    expect(onMarkJobWorkComplete).toHaveBeenCalledWith('job-1');
+
+    await renderModal(propsFor(makeJob({
+      lifecycle: lifecycle({
+        status: 'work_complete_pending_closeout',
+        workState: 'offsite',
+        visits: [
+          {
+            id: 'visit-1',
+            visitNumber: 1,
+            arrivedAt: '2026-08-15T09:00:00.000Z',
+            startedWorkAt: '2026-08-15T09:10:00.000Z',
+            endedAt: '2026-08-15T10:00:00.000Z',
+            endReason: 'completed_work',
+          },
+        ],
+      }),
+    })));
+
+    expect(document.body.textContent).toContain('Work Complete — Pending Closeout');
+    expect(document.body.textContent).toContain('Current work state: Offsite');
+    expect(document.body.textContent).toContain('Closeout');
+    expect(document.body.textContent).not.toContain('Pause Work');
+    expect(document.body.textContent).not.toContain('Resume Work');
+    expect(document.body.textContent).not.toContain('Await Support');
+    expect(document.body.textContent).not.toContain('Blocked Onsite');
+    expect(document.body.textContent).not.toContain('End Visit');
+  });
+
   it('shows compact visit history with visit numbers, timing, reasons, and visit ids', async () => {
     await renderModal(propsFor(makeJob({
       lifecycle: lifecycle({

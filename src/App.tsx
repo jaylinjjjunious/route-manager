@@ -2113,6 +2113,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
               onAwaitJobSupport={jobs.awaitJobSupport}
               onMarkJobBlockedOnsite={jobs.markJobBlockedOnsite}
               onEndJobVisit={jobs.endJobVisit}
+              onMarkJobWorkComplete={jobs.markJobWorkComplete}
               onClose={() => setRouteDetailJobId(null)}
             />
           );
