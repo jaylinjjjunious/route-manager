@@ -338,6 +338,28 @@ describe('JobDetailModal lifecycle action wiring', () => {
     expect(onCompleteJobCloseout.mock.results[0].value.updatedJob.lifecycle.completedAt).toBe('2026-08-15T10:10:00.000Z');
   });
 
+  it('captures a reopen reason before calling the reopen callback', async () => {
+    const onReopenCompletedJob = vi.fn(() => mutationResult);
+    await renderModal(propsFor(makeJob({
+      lifecycle: lifecycle({
+        status: 'completed',
+        workState: 'offsite',
+        completedAt: '2026-08-15T10:10:00.000Z',
+        originalCompletedAt: '2026-08-15T10:10:00.000Z',
+      }),
+    }), { onReopenCompletedJob }));
+
+    await clickButton('Reopen if necessary');
+    expect(document.body.textContent).toContain('Why reopen this completed job?');
+    await clickButton('Save');
+    expect(onReopenCompletedJob).not.toHaveBeenCalled();
+    expect(document.body.textContent).toContain('Add a short reason before saving.');
+
+    await typeNote('Missing closeout proof');
+    await clickButton('Save');
+    expect(onReopenCompletedJob).toHaveBeenCalledWith('job-1', 'Missing closeout proof');
+  });
+
   it('shows compact visit history with visit numbers, timing, reasons, and visit ids', async () => {
     await renderModal(propsFor(makeJob({
       lifecycle: lifecycle({

@@ -28,6 +28,7 @@ import {
   SCHEDULE_MAX_DAYS_AHEAD
 } from './features/jobs/jobSchedule';
 import { useJobs, SEED_JOBS } from './features/jobs/useJobs';
+import { JOB_LIFECYCLE_HARNESS_JOB_ID, isJobLifecycleHarnessEnabled } from './features/jobs/jobLifecycleHarness';
 import Header from './components/Header';
 import JobCard from './features/jobs/JobCard';
 import JobModal from './features/jobs/JobModal';
@@ -85,6 +86,7 @@ import {
 } from 'lucide-react';
 
 const isSmartAisleTestLabEnabled = import.meta.env.DEV && import.meta.env.VITE_ENABLE_SMART_AISLE_TEST_LAB === 'true';
+const isLifecycleHarnessEnabled = isJobLifecycleHarnessEnabled(import.meta.env);
 
 const SHOWER_HABIT_TASK_ID = 'habit-task-mandatory-shower';
 const SHOWER_HABIT_NAME = 'Mandatory Shower';
@@ -163,7 +165,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const [currentTab, setCurrentTab] = useState<AppTab>(() => getTabFromHash() || 'dashboard');
 
   const [today, setToday] = useState<string>(() => todayString());
-  const jobs = useJobs(today);
+  const jobs = useJobs(today, { includeLifecycleHarness: isLifecycleHarnessEnabled });
   const proofVault = useProofVault({ completedJobs: jobs.jobs.filter(isJobCompleted) });
   const [nowTick, setNowTick] = useState(() => Date.now());
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
@@ -540,6 +542,11 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     setStartAddress('1951 Golden State Ave');
     setStartCoord(BAKERSFIELD_COORDINATES['1951 Golden State Ave']);
     safeStorage.removeItem('route_optimizer_start');
+  };
+
+  const handleResetLifecycleHarnessJob = () => {
+    jobs.resetLifecycleHarnessJob();
+    handleTabChange('jobs');
   };
 
   const handleOpenAddModal = () => {
@@ -1100,6 +1107,8 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                 onOpenDebugCenter={() => onOpenDebugCenter?.()}
                 onAddProcessServe={handleOpenProcessServeModal}
                 onImportScreenshots={() => setIsScreenshotImportOpen(true)}
+                lifecycleHarnessEnabled={isLifecycleHarnessEnabled}
+                onResetLifecycleHarness={handleResetLifecycleHarnessJob}
                 onSignOut={async () => {
                   if (window.confirm("Sign out of AIØ?")) await signOut();
                 }}
@@ -2115,6 +2124,10 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
               onEndJobVisit={jobs.endJobVisit}
               onMarkJobWorkComplete={jobs.markJobWorkComplete}
               onCompleteJobCloseout={jobs.completeJobCloseout}
+              onReopenCompletedJob={jobs.reopenCompletedJob}
+              onSatisfyCloseoutRequirements={isLifecycleHarnessEnabled && routeDetailJob.id === JOB_LIFECYCLE_HARNESS_JOB_ID
+                ? () => jobs.satisfyLifecycleHarnessCloseoutRequirements()
+                : undefined}
               onClose={() => setRouteDetailJobId(null)}
             />
           );

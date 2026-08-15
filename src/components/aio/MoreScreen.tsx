@@ -15,6 +15,7 @@ import {
   Timer,
   ChevronRight,
   ShieldCheck,
+  RefreshCw,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { GradientIconTile } from "./primitives";
@@ -32,6 +33,8 @@ export interface MoreScreenProps {
   onOpenDebugCenter: () => void;
   onAddProcessServe: () => void;
   onImportScreenshots: () => void;
+  lifecycleHarnessEnabled?: boolean;
+  onResetLifecycleHarness?: () => void;
   onSignOut: () => void;
 }
 
@@ -157,6 +160,26 @@ export default function MoreScreen(props: MoreScreenProps) {
           </div>
         </div>
       </section>
+
+      {props.lifecycleHarnessEnabled && props.onResetLifecycleHarness && (
+        <section aria-label="Development lifecycle harness">
+          <div className="aio-card p-4">
+            <p className="aio-label text-[12px] text-[#B25000] dark:text-[#FF9F0A]">Development</p>
+            <h2 className="mt-1 text-[17px] font-black text-[var(--color-aio-text)]">Lifecycle Acceptance Harness</h2>
+            <p className="mt-1 text-[13px] font-medium leading-relaxed text-[var(--color-aio-text-2)]">
+              Reset the fake technician job to planned/ready and open it from Jobs.
+            </p>
+            <button
+              type="button"
+              onClick={props.onResetLifecycleHarness}
+              className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-[14px] border border-[#FF9F0A]/25 bg-[#FF9F0A]/10 px-4 py-2.5 text-[14px] font-black text-[#B25000] dark:text-[#FFCC00]"
+            >
+              <RefreshCw size={16} />
+              Reset Lifecycle Test Job
+            </button>
+          </div>
+        </section>
+      )}
 
       <section aria-label="Sign out">
         <button

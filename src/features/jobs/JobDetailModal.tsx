@@ -58,10 +58,12 @@ interface JobDetailModalProps {
   onEndJobVisit?: (id: string, reason: VisitEndReason, note?: string) => JobLifecycleMutationResult;
   onMarkJobWorkComplete?: (id: string) => JobLifecycleMutationResult;
   onCompleteJobCloseout?: (id: string) => JobLifecycleMutationResult;
+  onReopenCompletedJob?: (id: string, reason: string) => JobLifecycleMutationResult;
+  onSatisfyCloseoutRequirements?: (id: string) => void;
   onClose: () => void;
 }
 
-type LifecycleNoteAction = Extract<JobOverviewActionId, 'blocked_before_start' | 'await_support' | 'blocked_onsite' | 'end_visit' | 'pause_work'>;
+type LifecycleNoteAction = Extract<JobOverviewActionId, 'blocked_before_start' | 'await_support' | 'blocked_onsite' | 'end_visit' | 'pause_work' | 'reopen'>;
 
 const END_VISIT_REASON_OPTIONS: Array<{ value: VisitEndReason; label: string }> = [
   { value: 'completed_work', label: 'Completed work' },
@@ -260,6 +262,8 @@ export default function JobDetailModal({
   onEndJobVisit,
   onMarkJobWorkComplete,
   onCompleteJobCloseout,
+  onReopenCompletedJob,
+  onSatisfyCloseoutRequirements,
   onClose,
 }: JobDetailModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -419,6 +423,8 @@ export default function JobDetailModal({
         handleLifecycleResult(onCompleteJobCloseout?.(job.id));
         break;
       case 'reopen':
+        openNoteSheet('reopen');
+        break;
       case 'review_details':
         setLifecycleError('This lifecycle action is not wired yet.');
         break;
@@ -444,6 +450,8 @@ export default function JobDetailModal({
       handleLifecycleResult(onPauseJobWork?.(job.id, note || undefined));
     } else if (noteAction === 'end_visit') {
       handleLifecycleResult(onEndJobVisit?.(job.id, endVisitReason, note));
+    } else if (noteAction === 'reopen') {
+      handleLifecycleResult(onReopenCompletedJob?.(job.id, note));
     }
 
     setNoteAction(null);
@@ -455,6 +463,7 @@ export default function JobDetailModal({
     : noteAction === 'await_support' ? 'What support are you waiting on?'
     : noteAction === 'blocked_onsite' ? 'What is blocking work onsite?'
     : noteAction === 'end_visit' ? 'End this visit'
+    : noteAction === 'reopen' ? 'Why reopen this completed job?'
     : 'Pause work';
 
   const notePlaceholder =
@@ -462,6 +471,7 @@ export default function JobDetailModal({
     : noteAction === 'await_support' ? 'Example: waiting for approval, remote support, missing answer'
     : noteAction === 'blocked_onsite' ? 'Example: locked case, unsafe area, missing equipment'
     : noteAction === 'end_visit' ? 'Add any handoff details for the next visit'
+    : noteAction === 'reopen' ? 'Example: missing proof, wrong closeout, follow-up needed'
     : 'Optional note';
 
   const modalContent = (
@@ -780,6 +790,17 @@ export default function JobDetailModal({
                   <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-2.5 py-2 text-[11px] font-bold text-cyan-200">
                     No closeout requirements attached.
                   </div>
+                )}
+
+                {onSatisfyCloseoutRequirements && (
+                  <button
+                    type="button"
+                    onClick={() => onSatisfyCloseoutRequirements(job.id)}
+                    className="mt-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs font-black text-amber-200 transition hover:bg-amber-500/15 focus:outline-none focus:ring-2 focus:ring-amber-300/30"
+                  >
+                    <RefreshCw size={14} />
+                    Satisfy Test Requirements
+                  </button>
                 )}
 
                 <button

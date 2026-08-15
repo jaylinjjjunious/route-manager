@@ -34,6 +34,11 @@ import {
   isOverdue,
   type ScheduledDaySummary,
 } from './jobSchedule';
+import {
+  ensureLifecycleHarnessJob,
+  resetLifecycleHarnessJob,
+  satisfyLifecycleHarnessCloseoutRequirements,
+} from './jobLifecycleHarness';
 import type { RouteFilterType } from './RouteFilter';
 import { filterJobsByType } from './RouteFilter';
 import type { JobLifecycleMutationResult, JobMutationResult } from './types';
@@ -193,6 +198,8 @@ export interface UseJobsReturn {
   markJobWorkComplete: (id: string, timestamp?: string) => JobLifecycleMutationResult;
   completeJobCloseout: (id: string, timestamp?: string) => JobLifecycleMutationResult;
   reopenCompletedJob: (id: string, reason: string, timestamp?: string) => JobLifecycleMutationResult;
+  resetLifecycleHarnessJob: () => Job[];
+  satisfyLifecycleHarnessCloseoutRequirements: () => Job[];
 
   /* ── Derived job / scheduling values ── */
   routeAJobs: Job[];
@@ -209,7 +216,11 @@ export interface UseJobsReturn {
   filteredRouteJobs: Job[];
 }
 
-export function useJobs(today: string): UseJobsReturn {
+export interface UseJobsOptions {
+  includeLifecycleHarness?: boolean;
+}
+
+export function useJobs(today: string, options: UseJobsOptions = {}): UseJobsReturn {
   /* ── Core state ── */
   const [jobs, setJobs] = useState<Job[]>([]);
   const [selectedStripDate, setSelectedStripDate] = useState<string | null>(null);
@@ -219,6 +230,7 @@ export function useJobs(today: string): UseJobsReturn {
   const [defaultJobType, setDefaultJobType] = useState<JobType>('retail_audit');
   const [routeFilter, setRouteFilter] = useState<RouteFilterType>('today');
   const [completingJobIds, setCompletingJobIds] = useState<string[]>([]);
+  const includeLifecycleHarness = options.includeLifecycleHarness === true;
 
   /* ── Persistence boundary ── */
   const persistJobs = (nextJobs: Job[]): Job[] => {
@@ -252,15 +264,15 @@ export function useJobs(today: string): UseJobsReturn {
           // Legacy list unreadable — fall through with no migration targets.
         }
         const migrated = migrateJobSchedules(rawJobs, legacyMovedIds, today);
-        replaceJobs(migrated.jobs);
+        replaceJobs(ensureLifecycleHarnessJob(migrated.jobs, includeLifecycleHarness, today));
         if (migrated.changed) {
           safeStorage.removeItem('jobs_moved_to_tomorrow');
         }
       } catch {
-        replaceJobs(normalizeJobsForStorage(SEED_JOBS));
+        replaceJobs(ensureLifecycleHarnessJob(normalizeJobsForStorage(SEED_JOBS), includeLifecycleHarness, today));
       }
     } else {
-      replaceJobs(normalizeJobsForStorage(SEED_JOBS));
+      replaceJobs(ensureLifecycleHarnessJob(normalizeJobsForStorage(SEED_JOBS), includeLifecycleHarness, today));
     }
   }, []);
 
@@ -521,6 +533,16 @@ export function useJobs(today: string): UseJobsReturn {
   const reopenCompletedJob = (id: string, reason: string, timestamp?: string): JobLifecycleMutationResult =>
     applyJobLifecycleTransition(id, lifecycle => applyReopenCompletedJob(lifecycle, reason, timestamp));
 
+  const resetLifecycleHarness = (): Job[] => {
+    if (!includeLifecycleHarness) return jobs;
+    return persistJobs(resetLifecycleHarnessJob(jobs, today));
+  };
+
+  const satisfyHarnessCloseoutRequirements = (): Job[] => {
+    if (!includeLifecycleHarness) return jobs;
+    return persistJobs(satisfyLifecycleHarnessCloseoutRequirements(jobs));
+  };
+
   /* ── Derived job / scheduling values ── */
   const routeAJobs = jobs.filter(j => j.routeId === 'A');
   const routeBJobs = jobs.filter(j => j.routeId === 'B');
@@ -588,6 +610,8 @@ export function useJobs(today: string): UseJobsReturn {
     markJobWorkComplete,
     completeJobCloseout,
     reopenCompletedJob,
+    resetLifecycleHarnessJob: resetLifecycleHarness,
+    satisfyLifecycleHarnessCloseoutRequirements: satisfyHarnessCloseoutRequirements,
 
     routeAJobs,
     routeBJobs,
