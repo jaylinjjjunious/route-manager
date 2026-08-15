@@ -65,6 +65,8 @@ interface Job {
   inventoryDomain?: 'merchandising' | 'contract_parts';
   lifecycle?: JobLifecycleState;
   closeoutRequirements?: JobCloseoutRequirement[];
+  procedureAssignment?: JobProcedureAssignment;
+  procedureAssignmentHistory?: JobProcedureAssignmentHistoryEvent[];
 }
 ```
 
@@ -75,6 +77,10 @@ Jobs can carry generic `closeoutRequirements?: JobCloseoutRequirement[]`. The cl
 ### Procedure Definition Foundation
 
 Generic, customer-agnostic procedure definitions live under `src/features/jobs/procedures/`. Procedure definitions are separate from Job records and are intended to be referenced later by procedure ID plus exact version rather than copied into each job. A procedure includes `id`, `customerKey`/optional `companyKey`, name, description, version, status (`draft`/`active`/`retired`), category, job type, timestamps, and ordered stable-ID steps. Each step carries one underlying data model that supports both Guided Mode (`guidedInstructions`) and Quick Mode (`quickCheckpoint`) without separate procedure copies. Steps can be required, conditional, recommended, or reference, and can include warning text, a generic condition, proof requirements, equipment/serial requirements, testing/validation metadata, and support/escalation metadata. Helper validation returns structured errors instead of throwing for ordinary malformed data. Version helpers treat a procedure version as immutable when a job reference list contains its exact procedure ID/version; editing should clone to a new draft version with deep-copied steps.
+
+### Procedure Assignment
+
+Jobs can optionally carry `procedureAssignment?: JobProcedureAssignment`, which stores only `{ procedureId, procedureVersion, assignedAt, assignmentSource, assignedBy?, note? }`. Full `ProcedureDefinition` objects remain separate from Job records. Assignment helpers in `src/features/jobs/procedures/jobProcedureAssignment.ts` validate stable procedure IDs, positive versions, assignment source, and optional supplied procedure definition ID/version matches. Pre-work jobs can assign, replace, or remove procedures directly. Jobs with started work or completed jobs return a structured `confirmation_required` result on normal change attempts; the confirmed helper path allows the change while preserving lifecycle, visits, proofs, inventory, notes, closeout requirements, timestamps, and revision-related fields. Same ID/version reassignment is idempotent and does not append duplicate history. Actual assignment/replacement/removal events are recorded in `procedureAssignmentHistory` as a focused audit trail and do not replace legacy `statusHistory` or legacy `JobStatus` behavior.
 
 ### Development Lifecycle Harness
 
@@ -119,6 +125,7 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 - **Lifecycle actions**: `useJobs.ts` exposes persisted lifecycle-only actions (`checkInJob`, `markJobReadyToStart`, `blockJobBeforeStart`, `startJob`, `pauseJobWork`, `resumeJobWork`, `awaitJobSupport`, `markJobBlockedOnsite`, `endJobVisit`, `markJobWorkComplete`, `completeJobCloseout`, `reopenCompletedJob`). These delegate to `jobLifecycle.ts`, return `JobLifecycleMutationResult`, block invalid transitions without persisting, preserve visit/event history, preserve lifecycle completion timestamps, and do not update legacy `JobStatus` yet.
 - **Closeout evaluation**: `jobCloseout.ts` evaluates generic job-attached closeout requirements into satisfied required items, missing required items, active conditional requirements, non-blocking warnings/recommended items, references, and a completion-allowed flag.
 - **Procedure definitions**: `procedures/procedureDefinition.ts` validates customer-agnostic procedure definitions, stable step IDs, nested requirement IDs, generic conditions, Guided/Quick text presence, step ordering, immutability checks, and clone-to-next-version behavior.
+- **Procedure assignment**: `procedures/jobProcedureAssignment.ts` assigns/removes exact procedure ID/version references on jobs, requires explicit confirmation after work starts or completion, validates optional procedure definition matches, and records idempotent assignment history without changing legacy job status.
 - **Lifecycle harness**: `jobLifecycleHarness.ts` owns the dev-only fixture, explicit environment guard, injection/reset helpers, and fake closeout requirement satisfaction helpers. The harness is excluded unless `VITE_ENABLE_JOB_LIFECYCLE_HARNESS=true` in a local dev build.
 - **Job Overview derivation**: `jobOverview.ts` derives lifecycle display labels, Next Action, warnings/blockers, and compact summary metadata for `JobDetailModal`.
 
@@ -202,6 +209,7 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 - `src/features/jobs/jobCloseout.ts` — pure closeout requirement evaluation
 - `src/features/jobs/procedures/types.ts` — customer-agnostic versioned procedure, step, condition, proof, equipment, validation, and escalation types
 - `src/features/jobs/procedures/procedureDefinition.ts` — pure procedure validation, lookup, ordering, immutability, and version-cloning helpers
+- `src/features/jobs/procedures/jobProcedureAssignment.ts` — pure version-specific procedure assignment, confirmation policy, validation, and assignment-history helpers
 - `src/features/jobs/jobLifecycleHarness.ts` — dev-only lifecycle acceptance fixture and guard helpers
 - `src/features/jobs/jobOverview.ts` — Job Detail overview and Next Action derivation
 - `src/features/jobs/jobSchedule.ts` — scheduling/migration/grouping helpers
@@ -223,4 +231,4 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 
 ## Last Updated
 
-2026-08-15 (Generic versioned procedure definition foundation added)
+2026-08-15 (Version-specific job procedure assignment helpers added)

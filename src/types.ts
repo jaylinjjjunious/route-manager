@@ -55,6 +55,33 @@ export interface CalendarSourceMeta {
   lastSyncedAt: string;
 }
 
+export type JobProcedureAssignmentSource = 'manual' | 'template' | 'import_suggestion';
+
+export interface JobProcedureAssignment {
+  procedureId: string;
+  procedureVersion: string;
+  assignedAt: string;
+  assignmentSource: JobProcedureAssignmentSource;
+  assignedBy?: string;
+  note?: string;
+}
+
+export interface JobProcedureAssignmentReference {
+  procedureId: string;
+  procedureVersion: string;
+}
+
+export interface JobProcedureAssignmentHistoryEvent {
+  timestamp: string;
+  action: 'assigned' | 'replaced' | 'removed';
+  from?: JobProcedureAssignmentReference;
+  to?: JobProcedureAssignmentReference;
+  assignmentSource: JobProcedureAssignmentSource;
+  assignedBy?: string;
+  note?: string;
+  confirmed: boolean;
+}
+
 export interface Job {
   id: string;
   storeName: string;
@@ -88,6 +115,10 @@ export interface Job {
   lifecycle?: JobLifecycleState;
   /** Generic closeout checklist requirements. Customer-specific rule engines may attach these later. */
   closeoutRequirements?: JobCloseoutRequirement[];
+  /** Exact version-specific procedure reference. Full ProcedureDefinition records are stored separately. */
+  procedureAssignment?: JobProcedureAssignment;
+  /** Assignment/reassignment audit trail. Does not replace legacy statusHistory. */
+  procedureAssignmentHistory?: JobProcedureAssignmentHistoryEvent[];
 }
 
 export interface RouteMetrics {
