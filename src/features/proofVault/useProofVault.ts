@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Job } from '../../types';
 import safeStorage from '../../utils/safeStorage';
+import { buildProcedureProofAsset, type ProcedureProofRequirementIdentity } from './procedureProof';
 import type { ProofAsset, ProofAssetKind, ProofRecord } from './types';
 
 const PROOF_VAULT_STORAGE_KEY = 'proof_vault_records';
@@ -100,17 +101,36 @@ export function useProofVault({ completedJobs }: UseProofVaultOptions) {
     }));
   }, []);
 
-  const addProofAssets = useCallback((jobId: string, kind: ProofAssetKind, files: FileList | null) => {
+  const addProofAssets = useCallback((
+    jobId: string,
+    kind: ProofAssetKind,
+    files: FileList | null,
+    metadata?: Partial<ProcedureProofRequirementIdentity>,
+  ) => {
     if (!files || files.length === 0) return;
 
     Array.from(files).forEach(file => {
       const reader = new FileReader();
       reader.onload = () => {
-        const asset: ProofAsset = {
+        const asset: ProofAsset = metadata?.requirementId && metadata.procedureId && metadata.procedureVersion && metadata.procedureStepId
+          ? buildProcedureProofAsset({
+              fileName: file.name,
+              dataUrl: String(reader.result || ''),
+              proofType: metadata.proofType,
+              requirementId: metadata.requirementId,
+              procedureId: metadata.procedureId,
+              procedureVersion: metadata.procedureVersion,
+              procedureStepId: metadata.procedureStepId,
+              visitId: metadata.visitId,
+            })
+          : {
           id: `proof-${Date.now()}-${Math.random().toString(16).slice(2)}`,
           name: file.name,
           dataUrl: String(reader.result || ''),
-          addedAt: new Date().toISOString()
+          addedAt: new Date().toISOString(),
+          source: 'manual',
+          proofType: metadata?.proofType,
+          visitId: metadata?.visitId,
         };
 
         setProofVault(prev => {
@@ -129,6 +149,23 @@ export function useProofVault({ completedJobs }: UseProofVaultOptions) {
       reader.readAsDataURL(file);
     });
   }, []);
+
+  const captureProofForRequirement = useCallback((
+    job: Job,
+    kind: ProofAssetKind,
+    files: FileList | null,
+    requirementContext: Omit<ProcedureProofRequirementIdentity, 'visitId'> & { visitId?: string },
+  ) => {
+    if (!files || files.length === 0) return;
+    const visitId = requirementContext.visitId ?? job.lifecycle?.activeVisitId;
+
+    setProofVault(prev => ({
+      ...prev,
+      [job.id]: createProofRecord(job, prev[job.id]),
+    }));
+
+    addProofAssets(job.id, kind, files, { ...requirementContext, visitId });
+  }, [addProofAssets]);
 
   const updateProofNotes = useCallback((jobId: string, notes: string) => {
     setProofVault(prev => {
@@ -171,6 +208,7 @@ export function useProofVault({ completedJobs }: UseProofVaultOptions) {
     selectedProofRecord,
     ensureProofForJob,
     addProofAssets,
+    captureProofForRequirement,
     updateProofNotes,
     openProof,
     openProofHistory,

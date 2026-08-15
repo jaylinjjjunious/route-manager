@@ -1,4 +1,5 @@
 import type { Coordinates } from '../../types';
+import type { ProcedureProofType } from '../jobs/procedures/types';
 
 export type ProofAssetKind = 'photos' | 'screenshots' | 'receipts';
 
@@ -7,6 +8,13 @@ export interface ProofAsset {
   name: string;
   dataUrl: string;
   addedAt: string;
+  source?: 'manual' | 'procedure_requirement' | 'job_completion' | 'import';
+  proofType?: ProcedureProofType;
+  requirementId?: string;
+  procedureId?: string;
+  procedureVersion?: string;
+  procedureStepId?: string;
+  visitId?: string;
 }
 
 export interface ProofRecord {

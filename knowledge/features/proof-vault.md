@@ -24,6 +24,13 @@ interface ProofAsset {
   name: string;
   dataUrl: string;
   addedAt: string;
+  source?: 'manual' | 'procedure_requirement' | 'job_completion' | 'import';
+  proofType?: ProcedureProofType;
+  requirementId?: string;
+  procedureId?: string;
+  procedureVersion?: string;
+  procedureStepId?: string;
+  visitId?: string;
 }
 
 interface ProofRecord {
@@ -56,6 +63,10 @@ interface ProofRecord {
 - Images render thumbnails; PDFs/files open through the stored data URL link
 - Notes field for annotations
 
+### Procedure Requirement Evidence
+
+Proof assets can optionally carry procedure requirement identity metadata: `requirementId`, `procedureId`, `procedureVersion`, `procedureStepId`, `proofType`, and `visitId`. This metadata is optional so legacy proof records remain readable without migration. Procedure definitions describe what evidence is required; Proof Vault owns the actual evidence. Helpers in `src/features/proofVault/procedureProof.ts` flatten proof records by job, match proof to procedure proof requirements by exact identity, respect `minimumCount`, and enforce visit scope (`any_visit`, `current_visit`, `per_visit`, `final_visit`). Legacy proof without requirement metadata is not matched by fuzzy label/name rules.
+
 ## Architecture
 
 ### Data Flow
@@ -71,6 +82,7 @@ Job Completion → Jobs handler → ensureProofForJob(job)
 ### Key Components
 
 - **useProofVault**: Owns proof records, record selection, localStorage persistence, completed-job backfill, folder creation, file asset insertion, notes updates, and sorted/selected derivations.
+- **Procedure proof helpers**: `procedureProof.ts` owns exact procedure requirement proof matching and proof-asset stamping for future procedure-driven capture flows.
 - **ProofVaultModal**: File upload interface per asset kind and notes editor for the selected record.
 - **Completion Flow**: App-level Jobs completion handlers call `ensureProofForJob(job)` when a job becomes completed. The modal opens through explicit Proof Vault navigation from More or the Assistant.
 
@@ -94,7 +106,7 @@ Job Completion → Jobs handler → ensureProofForJob(job)
 2. User can attach any combination of asset types
 3. Multiple files per asset kind allowed
 4. Notes are optional per proof record
-5. Proof is not required for completion (but encouraged)
+5. Legacy/manual Proof Vault evidence is not required for legacy completion, but procedure-derived proof requirements can block lifecycle closeout until matching proof evidence exists
 6. Existing proof can be edited after completion
 
 ## Security
@@ -149,6 +161,7 @@ Job Completion → Jobs handler → ensureProofForJob(job)
 
 - `src/App.tsx` — cross-feature proof orchestration: Jobs completion triggers, Assistant/More navigation, and modal composition
 - `src/features/proofVault/types.ts` — Proof Vault asset and record types
+- `src/features/proofVault/procedureProof.ts` — proof requirement identity, matching, visit-scope evaluation, and procedure proof asset stamping helpers
 - `src/features/proofVault/ProofVaultModal.tsx` — selected proof folder modal UI
 - `src/features/proofVault/useProofVault.ts` — Proof Vault state, persistence, mutations, selection, and completed-job backfill
 
@@ -159,4 +172,4 @@ Job Completion → Jobs handler → ensureProofForJob(job)
 
 ## Last Updated
 
-2026-08-08 (Proof Vault extraction Step 2: moved proof state, persistence, mutations, record selection, derivations, and completed-job backfill into `src/features/proofVault/useProofVault.ts`)
+2026-08-15 (Procedure proof requirement identity and exact proof-backed closeout evaluation added)

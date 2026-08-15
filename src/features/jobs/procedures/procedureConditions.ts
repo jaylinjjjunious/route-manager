@@ -1,4 +1,5 @@
 import type { Job } from '../../../types';
+import type { ProofRecord } from '../../proofVault/types';
 import type { ProcedureCondition } from './types';
 
 export interface ProcedureRequirementContext {
@@ -11,6 +12,9 @@ export interface ProcedureRequirementContext {
   blockerTypes?: string[];
   satisfiedRequirementIds?: string[];
   requirementSatisfaction?: Record<string, boolean>;
+  proofRecords?: ProofRecord[] | Record<string, ProofRecord>;
+  visitId?: string;
+  requiredVisitIds?: string[];
 }
 
 export type ProcedureConditionEvaluationStatus =

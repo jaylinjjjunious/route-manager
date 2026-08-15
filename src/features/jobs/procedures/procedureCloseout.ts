@@ -1,4 +1,5 @@
 import type { Job } from '../../../types';
+import { evaluateProofRequirement, getProofForJob } from '../../proofVault/procedureProof';
 import type { JobCloseoutRequirement, JobCloseoutRequirementKind } from '../jobCloseoutTypes';
 import { getProcedureStepsInOrder } from './procedureDefinition';
 import type { ProcedureResolutionResult } from './procedureCatalog';
@@ -54,6 +55,13 @@ function describeStep(step: ProcedureStep): string | undefined {
   return step.quickCheckpoint ?? step.guidedInstructions ?? step.warningText;
 }
 
+function effectiveNestedKind(step: ProcedureStep, kind: JobCloseoutRequirementKind): JobCloseoutRequirementKind {
+  if (step.classification === 'conditional' && (kind === 'required' || kind === 'conditional')) {
+    return 'conditional';
+  }
+  return kind;
+}
+
 function createRequirement(
   procedure: ProcedureDefinition,
   source: 'step' | 'proof' | 'equipment' | 'testing' | 'support',
@@ -104,16 +112,24 @@ function deriveProofRequirement(
 ): JobCloseoutRequirement {
   const countText = requirement.minimumCount ? ` Minimum count: ${requirement.minimumCount}.` : '';
   const scopeText = requirement.visitScope ? ` Scope: ${requirement.visitScope}.` : '';
-  return createRequirement(
+  const closeoutRequirement = createRequirement(
     procedure,
     'proof',
     requirement.id,
-    requirement.classification,
+    effectiveNestedKind(step, requirement.classification),
     requirement.label,
     `${requirement.instructions} Proof type: ${requirement.proofType}.${scopeText}${countText}`.trim(),
     context,
     activeForStep(step, context),
   );
+  const proofEvidence = context.job
+    ? getProofForJob(context.proofRecords, context.job.id)
+    : [];
+  const proofEvaluation = evaluateProofRequirement(proofEvidence, procedure, step, requirement, context);
+  return {
+    ...closeoutRequirement,
+    satisfied: proofEvaluation.satisfied,
+  };
 }
 
 function deriveEquipmentRequirement(
@@ -134,7 +150,7 @@ function deriveEquipmentRequirement(
     procedure,
     'equipment',
     requirement.id,
-    requirement.classification,
+    effectiveNestedKind(step, requirement.classification),
     requirement.label,
     details,
     context,
@@ -152,7 +168,7 @@ function deriveTestingRequirement(
     procedure,
     'testing',
     requirement.id,
-    requirement.classification,
+    effectiveNestedKind(step, requirement.classification),
     requirement.label,
     [requirement.instructions, `Validation type: ${requirement.validationType}.`].filter(Boolean).join(' '),
     context,
