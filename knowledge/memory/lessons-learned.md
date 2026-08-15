@@ -36,6 +36,7 @@
 - Shower gate cycle boundary at exactly 6:00:00 requires careful comparison — use `< boundary`, not `<=`.
 - Bottom navigation on mobile needs `overflow-x-auto` for small screens to prevent tab overflow.
 - Focus trapping improves accessibility for modal-like components.
+- Job Detail already contains lifecycle forms with native selects; new compact selector surfaces should avoid taking over generic `querySelector('select')` ordering in existing tests and should use clearly scoped controls.
 - Optional chaining filters must check `!= null` when a missing parent object should be excluded; `obj?.value !== null` still allows `undefined` through.
 - Local calendar days must never round-trip through `new Date('YYYY-MM-DD')` — that parses as UTC and shifts the rider's day. Use a local-noon `Date` for math and `Intl.DateTimeFormat('en-CA', { timeZone })` for the `YYYY-MM-DD` string, and encode the rule in a timezone test.
 - Date validation must check the real calendar (leap years, month lengths) with `Date.UTC` re-read, and invalid stored dates surface as Needs Review instead of being silently coerced.
@@ -68,4 +69,4 @@
 
 ---
 
-**Last Updated:** 2026-08-03 (Road Readiness rules)
+**Last Updated:** 2026-08-15 (Procedure workspace modal selector lesson)

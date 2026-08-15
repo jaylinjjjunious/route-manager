@@ -67,6 +67,8 @@ interface ProofRecord {
 
 Proof assets can optionally carry procedure requirement identity metadata: `requirementId`, `procedureId`, `procedureVersion`, `procedureStepId`, `proofType`, and `visitId`. This metadata is optional so legacy proof records remain readable without migration. Procedure definitions describe what evidence is required; Proof Vault owns the actual evidence. Helpers in `src/features/proofVault/procedureProof.ts` flatten proof records by job, match proof to procedure proof requirements by exact identity, respect `minimumCount`, and enforce visit scope (`any_visit`, `current_visit`, `per_visit`, `final_visit`). Legacy proof without requirement metadata is not matched by fuzzy label/name rules.
 
+`JobDetailModal` now surfaces procedure proof prompts through the generic Procedure workspace. Capture buttons call `captureProofForRequirement(...)`, which creates or reuses the job proof record and stamps uploaded assets with the exact procedure ID, version, step ID, requirement ID, proof type, and active visit ID when available. The workspace displays satisfied/missing state from the same proof-backed closeout evaluation rather than duplicating proof matching in React.
+
 ## Architecture
 
 ### Data Flow
@@ -83,6 +85,7 @@ Job Completion → Jobs handler → ensureProofForJob(job)
 
 - **useProofVault**: Owns proof records, record selection, localStorage persistence, completed-job backfill, folder creation, file asset insertion, notes updates, and sorted/selected derivations.
 - **Procedure proof helpers**: `procedureProof.ts` owns exact procedure requirement proof matching and proof-asset stamping for future procedure-driven capture flows.
+- **Procedure workspace capture**: `ProcedureWorkspace.tsx` renders generic proof prompts in Job Detail and routes capture through `useProofVault.captureProofForRequirement(...)`.
 - **ProofVaultModal**: File upload interface per asset kind and notes editor for the selected record.
 - **Completion Flow**: App-level Jobs completion handlers call `ensureProofForJob(job)` when a job becomes completed. The modal opens through explicit Proof Vault navigation from More or the Assistant.
 
@@ -172,4 +175,4 @@ Job Completion → Jobs handler → ensureProofForJob(job)
 
 ## Last Updated
 
-2026-08-15 (Procedure proof requirement identity and exact proof-backed closeout evaluation added)
+2026-08-15 (Procedure proof prompts added to Job Detail workspace using exact Proof Vault requirement identity)

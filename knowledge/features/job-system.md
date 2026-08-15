@@ -84,11 +84,17 @@ Jobs can optionally carry `procedureAssignment?: JobProcedureAssignment`, which 
 
 ### Procedure Resolution and Derived Closeout
 
-Procedure catalog helpers in `src/features/jobs/procedures/procedureCatalog.ts` resolve assignments by exact `procedureId` + `procedureVersion` only. They return structured statuses (`resolved`, `unassigned`, `not_found`, `invalid_assignment`) and never fall back to the latest version. The default local catalog is currently empty; future persistent/backend catalogs should be isolated behind the same resolver boundary.
+Procedure catalog helpers in `src/features/jobs/procedures/procedureCatalog.ts` resolve assignments by exact `procedureId` + `procedureVersion` only. They return structured statuses (`resolved`, `unassigned`, `not_found`, `invalid_assignment`) and never fall back to the latest version. The default local catalog currently contains only customer-agnostic generic fixtures; future persistent/backend catalogs should be isolated behind the same resolver boundary.
 
 Procedure closeout helpers in `src/features/jobs/procedures/procedureCloseout.ts` derive generic `JobCloseoutRequirement[]` from procedure steps, proof requirements, equipment/serial requirements, testing/validation requirements, and support escalations that require a reference/case number. Derived IDs are deterministic and scoped as procedure-sourced IDs while retaining the stable procedure step/requirement ID in the suffix. Required items block closeout; conditional items block only when their condition evaluates active; recommended/reference items never block. Procedure proof requirements are marked satisfied only when matching real Proof Vault evidence exists for the job, using exact `requirementId`, `procedureId`, `procedureVersion`, `procedureStepId`, proof type, minimum count, and visit-scope rules. Procedure equipment requirements are marked satisfied only when matching real Inventory Custody records exist for the job, using exact requirement identity plus quantity, serial role, removed-equipment, return, and visit-scope rules. Manual job requirements are preserved and merged before derived requirements. Exact duplicate IDs are deterministic first-wins, so repeated derivation/merge does not grow requirements.
 
 The minimal condition evaluator in `src/features/jobs/procedures/procedureConditions.ts` supports `device_type_equals`, `job_field_equals`, `previous_answer_equals`, `equipment_present`, `equipment_missing`, `issue_present`, and `blocker_present`. Missing context returns unresolved/inactive rather than active. If a job has a procedure assignment that cannot be resolved or is malformed, effective closeout adds a synthetic unsatisfied required requirement and blocks final completion because procedure-dependent obligations cannot be verified safely.
+
+### Procedure Workspace UI
+
+`JobDetailModal` now includes a generic Procedure workspace below the Job Overview and before specialized panels. The overview shows assigned procedure name/version, progress percentage, next procedure step, and unresolved-assignment warnings. The workspace shows the assigned procedure status/category, a catalog assignment surface, Guided/Quick presentation toggle, compact progress summary, phase-grouped ordered steps, warnings, condition status (`Applies`, `Does not apply`, `Cannot determine`), and proof/equipment/testing/support prompts. The first local catalog fixture is customer-agnostic (`generic-field-work` v1.0.0) and exists only to exercise the generic UI and exact-version assignment flow; it does not introduce Sonic or customer-specific procedure logic.
+
+Procedure assignment uses `useJobs.assignJobProcedure`, which delegates to the pure assignment helpers and persists through the existing job storage boundary. Reassigning after work has started uses the existing `confirmation_required` result and requires an explicit second confirmation in the modal. Guided and Quick mode are presentation-only and stored as a user preference outside the Job record. Step progress comes from the same effective closeout requirements used by the Closeout section, Proof Vault records, Inventory Custody ledgers, and narrow local acknowledgements for testing/step checks that do not have an external evidence source. Proof capture calls `captureProofForRequirement(...)` with exact procedure ID, version, step ID, requirement ID, proof type, and visit ID when available. Inventory prompts call `recordInventoryForRequirement(...)` with exact procedure requirement identity and custody role metadata.
 
 ### Development Lifecycle Harness
 
@@ -135,6 +141,7 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 - **Procedure definitions**: `procedures/procedureDefinition.ts` validates customer-agnostic procedure definitions, stable step IDs, nested requirement IDs, generic conditions, Guided/Quick text presence, step ordering, immutability checks, and clone-to-next-version behavior.
 - **Procedure assignment**: `procedures/jobProcedureAssignment.ts` assigns/removes exact procedure ID/version references on jobs, requires explicit confirmation after work starts or completion, validates optional procedure definition matches, and records idempotent assignment history without changing legacy job status.
 - **Procedure resolution/closeout derivation**: `procedures/procedureCatalog.ts`, `procedureConditions.ts`, and `procedureCloseout.ts` resolve exact assigned procedure versions, evaluate minimal generic conditions, derive procedure closeout requirements, merge them with manual requirements, satisfy proof requirements from Proof Vault evidence, satisfy equipment/serial/return requirements from Inventory Custody evidence, and safely block closeout when an assigned procedure cannot be resolved.
+- **Procedure workspace**: `procedures/procedureProgress.ts` derives procedure workspace state and progress from exact procedure resolution plus effective closeout requirements. `procedures/ProcedureWorkspace.tsx` renders the generic assignment surface, Guided/Quick step workspace, and proof/inventory/testing/support prompts without duplicating transition or closeout rules.
 - **Lifecycle harness**: `jobLifecycleHarness.ts` owns the dev-only fixture, explicit environment guard, injection/reset helpers, and fake closeout requirement satisfaction helpers. The harness is excluded unless `VITE_ENABLE_JOB_LIFECYCLE_HARNESS=true` in a local dev build.
 - **Job Overview derivation**: `jobOverview.ts` derives lifecycle display labels, Next Action, warnings/blockers, and compact summary metadata for `JobDetailModal`.
 
@@ -222,6 +229,9 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 - `src/features/jobs/procedures/procedureCatalog.ts` — exact-version procedure catalog composition and assignment resolution helpers
 - `src/features/jobs/procedures/procedureConditions.ts` — minimal pure procedure condition evaluation boundary
 - `src/features/jobs/procedures/procedureCloseout.ts` — pure procedure-derived closeout requirement derivation and manual/effective requirement merge helpers
+- `src/features/jobs/procedures/genericProcedureCatalog.ts` — customer-agnostic local procedure fixture for the first generic procedure UI
+- `src/features/jobs/procedures/procedureProgress.ts` — pure Procedure workspace progress and next-step derivation
+- `src/features/jobs/procedures/ProcedureWorkspace.tsx` — generic Procedure assignment and Guided/Quick job detail workspace
 - `src/features/jobs/jobLifecycleHarness.ts` — dev-only lifecycle acceptance fixture and guard helpers
 - `src/features/jobs/jobOverview.ts` — Job Detail overview and Next Action derivation
 - `src/features/jobs/jobSchedule.ts` — scheduling/migration/grouping helpers
@@ -243,4 +253,4 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 
 ## Last Updated
 
-2026-08-15 (Procedure equipment requirements connected to Inventory Custody evidence)
+2026-08-15 (Generic Procedure workspace UI added to Job Detail with exact-version assignment, proof, inventory, and progress integration)

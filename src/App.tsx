@@ -36,6 +36,7 @@ import AssistantProvider from './assistant/AssistantProvider';
 import AssistantBubble from './assistant/AssistantBubble';
 import AmbientLiquidBackground from './components/backgrounds/AmbientLiquidBackground';
 import JobDetailModal from './features/jobs/JobDetailModal';
+import type { ProcedureInventoryRecordInput } from './features/jobs/procedures/ProcedureWorkspace';
 import ShowerGatePanel from './features/showerGate/ShowerGatePanel';
 import RideModeSurface from './features/rideTracker/RideModeSurface';
 import RideTrackerTab from './features/rideTracker/RideTrackerTab';
@@ -48,6 +49,11 @@ import ScreenshotImportModal from './components/ScreenshotImportModal';
 import SmartAisleScan from './components/SmartAisleScan';
 import InventoryCustodyPanel from './components/InventoryCustodyPanel';
 import { getInventoryDomain, inventoryDomainLabel } from './services/inventory/domain';
+import {
+  loadCustodyLedger,
+  recordInventoryForRequirement,
+} from './services/inventory/chainOfCustody';
+import { DEFAULT_PROCEDURE_CATALOG } from './features/jobs/procedures/procedureCatalog';
 import SmartAisleScanTestLab from './components/SmartAisleScanTestLab';
 import { RouteFilter } from './features/jobs/RouteFilter';
 import { BusModeToggle } from './components/BusModeToggle';
@@ -167,6 +173,21 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const [today, setToday] = useState<string>(() => todayString());
   const jobs = useJobs(today, { includeLifecycleHarness: isLifecycleHarnessEnabled });
   const proofVault = useProofVault({ completedJobs: jobs.jobs.filter(isJobCompleted) });
+  const handleRecordProcedureInventory = useCallback(async (job: Job, input: ProcedureInventoryRecordInput) => {
+    const ledger = loadCustodyLedger(job.id, getInventoryDomain(job));
+    await recordInventoryForRequirement({
+      ledger,
+      type: input.type,
+      partNumber: input.partNumber,
+      serialNumber: input.serialNumber,
+      requirementContext: input.requirementContext,
+      receiptNumber: input.receiptNumber,
+      trackingNumber: input.trackingNumber,
+      equipmentLabel: input.equipmentLabel,
+      notes: input.notes,
+      sourceContext: 'procedure_workspace',
+    });
+  }, []);
   const [nowTick, setNowTick] = useState(() => Date.now());
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
   const [addMenuOpen, setAddMenuOpen] = useState(false);
@@ -2125,6 +2146,11 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
               onMarkJobWorkComplete={jobs.markJobWorkComplete}
               onCompleteJobCloseout={jobs.completeJobCloseout}
               onReopenCompletedJob={jobs.reopenCompletedJob}
+              procedureCatalog={DEFAULT_PROCEDURE_CATALOG}
+              proofRecords={proofVault.proofRecords}
+              onAssignProcedure={jobs.assignJobProcedure}
+              onCaptureProcedureProof={proofVault.captureProofForRequirement}
+              onRecordInventoryForRequirement={handleRecordProcedureInventory}
               onSatisfyCloseoutRequirements={isLifecycleHarnessEnabled && routeDetailJob.id === JOB_LIFECYCLE_HARNESS_JOB_ID
                 ? () => jobs.satisfyLifecycleHarnessCloseoutRequirements()
                 : undefined}

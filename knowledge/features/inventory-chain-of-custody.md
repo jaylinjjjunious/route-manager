@@ -40,11 +40,14 @@ Procedure definitions describe required equipment/serial/return obligations, whi
 
 Serial semantics are generic: `none` requires no serial; `single` requires one serial value; `old` requires a removed/original serial; `new` requires an assigned/installed replacement serial; `old_and_new` requires both old and new serials and they must be distinguishable. Removed-equipment tracking requires an actual removal/removed custody state. `returnRequired` is satisfied only by a return custody event/state with receipt and tracking data, not by removal alone. Legacy inventory without procedure identity remains readable but does not satisfy new procedure requirements through fuzzy model/name matching.
 
+The generic Job Detail Procedure workspace now displays equipment prompts from assigned procedures and writes requirement-scoped custody events through `recordInventoryForRequirement(...)`. The UI records the exact procedure ID, version, step ID, requirement ID, active visit ID when present, and a generic custody role (`serial_capture`, `installed_item`, `removed_item`, or `return_item`) so the existing closeout evaluator can determine satisfaction from custody evidence.
+
 ## Related Source Files
 
 - `src/components/InventoryCustodyPanel.tsx` — job detail UI and technician workflow
 - `src/services/inventory/chainOfCustody.ts` — ledger, hash chain, evidence, queue, and GPS helpers
 - `src/services/inventory/procedureInventory.ts` — pure procedure equipment/serial/removal/return satisfaction helpers for closeout
+- `src/features/jobs/procedures/ProcedureWorkspace.tsx` — generic Procedure workspace prompts that route equipment requirement capture through Inventory Custody
 - `public/sw.js` — Background Sync wake-up message
 - `src/features/jobs/JobDetailModal.tsx` — natural integration point
 - `tests/inventoryChain.test.ts` — local persistence, lifecycle, and tamper detection tests
@@ -63,4 +66,4 @@ Serial semantics are generic: `none` requires no serial; `single` requires one s
 
 ---
 
-**Last Updated:** 2026-08-15 (Procedure equipment requirements connected to Inventory Custody evidence)
+**Last Updated:** 2026-08-15 (Procedure equipment prompts added to Job Detail workspace using exact Inventory Custody requirement identity)

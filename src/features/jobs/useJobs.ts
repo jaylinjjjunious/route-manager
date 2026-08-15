@@ -42,6 +42,13 @@ import {
 import type { RouteFilterType } from './RouteFilter';
 import { filterJobsByType } from './RouteFilter';
 import type { JobLifecycleMutationResult, JobMutationResult } from './types';
+import {
+  assignProcedureToJob,
+  changeProcedureAssignmentWithConfirmation,
+  type ProcedureAssignmentInput,
+  type ProcedureAssignmentResult,
+} from './procedures/jobProcedureAssignment';
+import type { ProcedureDefinition } from './procedures/types';
 
 export const SEED_JOBS: Job[] = [
   {
@@ -198,6 +205,12 @@ export interface UseJobsReturn {
   markJobWorkComplete: (id: string, timestamp?: string) => JobLifecycleMutationResult;
   completeJobCloseout: (id: string, timestamp?: string) => JobLifecycleMutationResult;
   reopenCompletedJob: (id: string, reason: string, timestamp?: string) => JobLifecycleMutationResult;
+  assignJobProcedure: (
+    id: string,
+    input: ProcedureAssignmentInput,
+    procedure?: ProcedureDefinition,
+    confirmed?: boolean,
+  ) => ProcedureAssignmentResult;
   resetLifecycleHarnessJob: () => Job[];
   satisfyLifecycleHarnessCloseoutRequirements: () => Job[];
 
@@ -533,6 +546,46 @@ export function useJobs(today: string, options: UseJobsOptions = {}): UseJobsRet
   const reopenCompletedJob = (id: string, reason: string, timestamp?: string): JobLifecycleMutationResult =>
     applyJobLifecycleTransition(id, lifecycle => applyReopenCompletedJob(lifecycle, reason, timestamp));
 
+  const assignJobProcedure = (
+    id: string,
+    input: ProcedureAssignmentInput,
+    procedure?: ProcedureDefinition,
+    confirmed = false,
+  ): ProcedureAssignmentResult => {
+    const previousJob = jobs.find(job => job.id === id) || null;
+    if (!previousJob) {
+      return {
+        status: 'rejected',
+        job: normalizeJobState({
+          id,
+          storeName: '',
+          address: '',
+          pay: 0,
+          estimatedMinutes: 0,
+          jobType: 'field_task',
+          dueTime: '',
+          notes: '',
+          status: 'ready',
+          routeId: 'A',
+          coordinates: { lat: 0, lng: 0 },
+        }),
+        errors: [{ code: 'JOB_NOT_FOUND', message: 'Job was not found.', path: 'jobId' }],
+        confirmationRequired: false,
+      };
+    }
+
+    const result = confirmed
+      ? changeProcedureAssignmentWithConfirmation(previousJob, input, procedure)
+      : assignProcedureToJob(previousJob, input, procedure);
+
+    if (result.status === 'updated' || result.status === 'removed') {
+      const updatedJobs = jobs.map(job => job.id === id ? normalizeJobState(result.job) : job);
+      persistJobs(updatedJobs);
+    }
+
+    return result;
+  };
+
   const resetLifecycleHarness = (): Job[] => {
     if (!includeLifecycleHarness) return jobs;
     return persistJobs(resetLifecycleHarnessJob(jobs, today));
@@ -610,6 +663,7 @@ export function useJobs(today: string, options: UseJobsOptions = {}): UseJobsRet
     markJobWorkComplete,
     completeJobCloseout,
     reopenCompletedJob,
+    assignJobProcedure,
     resetLifecycleHarnessJob: resetLifecycleHarness,
     satisfyLifecycleHarnessCloseoutRequirements: satisfyHarnessCloseoutRequirements,
 

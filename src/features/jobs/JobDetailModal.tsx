@@ -22,6 +22,18 @@ import { buildJobOverview, type JobOverviewActionId } from './jobOverview';
 import type { JobLifecycleMutationResult } from './types';
 import type { VisitEndReason } from './jobLifecycleTypes';
 import type { JobCloseoutRequirement, JobCloseoutRequirementKind } from './jobCloseoutTypes';
+import ProcedureWorkspace, {
+  getProcedureAcknowledgementIds,
+  type ProcedureInventoryRecordInput,
+} from './procedures/ProcedureWorkspace';
+import { DEFAULT_PROCEDURE_CATALOG, type ProcedureCatalog } from './procedures/procedureCatalog';
+import { deriveProcedureWorkspaceModel } from './procedures/procedureProgress';
+import type { ProcedureAssignmentInput, ProcedureAssignmentResult } from './procedures/jobProcedureAssignment';
+import type { ProcedureDefinition } from './procedures/types';
+import type { ProofAssetKind, ProofRecord } from '../proofVault/types';
+import type { ProcedureProofRequirementIdentity } from '../proofVault/procedureProof';
+import { getInventoryDomain } from '../../services/inventory/domain';
+import { loadCustodyLedger, type CustodyLedger } from '../../services/inventory/chainOfCustody';
 import InventoryCustodyPanel from '../../components/InventoryCustodyPanel';
 import { JobTransitSection } from '../../components/transit/JobTransitSection';
 import { isTransitApiEnabled } from '../../services/transit';
@@ -59,6 +71,21 @@ interface JobDetailModalProps {
   onMarkJobWorkComplete?: (id: string) => JobLifecycleMutationResult;
   onCompleteJobCloseout?: (id: string) => JobLifecycleMutationResult;
   onReopenCompletedJob?: (id: string, reason: string) => JobLifecycleMutationResult;
+  procedureCatalog?: ProcedureCatalog;
+  proofRecords?: ProofRecord[];
+  onAssignProcedure?: (
+    jobId: string,
+    input: ProcedureAssignmentInput,
+    procedure?: ProcedureDefinition,
+    confirmed?: boolean,
+  ) => ProcedureAssignmentResult;
+  onCaptureProcedureProof?: (
+    job: Job,
+    kind: ProofAssetKind,
+    files: FileList | null,
+    requirementContext: Omit<ProcedureProofRequirementIdentity, 'visitId'> & { visitId?: string },
+  ) => void;
+  onRecordInventoryForRequirement?: (job: Job, input: ProcedureInventoryRecordInput) => void | Promise<void>;
   onSatisfyCloseoutRequirements?: (id: string) => void;
   onClose: () => void;
 }
@@ -263,6 +290,11 @@ export default function JobDetailModal({
   onMarkJobWorkComplete,
   onCompleteJobCloseout,
   onReopenCompletedJob,
+  procedureCatalog = DEFAULT_PROCEDURE_CATALOG,
+  proofRecords,
+  onAssignProcedure,
+  onCaptureProcedureProof,
+  onRecordInventoryForRequirement,
   onSatisfyCloseoutRequirements,
   onClose,
 }: JobDetailModalProps) {
@@ -275,13 +307,34 @@ export default function JobDetailModal({
   const [noteText, setNoteText] = useState('');
   const [endVisitReason, setEndVisitReason] = useState<VisitEndReason>('other');
   const [lifecycleError, setLifecycleError] = useState<string | null>(null);
+  const [procedureEvidenceVersion, setProcedureEvidenceVersion] = useState(0);
+  const [inventoryLedger, setInventoryLedger] = useState<CustodyLedger>(() =>
+    loadCustodyLedger(job.id, getInventoryDomain(job)),
+  );
 
   const category = getCategory(job, isOutlier);
   const isDone = isJobCompleted(job);
   const needsRevision = isRevisionJob(job);
   const overview = buildJobOverview(job, { isOutlier, jobAccessLocked });
   const lifecycle = normalizeJobLifecycleState(job);
-  const closeoutEvaluation = evaluateJobCloseout(job);
+  const closeoutEvaluation = evaluateJobCloseout(job, {
+    procedureCatalog,
+    context: {
+      job,
+      proofRecords,
+      inventoryLedgers: [inventoryLedger],
+      satisfiedRequirementIds: getProcedureAcknowledgementIds(job.id),
+    },
+  });
+  const procedureOverview = deriveProcedureWorkspaceModel(job, {
+    procedureCatalog,
+    context: {
+      job,
+      proofRecords,
+      inventoryLedgers: [inventoryLedger],
+      satisfiedRequirementIds: getProcedureAcknowledgementIds(job.id),
+    },
+  });
   const closeoutRequirements = [
     ...closeoutEvaluation.missingRequiredItems,
     ...closeoutEvaluation.satisfiedRequiredItems,
@@ -326,6 +379,20 @@ export default function JobDetailModal({
   useEffect(() => {
     closeButtonRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    setInventoryLedger(loadCustodyLedger(job.id, getInventoryDomain(job)));
+  }, [job, procedureEvidenceVersion]);
+
+  const refreshProcedureEvidence = () => {
+    setInventoryLedger(loadCustodyLedger(job.id, getInventoryDomain(job)));
+    setProcedureEvidenceVersion(version => version + 1);
+  };
+
+  const handleRecordInventoryForRequirement = async (targetJob: Job, input: ProcedureInventoryRecordInput) => {
+    await onRecordInventoryForRequirement?.(targetJob, input);
+    refreshProcedureEvidence();
+  };
 
   const handleBackdropClick = (event: React.MouseEvent) => {
     if (event.target === event.currentTarget) onClose();
@@ -676,6 +743,29 @@ export default function JobDetailModal({
                 ))}
               </div>
 
+              <div className={`rounded-xl border px-3 py-2 ${procedureOverview.resolution.status === 'not_found' || procedureOverview.resolution.status === 'invalid_assignment' ? 'border-rose-500/25 bg-rose-500/10' : 'border-white/10 bg-white/[0.03]'}`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-[9px] font-black uppercase text-slate-500">Procedure</p>
+                    <p className="mt-0.5 truncate text-xs font-black text-slate-200">
+                      {procedureOverview.procedure
+                        ? `${procedureOverview.procedure.name} v${procedureOverview.procedure.version}`
+                        : procedureOverview.resolution.status === 'unassigned'
+                          ? 'Not assigned'
+                          : 'Assigned procedure unresolved'}
+                    </p>
+                    <p className="mt-0.5 truncate text-[10px] font-bold text-slate-500">
+                      {procedureOverview.procedure
+                        ? `Next: ${procedureOverview.summary.nextStep?.step.title ?? 'Review complete'}`
+                        : procedureOverview.resolution.reason}
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded-full border border-white/10 bg-black/10 px-2 py-1 text-[9px] font-black uppercase text-slate-300">
+                    {procedureOverview.procedure ? `${procedureOverview.summary.percentComplete}%` : 'Assign'}
+                  </span>
+                </div>
+              </div>
+
               {lifecycle.visits.length > 0 && (
                 <div aria-label="Lifecycle time summary" className="rounded-xl border border-white/10 bg-black/10 px-3 py-3">
                   <div className="mb-2 flex items-center justify-between gap-2">
@@ -724,6 +814,17 @@ export default function JobDetailModal({
                 )}
               </div>
             </section>
+
+            <ProcedureWorkspace
+              job={job}
+              procedureCatalog={procedureCatalog}
+              proofRecords={proofRecords}
+              inventoryLedgers={[inventoryLedger]}
+              onAssignProcedure={onAssignProcedure}
+              onCaptureProcedureProof={onCaptureProcedureProof}
+              onRecordInventoryForRequirement={handleRecordInventoryForRequirement}
+              onEvidenceChanged={refreshProcedureEvidence}
+            />
 
             {lifecycle.visits.length > 0 && (
               <section aria-labelledby="visit-history-title" className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3">

@@ -1,4 +1,5 @@
 import type { Job, JobProcedureAssignment } from '../../../types';
+import { GENERIC_PROCEDURE_CATALOG } from './genericProcedureCatalog';
 import type { ProcedureDefinition } from './types';
 
 export type ProcedureCatalog = readonly ProcedureDefinition[];
@@ -16,7 +17,7 @@ export interface ProcedureResolutionResult {
   assignment?: JobProcedureAssignment;
 }
 
-export const DEFAULT_PROCEDURE_CATALOG: ProcedureCatalog = [];
+export const DEFAULT_PROCEDURE_CATALOG: ProcedureCatalog = GENERIC_PROCEDURE_CATALOG;
 
 const PROCEDURE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
 
