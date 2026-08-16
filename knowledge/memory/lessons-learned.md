@@ -62,6 +62,12 @@
 - A route's first and last stops are not necessarily the rider's boarding and exit stops. Prefer plan offsets and stop schedule items, carry confidence in the normalized contract, and visibly label any fallback as inferred or unavailable.
 - Scheduled and predicted transit times are separate facts. Preserve both Unix-second values, use the predicted value for display only when the upstream marks the data realtime, and expose that realtime status to the UI.
 
+## Test Stabilization
+
+- When a test expects an `aria-label` that no longer exists on a button, the root cause is usually a UI change that removed or renamed the attribute. Fix by restoring the missing accessibility attribute on the real component, not by weakening the test assertion.
+- When a shared component (`MoreScreen`) begins importing a child component (`ChangePasswordPanel`) that calls `useAuth()`, every test that renders the parent must either wrap with an `AuthProvider` or mock `useAuth`. The smallest fix is a module-level `vi.mock` in the test file that provides the context values the child needs.
+- The full test suite must be run before declaring stabilization complete. A targeted pass of only the "relevant" tests can miss regressions in seemingly unrelated files.
+
 ## Data-Driven Customer Procedures
 
 - A real customer procedure should be implemented as pure data on the generic engine, not as customer-specific React components or lifecycle logic. The Sonic Verifone Device Swap (`sonic-verifone-device-swap` v1.0.0) proves this: 12 phases, 50+ steps, conditional device logic, proof/serial/testing/return requirements, and troubleshooting content all exist as a `ProcedureDefinition` with no Sonic-specific UI or closeout code.
