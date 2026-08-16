@@ -111,6 +111,10 @@ export interface Job {
   calendar?: CalendarSourceMeta;
   /** Existing jobs default to merchandising; contract-parts jobs must opt in explicitly. */
   inventoryDomain?: 'merchandising' | 'contract_parts';
+  /** Generic device type hint for procedure conditional logic. */
+  deviceType?: string;
+  /** Generic device type list when a job involves multiple devices. */
+  deviceTypes?: string[];
   /** Optional v1 lifecycle overlay. Legacy JobStatus remains authoritative until the lifecycle migration is complete. */
   lifecycle?: JobLifecycleState;
   /** Generic closeout checklist requirements. Customer-specific rule engines may attach these later. */

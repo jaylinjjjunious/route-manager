@@ -6,6 +6,7 @@ import type { ProcedureCondition } from './types';
 export interface ProcedureRequirementContext {
   job?: Job;
   deviceType?: string;
+  deviceTypes?: string[];
   previousAnswers?: Record<string, unknown>;
   presentEquipmentRequirementIds?: string[];
   missingEquipmentRequirementIds?: string[];
@@ -71,14 +72,17 @@ export function evaluateProcedureCondition(
   }
 
   switch (condition.type) {
-    case 'device_type_equals':
+    case 'device_type_equals': {
       if (!hasValue(condition.deviceType)) return { status: 'malformed', active: false, condition, reason: 'Missing device type.' };
-      if (!hasValue(context.deviceType)) return { status: 'unresolved', active: false, condition, reason: 'No device type context.' };
-      return {
-        status: context.deviceType === condition.deviceType ? 'active' : 'inactive',
-        active: context.deviceType === condition.deviceType,
-        condition,
-      };
+      const ctxTypes = context.deviceTypes?.length
+        ? context.deviceTypes
+        : hasValue(context.deviceType)
+          ? [context.deviceType]
+          : undefined;
+      if (!ctxTypes) return { status: 'unresolved', active: false, condition, reason: 'No device type context.' };
+      const active = ctxTypes.includes(condition.deviceType);
+      return { status: active ? 'active' : 'inactive', active, condition };
+    }
     case 'job_field_equals': {
       if (!hasValue(condition.field) || !hasValue(condition.value)) {
         return { status: 'malformed', active: false, condition, reason: 'Missing job field condition data.' };

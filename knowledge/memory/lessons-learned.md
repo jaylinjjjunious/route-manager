@@ -62,6 +62,14 @@
 - A route's first and last stops are not necessarily the rider's boarding and exit stops. Prefer plan offsets and stop schedule items, carry confidence in the normalized contract, and visibly label any fallback as inferred or unavailable.
 - Scheduled and predicted transit times are separate facts. Preserve both Unix-second values, use the predicted value for display only when the upstream marks the data realtime, and expose that realtime status to the UI.
 
+## Data-Driven Customer Procedures
+
+- A real customer procedure should be implemented as pure data on the generic engine, not as customer-specific React components or lifecycle logic. The Sonic Verifone Device Swap (`sonic-verifone-device-swap` v1.0.0) proves this: 12 phases, 50+ steps, conditional device logic, proof/serial/testing/return requirements, and troubleshooting content all exist as a `ProcedureDefinition` with no Sonic-specific UI or closeout code.
+- Conditional device steps should use the generic `device_type_equals` condition. When jobs may involve multiple devices, the condition evaluator must support an array (`deviceTypes`) in addition to a single string (`deviceType`). The smallest generic job field addition (`deviceType?: string` and `deviceTypes?: string[]`) is sufficient.
+- Warning text belongs in `ProcedureStep.warningText` metadata so it renders in both Guided and Quick modes without custom React alerts.
+- Return obligations must not be auto-satisfied by removal. The `returnRequired` flag on an equipment requirement blocks closeout until an actual return custody event with receipt and tracking is recorded.
+- Do not invent credentials, phone numbers, passwords, file paths, or download URLs in procedure instructions. Represent job-specific values (store numbers, stall numbers) as technician input prompts within the step instructions.
+
 ## Error Monitoring
 
 - Any service test that imports a module pulling in `src/lib/supabase.ts` must mock it: that module throws at import time when `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` are missing, so the transit provider-selection test needed a hoisted supabase mock to run without env vars.
@@ -69,4 +77,4 @@
 
 ---
 
-**Last Updated:** 2026-08-15 (Procedure workspace modal selector lesson)
+**Last Updated:** 2026-08-16 (Data-driven customer procedure lesson — Sonic Verifone Device Swap)
