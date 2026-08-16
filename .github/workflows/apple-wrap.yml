@@ -22,6 +22,13 @@ jobs:
           node-version: 22
           cache: 'npm'
 
+      - name: Diagnostics — versions
+        run: |
+          echo "Node: $(node --version)"
+          echo "npm:  $(npm --version)"
+          echo "Capacitor CLI: $(npx cap --version)"
+          echo "Xcode: $(xcodebuild -version | head -n 1)"
+
       - name: Install dependencies
         run: npm ci
 
@@ -33,12 +40,22 @@ jobs:
       - name: Sync Capacitor iOS platform
         run: npx cap sync ios
 
+      - name: Diagnostics — Xcode project
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -list
+
+      - name: Resolve Swift Package Dependencies
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj \
+                     -resolvePackageDependencies
+
       - name: Build Xcode Archive (.xcarchive)
         run: |
-          xcodebuild -workspace ios/App/App.xcworkspace \
-                     -scheme App \
+          xcodebuild -project ios/App/App.xcodeproj \
+                     -target App \
                      -configuration Release \
                      -sdk iphoneos \
+                     -destination 'generic/platform=iOS' \
                      -archivePath build/App.xcarchive \
                      archive \
                      CODE_SIGN_IDENTITY="" \
