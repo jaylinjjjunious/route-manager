@@ -1,0 +1,58 @@
+name: Apple iOS Wrap
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    name: Build Apple iOS Package
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Web Application
+        run: npm run build
+        env:
+          VITE_TRANSIT_PROVIDER: ${{ secrets.VITE_TRANSIT_PROVIDER || 'transit' }}
+
+      - name: Sync Capacitor iOS platform
+        run: npx cap sync ios
+
+      - name: Build Xcode Archive (.xcarchive)
+        run: |
+          xcodebuild -workspace ios/App/App.xcworkspace \
+                     -scheme App \
+                     -configuration Release \
+                     -sdk iphoneos \
+                     -archivePath build/App.xcarchive \
+                     archive \
+                     CODE_SIGN_IDENTITY="" \
+                     CODE_SIGNING_REQUIRED=NO \
+                     CODE_SIGNING_ALLOWED=NO
+
+      - name: Compress Archive Artifact
+        run: |
+          cd build
+          zip -r App.xcarchive.zip App.xcarchive
+
+      - name: Upload iOS Archive Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apple-ios-archive
+          path: build/App.xcarchive.zip
+          retention-days: 14

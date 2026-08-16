@@ -51,6 +51,13 @@ railway deployment list
 railway up
 ```
 
+### Apple iOS Wrap (GitHub Actions)
+
+The app is wrapped into a native Apple iOS workspace via **Capacitor** (`@capacitor/core`, `@capacitor/ios`).
+- **Configuration:** `capacitor.config.ts` (`appId: 'com.allinone667.routeoptimizer'`, `webDir: 'dist'`).
+- **iOS Workspace:** `ios/App/App.xcworkspace`.
+- **CI/CD Pipeline:** `.github/workflows/apple-wrap.yml` runs on `macos-latest`, compiles the web application, syncs Capacitor iOS assets, builds an Xcode archive (`App.xcarchive`), and uploads the zipped `.xcarchive` artifact to GitHub Actions.
+
 ### Environment Variables
 
 Set in Railway dashboard or `.env` file:
@@ -70,6 +77,8 @@ Set in Railway dashboard or `.env` file:
 
 - `railway.toml` — Railway deployment config
 - `nixpacks.toml` — Build environment config
+- `capacitor.config.ts` — Capacitor iOS wrap config
+- `.github/workflows/apple-wrap.yml` — GitHub Actions iOS wrap workflow
 - `vite.config.ts` — Cloudflare/Vinext config
 - `vite.config.standalone.ts` — Standalone build config
 - `server.ts` — Express server entry
@@ -83,4 +92,4 @@ Set in Railway dashboard or `.env` file:
 
 ## Last Updated
 
-2026-07-20 (c12bd44)
+2026-08-15 (apple-ios-wrap-github-actions)

@@ -66,6 +66,13 @@ Notes:
 - Never create a `VITE_TRANSIT_API_KEY` variable — the key must stay server-side. `tests/transitKeyHygiene.test.ts` enforces this.
 - With `VITE_TRANSIT_PROVIDER` unset/empty the Transit UI is hidden; the server endpoints still respond (503 `TRANSIT_NOT_CONFIGURED` without a key).
 
+## Apple iOS Wrap Workflow
+
+1. Pushing to `main` branch or opening a pull request automatically triggers `.github/workflows/apple-wrap.yml`.
+2. The GitHub Actions job runs on `macos-latest`, compiles the frontend bundle via `npm run build`, and syncs assets to `ios/App/App/public` using `npx cap sync ios`.
+3. `xcodebuild` creates `build/App.xcarchive` which is zipped and uploaded to GitHub Actions Artifacts as `apple-ios-archive`.
+4. Download the `apple-ios-archive` zip from the GitHub Actions run summary page for Xcode distribution or simulator testing.
+
 ---
 
-**Last Updated:** 2026-07-30 (integrate-official-transit-api)
+**Last Updated:** 2026-08-15 (apple-ios-wrap-github-actions)
