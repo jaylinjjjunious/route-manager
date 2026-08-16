@@ -39,6 +39,10 @@ import {
   resetLifecycleHarnessJob,
   satisfyLifecycleHarnessCloseoutRequirements,
 } from './jobLifecycleHarness';
+import {
+  ensureSonicProcedureHarnessJobs,
+  resetSonicProcedureHarnessJobs,
+} from './sonicProcedureHarness';
 import type { RouteFilterType } from './RouteFilter';
 import { filterJobsByType } from './RouteFilter';
 import type { JobLifecycleMutationResult, JobMutationResult } from './types';
@@ -213,6 +217,7 @@ export interface UseJobsReturn {
   ) => ProcedureAssignmentResult;
   resetLifecycleHarnessJob: () => Job[];
   satisfyLifecycleHarnessCloseoutRequirements: () => Job[];
+  resetSonicProcedureHarness: () => Job[];
 
   /* ── Derived job / scheduling values ── */
   routeAJobs: Job[];
@@ -231,6 +236,7 @@ export interface UseJobsReturn {
 
 export interface UseJobsOptions {
   includeLifecycleHarness?: boolean;
+  includeSonicProcedureHarness?: boolean;
 }
 
 export function useJobs(today: string, options: UseJobsOptions = {}): UseJobsReturn {
@@ -244,6 +250,7 @@ export function useJobs(today: string, options: UseJobsOptions = {}): UseJobsRet
   const [routeFilter, setRouteFilter] = useState<RouteFilterType>('today');
   const [completingJobIds, setCompletingJobIds] = useState<string[]>([]);
   const includeLifecycleHarness = options.includeLifecycleHarness === true;
+  const includeSonicProcedureHarness = options.includeSonicProcedureHarness === true;
 
   /* ── Persistence boundary ── */
   const persistJobs = (nextJobs: Job[]): Job[] => {
@@ -277,15 +284,21 @@ export function useJobs(today: string, options: UseJobsOptions = {}): UseJobsRet
           // Legacy list unreadable — fall through with no migration targets.
         }
         const migrated = migrateJobSchedules(rawJobs, legacyMovedIds, today);
-        replaceJobs(ensureLifecycleHarnessJob(migrated.jobs, includeLifecycleHarness, today));
+        let withHarnesses = ensureLifecycleHarnessJob(migrated.jobs, includeLifecycleHarness, today);
+        withHarnesses = ensureSonicProcedureHarnessJobs(withHarnesses, includeSonicProcedureHarness, today);
+        replaceJobs(withHarnesses);
         if (migrated.changed) {
           safeStorage.removeItem('jobs_moved_to_tomorrow');
         }
       } catch {
-        replaceJobs(ensureLifecycleHarnessJob(normalizeJobsForStorage(SEED_JOBS), includeLifecycleHarness, today));
+        let withHarnesses = ensureLifecycleHarnessJob(normalizeJobsForStorage(SEED_JOBS), includeLifecycleHarness, today);
+        withHarnesses = ensureSonicProcedureHarnessJobs(withHarnesses, includeSonicProcedureHarness, today);
+        replaceJobs(withHarnesses);
       }
     } else {
-      replaceJobs(ensureLifecycleHarnessJob(normalizeJobsForStorage(SEED_JOBS), includeLifecycleHarness, today));
+      let withHarnesses = ensureLifecycleHarnessJob(normalizeJobsForStorage(SEED_JOBS), includeLifecycleHarness, today);
+      withHarnesses = ensureSonicProcedureHarnessJobs(withHarnesses, includeSonicProcedureHarness, today);
+      replaceJobs(withHarnesses);
     }
   }, []);
 
@@ -596,6 +609,11 @@ export function useJobs(today: string, options: UseJobsOptions = {}): UseJobsRet
     return persistJobs(satisfyLifecycleHarnessCloseoutRequirements(jobs));
   };
 
+  const resetSonicHarness = (): Job[] => {
+    if (!includeSonicProcedureHarness) return jobs;
+    return persistJobs(resetSonicProcedureHarnessJobs(jobs, today));
+  };
+
   /* ── Derived job / scheduling values ── */
   const routeAJobs = jobs.filter(j => j.routeId === 'A');
   const routeBJobs = jobs.filter(j => j.routeId === 'B');
@@ -666,6 +684,7 @@ export function useJobs(today: string, options: UseJobsOptions = {}): UseJobsRet
     assignJobProcedure,
     resetLifecycleHarnessJob: resetLifecycleHarness,
     satisfyLifecycleHarnessCloseoutRequirements: satisfyHarnessCloseoutRequirements,
+    resetSonicProcedureHarness: resetSonicHarness,
 
     routeAJobs,
     routeBJobs,

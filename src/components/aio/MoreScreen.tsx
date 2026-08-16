@@ -36,6 +36,8 @@ export interface MoreScreenProps {
   onImportScreenshots: () => void;
   lifecycleHarnessEnabled?: boolean;
   onResetLifecycleHarness?: () => void;
+  sonicProcedureHarnessEnabled?: boolean;
+  onResetSonicProcedureHarness?: () => void;
   onSignOut: () => void;
 }
 
@@ -180,6 +182,26 @@ export default function MoreScreen(props: MoreScreenProps) {
             >
               <RefreshCw size={16} />
               Reset Lifecycle Test Job
+            </button>
+          </div>
+        </section>
+      )}
+
+      {props.sonicProcedureHarnessEnabled && props.onResetSonicProcedureHarness && (
+        <section aria-label="Development Sonic procedure harness">
+          <div className="aio-card p-4">
+            <p className="aio-label text-[12px] text-[#0A84FF] dark:text-[#5AC8FA]">Development</p>
+            <h2 className="mt-1 text-[17px] font-black text-[var(--color-aio-text)]">Sonic Procedure Harness</h2>
+            <p className="mt-1 text-[13px] font-medium leading-relaxed text-[var(--color-aio-text-2)]">
+              Reset 6 Sonic test jobs (V400M, UX301, UX401, and combinations) pre-assigned to sonic-verifone-device-swap v1.0.0.
+            </p>
+            <button
+              type="button"
+              onClick={props.onResetSonicProcedureHarness}
+              className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-[14px] border border-[#0A84FF]/25 bg-[#0A84FF]/10 px-4 py-2.5 text-[14px] font-black text-[#0A84FF] dark:text-[#5AC8FA]"
+            >
+              <RefreshCw size={16} />
+              Reset Sonic Test Jobs
             </button>
           </div>
         </section>

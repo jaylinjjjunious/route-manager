@@ -29,6 +29,7 @@ import {
 } from './features/jobs/jobSchedule';
 import { useJobs, SEED_JOBS } from './features/jobs/useJobs';
 import { JOB_LIFECYCLE_HARNESS_JOB_ID, isJobLifecycleHarnessEnabled } from './features/jobs/jobLifecycleHarness';
+import { isSonicProcedureHarnessEnabled } from './features/jobs/sonicProcedureHarness';
 import Header from './components/Header';
 import JobCard from './features/jobs/JobCard';
 import JobModal from './features/jobs/JobModal';
@@ -93,6 +94,7 @@ import {
 
 const isSmartAisleTestLabEnabled = import.meta.env.DEV && import.meta.env.VITE_ENABLE_SMART_AISLE_TEST_LAB === 'true';
 const isLifecycleHarnessEnabled = isJobLifecycleHarnessEnabled(import.meta.env);
+const sonicHarnessEnabled = isSonicProcedureHarnessEnabled(import.meta.env);
 
 const SHOWER_HABIT_TASK_ID = 'habit-task-mandatory-shower';
 const SHOWER_HABIT_NAME = 'Mandatory Shower';
@@ -171,7 +173,10 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const [currentTab, setCurrentTab] = useState<AppTab>(() => getTabFromHash() || 'dashboard');
 
   const [today, setToday] = useState<string>(() => todayString());
-  const jobs = useJobs(today, { includeLifecycleHarness: isLifecycleHarnessEnabled });
+  const jobs = useJobs(today, {
+    includeLifecycleHarness: isLifecycleHarnessEnabled,
+    includeSonicProcedureHarness: sonicHarnessEnabled,
+  });
   const proofVault = useProofVault({ completedJobs: jobs.jobs.filter(isJobCompleted) });
   const handleRecordProcedureInventory = useCallback(async (job: Job, input: ProcedureInventoryRecordInput) => {
     const ledger = loadCustodyLedger(job.id, getInventoryDomain(job));
@@ -567,6 +572,11 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
 
   const handleResetLifecycleHarnessJob = () => {
     jobs.resetLifecycleHarnessJob();
+    handleTabChange('jobs');
+  };
+
+  const handleResetSonicProcedureHarness = () => {
+    jobs.resetSonicProcedureHarness();
     handleTabChange('jobs');
   };
 
@@ -1130,6 +1140,8 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                 onImportScreenshots={() => setIsScreenshotImportOpen(true)}
                 lifecycleHarnessEnabled={isLifecycleHarnessEnabled}
                 onResetLifecycleHarness={handleResetLifecycleHarnessJob}
+                sonicProcedureHarnessEnabled={sonicHarnessEnabled}
+                onResetSonicProcedureHarness={handleResetSonicProcedureHarness}
                 onSignOut={async () => {
                   if (window.confirm("Sign out of AIØ?")) await signOut();
                 }}

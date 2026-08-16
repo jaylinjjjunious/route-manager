@@ -5,6 +5,16 @@ import { createRoot, type Root } from "react-dom/client";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const authMock = vi.hoisted(() => ({
+  user: null,
+  updatePassword: vi.fn(async () => ({ error: null })),
+}));
+
+vi.mock("../src/auth/AuthProvider", () => ({
+  useAuth: () => authMock,
+}));
+
 import AioHeader from "../src/components/aio/AioHeader";
 import MoreScreen from "../src/components/aio/MoreScreen";
 

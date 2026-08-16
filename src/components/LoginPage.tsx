@@ -136,6 +136,7 @@ export default function LoginPage({ onForgotPassword }: LoginPageProps) {
                 type="button"
                 onClick={enableLocalAuthBypass}
                 disabled={submitting}
+                aria-label="Enter local development workspace"
                 className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3.5 text-sm font-black uppercase tracking-wide text-amber-200 transition hover:bg-amber-400/15 active:scale-[0.98] disabled:opacity-50"
                 style={{ minHeight: "48px" }}
               >
