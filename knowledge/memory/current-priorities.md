@@ -17,7 +17,7 @@
 
 - Add the authenticated durable inventory custody sync slice: server endpoint, append-only persistence, idempotent replay, attachment storage, and multi-device conflict policy. The current job-detail ledger is offline-first and intentionally remains queued until this is implemented.
 
-- Continue the generic field-work procedure rollout: validate the new Job Detail Procedure workspace manually on mobile, then add procedure-derived assignment/defaulting and customer-specific procedure data only after the generic proof/equipment/closeout loops are stable.
+- Continue the generic field-work procedure rollout: the Job Detail Procedure workspace now has mobile-validated ergonomics (scroll-to-step, current-step highlighting, quiet satisfied states, prominent blocking actions). Next: validate the complete Sonic technician flow end-to-end on a real phone (create job → assign procedure → open job → continue procedure → capture proof/serial → complete closeout), then add procedure-derived assignment/defaulting and additional customer-specific procedure data only after the generic proof/equipment/closeout loops are stable.
 
 
 - Verify Smart Aisle Scan real-iPhone deletion/undo and lens cleanliness detection through `/real-device-verification?access=fuckyouleavemelone`: run Safari portrait/landscape and installed Home Screen PWA tests for immediate delete, undo restore, count update, automatic restitch, lens check result, recheck, false-warning avoidance, and capture blocking; collect the privacy-safe report plus screenshots or recording, and evaluate any failures before marking the feature fully verified.

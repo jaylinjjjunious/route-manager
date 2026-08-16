@@ -68,7 +68,7 @@ describe('buildJobOverview', () => {
       lifecycle: lifecycle({ status: 'in_progress', workState: 'working', activeVisitId: 'visit-1', visits: [activeVisit] }),
     })).nextAction).toMatchObject({
       primaryLabel: 'Pause Work',
-      secondaryLabels: ['Await Support', 'Blocked Onsite', 'Work Complete', 'End Visit'],
+      secondaryLabels: ['Continue Procedure', 'Await Support', 'Blocked Onsite', 'Work Complete', 'End Visit'],
     });
 
     expect(buildJobOverview(makeJob({
@@ -92,6 +92,14 @@ describe('buildJobOverview', () => {
     expect(buildJobOverview(makeJob({
       lifecycle: lifecycle({ status: 'completed', workState: 'offsite', completedAt: '2026-08-15T10:10:00.000Z' }),
     })).nextAction.primaryLabel).toBe('Reopen if necessary');
+  });
+
+  it('warns when procedure is assigned but no devices are selected', () => {
+    const overview = buildJobOverview(makeJob({
+      procedureAssignment: { procedureId: 'sonic-verifone-device-swap', procedureVersion: '1.0.0', assignmentSource: 'suggested', assignedAt: '2026-08-15T09:00:00.000Z' },
+      deviceTypes: [],
+    }));
+    expect(overview.warnings.map(w => w.label)).toContain('Procedure assigned but no devices selected.');
   });
 
   it('reports missing work and legacy lifecycle conflicts as warnings', () => {

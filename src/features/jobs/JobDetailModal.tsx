@@ -12,7 +12,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Navigation, Clock, MapPin, CheckSquare, Edit2, Trash2, Copy, ArrowRightLeft, ShieldAlert, Calendar, AlertCircle, Sparkles, Hourglass, RefreshCw, CheckCircle2, RotateCcw, Camera, BookOpen } from 'lucide-react';
+import { X, Navigation, Clock, MapPin, CheckSquare, Edit2, Trash2, Copy, ArrowRightLeft, ShieldAlert, Calendar, AlertCircle, Sparkles, Hourglass, RefreshCw, CheckCircle2, RotateCcw, Camera, BookOpen, PackageCheck } from 'lucide-react';
 import type { Job, JobType } from '../../types';
 import { isJobCompleted, isRevisionJob, normalizeJobLifecycleState } from './jobState';
 import { formatScheduledDate, isValidScheduledDate } from './jobSchedule';
@@ -335,6 +335,7 @@ export default function JobDetailModal({
       satisfiedRequirementIds: getProcedureAcknowledgementIds(job.id),
     },
   });
+  const procedureNextStepTitle = procedureOverview.summary.nextStep?.step.title;
   const closeoutRequirements = [
     ...closeoutEvaluation.missingRequiredItems,
     ...closeoutEvaluation.satisfiedRequiredItems,
@@ -400,6 +401,16 @@ export default function JobDetailModal({
 
   const handlePanelClick = (event: React.MouseEvent) => {
     event.stopPropagation();
+  };
+
+  const scrollToStep = (stepId?: string) => {
+    if (!stepId || !bodyRef.current) return;
+    const el = document.getElementById(`step-${stepId}`);
+    if (!el) return;
+    const containerTop = bodyRef.current.getBoundingClientRect().top;
+    const elTop = el.getBoundingClientRect().top;
+    const scrollOffset = bodyRef.current.scrollTop + (elTop - containerTop) - 16;
+    bodyRef.current.scrollTo({ top: scrollOffset, behavior: 'smooth' });
   };
 
   const handleQuickStatusChange = (statusType: 'completed' | 'revisit' | 'under_review' | 'postponed' | 'ready' | 'finished') => {
@@ -491,6 +502,9 @@ export default function JobDetailModal({
         break;
       case 'reopen':
         openNoteSheet('reopen');
+        break;
+      case 'continue_procedure':
+        scrollToStep(procedureOverview.summary.nextStep?.step.id);
         break;
       case 'review_details':
         setLifecycleError('This lifecycle action is not wired yet.');
@@ -646,6 +660,12 @@ export default function JobDetailModal({
                     {job.priority} Priority
                   </span>
                 )}
+                {job.deviceTypes && job.deviceTypes.length > 0 && (
+                  <span className="road-pill min-h-7 px-2.5 py-0.5 text-[10px] shadow-xs border bg-amber-950/40 text-amber-400 border-amber-500/20 flex items-center gap-1">
+                    <PackageCheck size={10} />
+                    {job.deviceTypes.join(' + ')}
+                  </span>
+                )}
                 {job.revisionStatus && job.revisionStatus !== 'None' && (
                   <span className={`road-pill min-h-7 px-2.5 py-0.5 text-[10px] shadow-xs border flex items-center gap-0.5 ${
                     job.revisionStatus === 'Needs Revision'
@@ -756,7 +776,9 @@ export default function JobDetailModal({
                     </p>
                     <p className="mt-0.5 text-[10px] font-bold leading-tight text-slate-500 break-words">
                       {procedureOverview.procedure
-                        ? `Next: ${procedureOverview.summary.nextStep?.step.title ?? 'Review complete'}`
+                        ? procedureNextStepTitle
+                          ? `Next step: ${procedureNextStepTitle}`
+                          : 'All steps satisfied — review and closeout'
                         : procedureOverview.resolution.reason}
                     </p>
                   </div>
@@ -879,6 +901,16 @@ export default function JobDetailModal({
 
                 {closeoutRequirements.length > 0 ? (
                   <div className="space-y-1.5">
+                    {closeoutEvaluation.missingRequiredItems.length > 0 && procedureOverview.summary.nextStep && (
+                      <button
+                        type="button"
+                        onClick={() => scrollToStep(procedureOverview.summary.nextStep?.step.id)}
+                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-amber-500/25 bg-amber-500/10 px-2.5 py-2 text-[11px] font-black text-amber-200 transition hover:bg-amber-500/15"
+                      >
+                        <AlertCircle size={13} />
+                        Jump to next missing step: {procedureOverview.summary.nextStep.step.title}
+                      </button>
+                    )}
                     {closeoutRequirements.map(requirement => (
                       <CloseoutRequirementRow
                         key={requirement.id}

@@ -67,6 +67,7 @@ interface Job {
   closeoutRequirements?: JobCloseoutRequirement[];
   procedureAssignment?: JobProcedureAssignment;
   procedureAssignmentHistory?: JobProcedureAssignmentHistoryEvent[];
+  deviceTypes?: string[];
 }
 ```
 
@@ -93,6 +94,12 @@ The minimal condition evaluator in `src/features/jobs/procedures/procedureCondit
 ### Procedure Workspace UI
 
 `JobDetailModal` now includes a generic Procedure workspace below the Job Overview and before specialized panels. The overview shows assigned procedure name/version, progress percentage, next procedure step, and unresolved-assignment warnings. The workspace shows the assigned procedure status/category, a catalog assignment surface, Guided/Quick presentation toggle, compact progress summary, phase-grouped ordered steps, warnings, condition status (`Applies`, `Does not apply`, `Cannot determine`), and proof/equipment/testing/support prompts. The first local catalog fixture is customer-agnostic (`generic-field-work` v1.0.0) and exists only to exercise the generic UI and exact-version assignment flow, including inactive and unresolved conditional states. The first real customer procedure is `sonic-verifone-device-swap` v1.0.0 (`Sonic Verifone Device Swap`), covering V400M terminal replacement and UX301/UX401 display swap with pre-removal documentation, grounding-strap warnings, serial capture, testing, and return obligations. It is implemented entirely as procedure data on the generic engine with no Sonic-specific React components or lifecycle logic.
+
+**Field job creation flow:** `JobModal` now shows a device-type multi-select for `field_task` jobs (`V400M`, `UX301`, `UX401`). Selected devices are stored in `deviceTypes` and drive the `device_type_equals` procedure condition. A visible procedure suggestion panel appears when devices are selected, explaining which procedure will be suggested after save.
+
+**Technician workflow polish:** `JobDetailModal` renders selected device badges in the job header. When a technician is actively working an in-progress job, the Next Action card includes a `Continue Procedure` secondary action that smooth-scrolls the modal body to the next unresolved step in `ProcedureWorkspace`. The closeout blocker summary adds a prominent jump-to-step button when missing required items exist, linking directly to the next incomplete procedure step.
+
+**Mobile ergonomics in `ProcedureWorkspace`:** Every step renders a stable DOM `id="step-{stepId}"` for deep-link scrolling. The current (next unresolved) step is highlighted with a blue border and a "Current" badge. Satisfied steps are visually quieted with reduced border/bg opacity. Blocking/missing steps retain a rose-tinted container. Proof capture, inventory record, and test-acknowledge buttons use full-width, high-contrast styling when the requirement is blocking, with `min-h-10` touch targets.
 
 Procedure assignment uses `useJobs.assignJobProcedure`, which delegates to the pure assignment helpers and persists through the existing job storage boundary. Reassigning after work has started uses the existing `confirmation_required` result and requires an explicit second confirmation in the modal. Guided and Quick mode are presentation-only and stored as a user preference outside the Job record. Step progress comes from the same effective closeout requirements used by the Closeout section, Proof Vault records, Inventory Custody ledgers, and narrow local acknowledgements for testing/step checks that do not have an external evidence source. Proof capture calls `captureProofForRequirement(...)` with exact procedure ID, version, step ID, requirement ID, proof type, and visit ID when available. Inventory prompts call `recordInventoryForRequirement(...)` with exact procedure requirement identity and custody role metadata.
 
@@ -143,7 +150,7 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 - **Procedure resolution/closeout derivation**: `procedures/procedureCatalog.ts`, `procedureConditions.ts`, and `procedureCloseout.ts` resolve exact assigned procedure versions, evaluate minimal generic conditions, derive procedure closeout requirements, merge them with manual requirements, satisfy proof requirements from Proof Vault evidence, satisfy equipment/serial/return requirements from Inventory Custody evidence, and safely block closeout when an assigned procedure cannot be resolved.
 - **Procedure workspace**: `procedures/procedureProgress.ts` derives procedure workspace state and progress from exact procedure resolution plus effective closeout requirements. `procedures/ProcedureWorkspace.tsx` renders the generic assignment surface, Guided/Quick step workspace, and proof/inventory/testing/support prompts without duplicating transition or closeout rules.
 - **Lifecycle harness**: `jobLifecycleHarness.ts` owns the dev-only fixture, explicit environment guard, injection/reset helpers, and fake closeout requirement satisfaction helpers. The harness is excluded unless `VITE_ENABLE_JOB_LIFECYCLE_HARNESS=true` in a local dev build.
-- **Job Overview derivation**: `jobOverview.ts` derives lifecycle display labels, Next Action, warnings/blockers, and compact summary metadata for `JobDetailModal`.
+- **Job Overview derivation**: `jobOverview.ts` derives lifecycle display labels, Next Action, warnings/blockers, and compact summary metadata for `JobDetailModal`. Active work states include a `continue_procedure` secondary action for technicians with assigned procedures.
 
 ## Design Rationale
 
@@ -253,4 +260,4 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 
 ## Last Updated
 
-2026-08-16 (Added `sonic-verifone-device-swap` v1.0.0 — first real customer procedure using the generic engine; added `deviceType`/`deviceTypes` to Job for procedure conditional logic)
+2026-08-16 (Field job creation + technician workflow polish: `JobModal` device-type multi-select and procedure suggestion; `JobDetailModal` device badges, `Continue Procedure` scroll-to-step, closeout jump-to-step links; `ProcedureWorkspace` scroll IDs, current-step prominence, quiet satisfied states, prominent missing-state tap targets; wired `continue_procedure` into active-work Next Action)

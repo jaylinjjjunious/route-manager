@@ -51,7 +51,7 @@ describe('sonic procedure harness', () => {
   });
 
   it('adds harness jobs when enabled and absent', () => {
-    const base = [{ id: 'seed-1', storeName: 'Test', address: '123 Main', pay: 10, estimatedMinutes: 15, jobType: 'field_task', dueTime: '12:00', notes: '', status: 'ready', routeId: 'A', coordinates: { lat: 0, lng: 0 } }];
+    const base = [{ id: 'seed-1', storeName: 'Test', address: '123 Main', pay: 10, estimatedMinutes: 15, jobType: 'field_task' as const, dueTime: '12:00', notes: '', status: 'ready' as const, routeId: 'A' as const, coordinates: { lat: 0, lng: 0 } }];
     const result = ensureSonicProcedureHarnessJobs(base, true, '2026-08-16');
     expect(result.filter(j => j.id.startsWith(SONIC_PROCEDURE_HARNESS_PREFIX))).toHaveLength(6);
     expect(result.find(j => j.id === 'seed-1')).toBeTruthy();
@@ -59,7 +59,7 @@ describe('sonic procedure harness', () => {
 
   it('removes harness jobs when disabled', () => {
     const harness = createSonicHarnessJobs('2026-08-16');
-    const base = [{ id: 'seed-1', storeName: 'Test', address: '123 Main', pay: 10, estimatedMinutes: 15, jobType: 'field_task', dueTime: '12:00', notes: '', status: 'ready', routeId: 'A', coordinates: { lat: 0, lng: 0 } }];
+    const base = [{ id: 'seed-1', storeName: 'Test', address: '123 Main', pay: 10, estimatedMinutes: 15, jobType: 'field_task' as const, dueTime: '12:00', notes: '', status: 'ready' as const, routeId: 'A' as const, coordinates: { lat: 0, lng: 0 } }];
     const combined = [...harness, ...base];
     const result = ensureSonicProcedureHarnessJobs(combined, false, '2026-08-16');
     expect(result.filter(j => j.id.startsWith(SONIC_PROCEDURE_HARNESS_PREFIX))).toHaveLength(0);
@@ -68,7 +68,7 @@ describe('sonic procedure harness', () => {
 
   it('preserves existing harness jobs when already present', () => {
     const harness = createSonicHarnessJobs('2026-08-16');
-    const base = [{ id: 'seed-1', storeName: 'Test', address: '123 Main', pay: 10, estimatedMinutes: 15, jobType: 'field_task', dueTime: '12:00', notes: '', status: 'ready', routeId: 'A', coordinates: { lat: 0, lng: 0 } }];
+    const base = [{ id: 'seed-1', storeName: 'Test', address: '123 Main', pay: 10, estimatedMinutes: 15, jobType: 'field_task' as const, dueTime: '12:00', notes: '', status: 'ready' as const, routeId: 'A' as const, coordinates: { lat: 0, lng: 0 } }];
     const combined = [...harness, ...base];
     const result = ensureSonicProcedureHarnessJobs(combined, true, '2026-08-16');
     expect(result.filter(j => j.id.startsWith(SONIC_PROCEDURE_HARNESS_PREFIX))).toHaveLength(6);
@@ -76,7 +76,7 @@ describe('sonic procedure harness', () => {
 
   it('reset replaces all harness jobs with fresh ones', () => {
     const oldHarness = createSonicHarnessJobs('2026-08-15');
-    const base = [{ id: 'seed-1', storeName: 'Test', address: '123 Main', pay: 10, estimatedMinutes: 15, jobType: 'field_task', dueTime: '12:00', notes: '', status: 'ready', routeId: 'A', coordinates: { lat: 0, lng: 0 } }];
+    const base = [{ id: 'seed-1', storeName: 'Test', address: '123 Main', pay: 10, estimatedMinutes: 15, jobType: 'field_task' as const, dueTime: '12:00', notes: '', status: 'ready' as const, routeId: 'A' as const, coordinates: { lat: 0, lng: 0 } }];
     const combined = [...oldHarness, ...base];
     const result = resetSonicProcedureHarnessJobs(combined, '2026-08-16');
     const newHarness = result.filter(j => j.id.startsWith(SONIC_PROCEDURE_HARNESS_PREFIX));

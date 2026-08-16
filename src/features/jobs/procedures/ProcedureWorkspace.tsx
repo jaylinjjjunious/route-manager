@@ -256,8 +256,15 @@ export default function ProcedureWorkspace({
           </div>
           {renderRequirementStatus(requirement)}
         </div>
-        <label htmlFor={inputId} className="mt-2 inline-flex min-h-9 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-2.5 py-1.5 text-[11px] font-black text-white hover:bg-white/15">
-          <FileCheck2 size={13} />
+        <label
+          htmlFor={inputId}
+          className={`mt-2 inline-flex min-h-10 cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-black text-white transition ${
+            requirement.blocking
+              ? 'w-full border-amber-500/30 bg-amber-500/15 hover:bg-amber-500/20'
+              : 'border-white/15 bg-white/10 hover:bg-white/15'
+          }`}
+        >
+          <FileCheck2 size={14} />
           Capture Proof
         </label>
         <input
@@ -338,9 +345,13 @@ export default function ProcedureWorkspace({
         <button
           type="button"
           onClick={() => void recordInventory(requirement, equipmentRequirement)}
-          className="mt-2 inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-2.5 py-1.5 text-[11px] font-black text-white hover:bg-white/15"
+          className={`mt-2 inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-black text-white transition ${
+            requirement.blocking
+              ? 'w-full border-amber-500/30 bg-amber-500/15 hover:bg-amber-500/20'
+              : 'border-white/15 bg-white/10 hover:bg-white/15'
+          }`}
         >
-          <PackageCheck size={13} />
+          <PackageCheck size={14} />
           Record Inventory
         </button>
       </div>
@@ -472,18 +483,34 @@ export default function ProcedureWorkspace({
               .filter(item => mode === 'guided' || item.applicable || item.missingBlockingRequirements.length > 0)
               .map(item => {
                 const showExpanded = mode === 'guided' || item.missingBlockingRequirements.length > 0;
+                const isCurrentStep = model.summary.nextStep?.step.id === item.step.id;
+                const hasBlocking = item.missingBlockingRequirements.length > 0;
+                const containerClass = isCurrentStep
+                  ? 'border-blue-500/30 bg-blue-500/5'
+                  : hasBlocking
+                    ? 'border-rose-500/25 bg-rose-500/5'
+                    : item.satisfied
+                      ? 'border-white/5 bg-black/5'
+                      : 'border-white/10 bg-black/10';
                 return (
-                  <details key={item.step.id} open={showExpanded} className="rounded-xl border border-white/10 bg-black/10 px-2.5 py-2">
+                  <details key={item.step.id} id={`step-${item.step.id}`} open={showExpanded} className={`rounded-xl border px-2.5 py-2 ${containerClass}`}>
                     <summary className="flex cursor-pointer list-none items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="text-[9px] font-black uppercase text-slate-500">{item.phaseLabel}</p>
-                        <p className="mt-0.5 text-sm font-black text-white">{item.step.title}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-[9px] font-black uppercase text-slate-500">{item.phaseLabel}</p>
+                          {isCurrentStep && (
+                            <span className="rounded-full border border-blue-500/30 bg-blue-500/15 px-1.5 py-0.5 text-[8px] font-black uppercase text-blue-300">
+                              Current
+                            </span>
+                          )}
+                        </div>
+                        <p className={`mt-0.5 text-sm font-black ${item.satisfied ? 'text-slate-400' : 'text-white'}`}>{item.step.title}</p>
                         <p className="mt-0.5 text-[10px] font-bold text-slate-400">
                           {mode === 'quick' ? item.step.quickCheckpoint ?? item.step.guidedInstructions : item.step.guidedInstructions ?? item.step.quickCheckpoint}
                         </p>
                       </div>
                       {item.satisfied ? (
-                        <CheckCircle2 size={16} className="mt-1 shrink-0 text-emerald-300" />
+                        <CheckCircle2 size={16} className="mt-1 shrink-0 text-emerald-300/70" />
                       ) : (
                         <ClipboardList size={16} className="mt-1 shrink-0 text-amber-300" />
                       )}
@@ -524,8 +551,9 @@ export default function ProcedureWorkspace({
                                 <button
                                   type="button"
                                   onClick={() => acknowledgeRequirement(scopedProcedureRequirementId(procedure, 'testing', requirement.testingRequirement!.id))}
-                                  className="mt-2 min-h-9 rounded-lg border border-white/15 bg-white/10 px-2.5 py-1.5 text-[11px] font-black text-white hover:bg-white/15"
+                                  className="mt-2 min-h-10 w-full rounded-lg border border-amber-500/30 bg-amber-500/15 px-3 py-2 text-xs font-black text-white transition hover:bg-amber-500/20"
                                 >
+                                  <CheckCircle2 size={14} className="inline align-text-bottom mr-1" />
                                   Acknowledge Test Complete
                                 </button>
                               )}

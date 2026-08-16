@@ -15,7 +15,8 @@ export type JobOverviewActionId =
   | 'work_complete'
   | 'closeout'
   | 'reopen'
-  | 'review_details';
+  | 'review_details'
+  | 'continue_procedure';
 
 export interface JobOverviewSecondaryAction {
   id: JobOverviewActionId;
@@ -48,6 +49,7 @@ export interface JobOverviewModel {
   nextAction: JobOverviewAction;
   warnings: JobOverviewWarning[];
   summaryItems: JobOverviewSummaryItem[];
+  procedureNextStepTitle?: string;
 }
 
 const labelize = (value: string) =>
@@ -113,13 +115,20 @@ export function buildJobOverview(job: Job, options: { isOutlier?: boolean; jobAc
         tone: 'working',
       };
     } else {
+      const secondaryActions: JobOverviewSecondaryAction[] = [
+        { id: 'continue_procedure', label: 'Continue Procedure' },
+        { id: 'await_support', label: 'Await Support' },
+        { id: 'blocked_onsite', label: 'Blocked Onsite' },
+        { id: 'work_complete', label: 'Work Complete' },
+        { id: 'end_visit', label: 'End Visit' },
+      ];
       nextAction = {
         title: 'Continue onsite work',
         description: 'You are checked in and actively working this job.',
         primaryActionId: 'pause_work',
         primaryLabel: 'Pause Work',
-        secondaryActions: [{ id: 'await_support', label: 'Await Support' }, { id: 'blocked_onsite', label: 'Blocked Onsite' }, { id: 'work_complete', label: 'Work Complete' }, { id: 'end_visit', label: 'End Visit' }],
-        secondaryLabels: ['Await Support', 'Blocked Onsite', 'Work Complete', 'End Visit'],
+        secondaryActions,
+        secondaryLabels: secondaryActions.map(action => action.label),
         tone: 'working',
       };
     }
@@ -180,6 +189,7 @@ export function buildJobOverview(job: Job, options: { isOutlier?: boolean; jobAc
   if (job.status === 'under_review') warnings.push({ label: 'Legacy status is under review; lifecycle may differ.', tone: 'info' });
   if (isJobCompleted(job) && status !== 'completed') warnings.push({ label: 'Legacy status says complete, but lifecycle is not closed out.', tone: 'warning' });
   if (!isJobCompleted(job) && status === 'completed') warnings.push({ label: 'Lifecycle is completed while legacy status remains active.', tone: 'info' });
+  if (job.procedureAssignment && !job.deviceTypes?.length) warnings.push({ label: 'Procedure assigned but no devices selected.', tone: 'warning' });
 
   return {
     lifecycleStatusLabel: labelize(status),

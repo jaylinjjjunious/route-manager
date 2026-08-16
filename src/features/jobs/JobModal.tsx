@@ -39,6 +39,7 @@ export default function JobModal({
   const [routeId, setRouteId] = useState<'A' | 'B'>('A');
   const [status, setStatus] = useState<JobStatus>('ready');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [deviceTypes, setDeviceTypes] = useState<string[]>([]);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isRevisionRequired, setIsRevisionRequired] = useState(false);
   const [processServe, setProcessServe] = useState<ProcessServeDetails>({
@@ -89,6 +90,7 @@ export default function JobModal({
       setRouteId(editingJob.routeId);
       setStatus(editingJob.status === 'pending' ? 'ready' : (editingJob.status || 'ready'));
       setPriority(editingJob.priority || 'medium');
+      setDeviceTypes(editingJob.deviceTypes ?? []);
       setIsCompleted(editingJob.isCompleted || editingJob.status === 'completed');
       setIsRevisionRequired(editingJob.isRevisionRequired || editingJob.status === 'revisit');
       setProcessServe({
@@ -108,6 +110,7 @@ export default function JobModal({
       setRouteId(defaultRouteId);
       setStatus('ready');
       setPriority(isProcessServeDefault ? 'high' : 'medium');
+      setDeviceTypes([]);
       setIsCompleted(false);
       setIsRevisionRequired(false);
       setProcessServe(getDefaultProcessServe());
@@ -173,6 +176,7 @@ export default function JobModal({
       routeId,
       coordinates,
       priority,
+      deviceTypes: deviceTypes.length > 0 ? deviceTypes : undefined,
       isCompleted,
       isRevisionRequired,
       processServe: isProcessServe ? processServe : undefined
@@ -295,6 +299,60 @@ export default function JobModal({
               <p className="mt-1 text-xs text-rose-500">{errors.address}</p>
             )}
           </div>
+
+          {/* Device Types (field task / technician jobs) */}
+          {jobType === 'field_task' && (
+            <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-white/5 dark:bg-white/2">
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
+                Devices on this job
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {['V400M', 'UX301', 'UX401'].map(device => (
+                  <button
+                    key={device}
+                    type="button"
+                    onClick={() => {
+                      setDeviceTypes(prev =>
+                        prev.includes(device) ? prev.filter(d => d !== device) : [...prev, device],
+                      );
+                    }}
+                    className={`rounded-lg border px-3 py-1.5 text-xs font-black transition-all ${
+                      deviceTypes.includes(device)
+                        ? 'border-blue-500 bg-blue-500/10 text-blue-500 dark:text-blue-400'
+                        : 'border-slate-200 bg-white text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-400'
+                    }`}
+                  >
+                    {deviceTypes.includes(device) ? '✓ ' : ''}{device}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-[11px] font-semibold text-slate-400">
+                Select every device the technician will service. This drives the assigned procedure.
+              </p>
+            </div>
+          )}
+
+          {/* Procedure Suggestion */}
+          {jobType === 'field_task' && (
+            <div className="rounded-xl border border-blue-100 bg-blue-50/40 p-3 dark:border-blue-500/15 dark:bg-blue-500/5">
+              <div className="flex items-start gap-2">
+                <Sparkles size={14} className="mt-0.5 shrink-0 text-blue-500" />
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-blue-500 dark:text-blue-400">
+                    Procedure Suggestion
+                  </p>
+                  <p className="mt-1 text-xs font-bold text-slate-700 dark:text-slate-300">
+                    {deviceTypes.length > 0
+                      ? `Sonic Verifone Device Swap @ 1.0.0 matches ${deviceTypes.join(' + ')}`
+                      : 'Select devices above to see matching procedures.'}
+                  </p>
+                  <p className="mt-1 text-[11px] font-semibold text-slate-400">
+                    The procedure will be suggested after you save the job. You must confirm the assignment.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Pay & Inside Store Minutes */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
