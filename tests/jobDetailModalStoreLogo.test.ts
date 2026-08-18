@@ -104,8 +104,8 @@ describe("Job Details Mini Page store logo", () => {
     expect(img).not.toBeNull();
     expect(img?.className).toContain("object-contain");
     const button = img?.closest("button");
-    expect(button?.className).toContain("h-9");
-    expect(button?.className).toContain("w-9");
+    expect(button?.className).toContain("h-10");
+    expect(button?.className).toContain("w-10");
     expect(button?.className).toContain("rounded-lg");
 
     expect(JSON.stringify(job)).toBe(before);

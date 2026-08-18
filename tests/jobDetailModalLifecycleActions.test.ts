@@ -105,6 +105,16 @@ async function clickButton(name: string) {
   });
 }
 
+async function clickTab(label: string) {
+  const buttons = Array.from(document.querySelectorAll('button'));
+  const button = buttons.find(candidate => candidate.textContent?.trim() === label);
+  expect(button, `tab ${label}`).toBeTruthy();
+  await act(async () => {
+    button?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await Promise.resolve();
+  });
+}
+
 async function typeNote(value: string) {
   const textarea = document.querySelector<HTMLTextAreaElement>('[data-lifecycle-note="true"]');
   expect(textarea).toBeTruthy();
@@ -296,6 +306,7 @@ describe('JobDetailModal lifecycle action wiring', () => {
       ],
     }), { onCompleteJobCloseout }));
 
+    await clickTab('CLOSEOUT');
     expect(document.body.textContent).toContain('Closeout');
     expect(document.body.textContent).toContain('1 required item missing.');
     expect(document.body.textContent).toContain('Upload required proof');
@@ -332,6 +343,7 @@ describe('JobDetailModal lifecycle action wiring', () => {
       ],
     }), { onCompleteJobCloseout }));
 
+    await clickTab('CLOSEOUT');
     expect(document.body.textContent).toContain('Ready for final completion.');
     await clickButton('Complete Job');
     expect(onCompleteJobCloseout).toHaveBeenCalledWith('job-1');
@@ -384,6 +396,7 @@ describe('JobDetailModal lifecycle action wiring', () => {
       }),
     })));
 
+    await clickTab('DETAILS');
     expect(document.body.textContent).toContain('Visit History');
     expect(document.body.textContent).toContain('Onsite now');
     expect(document.body.textContent).toContain('Visit 1');
@@ -421,6 +434,7 @@ describe('JobDetailModal lifecycle action wiring', () => {
       }),
     })));
 
+    await clickTab('DETAILS');
     const summary = document.querySelector('[aria-label="Lifecycle time summary"]');
     expect(summary).not.toBeNull();
     expect(summary?.textContent).toContain('Time Summary');
