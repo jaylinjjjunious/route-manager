@@ -1,11 +1,15 @@
 # Deployment Workflow
 
-## Current Hosting Transition
+## Current Hosting
 
-- Railway remains the currently documented production service until the Render
-  deployment passes its health check and the public application is verified.
-- Render is the replacement Node/Express host. Its Blueprint configuration is
+- Render is the primary Node/Express production host. Its Blueprint configuration is
   stored in `/render.yaml` and deploys the `main` branch automatically.
+- Production URL: `https://route-manager-phtj.onrender.com`.
+- Render service ID: `srv-da7qimgu01pc73bmpo40`.
+- The initial Render deploy of commit `61ee690` was verified Live on 2026-08-26;
+  the public sign-in page loaded and `/api/health` returned `status: ok`.
+- Keep Railway available as a temporary rollback host until signed-in production
+  authentication and protected API calls are verified on Render.
 - Render build command: `npm ci && npm run build`.
 - Render start command: `npm start`.
 - Render health check: `/api/health`.
@@ -22,20 +26,18 @@
 1. Ensure lint and build pass locally (`npm run verify`).
 2. Commit changes to the `main` branch with a descriptive message.
 3. Push to the `github` remote (`main` branch).
-4. Railway Autodeploy detects the push and triggers a build.
-5. Verify the deployment with `railway deployment list`.
-6. Check the health endpoint at `/api/health` on the deployed instance.
-7. If Autodeploy fails, use the fallback: `railway up`.
-
-These steps describe the existing Railway production flow. After Render is
-verified, replace this section with the final Render cutover procedure instead
-of treating both platforms as authoritative production hosts.
+4. Render detects the push and triggers a Blueprint-managed deployment.
+5. Verify that the new Render deploy is marked Live.
+6. Check `https://route-manager-phtj.onrender.com/api/health` and the relevant
+   public application route.
+7. Only call the change live after Render reports the pushed commit and the
+   public checks pass.
 
 ## Autodeploy Details
 
-- Railway watches the `main` branch on the `github` remote.
+- Render watches the `main` branch on the GitHub repository.
 - Every push to main triggers an automatic build and deploy.
-- The build uses nixpacks with Node.js 22.16.
+- The build uses `npm ci && npm run build` with Node.js 22.16.
 - No manual deployment command is needed under normal conditions.
 
 ## Commit Verification
