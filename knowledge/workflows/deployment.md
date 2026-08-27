@@ -1,5 +1,22 @@
 # Deployment Workflow
 
+## Current Hosting Transition
+
+- Railway remains the currently documented production service until the Render
+  deployment passes its health check and the public application is verified.
+- Render is the replacement Node/Express host. Its Blueprint configuration is
+  stored in `/render.yaml` and deploys the `main` branch automatically.
+- Render build command: `npm ci && npm run build`.
+- Render start command: `npm start`.
+- Render health check: `/api/health`.
+- Node.js is pinned to `22.16.0` through `NODE_VERSION`.
+- Secrets marked `sync: false` in `render.yaml` must be entered in the Render
+  dashboard and must never be committed.
+- The free Render filesystem is ephemeral. Proof files, error reports, and
+  Transit usage data written locally are not durable across restarts or
+  spin-downs; P002 remains open until those writes move to durable storage or a
+  paid persistent disk is configured.
+
 ## Production Deployment Steps
 
 1. Ensure lint and build pass locally (`npm run verify`).
@@ -9,6 +26,10 @@
 5. Verify the deployment with `railway deployment list`.
 6. Check the health endpoint at `/api/health` on the deployed instance.
 7. If Autodeploy fails, use the fallback: `railway up`.
+
+These steps describe the existing Railway production flow. After Render is
+verified, replace this section with the final Render cutover procedure instead
+of treating both platforms as authoritative production hosts.
 
 ## Autodeploy Details
 
