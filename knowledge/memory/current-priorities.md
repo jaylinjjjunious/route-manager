@@ -2,6 +2,12 @@
 
 ## High
 
+- Complete the Railway-to-Render hosting transition: sync the Render Blueprint,
+  enter production secrets, verify `/api/health`, authentication, protected API
+  calls, and the signed-in mobile app, then update the deployment documentation
+  and production URL. Do not retire Railway until the Render deployment is
+  verified.
+
 - Add server-side Supabase bearer-token validation to protected Cloudflare
   Worker routes so Worker deployments enforce the same authentication boundary
   as Express; track as P011.
