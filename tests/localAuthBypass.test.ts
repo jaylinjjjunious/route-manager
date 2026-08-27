@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { isLocalAuthBypassAllowed } from "../src/auth/localAuthBypass";
 
 const authMock = vi.hoisted(() => ({
-  localAuthBypassAvailable: true,
-  enableLocalAuthBypass: vi.fn(),
+  workspaceBypassAvailable: true,
+  enableWorkspaceBypass: vi.fn(),
   signIn: vi.fn(async () => ({})),
 }));
 
@@ -38,38 +38,38 @@ describe("isLocalAuthBypassAllowed", () => {
   });
 });
 
-describe("LoginPage local auth bypass control", () => {
+describe("LoginPage workspace bypass control", () => {
   let container: HTMLDivElement;
   let root: Root;
 
   beforeEach(() => {
-    authMock.localAuthBypassAvailable = true;
-    authMock.enableLocalAuthBypass.mockReset();
+    authMock.workspaceBypassAvailable = true;
+    authMock.enableWorkspaceBypass.mockReset();
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
   });
 
-  it("uses the existing shield as the development bypass control", () => {
+  it("uses the existing shield as the workspace bypass control", () => {
     act(() => root.render(React.createElement(LoginPage, { onForgotPassword: vi.fn() })));
 
     const button = container.querySelector<HTMLButtonElement>(
-      'button[aria-label="Enter local development workspace"]',
+      'button[aria-label="Enter workspace without signing in"]',
     );
     expect(button).not.toBeNull();
 
     act(() => button?.click());
-    expect(authMock.enableLocalAuthBypass).toHaveBeenCalledOnce();
+    expect(authMock.enableWorkspaceBypass).toHaveBeenCalledOnce();
 
     act(() => root.unmount());
     container.remove();
   });
 
   it("renders no bypass control when the guard is unavailable", () => {
-    authMock.localAuthBypassAvailable = false;
+    authMock.workspaceBypassAvailable = false;
     act(() => root.render(React.createElement(LoginPage, { onForgotPassword: vi.fn() })));
 
-    expect(container.querySelector('[aria-label="Enter local development workspace"]')).toBeNull();
+    expect(container.querySelector('[aria-label="Enter workspace without signing in"]')).toBeNull();
 
     act(() => root.unmount());
     container.remove();
