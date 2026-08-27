@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: route-manager
+    runtime: node
+    plan: free
+    region: oregon
+    branch: main
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: 22.16.0
+      - key: APP_URL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GOOGLE_MAPS_PLATFORM_KEY
+        sync: false
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: TRANSIT_API_KEY
+        sync: false
+      - key: TRANSIT_API_BASE_URL
+        value: https://external.transitapp.com/v4
+      - key: TRANSIT_NETWORK_IDS
+        value: GET|Bakersfield
+      - key: VITE_TRANSIT_PROVIDER
+        value: transit
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
