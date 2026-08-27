@@ -6,7 +6,9 @@ Route Manager is a mobile-first field-work application for route planning, deliv
 
 - Production branch: `main`
 - GitHub remote: `github` -> `https://github.com/jaylinjjjunious/route-manager.git`
-- Railway project/service/environment: `route-optimizer-app` / `route-optimizer-app` / `production`
+- Primary production host: Render (`route-manager`, Oregon, free instance)
+- Production URL: `https://route-manager-phtj.onrender.com`
+- Render service ID: `srv-da7qimgu01pc73bmpo40`
 - Last committed release: `6a8bba7` (`Document Smart Aisle production verification`)
 - Last verified Railway deployment: `3d47e332-e3c1-4770-8850-cd4e578f9d05` (SUCCESS)
 - Production build endpoint: `https://route-optimizer-app-production.up.railway.app/api/build-info`
@@ -23,7 +25,7 @@ Open verification items are real iPhone Safari/Home Screen PWA evidence for Smar
 - Backend: Express, bundled with esbuild from `server.ts`
 - Authentication: Supabase magic link and email/password
 - Storage: Cloudflare D1 for proofs and Supabase for authentication
-- Primary hosting: Railway; alternate Cloudflare Worker/Vinext path is retained
+- Primary hosting: Render; Railway remains available as a temporary rollback host, and the alternate Cloudflare Worker/Vinext path is retained
 - Main app entry: `src/App.tsx` and `src/main.tsx`
 - Smart Aisle implementation: `src/components/SmartAisleScan.tsx`
 - Smart Aisle verification panel: `src/components/RealDeviceVerification.tsx`
@@ -65,10 +67,10 @@ For a completed application change:
 4. Commit with a descriptive message on `main` unless the change is risky; use a feature branch for risky work.
 5. Push with `git push github main`.
 6. Confirm the remote SHA with `git ls-remote --heads github main`.
-7. Check `railway deployment list` and verify `/api/build-info` plus the relevant public route.
+7. Confirm the Render deploy is Live and verify `/api/health` plus the relevant public route.
 8. Only call the change live after the public domain reports the new commit.
 
-Use `railway up` only when Railway autodeploy is unavailable. Do not use `railway redeploy` for new source changes, and never force-push. Do not commit secrets, private proof images, local databases, upload folders, or generated evidence.
+Render deploys `main` automatically from `render.yaml`. Keep Railway unchanged as a rollback host until the Render deployment has passed signed-in production verification. Never force-push or commit secrets, private proof images, local databases, upload folders, or generated evidence.
 
 ## Resume Instructions
 
