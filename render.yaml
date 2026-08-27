@@ -32,6 +32,8 @@ services:
         value: GET|Bakersfield
       - key: VITE_TRANSIT_PROVIDER
         value: transit
+      - key: VITE_PUBLIC_WORKSPACE_BYPASS
+        value: "true"
       - key: OPENAI_API_KEY
         sync: false
       - key: ELEVENLABS_API_KEY
