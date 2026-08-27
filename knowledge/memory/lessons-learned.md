@@ -28,6 +28,10 @@
 
 - Vite 8 requires Node.js >= 20.19. The project pins to Node 22.16 for Railway compatibility.
 - nixpacks Node version must match build requirements — mismatches cause silent failures.
+- Render should use the same Node 22.16 pin and the repository's existing
+  `npm run build` / `npm start` contract. A successful deploy does not make
+  local filesystem writes durable; free instances lose those files on restart
+  or spin-down.
 - Multipart form parsing needs careful handling. A hand-rolled parser caused issues and was replaced with multer.
 
 ## Application Logic
