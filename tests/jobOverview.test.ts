@@ -96,7 +96,7 @@ describe('buildJobOverview', () => {
 
   it('warns when procedure is assigned but no devices are selected', () => {
     const overview = buildJobOverview(makeJob({
-      procedureAssignment: { procedureId: 'sonic-verifone-device-swap', procedureVersion: '1.0.0', assignmentSource: 'suggested', assignedAt: '2026-08-15T09:00:00.000Z' },
+      procedureAssignment: { procedureId: 'sonic-verifone-device-swap', procedureVersion: '1.0.0', assignmentSource: 'import_suggestion', assignedAt: '2026-08-15T09:00:00.000Z' },
       deviceTypes: [],
     }));
     expect(overview.warnings.map(w => w.label)).toContain('Procedure assigned but no devices selected.');
