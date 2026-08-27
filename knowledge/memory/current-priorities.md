@@ -2,11 +2,11 @@
 
 ## High
 
-- Complete the Railway-to-Render hosting transition: sync the Render Blueprint,
-  enter production secrets, verify `/api/health`, authentication, protected API
-  calls, and the signed-in mobile app, then update the deployment documentation
-  and production URL. Do not retire Railway until the Render deployment is
-  verified.
+- Complete the final signed-in Render verification: the Blueprint is deployed,
+  the public sign-in page loads, and `/api/health` passes at
+  `https://route-manager-phtj.onrender.com`. Verify authentication, protected
+  API calls, and the signed-in mobile app before retiring Railway as the
+  temporary rollback host.
 
 - Add server-side Supabase bearer-token validation to protected Cloudflare
   Worker routes so Worker deployments enforce the same authentication boundary
