@@ -7,8 +7,7 @@ interface LoginPageProps {
 }
 
 export default function LoginPage({ onForgotPassword }: LoginPageProps) {
-  const { signIn, localAuthBypassAvailable, enableLocalAuthBypass } = useAuth();
-  const showLocalAuthBypass = import.meta.env.DEV && localAuthBypassAvailable;
+  const { signIn, workspaceBypassAvailable, enableWorkspaceBypass } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -131,18 +130,24 @@ export default function LoginPage({ onForgotPassword }: LoginPageProps) {
               )}
             </button>
 
-            {showLocalAuthBypass && (
+            {workspaceBypassAvailable && (
               <button
                 type="button"
-                onClick={enableLocalAuthBypass}
+                onClick={enableWorkspaceBypass}
                 disabled={submitting}
-                aria-label="Enter local development workspace"
+                aria-label="Enter workspace without signing in"
                 className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3.5 text-sm font-black uppercase tracking-wide text-amber-200 transition hover:bg-amber-400/15 active:scale-[0.98] disabled:opacity-50"
                 style={{ minHeight: "48px" }}
               >
                 <ShieldCheck size={18} />
-                Enter Local Workspace (Bypass)
+                Enter Workspace
               </button>
+            )}
+
+            {workspaceBypassAvailable && (
+              <p className="text-center text-xs font-semibold leading-5 text-slate-500">
+                Local-only mode. Protected cloud features still require sign-in.
+              </p>
             )}
 
             {/* Forgot Password */}
