@@ -278,4 +278,4 @@ User Input → JobModal → Job State (localStorage) → JobCard UI
 
 ## Last Updated
 
-2026-08-17 (Job Detail tab-based redesign: WORK/PROCEDURE/CLOSEOUT/DETAILS tabs with sticky segmented tab bar; WORK tab focuses on next action and job identity; PROCEDURE tab hosts full ProcedureWorkspace with phase accordion and progressive step disclosure; CLOSEOUT tab isolates closeout gate with blocker jump-to-step; DETAILS tab holds schedule, pay, time summary, visit history, and admin controls; sticky bottom action bar with primary lifecycle action and Continue Procedure; typography increased to 12px minimum for all meaningful content; Quick Mode hides verbose content and satisfied requirements; Guided Mode expands current and blocking steps only; all existing lifecycle, procedure, proof, inventory, and closeout behavior preserved)
+2026-09-09 (Date-only scheduling math and display are now host-timezone independent; Los Angeles timezone conversion is reserved for real timestamps.)

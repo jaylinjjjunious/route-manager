@@ -45,9 +45,9 @@ describe('timezone-stable local dates', () => {
 
   it('never round-trips through new Date("YYYY-MM-DD") UTC parsing', () => {
     const midnightUtc = new Date('2026-07-30T00:00:00.000Z');
-    const localNoonMath = new Date(2026, 6, 30, 12, 0, 0);
+    const losAngelesNoon = new Date('2026-07-30T19:00:00.000Z');
     expect(toLocalDateString(midnightUtc)).toBe('2026-07-29');
-    expect(toLocalDateString(localNoonMath)).toBe('2026-07-30');
+    expect(toLocalDateString(losAngelesNoon)).toBe('2026-07-30');
   });
 
   it('todayString returns a YYYY-MM-DD string', () => {

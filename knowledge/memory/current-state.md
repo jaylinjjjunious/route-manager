@@ -45,7 +45,8 @@ Implemented on top of the existing job system:
 - **Debug Center:** Diagnostics and system status.
 - **Supabase authentication:** Magic link and email/password login.
 - **Self-hosted error reporting:** Privacy-safe client reporter (`src/services/errorReporter.ts`) captures window errors/unhandled rejections, batches them, and flushes to authenticated `POST /api/errors`; reports land in `.local-error-reports/reports.json`. Opt-out toggle + "Send Test Error" live in Debug Center. Bounded/sanitized; no third-party service.
-- **Railway deployment:** Autodeploy from main branch.
+- **Render deployment:** Primary Node/Express production host.
+- **Railway deployment:** Temporary rollback host; its Tailwind PostCSS build dependency was repaired on 2026-09-09.
 - **Cloudflare Worker API variant:** Alternative backend deployment.
 - **Checkpoint and release scripts:** `scripts/checkpoint.cjs`, `scripts/release.cjs`.
 - **Knowledge system:** This documentation directory.
@@ -63,10 +64,10 @@ Implemented on top of the existing job system:
 - Backend: Express.js server bundled with esbuild.
 - Alternative backend: Cloudflare Worker.
 - Database: Cloudflare D1 (for proofs) + Supabase (for auth).
-- Hosting: Railway (production) + Cloudflare Workers (alternative).
+- Hosting: Render (primary) + Railway (temporary rollback) + Cloudflare Workers (alternative).
 - CI/CD: GitHub Actions (Apple iOS Wrap).
 - Latest checkpoint: `checkpoint-2026-07-21-remove-road-card-slab` (SHA cef52e5).
 
 ---
 
-**Last Updated:** 2026-08-17 (Test suite: 449/449 passing; Job Detail tab redesign: WORK/PROCEDURE/CLOSEOUT/DETAILS tabs, phase accordion, progressive step disclosure, sticky action bar, typography increase to 12px minimum)
+**Last Updated:** 2026-09-09 (Railway build dependency repaired; date-only scheduling made host-timezone independent; 449/449 tests passing)

@@ -7,8 +7,8 @@
  * All scheduling is based on a local calendar day (YYYY-MM-DD) in
  * America/Los_Angeles. Dates are never round-tripped through
  * `new Date('YYYY-MM-DD')` (that parses as UTC and shifts the local day);
- * instead a local-noon `Date` is used for math and `Intl.DateTimeFormat`
- * produces the local day string.
+ * instead UTC calendar math is used for date-only values and
+ * `Intl.DateTimeFormat` produces local days from real instants.
  */
 
 import { Job } from '../../types';
@@ -60,19 +60,20 @@ export function isValidScheduledDate(value: unknown): value is string {
 /** Adds `days` (positive or negative) to a YYYY-MM-DD local date string. */
 export function addDays(dateStr: string, days: number): string {
   const [year, month, day] = dateStr.split('-').map(Number);
-  const date = new Date(year, month - 1, day, 12, 0, 0);
-  date.setDate(date.getDate() + days);
-  return toLocalDateString(date);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
 }
 
 /** Formats a YYYY-MM-DD string for display, e.g. "Thu, Jul 30". */
 export function formatScheduledDate(dateStr: string): string {
   const [year, month, day] = dateStr.split('-').map(Number);
   return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'UTC',
     weekday: 'short',
     month: 'short',
     day: 'numeric',
-  }).format(new Date(year, month - 1, day, 12, 0, 0));
+  }).format(new Date(Date.UTC(year, month - 1, day)));
 }
 
 export function isJobCompletedStatus(job: Pick<Job, 'status' | 'isCompleted'>): boolean {

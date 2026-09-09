@@ -33,6 +33,8 @@
   local filesystem writes durable; free instances lose those files on restart
   or spin-down.
 - Multipart form parsing needs careful handling. A hand-rolled parser caused issues and was replaced with multer.
+- Packages required by the production build belong in `dependencies` when a host may omit `devDependencies`; otherwise local builds can pass while Railway fails.
+- Date-only `YYYY-MM-DD` scheduling math must use UTC calendar fields. Constructing local `Date` objects makes results depend on the host timezone even when display logic targets America/Los_Angeles.
 
 ## Application Logic
 
@@ -87,4 +89,4 @@
 
 ---
 
-**Last Updated:** 2026-08-16 (Data-driven customer procedure lesson — Sonic Verifone Device Swap)
+**Last Updated:** 2026-09-09 (Production build dependencies and timezone-independent date-only math)

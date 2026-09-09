@@ -27,8 +27,9 @@
 | R007 | Transit trip plans silently used the first/last stops of an entire route as the rider's boarding/exit stops | Fixed by using plan offsets/schedule items when present and exposing exact/inferred/unavailable confidence with honest UI warnings |
 | R008 | No automated tests for camera/barcode/upload flows (P005) | Added `tests/cameraLifecycle.test.ts`, `tests/showerProofUpload.test.ts`, and `tests/errorReporter.test.ts`; transit provider test now mocks Supabase so it runs without env vars |
 | R009 | No error monitoring or alerting (P006) | Self-hosted privacy-safe client reporter (`src/services/errorReporter.ts`) + authenticated `POST /api/errors` (`.local-error-reports/`) + Debug Center toggle/test button |
+| R010 | Date-only scheduling shifted one day backward when tests or server tooling ran outside the Los Angeles system timezone | `addDays` and `formatScheduledDate` now use UTC calendar math for `YYYY-MM-DD` values; timezone conversion remains limited to real instants |
+| R011 | Railway production build could not load `@tailwindcss/postcss` when development dependencies were omitted | Moved the required build plugin into production dependencies |
 
 ---
 
-**Last Updated:** 2026-08-03 (Worker authentication gap)
-
+**Last Updated:** 2026-09-09 (Railway build dependency and timezone-independent scheduling fixes)
