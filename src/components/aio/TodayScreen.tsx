@@ -6,19 +6,21 @@ import {
   Check,
   CheckCircle2,
   ChevronRight,
+  CloudOff,
   CloudSun,
   Hourglass,
   MapPin,
+  Moon,
   Navigation,
   Plus,
   RefreshCw,
   Route as RouteIcon,
+  Sun,
   Volume2,
   VolumeX,
   Wind,
   Zap,
 } from "lucide-react";
-import { WeatherArtworkBadge } from "./WeatherArtworkBadge";
 import type { Job, Coordinates } from "../../types";
 import type { ScheduledDaySummary } from "../../features/jobs/jobSchedule";
 import type { UseTransitTripResult } from "../../hooks/useTransitTrip";
@@ -42,6 +44,7 @@ import {
 } from "./roadReadiness";
 import { useLiveWeather } from "../../services/weather/useLiveWeather";
 import { formatTempF } from "../../services/weather/currentWeather";
+import { getWeatherAltText } from "../../services/weather/weatherSelector";
 import { PreviewGuideCompletionRow } from "./PreviewGuideCompletionRow";
 import { StoreLogo } from "./StoreLogo";
 
@@ -165,6 +168,15 @@ export default function TodayScreen(props: TodayScreenProps) {
     longitude: props.startCoord.lng,
   });
   const liveWeather = liveWeatherState.status === "ready" ? liveWeatherState.weather : null;
+  const [weatherImageError, setWeatherImageError] = useState(false);
+  const weatherArtworkUrl = liveWeather?.artworkUrl ?? null;
+  const weatherHasArtwork = Boolean(weatherArtworkUrl && !weatherImageError);
+  const WeatherGlyph = liveWeather ? (liveWeather.isDay ? Sun : Moon) : liveWeatherState.status === "loading" ? Sun : CloudOff;
+  const weatherTileClass = liveWeather
+    ? liveWeather.isDay
+      ? "bg-amber-300/20 text-amber-300"
+      : "bg-indigo-300/20 text-indigo-300"
+    : "bg-white/10 text-white/45";
   const weatherTemp = liveWeather ? formatTempF(liveWeather.temperatureC) : liveWeatherState.status === "loading" ? "…" : "—";
   const weatherCondition = liveWeather
     ? liveWeather.condition
@@ -172,6 +184,13 @@ export default function TodayScreen(props: TodayScreenProps) {
       ? "Loading weather"
       : "Live weather unavailable";
   const weatherFeels = liveWeather ? `Feels like ${formatTempF(liveWeather.feelsLikeC)}` : null;
+  const weatherArtworkAlt = liveWeather?.semanticState
+    ? getWeatherAltText(liveWeather.semanticState)
+    : "Weather condition icon";
+
+  useEffect(() => {
+    setWeatherImageError(false);
+  }, [weatherArtworkUrl]);
 
   useEffect(() => {
     setConfirmLightHeadwind(false);
@@ -210,10 +229,22 @@ export default function TodayScreen(props: TodayScreenProps) {
 
           <div className="relative flex flex-col items-stretch justify-between gap-2 min-[381px]:flex-row min-[381px]:flex-wrap min-[381px]:items-start">
             <div className="flex shrink-0 items-center">
-              <WeatherArtworkBadge
-                status={liveWeatherState.status}
-                weather={liveWeather}
-              />
+              <span
+                className={`flex h-12 w-12 shrink-0 items-center justify-center transition-colors ${weatherHasArtwork ? "bg-transparent" : `rounded-full ${weatherTileClass}`}`}
+                aria-hidden={weatherHasArtwork ? undefined : "true"}
+              >
+                {weatherHasArtwork ? (
+                  <img
+                    src={weatherArtworkUrl!}
+                    alt={weatherArtworkAlt}
+                    className="h-full w-full object-contain select-none pointer-events-none drop-shadow-[0_2px_6px_rgba(0,0,0,0.35)]"
+                    onError={() => setWeatherImageError(true)}
+                    loading="eager"
+                  />
+                ) : (
+                  <WeatherGlyph size={24} strokeWidth={2.2} />
+                )}
+              </span>
               <p className="ml-1 whitespace-nowrap text-[26px] font-black leading-none tracking-[-0.02em] text-white">
                 {weatherTemp}
               </p>

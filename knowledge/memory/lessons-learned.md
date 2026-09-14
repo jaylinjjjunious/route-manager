@@ -90,7 +90,7 @@
 ## External API Integration (Weather & Dynamic Artwork)
 
 - Open-Meteo provides keyless, rate-limit-friendly current weather (`temperature_2m`, `apparent_temperature`, `weather_code`, `is_day`, `precipitation`, `wind_speed_10m`) and daily solar events (`sunrise`, `sunset`). In-memory caching (5-minute TTL) prevents redundant network requests during tab switching.
-- Separating weather normalization (`selectSemanticWeatherState`), asset resolution (`resolveWeatherArtwork`), and UI display (`WeatherArtworkBadge`) ensures deterministic testability and prevents UI rendering bugs from breaking weather logic.
+- Separating weather normalization (`selectSemanticWeatherState`) and asset resolution (`resolveWeatherArtwork`) keeps the feature deterministic while letting the existing TodayScreen weather slot preserve its approved layout.
 - Graceful UI degradation via `onError` on artwork images ensures the application never crashes or breaks when 3D artwork files are missing or loading, smoothly preserving the existing Lucide vector glyphs.
 
 ---

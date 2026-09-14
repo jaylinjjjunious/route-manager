@@ -1,7 +1,7 @@
 # Dynamic Weather Artwork
 
 **Last Updated:** 2026-09-14
-**Related Source Files:** `src/services/weather/*`, `src/components/aio/WeatherArtworkBadge.tsx`, `src/components/aio/TodayScreen.tsx`
+**Related Source Files:** `src/services/weather/*`, `src/components/aio/TodayScreen.tsx`
 
 ---
 
@@ -24,7 +24,7 @@ Semantic artwork state (21 states)
          ↓
 Asset registry resolution (`weatherArtwork.ts`)
          ↓
-UI component (`WeatherArtworkBadge.tsx` on TodayScreen first card)
+Existing TodayScreen weather slot (`TodayScreen.tsx` first card)
 ```
 
 ### 2.1 Supported Semantic Weather States
@@ -58,7 +58,7 @@ UI component (`WeatherArtworkBadge.tsx` on TodayScreen first card)
 ## 3. Failure Handling & Fallback Behavior
 
 - **No crashes or broken layouts**: If geolocation fails, network fails, or the weather code is unrecognized, the badge defaults safely to a semantic `fallback`.
-- **Image error recovery**: If the designated `.png` file is not present in `public/weather/` or fails to download, the `WeatherArtworkBadge` triggers `onError` and immediately renders a polished Lucide glyph (`Sun`, `Moon`, or `CloudOff`) inside the exact same container dimensions.
+- **Image error recovery**: If the designated `.png` file is not present in `public/weather/` or fails to download, the existing TodayScreen weather slot triggers `onError` and immediately renders the original polished Lucide glyph (`Sun`, `Moon`, or `CloudOff`) inside the same container dimensions.
 - **Aspect ratio protection**: The artwork uses `object-contain` to preserve realistic 3D proportions without stretching.
 
 ---

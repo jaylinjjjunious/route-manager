@@ -68,7 +68,6 @@
 | `AioButton` | Primary/secondary/ghost button, 48px min height |
 | `CompactJobRow` | Store name + street/type + badge + pay + chevron; tappable to open job |
 | `WeekDayIndicator` | Strip day cell (weekday, date, count) with today/selected states |
-| `WeatherArtworkBadge` | 48x48 dimensional 3D weather artwork badge with graceful fallback to Lucide glyphs on error/loading |
 | `BottomTabBar` | Floating Today/Jobs/More bottom bar with active pill indicator and jobs-count badge |
 
 ### AIØ Job Metadata
