@@ -66,6 +66,8 @@ describe("WeatherArtworkBadge UI component", () => {
     expect(img).toBeTruthy();
     expect(img?.getAttribute("src")).toBe("/weather/sunny.png");
     expect(img?.getAttribute("alt")).toBe("Realistic 3D sunny weather artwork");
+    expect(img?.parentElement?.className).toContain("bg-transparent");
+    expect(img?.parentElement?.className).not.toContain("bg-amber-300/20");
     expect(container.querySelector("svg")).toBeNull();
   });
 

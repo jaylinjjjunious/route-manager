@@ -22,18 +22,11 @@ export function WeatherArtworkBadge({
     setImageError(false);
   }, [weather?.artworkUrl]);
 
-  const isDay = weather ? weather.isDay : true;
   const FallbackGlyph = weather
     ? (weather.isDay ? Sun : Moon)
     : status === "loading"
       ? Sun
       : CloudOff;
-
-  const weatherTileClass = weather
-    ? isDay
-      ? "bg-amber-300/20 text-amber-300"
-      : "bg-indigo-300/20 text-indigo-300"
-    : "bg-white/10 text-white/45";
 
   const altText = weather?.semanticState
     ? getWeatherAltText(weather.semanticState)
@@ -42,17 +35,22 @@ export function WeatherArtworkBadge({
       : "Weather condition";
 
   const hasArtwork = Boolean(weather?.artworkUrl && !imageError);
+  const fallbackTileClass = weather
+    ? weather.isDay
+      ? "rounded-full bg-amber-300/20 text-amber-300"
+      : "rounded-full bg-indigo-300/20 text-indigo-300"
+    : "rounded-full bg-white/10 text-white/45";
 
   return (
     <span
-      className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-colors ${weatherTileClass} ${className}`}
+      className={`relative flex h-12 w-12 shrink-0 items-center justify-center transition-colors ${hasArtwork ? "bg-transparent" : fallbackTileClass} ${className}`}
       aria-label={altText}
     >
       {hasArtwork ? (
         <img
           src={weather!.artworkUrl!}
           alt={altText}
-          className="h-full w-full object-contain p-1 select-none pointer-events-none drop-shadow-[0_2px_6px_rgba(0,0,0,0.35)]"
+          className="h-full w-full object-contain select-none pointer-events-none drop-shadow-[0_2px_6px_rgba(0,0,0,0.35)]"
           onError={() => setImageError(true)}
           loading="eager"
         />
