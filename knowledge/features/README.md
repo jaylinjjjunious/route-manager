@@ -14,6 +14,7 @@ Index of feature documentation for the All in One 667 application.
 | [Proof Vault](./proof-vault.md) | Per-job proof attachment system (photos, screenshots, receipts) |
 | [Voice System](./voice-system.md) | Text-to-speech with Gemini/OpenAI/ElevenLabs providers |
 | [Shower Gate](./shower-gate.md) | Mandatory shower verification before accessing protected tabs |
+| [Dynamic Weather Artwork](./weather-artwork.md) | Dimensional 3D weather artwork on TodayScreen first card driven by real weather data |
 
 ## App Overview
 

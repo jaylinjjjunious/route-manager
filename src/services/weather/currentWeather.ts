@@ -1,12 +1,13 @@
 /**
  * Live current-weather lookup for the Road Readiness Panel.
  *
- * Uses the free, no-key Open-Meteo API for current conditions. Data is
- * display-only: temperature, feels-like, condition label, and a day/night
- * aware icon key. It never influences Road Readiness status or Ride Mode
- * eligibility (that logic lives in roadReadiness.ts and uses the manual wind
- * setting).
+ * Uses the free, no-key Open-Meteo API for current conditions.
+ * Normalizes conditions into semantic states and resolves 3D artwork assets.
  */
+
+import { selectSemanticWeatherState } from "./weatherSelector";
+import { resolveWeatherArtwork } from "./weatherArtwork";
+import type { SemanticWeatherState } from "./weatherTypes";
 
 export type WeatherIconKey =
   | "sun"
@@ -27,9 +28,30 @@ export interface CurrentWeather {
   isDay: boolean;
   condition: string;
   icon: WeatherIconKey;
+  precipitationMm?: number;
+  windSpeedKmh?: number;
+  sunriseIso?: string;
+  sunsetIso?: string;
+  semanticState: SemanticWeatherState;
+  artworkUrl: string | null;
 }
 
 const OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast";
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+interface CachedEntry {
+  timestamp: number;
+  data: CurrentWeather;
+}
+
+const weatherCache = new Map<string, CachedEntry>();
+
+/**
+ * Clears the in-memory weather cache (primarily for tests).
+ */
+export function clearWeatherCache(): void {
+  weatherCache.clear();
+}
 
 export function toFahrenheit(celsius: number): number {
   return Math.round((celsius * 9) / 5 + 32);
@@ -60,21 +82,39 @@ export function mapWeatherCode(code: number, isDay: boolean): { condition: strin
 }
 
 interface OpenMeteoCurrent {
+  time?: string;
   temperature_2m: number;
   apparent_temperature: number;
   weather_code: number;
   is_day: number;
+  precipitation?: number;
+  wind_speed_10m?: number;
+}
+
+interface OpenMeteoDaily {
+  sunrise?: string[];
+  sunset?: string[];
 }
 
 interface OpenMeteoResponse {
   current?: OpenMeteoCurrent;
+  daily?: OpenMeteoDaily;
 }
 
 export async function fetchCurrentWeather(latitude: number, longitude: number, signal?: AbortSignal): Promise<CurrentWeather> {
+  const cacheKey = `${latitude.toFixed(3)},${longitude.toFixed(3)}`;
+  const now = Date.now();
+  const cached = weatherCache.get(cacheKey);
+
+  if (cached && now - cached.timestamp < CACHE_TTL_MS) {
+    return cached.data;
+  }
+
   const params = new URLSearchParams({
     latitude: String(latitude),
     longitude: String(longitude),
-    current: "temperature_2m,apparent_temperature,weather_code,is_day",
+    current: "temperature_2m,apparent_temperature,weather_code,is_day,precipitation,wind_speed_10m",
+    daily: "sunrise,sunset",
     temperature_unit: "celsius",
     timezone: "auto",
     forecast_days: "1",
@@ -90,12 +130,43 @@ export async function fetchCurrentWeather(latitude: number, longitude: number, s
   const current = json.current;
   const isDay = current.is_day === 1;
   const { condition, icon } = mapWeatherCode(current.weather_code, isDay);
-  return {
+
+  const precipitationMm = typeof current.precipitation === "number" ? current.precipitation : undefined;
+  const windSpeedKmh = typeof current.wind_speed_10m === "number" ? current.wind_speed_10m : undefined;
+  const sunriseIso = json.daily?.sunrise?.[0];
+  const sunsetIso = json.daily?.sunset?.[0];
+
+  const semanticState = selectSemanticWeatherState({
+    weatherCode: current.weather_code,
+    isDay,
+    temperatureC: current.temperature_2m,
+    feelsLikeC: current.apparent_temperature,
+    precipitationMm,
+    windSpeedKmh,
+    condition,
+    sunriseIso,
+    sunsetIso,
+    currentTimeIso: current.time,
+  });
+
+  const artworkUrl = resolveWeatherArtwork(semanticState);
+
+  const data: CurrentWeather = {
     temperatureC: current.temperature_2m,
     feelsLikeC: current.apparent_temperature,
     weatherCode: current.weather_code,
     isDay,
     condition,
     icon,
+    precipitationMm,
+    windSpeedKmh,
+    sunriseIso,
+    sunsetIso,
+    semanticState,
+    artworkUrl,
   };
+
+  weatherCache.set(cacheKey, { timestamp: now, data });
+
+  return data;
 }

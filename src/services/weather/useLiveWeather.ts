@@ -10,6 +10,8 @@
  * API, an unavailable geolocation, or any offline/request failure silently
  * falls back to the supplied hub coordinates (or the unavailable state) so the
  * panel stays balanced and never shows fabricated values.
+ *
+ * Refreshes automatically every 15 minutes while mounted without excessive requests.
  */
 
 import { useEffect, useState } from "react";
@@ -26,6 +28,8 @@ export interface UseLiveWeatherResult {
   status: LiveWeatherStatus;
   weather: CurrentWeather | null;
 }
+
+const REFRESH_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 
 export async function resolveLocation(
   fallback: LiveWeatherCoordinates,
@@ -57,9 +61,9 @@ export function useLiveWeather(fallback: LiveWeatherCoordinates): UseLiveWeather
 
   useEffect(() => {
     let cancelled = false;
-    const controller = new AbortController();
+    let controller = new AbortController();
 
-    (async () => {
+    const loadWeather = async () => {
       const coords = await resolveLocation(fallback);
       if (cancelled) return;
       try {
@@ -72,11 +76,20 @@ export function useLiveWeather(fallback: LiveWeatherCoordinates): UseLiveWeather
         setWeather(null);
         setStatus("unavailable");
       }
-    })();
+    };
+
+    void loadWeather();
+
+    const intervalId = setInterval(() => {
+      controller.abort();
+      controller = new AbortController();
+      void loadWeather();
+    }, REFRESH_INTERVAL_MS);
 
     return () => {
       cancelled = true;
       controller.abort();
+      clearInterval(intervalId);
     };
   }, [fallback.latitude, fallback.longitude]);
 

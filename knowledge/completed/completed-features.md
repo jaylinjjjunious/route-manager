@@ -58,6 +58,12 @@
 ## Documentation
 - Knowledge system (this directory).
 
+## Dynamic Weather Artwork
+- Today screen first-card weather artwork driven by real Open-Meteo current weather.
+- Semantic selector maps real condition code, temperature/feels-like, precipitation, wind, day/night, and sunrise/sunset data into supported artwork states with no unsupported random states.
+- Transparent 3D artwork assets live in `public/weather/*.png`; missing or failed assets fall back to the original Lucide weather glyph behavior.
+- Weather lookup includes a 5-minute in-memory cache and a 15-minute mounted refresh interval.
+
 ## Smart Aisle Scan
 - Camera-guided retail aisle photography system.
 - Full capture workflow: setup, full-screen camera with alignment overlay, animated start-photo capture into a numbered top-left proof tray, hold-for-burst section capture while moving across the aisle, release-to-pause burst completion, separate Reached the End action, ending capture, immediate canvas panorama stitching, stitched review, and stitched-photo submission.
@@ -95,7 +101,7 @@
 
 ---
 
-**Last Updated:** 2026-08-03 (error-reporting)
+**Last Updated:** 2026-09-14 (dynamic weather artwork)
 
 ## 2026-08-03
 

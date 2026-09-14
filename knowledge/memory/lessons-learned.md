@@ -87,6 +87,12 @@
 - Any service test that imports a module pulling in `src/lib/supabase.ts` must mock it: that module throws at import time when `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` are missing, so the transit provider-selection test needed a hoisted supabase mock to run without env vars.
 - A client error reporter must not import modules that can throw at module scope in a "missing config" startup path; init it only after Supabase config is validated (inside the existing try/catch in `main.tsx`).
 
+## External API Integration (Weather & Dynamic Artwork)
+
+- Open-Meteo provides keyless, rate-limit-friendly current weather (`temperature_2m`, `apparent_temperature`, `weather_code`, `is_day`, `precipitation`, `wind_speed_10m`) and daily solar events (`sunrise`, `sunset`). In-memory caching (5-minute TTL) prevents redundant network requests during tab switching.
+- Separating weather normalization (`selectSemanticWeatherState`), asset resolution (`resolveWeatherArtwork`), and UI display (`WeatherArtworkBadge`) ensures deterministic testability and prevents UI rendering bugs from breaking weather logic.
+- Graceful UI degradation via `onError` on artwork images ensures the application never crashes or breaks when 3D artwork files are missing or loading, smoothly preserving the existing Lucide vector glyphs.
+
 ---
 
-**Last Updated:** 2026-09-09 (Production build dependencies and timezone-independent date-only math)
+**Last Updated:** 2026-09-14 (Dynamic weather artwork system and lessons learned)

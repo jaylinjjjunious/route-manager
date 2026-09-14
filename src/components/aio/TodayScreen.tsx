@@ -6,21 +6,19 @@ import {
   Check,
   CheckCircle2,
   ChevronRight,
-  CloudOff,
   CloudSun,
   Hourglass,
   MapPin,
-  Moon,
   Navigation,
   Plus,
   RefreshCw,
   Route as RouteIcon,
-  Sun,
   Volume2,
   VolumeX,
   Wind,
   Zap,
 } from "lucide-react";
+import { WeatherArtworkBadge } from "./WeatherArtworkBadge";
 import type { Job, Coordinates } from "../../types";
 import type { ScheduledDaySummary } from "../../features/jobs/jobSchedule";
 import type { UseTransitTripResult } from "../../hooks/useTransitTrip";
@@ -167,12 +165,6 @@ export default function TodayScreen(props: TodayScreenProps) {
     longitude: props.startCoord.lng,
   });
   const liveWeather = liveWeatherState.status === "ready" ? liveWeatherState.weather : null;
-  const WeatherGlyph = liveWeather ? (liveWeather.isDay ? Sun : Moon) : liveWeatherState.status === "loading" ? Sun : CloudOff;
-  const weatherTileClass = liveWeather
-    ? liveWeather.isDay
-      ? "bg-amber-300/20 text-amber-300"
-      : "bg-indigo-300/20 text-indigo-300"
-    : "bg-white/10 text-white/45";
   const weatherTemp = liveWeather ? formatTempF(liveWeather.temperatureC) : liveWeatherState.status === "loading" ? "…" : "—";
   const weatherCondition = liveWeather
     ? liveWeather.condition
@@ -218,12 +210,10 @@ export default function TodayScreen(props: TodayScreenProps) {
 
           <div className="relative flex flex-col items-stretch justify-between gap-2 min-[381px]:flex-row min-[381px]:flex-wrap min-[381px]:items-start">
             <div className="flex shrink-0 items-center">
-              <span
-                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-colors ${weatherTileClass}`}
-                aria-hidden="true"
-              >
-                <WeatherGlyph size={24} strokeWidth={2.2} />
-              </span>
+              <WeatherArtworkBadge
+                status={liveWeatherState.status}
+                weather={liveWeather}
+              />
               <p className="ml-1 whitespace-nowrap text-[26px] font-black leading-none tracking-[-0.02em] text-white">
                 {weatherTemp}
               </p>
