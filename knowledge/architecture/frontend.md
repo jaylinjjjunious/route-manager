@@ -44,7 +44,7 @@ Three AIØ primary tabs plus five legacy feature tabs (reachable from More), def
 
 | Tab | ID | Component | Protected | Purpose |
 |-----|----|-----------|-----------|---------|
-| Today | `dashboard` | `TodayScreen` | No | Authoritative route-planning screen: readiness hero, Next Best Job / Current Job, Today's Other Jobs, Travel Plan, This Week strip + expanded day panel |
+| Today | `dashboard` | `TodayScreen` | No | Simplified route-planning screen: live weather artwork with This Week calendar, Next Best Jobs / Current Job, and Today's Other Jobs |
 | Jobs | `jobs` | `JobsScreen` | No | Schedule list: Today, later days, Route B standby, overdue/unscheduled review, Optimize/Add |
 | More | `more` | `MoreScreen` | No | Hub for legacy tabs and actions (Proof Vault, Process Serve, Import, Debug Center, Sign Out) |
 | Inventory | `inventory` | legacy | No | Store inventory custody & domains |
@@ -78,7 +78,7 @@ Today's route pool, the weekly strip, and the expanded day panel all derive from
 
 ### Rendering Patterns
 
-- **Today screen (dashboard)**: The AIØ Today screen is the authoritative route interface; the standalone Route tab was retired and `/route`, `/routes`, and `#route` redirect to Dashboard. Job rows open compact per-job detail panels while action buttons keep their own behavior.
+- **Today screen (dashboard)**: The AIØ Today screen is the simplified authoritative route interface; the standalone Route tab was retired and `/route`, `/routes`, and `#route` redirect to Dashboard. The top weather artwork panel now hosts the existing This Week calendar and expanded day panel. Job rows open compact per-job detail panels while action buttons keep their own behavior.
 - **Inventory domain selection**: The dedicated Inventory page resolves jobs without `inventoryDomain` to merchandising / secret-shopping and exposes explicit contract-parts jobs only when marked `inventoryDomain: 'contract_parts'`.
 - **Conditional rendering** based on `currentTab` and `showerGateUnlocked`
 - **Protected tab overlay**: Rendered before actual tab content when `!showerGateUnlocked`
@@ -141,4 +141,4 @@ Targets modern mobile browsers (iOS Safari, Android Chrome) and desktop (Chrome,
 
 ## Last Updated
 
-2026-08-08 — Proof Vault extraction Step 2 moved proof state, persistence, mutations, derivations, and completed-job backfill into `src/features/proofVault/useProofVault.ts`; `App.tsx` keeps cross-feature orchestration/composition.
+2026-09-15 — Today dashboard simplified: Travel Plan and inline Preview/Ride Mode readiness content were removed from `TodayScreen`; the existing This Week calendar now lives inside the weather artwork panel above Next Best Jobs and Today's Other Jobs.

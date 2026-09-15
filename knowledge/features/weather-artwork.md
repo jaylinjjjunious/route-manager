@@ -1,13 +1,13 @@
 # Dynamic Weather Artwork
 
-**Last Updated:** 2026-09-14
+**Last Updated:** 2026-09-15
 **Related Source Files:** `src/services/weather/*`, `src/components/aio/TodayScreen.tsx`
 
 ---
 
 ## 1. Purpose & Overview
 
-The first card in the AIØ Today screen (Readiness + Weather card) displays dimensional, realistic 3D weather artwork matching the user's real live current weather conditions. The feature is completely driven by live meteorological data from Open-Meteo and safely resolves to polished visual icon fallbacks if artwork assets are missing, loading, or unresolvable.
+The first card in the AIØ Today screen (Weather + This Week card) displays dimensional, realistic 3D weather artwork matching the user's real live current weather conditions. The feature is completely driven by live meteorological data from Open-Meteo and safely resolves to polished visual icon fallbacks if artwork assets are missing, loading, or unresolvable.
 
 ---
 
@@ -24,7 +24,7 @@ Semantic artwork state (21 states)
          ↓
 Asset registry resolution (`weatherArtwork.ts`)
          ↓
-Existing TodayScreen weather slot (`TodayScreen.tsx` first card)
+Existing TodayScreen weather slot (`TodayScreen.tsx` first card, above the This Week calendar)
 ```
 
 ### 2.1 Supported Semantic Weather States

@@ -1058,7 +1058,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                 onToggleTheme={handleToggleTheme}
                 onOpenMore={() => handleTabChange('more')}
                 jobsTodayCount={jobs.todayRouteJobs.length}
-                weatherWind={weatherWind}
                 currentJob={currentJob}
                 hasCurrentJob={hasCurrentJob}
                 nextJob={nextJob}
@@ -1073,16 +1072,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                 onBlockJobAccess={() => blockJobAccess('navigation')}
                 onToggleJobProgress={handleToggleJobProgress}
                 onOpenJob={(job) => setRouteDetailJobId(job.id)}
-                onStartRideMode={handleStartRideMode}
-                actionableJob={nextRouteAJob}
-                onOpenPreviewGuide={(job) => setPreviewGuideJobId(job.id)}
-                transit={transit}
-                transitOrigin={transitOrigin}
-                onSpeakRoute={handleSpeakRoute}
-                isSpeaking={isSpeaking}
-                onOptimizeRoute={handleOptimizeRouteSequence}
                 onAddJob={handleOpenAddModal}
-                previewGuideReadiness={previewGuideReadiness}
                 weeklyDays={jobs.weeklyDays}
                 today={today}
                 selectedStripDate={jobs.selectedStripDate}
@@ -1096,9 +1086,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                 onMoveToDay={jobs.setMoveToDayJob}
                 onPlanThisDay={handleOptimizeRouteSequence}
                 onMoveExisting={() => handleTabChange('jobs')}
-                batteryPct={batteryTrackerCurrent}
-                batteryMilesLeft={estimatedMilesRemaining}
-                batteryRisk={batteryRisk}
                 earningsAmount={earningsTileAmount}
                 earningsTitle={earningsTileTitle}
                 earningsFooter={earningsTileFooter}

@@ -12,9 +12,9 @@
   Worker routes so Worker deployments enforce the same authentication boundary
   as Express; track as P011.
 
-- Begin the next named Today-screen panel review after the Road Readiness Panel. The Road Readiness Panel is approved in production for the current phase; its route-aware battery readiness feature is explicitly deferred to a later, separately scoped pass.
+- Continue named Today-screen panel reviews against the simplified dashboard stack. The removed inline Preview/Ride Mode readiness panel and Travel Plan panel should not be reintroduced unless explicitly requested.
 
-- Verify the AIØ three-tab redesign (Today/Jobs/More) in the live signed-in app on a real device: Road Readiness mandatory Preview Guide states, live-weather slot (day sun / night moon, temperature, condition, feels-like, and the offline/denied fallback), direct Review Preview Guide action, light-headwind confirmation, strong-headwind blocking, Next Best Job actions, Travel Plan, weekly strip + expanded day panel, Jobs schedule list, More hub navigation, and the jobs-count badge. Headless layout verification (320/390/430 px, dark/light, no overflow) is done via `scripts/screenshot-today.mjs`; the signed-in production pass remains.
+- Verify the AIØ three-tab redesign (Today/Jobs/More) in the live signed-in app on a real device: simplified Today stack (weather artwork, This Week calendar, Next Best Jobs, Today's Other Jobs), live-weather slot (day sun / night moon, temperature, condition, feels-like, and the offline/denied fallback), Next Best Job actions, weekly strip + expanded day panel, Jobs schedule list, More hub navigation, and the jobs-count badge. Headless layout verification (320/390/430 px, dark/light, no overflow) is done via `scripts/screenshot-today.mjs`; the signed-in production pass remains.
 
 - Complete real iPhone Safari/Home Screen PWA verification of Preview Guide using a real slow-scroll recording, including codec decode, seek order, cancellation/recovery, storage pressure, camera preparation photo, explicit trip handoff, and arrival persistence.
 
@@ -41,8 +41,8 @@
 
 ## Low
 
-- Implement the deferred route-aware battery readiness feature for the Road Readiness Panel. It should evaluate travel, navigation use, job duration, next-stop or charging needs, and a safety buffer before affecting readiness or Ride Mode eligibility.
+- If the Road Readiness concept returns, scope it as a separately requested feature rather than adding it back to the simplified main dashboard by default.
 
 ---
 
-**Last Updated:** 2026-08-15 (Generic Procedure workspace follow-up added)
+**Last Updated:** 2026-09-15 (Today dashboard simplification reflected in verification priorities)

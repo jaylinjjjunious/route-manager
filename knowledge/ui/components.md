@@ -1,6 +1,6 @@
 # UI Components
 
-**Last Updated:** 2026-08-08 (Proof Vault extraction Step 2: Proof Vault state/persistence moved into `useProofVault`)
+**Last Updated:** 2026-09-15 (Today dashboard simplified: Travel Plan and inline Preview/Ride Mode readiness content removed)
 **Related Source Files:** `src/components/*.tsx`, `src/components/aio/*.tsx`, `src/features/*/*.tsx`, `src/assistant/*.tsx`
 
 ---
@@ -21,7 +21,7 @@
 |-------|-------|
 | **File** | `src/components/aio/TodayScreen.tsx` |
 | **Props** | Theme, username, weather wind, current/next job, remaining jobs, completion state, navigation link, transit result, weekly schedule, battery, earnings, route progress, revision alerts — all derived values passed from `App.tsx` |
-| **Responsibility** | Authoritative route-planning screen (the former Mission Control dashboard) in AIØ style. Its Road Readiness Panel requires a reviewed Preview Guide for every actionable job, applies `BLOCKED` → `NEEDS ATTENTION` → `READY` priority, opens Preview Guide directly when review is needed, requires one confirmation for light headwind, and disables Ride Mode for strong headwind or unavailable Preview Guide. Battery remains visible but informational for this calculation. Other sections are Next Best Job / Current Job, Today's Other Jobs, Travel Plan, and This Week with `ExpandedDayPanel`. |
+| **Responsibility** | Simplified authoritative route-planning screen (the former Mission Control dashboard) in AIØ style. The top panel preserves the existing dimensional live weather artwork and now hosts the existing This Week calendar plus `ExpandedDayPanel`. The remaining primary sections are Next Best Jobs / Current Job and Today's Other Jobs. The former Travel Plan panel and inline Preview/Ride Mode readiness content are no longer rendered on the main dashboard. |
 
 ### JobsScreen
 
@@ -90,7 +90,7 @@
 |-------|-------|
 | **File** | `src/features/jobs/WeeklyStrip.tsx` |
 | **Props** | `days: ScheduledDaySummary[]`, `today: string`, `selectedDate: string \| null`, `onSelect: (date: string) => void`, `overdueCount: number`, `unscheduledCount: number`, `onReviewOverdue: () => void`, `onReviewUnscheduled: () => void` |
-| **Responsibility** | **Superseded** by the AIØ `WeekDayIndicator` strip rendered inside `TodayScreen` (This Week section). The standalone `WeeklyStrip` is no longer mounted by `App.tsx`. The AIØ strip keeps the same data contract (`weeklyDays`) and shows weekday/date/job-count cells with today/selected states plus overdue/unscheduled chips. |
+| **Responsibility** | **Superseded** by the AIØ `WeekDayIndicator` strip rendered inside `TodayScreen`'s weather panel. The standalone `WeeklyStrip` is no longer mounted by `App.tsx`. The AIØ strip keeps the same data contract (`weeklyDays`) and shows weekday/date/job-count cells with today/selected states plus overdue/unscheduled chips. |
 
 ---
 
