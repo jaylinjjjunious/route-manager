@@ -45,15 +45,10 @@ export default function AioHeader({
             type="button"
             onClick={onOpenProfile}
             className={profileClass}
+            style={{ backgroundImage: `url(${AVATAR_PATH})`, backgroundPosition: "center", backgroundSize: "cover" }}
             aria-label="Open profile and More menu"
             title="Profile"
-          >
-            <img
-              src={AVATAR_PATH}
-              alt="Your profile picture"
-              className="block aspect-square h-full w-full rounded-full object-cover object-center"
-            />
-          </button>
+          />
         </div>
       </div>
     </header>
