@@ -24,7 +24,6 @@ import {
   CompactJobRow,
   WeekDayIndicator,
 } from "./primitives";
-import { ExpandedDayPanel } from "../../features/jobs/ExpandedDayPanel";
 import { useLiveWeather } from "../../services/weather/useLiveWeather";
 import { formatTempF } from "../../services/weather/currentWeather";
 import { getWeatherAltText } from "../../services/weather/weatherSelector";
@@ -232,29 +231,6 @@ export default function TodayScreen(props: TodayScreenProps) {
             )}
           </div>
 
-          {selectedStripDate && (() => {
-            const selectedDay = weeklyDays.find(day => day.date === selectedStripDate) || null;
-            if (!selectedDay) return null;
-            return (
-              <div className="mt-4 border-t border-white/10 pt-4">
-                <ExpandedDayPanel
-                  day={selectedDay}
-                  today={today}
-                  todayJobsCount={weeklyDays[0]?.jobs.length ?? 0}
-                  todayPay={weeklyDays[0]?.pay ?? 0}
-                  todayWorkMinutes={weeklyDays[0]?.workMinutes ?? 0}
-                  startCoord={props.startCoord}
-                  avgSpeedMph={props.avgSpeedMph}
-                  onMoveToDay={props.onMoveToDay}
-                  onOpenJob={(id) => props.onOpenJob(weeklyDays.flatMap(d => d.jobs).find(j => j.id === id) as Job)}
-                  onPlanThisDay={() => props.onPlanThisDay()}
-                  onAddJob={props.onAddJob}
-                  onMoveExisting={props.onMoveExisting}
-                  onCollapse={() => props.onSelectStripDate(null)}
-                />
-              </div>
-            );
-          })()}
         </div>
       </section>
 

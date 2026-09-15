@@ -434,6 +434,23 @@ select {
   animation: none;
 }
 
+.aio-weekday-orb-active {
+  background:
+    radial-gradient(circle at 32% 18%, rgba(236, 72, 153, 0.78), transparent 36%),
+    radial-gradient(circle at 78% 82%, rgba(0, 122, 255, 0.55), transparent 42%),
+    linear-gradient(135deg, rgba(139, 92, 246, 0.96), rgba(109, 40, 217, 0.92));
+  animation: aio-weekday-orb-color 18s ease-in-out infinite;
+}
+
+@keyframes aio-weekday-orb-color {
+  0%, 100% {
+    filter: hue-rotate(0deg) saturate(1.08);
+  }
+  50% {
+    filter: hue-rotate(28deg) saturate(1.22);
+  }
+}
+
 /* ============================================
    Orb 1 Motion — upper/middle zones, 140s
    Path: left gutter → upper panels → top center →

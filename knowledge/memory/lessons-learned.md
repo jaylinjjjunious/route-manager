@@ -56,6 +56,7 @@
 - Checkpoint tags enable safe rollback without losing work.
 - Always verify deployment after push — never assume it succeeded.
 - Documentation must be updated in the same session as code changes, or it will drift.
+- Do not add new interaction behavior, panels, or secondary flows unless the user explicitly asks for them. If a possible improvement is only a suggestion, ask first before implementing it.
 
 ## External API Integration (Transit)
 
@@ -95,4 +96,4 @@
 
 ---
 
-**Last Updated:** 2026-09-14 (Dynamic weather artwork system and lessons learned)
+**Last Updated:** 2026-09-15 (User-request scope rule added)
