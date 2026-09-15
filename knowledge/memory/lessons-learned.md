@@ -57,6 +57,7 @@
 - Always verify deployment after push — never assume it succeeded.
 - Documentation must be updated in the same session as code changes, or it will drift.
 - Do not add new interaction behavior, panels, or secondary flows unless the user explicitly asks for them. If a possible improvement is only a suggestion, ask first before implementing it.
+- Before telling the user a UI change is done, verify the user-visible app or served production bundle actually contains the change. If verification fails or deployment is still stale, say that plainly and keep working instead of handing it back as complete.
 
 ## External API Integration (Transit)
 
