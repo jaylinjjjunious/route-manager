@@ -436,18 +436,18 @@ select {
 
 .aio-weekday-orb-active {
   background:
-    radial-gradient(circle at 30% 16%, rgba(191, 90, 242, 0.38), transparent 38%),
-    radial-gradient(circle at 78% 82%, rgba(10, 132, 255, 0.22), transparent 44%),
-    linear-gradient(135deg, rgba(76, 29, 149, 0.96), rgba(46, 16, 101, 0.94));
+    radial-gradient(circle at 28% 18%, rgba(126, 58, 242, 0.28), transparent 38%),
+    radial-gradient(circle at 78% 82%, rgba(79, 70, 229, 0.18), transparent 44%),
+    linear-gradient(135deg, rgba(50, 24, 88, 0.98), rgba(24, 14, 45, 0.96));
   animation: aio-weekday-orb-color 18s ease-in-out infinite;
 }
 
 @keyframes aio-weekday-orb-color {
   0%, 100% {
-    filter: hue-rotate(0deg) saturate(1.02) brightness(0.92);
+    filter: hue-rotate(0deg) saturate(0.9) brightness(0.82);
   }
   50% {
-    filter: hue-rotate(18deg) saturate(1.12) brightness(0.98);
+    filter: hue-rotate(10deg) saturate(0.98) brightness(0.88);
   }
 }
 
