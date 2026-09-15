@@ -56,7 +56,6 @@ export interface TodayScreenProps {
 
   weeklyDays: ScheduledDaySummary[];
   today: string;
-  selectedStripDate: string | null;
   onSelectStripDate: (date: string | null) => void;
   overdueCount: number;
   unscheduledCount: number;
@@ -90,7 +89,6 @@ export default function TodayScreen(props: TodayScreenProps) {
     remainingJobs,
     weeklyDays,
     today,
-    selectedStripDate,
   } = props;
 
   const primaryJob = currentJob || nextJob;
@@ -190,16 +188,14 @@ export default function TodayScreen(props: TodayScreenProps) {
             <div className="flex items-stretch gap-1.5 overflow-x-auto pb-2">
               {weeklyDays.slice(0, 7).map(day => {
                 const isToday = day.date === today;
-                const isSelected = day.date === selectedStripDate;
                 return (
                   <WeekDayIndicator
                     key={day.date}
                     dayLabel={isToday ? "Today" : new Date(`${day.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "short" })}
                     dateLabel={day.date.slice(8)}
                     count={day.jobs.length}
-                    active={isSelected}
+                    active={isToday}
                     today={isToday}
-                    onClick={() => props.onSelectStripDate(day.date)}
                   />
                 );
               })}

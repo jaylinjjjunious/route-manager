@@ -1075,7 +1075,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                 onAddJob={handleOpenAddModal}
                 weeklyDays={jobs.weeklyDays}
                 today={today}
-                selectedStripDate={jobs.selectedStripDate}
                 onSelectStripDate={jobs.setSelectedStripDate}
                 overdueCount={jobs.overdueJobs.length}
                 unscheduledCount={jobs.unscheduledJobs.length}

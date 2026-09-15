@@ -1,6 +1,6 @@
 # UI Components
 
-**Last Updated:** 2026-09-15 (Today calendar selection made visual-only)
+**Last Updated:** 2026-09-15 (Today calendar highlight follows the current date automatically)
 **Related Source Files:** `src/components/*.tsx`, `src/components/aio/*.tsx`, `src/features/*/*.tsx`, `src/assistant/*.tsx`
 
 ---
@@ -12,8 +12,8 @@
 | Field | Value |
 |-------|-------|
 | **File** | `src/components/aio/AioHeader.tsx` |
-| **Props** | `theme: 'dark' \| 'light'`, `userName?: string`, `onToggleTheme()`, `onMore?()` |
-| **Responsibility** | Sticky top header for Today/Jobs/More tabs. Shows time-of-day greeting with first name, the AIØ wordmark, formatted date, theme toggle, and a More shortcut button. |
+| **Props** | `userName?: string`, `onOpenProfile()` |
+| **Responsibility** | Sticky top header for Today/Jobs/More tabs. Shows time-of-day greeting with first name, the AIØ wordmark, formatted date, and a circular profile-picture button that opens More. |
 
 ### TodayScreen
 
@@ -21,7 +21,7 @@
 |-------|-------|
 | **File** | `src/components/aio/TodayScreen.tsx` |
 | **Props** | Theme, username, weather wind, current/next job, remaining jobs, completion state, navigation link, transit result, weekly schedule, battery, earnings, route progress, revision alerts — all derived values passed from `App.tsx` |
-| **Responsibility** | Simplified authoritative route-planning screen (the former Mission Control dashboard) in AIØ style. The top panel preserves the existing dimensional live weather artwork and hosts a visual-only This Week calendar selector. Tapping a day highlights it but does not open another panel. The remaining primary sections are Next Best Jobs / Current Job and Today's Other Jobs. The former Travel Plan panel and inline Preview/Ride Mode readiness content are no longer rendered on the main dashboard. |
+| **Responsibility** | Simplified authoritative route-planning screen (the former Mission Control dashboard) in AIØ style. The top panel preserves the existing dimensional live weather artwork and hosts a visual-only This Week calendar strip whose purple highlight follows the current date automatically. Tapping a day does not move the highlight or open another panel. The remaining primary sections are Next Best Jobs / Current Job and Today's Other Jobs. The former Travel Plan panel and inline Preview/Ride Mode readiness content are no longer rendered on the main dashboard. |
 
 ### JobsScreen
 
@@ -67,7 +67,7 @@
 | `ChecklistRow` | Checkable row (used in the readiness hero) |
 | `AioButton` | Primary/secondary/ghost button, 48px min height |
 | `CompactJobRow` | Store name + street/type + badge + pay + chevron; tappable to open job |
-| `WeekDayIndicator` | Strip day cell (weekday, date, count) with today/selected states |
+| `WeekDayIndicator` | Strip day cell (weekday, date, count) with an automatic today state |
 | `BottomTabBar` | Floating Today/Jobs/More bottom bar with active pill indicator and jobs-count badge |
 
 ### AIØ Job Metadata
@@ -90,7 +90,7 @@
 |-------|-------|
 | **File** | `src/features/jobs/WeeklyStrip.tsx` |
 | **Props** | `days: ScheduledDaySummary[]`, `today: string`, `selectedDate: string \| null`, `onSelect: (date: string) => void`, `overdueCount: number`, `unscheduledCount: number`, `onReviewOverdue: () => void`, `onReviewUnscheduled: () => void` |
-| **Responsibility** | **Superseded** by the AIØ `WeekDayIndicator` strip rendered inside `TodayScreen`'s weather panel. The standalone `WeeklyStrip` is no longer mounted by `App.tsx`. The AIØ strip keeps the same data contract (`weeklyDays`) and shows weekday/date/job-count cells with today/selected states plus overdue/unscheduled chips. In the simplified dashboard, selection is visual-only and does not mount `ExpandedDayPanel`. |
+| **Responsibility** | **Superseded** by the AIØ `WeekDayIndicator` strip rendered inside `TodayScreen`'s weather panel. The standalone `WeeklyStrip` is no longer mounted by `App.tsx`. The AIØ strip keeps the same data contract (`weeklyDays`) and shows weekday/date/job-count cells with an automatic today highlight plus overdue/unscheduled chips. In the simplified dashboard, tapping a day does not move the highlight or mount `ExpandedDayPanel`. |
 
 ---
 
