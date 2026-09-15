@@ -100,11 +100,11 @@ export default function MoreScreen(props: MoreScreenProps) {
       <section aria-label="Account">
         <div className="space-y-3">
           <div className="aio-card flex items-center gap-3 p-4">
-            <span className="block h-12 w-12 shrink-0 overflow-hidden rounded-full border border-[var(--color-aio-line)] bg-[var(--color-aio-surface)]">
+            <span className="block aspect-square h-12 w-12 shrink-0 overflow-hidden rounded-full border border-[var(--color-aio-line)] bg-[var(--color-aio-surface)]">
               <img
                 src={AVATAR_PATH}
                 alt={`${props.userEmail || "Account"} profile picture`}
-                className="h-full w-full object-cover"
+                className="block aspect-square h-full w-full rounded-full object-cover object-center"
               />
             </span>
             <div className="min-w-0 flex-1">

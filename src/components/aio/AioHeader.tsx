@@ -25,7 +25,7 @@ export default function AioHeader({
 }) {
   const hour = new Date().getHours();
   const greetingName = userName ? `, ${userName.trim().split(/\s+/)[0]}` : "";
-  const profileClass = "flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-[var(--color-aio-line)] bg-[var(--color-aio-surface)] transition-transform hover:scale-[1.03] active:scale-95 touch-manipulation";
+  const profileClass = "flex aspect-square h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-[var(--color-aio-line)] bg-[var(--color-aio-surface)] transition-transform hover:scale-[1.03] active:scale-95 touch-manipulation";
 
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--color-aio-line)] bg-[var(--color-aio-bg)]/85 backdrop-blur-xl">
@@ -51,7 +51,7 @@ export default function AioHeader({
             <img
               src={AVATAR_PATH}
               alt="Your profile picture"
-              className="h-full w-full object-cover"
+              className="block aspect-square h-full w-full rounded-full object-cover object-center"
             />
           </button>
         </div>
