@@ -4,6 +4,7 @@
 
 | SHA | Description |
 |-----|-------------|
+| ce14cc4 | Simplify Today dashboard |
 | 7c32096 | Add localhost-only shield-logo sign-in bypass with production exclusion safeguards |
 | eb11679 | Add self-hosted error reporting and camera/upload test coverage |
 | bc38fd6 | Smart Aisle photo review, removable thumbnails, recalculation, quality gate, and level guide |
@@ -57,5 +58,5 @@ Plus approximately 45 earlier commits covering the full feature progression: hab
 
 ---
 
-**Last Updated:** 2026-08-03 (7c32096)
+**Last Updated:** 2026-09-15 (ce14cc4)
 
