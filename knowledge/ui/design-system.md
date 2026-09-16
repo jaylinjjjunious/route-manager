@@ -1,6 +1,6 @@
 # UI Design System
 
-**Last Updated:** 2026-08-02 (aio-three-tab-redesign)
+**Last Updated:** 2026-09-16 (Jobs page glass panels)
 **Related Source Files:** `src/index.css`, `src/components/aio/*.tsx`
 
 ---
@@ -42,6 +42,8 @@ The AIØ surfaces (Today / Jobs / More) use an iOS-style system implemented with
 | `.aio-caption` | Caption / auxiliary text (`13px`, semibold, tertiary text) |
 
 AIØ primitives live in `src/components/aio/primitives.tsx`: `AioCard`, `AioSectionLabel`, `GradientIconTile`, `StatusIndicator`, `MetricItem`, `ChecklistRow`, `AioButton`, `CompactJobRow`, `WeekDayIndicator`, and `BottomTabBar`. Job icon/type/badge metadata lives in `src/components/aio/jobMeta.ts`.
+
+The dashboard and Jobs schedule panels use a dark purple glass treatment built from a deep `#0C0A16` base, a soft purple blurred glow, purple-tinted shadow, subtle white separators, and local white-text surface tokens. On the Jobs page this applies to the attention panel, Today, every populated later day, and Route B Standby; buttons and row behavior keep their existing semantic colors and interactions.
 
 The legacy "Road" design system classes remain for legacy tabs (Inventory, Battery, Tracker, Habits, Tools, Settings).
 

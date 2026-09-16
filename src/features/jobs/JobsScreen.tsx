@@ -2,8 +2,23 @@ import React from "react";
 import { AlertTriangle, CalendarDays, ChevronRight, Plus, Route as RouteIcon } from "lucide-react";
 import type { Job } from "../../types";
 import type { ScheduledDaySummary } from "./jobSchedule";
-import { AioCard, AioSectionLabel, AioButton, CompactJobRow } from "../../components/aio/primitives";
+import { AioSectionLabel, AioButton, CompactJobRow } from "../../components/aio/primitives";
 import { StoreLogo } from "../../components/aio/StoreLogo";
+
+const jobsGlassPanelClass =
+  "relative overflow-hidden rounded-[24px] bg-[#0C0A16] shadow-[0_18px_50px_rgba(88,28,135,0.28)] [--color-aio-line:rgba(255,255,255,0.10)] [--color-aio-surface:rgba(255,255,255,0.06)] [--color-aio-surface-2:rgba(255,255,255,0.10)] [--color-aio-text:#ffffff] [--color-aio-text-2:rgba(255,255,255,0.68)] [--color-aio-text-3:rgba(255,255,255,0.42)]";
+
+function JobsGlassPanel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`${jobsGlassPanelClass} ${className}`}>
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-14 -top-20 h-56 w-56 rounded-full bg-[var(--color-aio-purple)] opacity-25 blur-3xl"
+      />
+      <div className="relative z-[1]">{children}</div>
+    </div>
+  );
+}
 
 export interface JobsScreenProps {
   today: string;
@@ -49,7 +64,7 @@ export default function JobsScreen(props: JobsScreenProps) {
       </div>
 
       {needsAttention && (
-        <AioCard className="p-4">
+        <JobsGlassPanel className="p-4">
           <div className="flex flex-wrap gap-2">
             {props.overdueJobs.length > 0 && (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FF9F0A]/12 px-3 py-1.5 text-[12px] font-bold text-[#B25000] dark:text-[#FF9F0A]">
@@ -92,14 +107,14 @@ export default function JobsScreen(props: JobsScreenProps) {
               ))}
             </div>
           )}
-        </AioCard>
+        </JobsGlassPanel>
       )}
 
       <section aria-label="Today's jobs">
         <AioSectionLabel trailing={<span className="aio-caption">{props.todayJobs.length} job{props.todayJobs.length === 1 ? "" : "s"}</span>}>
           Today
         </AioSectionLabel>
-        <AioCard className="mt-2.5 p-2">
+        <JobsGlassPanel className="mt-2.5 p-2">
           {props.todayJobs.length === 0 ? (
             <div className="py-4 text-center">
               <p className="aio-caption">No jobs scheduled for today.</p>
@@ -111,7 +126,7 @@ export default function JobsScreen(props: JobsScreenProps) {
               ))}
             </div>
           )}
-        </AioCard>
+        </JobsGlassPanel>
       </section>
 
       {laterDays.map(day => (
@@ -119,13 +134,13 @@ export default function JobsScreen(props: JobsScreenProps) {
           <AioSectionLabel trailing={<span className="aio-caption">{day.jobs.length} · ${day.pay.toFixed(2)}</span>}>
             {dayLabel(day.date)}
           </AioSectionLabel>
-          <AioCard className="mt-2.5 p-2">
+          <JobsGlassPanel className="mt-2.5 p-2">
             <div className="divide-y divide-[var(--color-aio-line)]">
               {day.jobs.map(job => (
                 <CompactJobRow key={job.id} job={job} onOpen={props.onOpenJob} iconSlot={<StoreLogo job={job} />} />
               ))}
             </div>
-          </AioCard>
+          </JobsGlassPanel>
         </section>
       ))}
 
@@ -133,7 +148,7 @@ export default function JobsScreen(props: JobsScreenProps) {
         <AioSectionLabel trailing={<span className="aio-caption">{props.routeBJobs.length} standby</span>}>
           Route B Standby
         </AioSectionLabel>
-        <AioCard className="mt-2.5 p-2">
+        <JobsGlassPanel className="mt-2.5 p-2">
           {props.routeBJobs.length === 0 ? (
             <div className="py-4 text-center">
               <p className="aio-caption"><CalendarDays size={16} className="mr-1 inline" />No standby jobs.</p>
@@ -145,7 +160,7 @@ export default function JobsScreen(props: JobsScreenProps) {
               ))}
             </div>
           )}
-        </AioCard>
+        </JobsGlassPanel>
       </section>
     </div>
   );

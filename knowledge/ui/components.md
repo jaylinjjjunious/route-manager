@@ -1,6 +1,6 @@
 # UI Components
 
-**Last Updated:** 2026-09-16 (AIØ 17 header wordmark)
+**Last Updated:** 2026-09-16 (Jobs page glass panels)
 **Related Source Files:** `src/components/*.tsx`, `src/components/aio/*.tsx`, `src/features/*/*.tsx`, `src/assistant/*.tsx`
 
 ---
@@ -29,7 +29,7 @@
 |-------|-------|
 | **File** | `src/features/jobs/JobsScreen.tsx` |
 | **Props** | `today`, `todayJobs`, `weekDays`, `routeBJobs`, `overdueJobs`, `unscheduledJobs`, `onOpenJob`, `onAddJob`, `onOptimizeRoute`, `onMoveToDay` |
-| **Responsibility** | Schedule list in AIØ style. Header with Optimize/Add actions, overdue/unscheduled attention card with Move actions, Today section, later scheduled days (with pay totals), and Route B Standby section. |
+| **Responsibility** | Schedule list in AIØ style. Header with Optimize/Add actions, overdue/unscheduled attention panel with Move actions, Today section, later scheduled days (with pay totals), and Route B Standby section. Every Jobs-page content panel uses the same dark purple glass base, glow, shadow, and text hierarchy as the dashboard panels while preserving all existing row actions and scheduling behavior. |
 
 ### MoreScreen
 
