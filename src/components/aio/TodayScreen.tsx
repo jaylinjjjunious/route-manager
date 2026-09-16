@@ -246,7 +246,7 @@ export default function TodayScreen(props: TodayScreenProps) {
               {hasCurrentJob ? "Current Job" : "Next Best Jobs"}
             </AioSectionLabel>
 
-            <div className="mt-2.5 rounded-[24px] border border-white/10 bg-white/[0.06] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+            <div className="mt-2.5 rounded-[24px] border border-white/10 bg-black/25 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.045)]">
           {primaryJob ? (
               <div>
                 <div className="flex items-start gap-4">
@@ -278,19 +278,19 @@ export default function TodayScreen(props: TodayScreenProps) {
                     label="Distance"
                     value={`${props.nextStopDistance.toFixed(1)} mi`}
                     labelClassName="text-white/65"
-                    className="rounded-[16px] border border-white/10 bg-white/[0.08] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
+                    className="rounded-[16px] border border-white/10 bg-black/20 px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.045)]"
                   />
                   <MetricItem
                     label="Ride"
                     value={`${props.nextStopRideMinutes} min`}
                     labelClassName="text-white/65"
-                    className="rounded-[16px] border border-white/10 bg-white/[0.08] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
+                    className="rounded-[16px] border border-white/10 bg-black/20 px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.045)]"
                   />
                   <MetricItem
                     label="Due"
                     value={dueLabel(primaryJob)}
                     labelClassName="text-[#F5C97B]"
-                    className="rounded-[16px] border border-white/10 bg-white/[0.08] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
+                    className="rounded-[16px] border border-white/10 bg-black/20 px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.045)]"
                   />
                 </div>
 
@@ -376,7 +376,7 @@ export default function TodayScreen(props: TodayScreenProps) {
                 </span>
               </div>
             )}
-            <div className="mt-2.5 rounded-[24px] border border-white/10 bg-white/[0.06] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+            <div className="mt-2.5 rounded-[24px] border border-white/10 bg-black/25 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.045)]">
           {otherJobs.length === 0 ? (
             <div className="py-4 text-center">
               <p className="aio-caption">Nothing else scheduled for today.</p>
