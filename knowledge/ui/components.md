@@ -1,6 +1,6 @@
 # UI Components
 
-**Last Updated:** 2026-09-16 (Dashboard job sections use matching glass panels)
+**Last Updated:** 2026-09-16 (AIØ 17 header wordmark)
 **Related Source Files:** `src/components/*.tsx`, `src/components/aio/*.tsx`, `src/features/*/*.tsx`, `src/assistant/*.tsx`
 
 ---
@@ -13,7 +13,7 @@
 |-------|-------|
 | **File** | `src/components/aio/AioHeader.tsx` |
 | **Props** | `userName?: string`, `onOpenProfile()` |
-| **Responsibility** | Sticky top header for Today/Jobs/More tabs. Shows time-of-day greeting with first name, the AIØ wordmark, formatted date, and a circular profile-picture button that opens More. |
+| **Responsibility** | Sticky top header for Today/Jobs/More tabs. Shows time-of-day greeting with first name, the AIØ wordmark followed by a same-typeface `17` with a softly blended red-to-white-to-blue vertical treatment, formatted date, and a circular profile-picture button that opens More. |
 
 ### TodayScreen
 

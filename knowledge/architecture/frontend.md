@@ -95,7 +95,7 @@ Today's route pool, the weekly strip, and the expanded day panel all derive from
 
 ### App Icons
 
-The official application icon source is preserved at `public/branding/all-in-one-667-source-icon.png`. Safari iPhone home-screen installation uses `public/apple-touch-icon.png` through the `<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />` tag in `index.html`. The app also ships `public/manifest.webmanifest` and a no-stale `public/sw.js` service worker for installed Home Screen PWA verification. The AIØ header uses the `AIØ` text wordmark (no logo image); the legacy `Header` component used on non-AIØ tabs reuses `public/icons/aio-icon-192.png` for the small logo next to the `All in One 667` title.
+The official application icon source is preserved at `public/branding/all-in-one-667-source-icon.png`. Safari iPhone home-screen installation uses `public/apple-touch-icon.png` through the `<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />` tag in `index.html`. The app also ships `public/manifest.webmanifest` and a no-stale `public/sw.js` service worker for installed Home Screen PWA verification. The AIØ header uses the `AIØ 17` text wordmark (no logo image), with only `17` carrying a soft red/white/blue vertical blend; the legacy `Header` component used on non-AIØ tabs reuses `public/icons/aio-icon-192.png` for the small logo next to the `All in One 667` title.
 
 Generated icon outputs (black/white AIØ badge):
 - `public/apple-touch-icon.png` - 180x180 for iPhone Safari Add to Home Screen

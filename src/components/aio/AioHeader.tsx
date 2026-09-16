@@ -35,8 +35,22 @@ export default function AioHeader({
             {getGreeting(hour)}
             {greetingName}
           </p>
-          <h1 className="mt-0.5 text-[34px] font-black leading-none tracking-[-0.02em] text-[var(--color-aio-text)]">
-            AI<span aria-label="Ø (slashed zero)">Ø</span>
+          <h1
+            className="mt-0.5 text-[34px] font-black leading-none tracking-[-0.02em] text-[var(--color-aio-text)]"
+            aria-label="AIØ 17"
+          >
+            <span aria-hidden="true">AIØ</span>
+            <span
+              aria-hidden="true"
+              className="ml-[0.08em] bg-clip-text text-transparent"
+              style={{
+                backgroundImage:
+                  "linear-gradient(180deg, #dc2626 0%, #ef4444 20%, #f8fafc 45%, #ffffff 55%, #3b82f6 80%, #1d4ed8 100%)",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              17
+            </span>
           </h1>
           <p className="mt-1.5 text-[13px] font-medium text-[var(--color-aio-text-2)]">{formatToday()}</p>
         </div>
