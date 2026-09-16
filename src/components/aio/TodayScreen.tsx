@@ -16,7 +16,6 @@ import type { Job, Coordinates } from "../../types";
 import type { ScheduledDaySummary } from "../../features/jobs/jobSchedule";
 import { getStreetName, getJobTypeLabel } from "./jobMeta";
 import {
-  AioCard,
   AioSectionLabel,
   StatusIndicator,
   MetricItem,
@@ -80,6 +79,12 @@ function dueLabel(job: Job | null): string {
   if (job.dueTime) return job.dueTime;
   return "Flex";
 }
+
+const glassPanelClass =
+  "relative overflow-hidden rounded-[24px] bg-[#0C0A16] p-4 shadow-[0_18px_50px_rgba(88,28,135,0.28)] sm:p-5 [--color-aio-line:rgba(255,255,255,0.10)] [--color-aio-surface:rgba(255,255,255,0.06)] [--color-aio-surface-2:rgba(255,255,255,0.10)] [--color-aio-text:#ffffff] [--color-aio-text-2:rgba(255,255,255,0.68)] [--color-aio-text-3:rgba(255,255,255,0.42)]";
+
+const glassPanelGlowClass =
+  "pointer-events-none absolute -right-14 -top-20 h-56 w-56 rounded-full bg-[var(--color-aio-purple)] opacity-25 blur-3xl";
 
 export default function TodayScreen(props: TodayScreenProps) {
   const {
@@ -232,12 +237,16 @@ export default function TodayScreen(props: TodayScreenProps) {
 
       {/* 2. Next Best Job / Current Job */}
       <section aria-label="Next job">
-        <AioSectionLabel trailing={props.completedJobsCount > 0 || props.routeTotalJobs > 0
-          ? <span className="aio-caption">{props.completedJobsCount} of {props.routeTotalJobs} paid</span>
-          : undefined}>
-          {hasCurrentJob ? "Current Job" : "Next Best Jobs"}
-        </AioSectionLabel>
-        <AioCard className="mt-2.5 p-5" gradient={hasCurrentJob}>
+        <div className={glassPanelClass}>
+          <div aria-hidden="true" className={glassPanelGlowClass} />
+          <div className="relative">
+            <AioSectionLabel trailing={props.completedJobsCount > 0 || props.routeTotalJobs > 0
+              ? <span className="aio-caption">{props.completedJobsCount} of {props.routeTotalJobs} paid</span>
+              : undefined}>
+              {hasCurrentJob ? "Current Job" : "Next Best Jobs"}
+            </AioSectionLabel>
+
+            <div className="mt-2.5 rounded-[24px] border border-white/10 bg-white/[0.06] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
           {primaryJob ? (
               <div>
                 <div className="flex items-start gap-4">
@@ -268,20 +277,20 @@ export default function TodayScreen(props: TodayScreenProps) {
                   <MetricItem
                     label="Distance"
                     value={`${props.nextStopDistance.toFixed(1)} mi`}
-                    labelClassName="text-slate-600 dark:text-slate-300"
-                    className="rounded-[16px] border border-black/10 bg-[#ECECF2] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] dark:border-white/15 dark:bg-[#222329] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
+                    labelClassName="text-white/65"
+                    className="rounded-[16px] border border-white/10 bg-white/[0.08] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
                   />
                   <MetricItem
                     label="Ride"
                     value={`${props.nextStopRideMinutes} min`}
-                    labelClassName="text-slate-600 dark:text-slate-300"
-                    className="rounded-[16px] border border-black/10 bg-[#ECECF2] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] dark:border-white/15 dark:bg-[#222329] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
+                    labelClassName="text-white/65"
+                    className="rounded-[16px] border border-white/10 bg-white/[0.08] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
                   />
                   <MetricItem
                     label="Due"
                     value={dueLabel(primaryJob)}
-                    labelClassName="text-amber-700 dark:text-[#F5C97B]"
-                    className="rounded-[16px] border border-black/10 bg-[#ECECF2] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] dark:border-white/15 dark:bg-[#222329] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
+                    labelClassName="text-[#F5C97B]"
+                    className="rounded-[16px] border border-white/10 bg-white/[0.08] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
                   />
                 </div>
 
@@ -332,11 +341,11 @@ export default function TodayScreen(props: TodayScreenProps) {
               </AioButton>
             </div>
           )}
-        </AioCard>
+            </div>
 
         {props.routeProgressPct < 100 && (
           <div className="mt-2.5 px-1">
-            <div className="h-1.5 overflow-hidden rounded-full bg-[var(--color-aio-surface-2)]">
+            <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
               <div
                 className="h-full rounded-full bg-[var(--color-aio-blue)] transition-all duration-500"
                 style={{ width: `${props.routeProgressPct}%` }}
@@ -347,22 +356,27 @@ export default function TodayScreen(props: TodayScreenProps) {
             </p>
           </div>
         )}
+          </div>
+        </div>
       </section>
 
       {/* 3. Today's Other Jobs */}
       <section aria-label="Today's other jobs">
-        <AioSectionLabel trailing={<span className="aio-caption">{otherJobs.length} job{otherJobs.length === 1 ? "" : "s"}</span>}>
-          Today&apos;s Other Jobs
-        </AioSectionLabel>
-        {props.revisionAlerts.length > 0 && (
-          <div className="mt-2.5 flex items-center gap-2 rounded-[16px] bg-[#FF9F0A]/12 px-3 py-2.5 text-[#B25000] dark:text-[#FF9F0A]">
-            <RefreshCw size={15} />
-            <span className="text-[13px] font-bold">
-              {props.revisionAlerts.length} revision{props.revisionAlerts.length === 1 ? "" : "s"} need attention
-            </span>
-          </div>
-        )}
-        <AioCard className="mt-2.5 p-2">
+        <div className={glassPanelClass}>
+          <div aria-hidden="true" className={glassPanelGlowClass} />
+          <div className="relative">
+            <AioSectionLabel trailing={<span className="aio-caption">{otherJobs.length} job{otherJobs.length === 1 ? "" : "s"}</span>}>
+              Today&apos;s Other Jobs
+            </AioSectionLabel>
+            {props.revisionAlerts.length > 0 && (
+              <div className="mt-2.5 flex items-center gap-2 rounded-[16px] bg-[#FF9F0A]/12 px-3 py-2.5 text-[#FFB547]">
+                <RefreshCw size={15} />
+                <span className="text-[13px] font-bold">
+                  {props.revisionAlerts.length} revision{props.revisionAlerts.length === 1 ? "" : "s"} need attention
+                </span>
+              </div>
+            )}
+            <div className="mt-2.5 rounded-[24px] border border-white/10 bg-white/[0.06] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
           {otherJobs.length === 0 ? (
             <div className="py-4 text-center">
               <p className="aio-caption">Nothing else scheduled for today.</p>
@@ -374,7 +388,9 @@ export default function TodayScreen(props: TodayScreenProps) {
               ))}
             </div>
           )}
-        </AioCard>
+            </div>
+          </div>
+        </div>
       </section>
 
     </div>

@@ -1,6 +1,6 @@
 # UI Components
 
-**Last Updated:** 2026-09-15 (Today calendar highlight follows the current date automatically)
+**Last Updated:** 2026-09-16 (Dashboard job sections use matching glass panels)
 **Related Source Files:** `src/components/*.tsx`, `src/components/aio/*.tsx`, `src/features/*/*.tsx`, `src/assistant/*.tsx`
 
 ---
@@ -21,7 +21,7 @@
 |-------|-------|
 | **File** | `src/components/aio/TodayScreen.tsx` |
 | **Props** | Theme, username, weather wind, current/next job, remaining jobs, completion state, navigation link, transit result, weekly schedule, battery, earnings, route progress, revision alerts — all derived values passed from `App.tsx` |
-| **Responsibility** | Simplified authoritative route-planning screen (the former Mission Control dashboard) in AIØ style. The top panel preserves the existing dimensional live weather artwork and hosts a visual-only This Week calendar strip whose purple highlight follows the current date automatically. Tapping a day does not move the highlight or open another panel. The remaining primary sections are Next Best Jobs / Current Job and Today's Other Jobs. The former Travel Plan panel and inline Preview/Ride Mode readiness content are no longer rendered on the main dashboard. |
+| **Responsibility** | Simplified authoritative route-planning screen (the former Mission Control dashboard) in AIØ style. The top panel preserves the existing dimensional live weather artwork and hosts a visual-only This Week calendar strip whose purple highlight follows the current date automatically. Tapping a day does not move the highlight or open another panel. Next Best Jobs / Current Job and Today's Other Jobs use matching dark purple glass panels. The former Travel Plan panel and inline Preview/Ride Mode readiness content are no longer rendered on the main dashboard. |
 
 ### JobsScreen
 
