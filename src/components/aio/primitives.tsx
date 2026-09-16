@@ -305,7 +305,7 @@ export function WeekDayIndicator({
 }) {
   const base = "flex min-h-[64px] flex-1 flex-col items-center justify-center gap-1 rounded-[16px] px-1 py-2 transition-all touch-manipulation";
   const activeClass = active
-    ? "aio-weekday-orb-active text-white shadow-[0_8px_22px_rgba(139,92,246,0.42)]"
+    ? "aio-weekday-orb-active text-white shadow-[0_10px_30px_rgba(139,92,246,0.24)]"
     : today
       ? "bg-[var(--color-aio-surface-2)] text-[var(--color-aio-text)]"
       : "bg-transparent text-[var(--color-aio-text-2)]";
