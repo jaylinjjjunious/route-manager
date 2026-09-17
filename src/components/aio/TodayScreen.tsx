@@ -72,6 +72,7 @@ export interface TodayScreenProps {
 
   routeProgressPct: number;
   revisionAlerts: Job[];
+  probationCheckInCompleted: boolean;
 }
 
 function dueLabel(job: Job | null): string {
@@ -201,6 +202,13 @@ export default function TodayScreen(props: TodayScreenProps) {
                     count={day.jobs.length}
                     active={isToday}
                     today={isToday}
+                    compliance={Number(day.date.slice(8)) <= 10
+                      ? props.probationCheckInCompleted
+                        ? "complete"
+                        : Number(day.date.slice(8)) >= 8
+                          ? "urgent"
+                          : "window"
+                      : undefined}
                   />
                 );
               })}
@@ -313,10 +321,12 @@ export default function TodayScreen(props: TodayScreenProps) {
                   <AioButton
                     variant={hasCurrentJob ? "primary" : "secondary"}
                     icon={hasCurrentJob ? CheckCircle2 : Hourglass}
-                    disabled={props.completingJobIds.includes(primaryJob.id)}
-                    onClick={() => props.onToggleJobProgress(primaryJob)}
+                    disabled={props.jobAccessLocked || props.completingJobIds.includes(primaryJob.id)}
+                    onClick={() => props.jobAccessLocked ? props.onBlockJobAccess() : props.onToggleJobProgress(primaryJob)}
                   >
-                    {props.completingJobIds.includes(primaryJob.id)
+                    {props.jobAccessLocked
+                      ? "Locked"
+                      : props.completingJobIds.includes(primaryJob.id)
                       ? "Done"
                       : hasCurrentJob
                         ? "Complete Job"
@@ -336,7 +346,7 @@ export default function TodayScreen(props: TodayScreenProps) {
             <div className="py-4 text-center">
               <p className="aio-heading text-[17px] font-black">Route clear</p>
               <p className="aio-caption mt-1">No actionable jobs for today.</p>
-              <AioButton variant="secondary" icon={Plus} onClick={props.onAddJob} className="mt-4">
+              <AioButton variant="secondary" icon={Plus} disabled={props.jobAccessLocked} onClick={props.onAddJob} className="mt-4">
                 Add a job
               </AioButton>
             </div>

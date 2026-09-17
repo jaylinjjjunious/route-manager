@@ -206,7 +206,7 @@ export default function JobCard({
             onClick={() => handleQuickStatusChange(isDone ? 'ready' : job.status === 'under_review' ? 'completed' : 'under_review')}
             disabled={jobAccessLocked && !isDone}
             className="road-icon-button mt-0.5 border-slate-200 bg-white text-slate-400 hover:text-emerald-600 disabled:cursor-not-allowed disabled:opacity-45 dark:border-white/10 dark:bg-white/5 dark:text-slate-500 dark:hover:text-emerald-400 focus:outline-none"
-            title={jobAccessLocked ? 'Shower proof required first' : isDone ? 'Reactivate' : job.status === 'under_review' ? 'Complete after review' : 'Mark under review'}
+            title={jobAccessLocked ? 'Required compliance check first' : isDone ? 'Reactivate' : job.status === 'under_review' ? 'Complete after review' : 'Mark under review'}
           >
             {isDone ? (
               <CheckSquare size={24} className="text-blue-500 fill-blue-100 dark:fill-blue-950/30" />

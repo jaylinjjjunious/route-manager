@@ -6,6 +6,8 @@ Job-based field work management system with proof vault, multiple job types, and
 
 ## Current Implementation
 
+Monthly probation compliance is an additional job-access prerequisite. An incomplete current-month CE Check-In keeps jobs available during coaching days 1–7, then locks navigation, lifecycle/status changes, Ride Mode, add, optimize, move, review, and completion beginning on the 8th. Schedule and job details remain view-only. See [Monthly Probation Check-In](./probation-check-in.md).
+
 ### Job Types
 
 | Type | Description |

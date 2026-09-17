@@ -592,7 +592,7 @@ export default function JobDetailModal({
             onClick={() => handleQuickStatusChange(isDone ? 'ready' : job.status === 'under_review' ? 'completed' : 'under_review')}
             disabled={jobAccessLocked && !isDone}
             className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-white/5 text-slate-500 transition hover:text-emerald-400 disabled:cursor-not-allowed disabled:opacity-45"
-            title={jobAccessLocked ? 'Shower proof required first' : isDone ? 'Reactivate' : job.status === 'under_review' ? 'Complete after review' : 'Mark under review'}
+            title={jobAccessLocked ? 'Required compliance check first' : isDone ? 'Reactivate' : job.status === 'under_review' ? 'Complete after review' : 'Mark under review'}
           >
             {isDone ? (
               <CheckSquare size={22} className="text-blue-500" />
@@ -1158,11 +1158,11 @@ export default function JobDetailModal({
         </div>
       </div>
 
-      {/* Shower gate warning */}
+      {/* Job access gate warning */}
       {!jobAccessLocked ? null : (
         <div className="flex items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2">
           <span className="text-xs font-bold text-amber-300">
-            Shower verification required to complete actions. Details are view-only.
+            A required compliance check is incomplete. Job details are view-only until access is restored.
           </span>
         </div>
       )}

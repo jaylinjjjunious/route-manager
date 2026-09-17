@@ -32,6 +32,7 @@
 ## Medium
 
 - Monitor Shower Gate cycle reset behavior in production.
+- Monitor the monthly probation check-in reset, day-8 lock, device classification, and browser-local proof capacity in production.
 - Gather user feedback on barcode scanning reliability.
 - Test Smart Aisle Scan full-screen camera + 0.5x zoom on actual mobile device.
 - Consider image compression before localStorage upload for scan photos.

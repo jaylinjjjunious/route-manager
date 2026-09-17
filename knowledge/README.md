@@ -48,6 +48,7 @@ Use this map to select relevant documents before editing code. Read only what yo
 - `features/inventory-chain-of-custody.md` — Offline inventory receiving, custody events, and returns
 - `features/ai-dispatcher.md` — AI chat dispatcher and safety news
 - `features/screenshot-import.md` — OCR import from screenshots
+- `features/probation-check-in.md` — Monthly CE Check-In coaching, proof log, calendar awareness, and day-8 job lock
 
 - features/job-preview-guide.md — Per-job recording capture, reviewed preparation, travel and arrival handoff
 - `features/voice-system.md` — Text-to-speech for directions

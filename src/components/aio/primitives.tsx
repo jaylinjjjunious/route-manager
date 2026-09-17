@@ -294,6 +294,7 @@ export function WeekDayIndicator({
   count,
   active = false,
   today = false,
+  compliance,
   onClick,
 }: {
   dayLabel: string;
@@ -301,6 +302,7 @@ export function WeekDayIndicator({
   count?: number;
   active?: boolean;
   today?: boolean;
+  compliance?: "window" | "urgent" | "complete";
   onClick?: () => void;
 }) {
   const base = "flex min-h-[64px] flex-1 flex-col items-center justify-center gap-1 rounded-[16px] px-1 py-2 transition-all touch-manipulation";
@@ -310,7 +312,15 @@ export function WeekDayIndicator({
       ? "bg-[var(--color-aio-surface-2)] text-[var(--color-aio-text)]"
       : "bg-transparent text-[var(--color-aio-text-2)]";
   return (
-    <button type="button" onClick={onClick} className={`${base} ${activeClass}`}>
+    <button type="button" onClick={onClick} className={`${base} relative ${activeClass}`}>
+      {compliance && (
+        <span
+          aria-label={compliance === "complete" ? "Probation check-in complete" : compliance === "urgent" ? "Urgent probation check-in date" : "Probation check-in window"}
+          className={`absolute right-1.5 top-1.5 h-2 w-2 rounded-full ${
+            compliance === "complete" ? "bg-emerald-400" : compliance === "urgent" ? "bg-red-400" : "bg-blue-400"
+          }`}
+        />
+      )}
       <span className="text-[12px] font-bold leading-none">{dayLabel}</span>
       <span className={`text-[12px] font-black leading-none ${active ? "text-white/90" : "text-[var(--color-aio-text-3)]"}`}>
         {dateLabel}

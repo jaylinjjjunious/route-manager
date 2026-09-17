@@ -27,6 +27,8 @@ export interface JobsScreenProps {
   routeBJobs: Job[];
   overdueJobs: Job[];
   unscheduledJobs: Job[];
+  jobAccessLocked?: boolean;
+  onBlockJobAccess?: () => void;
   onOpenJob: (job: Job) => void;
   onAddJob: () => void;
   onOptimizeRoute: () => void;
@@ -45,6 +47,7 @@ function dayLabel(date: string): string {
 export default function JobsScreen(props: JobsScreenProps) {
   const needsAttention = props.overdueJobs.length > 0 || props.unscheduledJobs.length > 0;
   const laterDays = props.weekDays.slice(1).filter(day => day.jobs.length > 0);
+  const jobAccessLocked = props.jobAccessLocked ?? false;
 
   return (
     <div className="space-y-5" id="tab-view-jobs">
@@ -54,10 +57,10 @@ export default function JobsScreen(props: JobsScreenProps) {
           <h1 className="mt-0.5 text-[28px] font-black leading-none tracking-[-0.02em] text-[var(--color-aio-text)]">Jobs</h1>
         </div>
         <div className="flex shrink-0 gap-2">
-          <AioButton variant="secondary" icon={RouteIcon} onClick={props.onOptimizeRoute} className="min-h-11">
+          <AioButton variant="secondary" icon={RouteIcon} disabled={jobAccessLocked} onClick={props.onOptimizeRoute} className="min-h-11">
             Optimize
           </AioButton>
-          <AioButton icon={Plus} onClick={props.onAddJob} className="min-h-11">
+          <AioButton icon={Plus} disabled={jobAccessLocked} onClick={props.onAddJob} className="min-h-11">
             Add
           </AioButton>
         </div>
@@ -90,7 +93,8 @@ export default function JobsScreen(props: JobsScreenProps) {
                   </span>
                   <button
                     type="button"
-                    onClick={() => props.onMoveToDay(job)}
+                    onClick={() => jobAccessLocked ? props.onBlockJobAccess?.() : props.onMoveToDay(job)}
+                    disabled={jobAccessLocked}
                     className="rounded-full bg-[var(--color-aio-blue)] px-3 py-1.5 text-[12px] font-bold text-white"
                   >
                     Move

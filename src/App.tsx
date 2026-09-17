@@ -81,6 +81,8 @@ import { useTextToSpeech } from './hooks/useTextToSpeech';
 import type { ShowerProofRecord } from './features/showerGate/showerProofApi';
 import type { ShowerProof } from './features/showerGate/types';
 import { useShowerGate } from './features/showerGate/useShowerGate';
+import ProbationCheckInPanel from './features/probation/ProbationCheckInPanel';
+import { useProbationCheckIn } from './features/probation/useProbationCheckIn';
 import { authFetch, authFetchJson } from './services/apiClient';
 import { isTransitApiEnabled } from './services/transit';
 import DebugCenter from './components/settings/DebugCenter';
@@ -615,16 +617,22 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const todayKey = getDateKey(now);
   const habits = useHabits(todayKey);
   const showerGate = useShowerGate(now);
+  const probationCheckIn = useProbationCheckIn(now);
+  const jobAccessReady = showerGate.showerGateAccessReady && !probationCheckIn.locked;
   const showerHabitLogs = habits.habitLogs.filter(log => log.taskId === SHOWER_HABIT_TASK_ID || log.taskName === SHOWER_HABIT_NAME);
   const showerHabitLoggedForCycle = showerHabitLogs.some(log => log.date === showerGate.showerCycleKey);
 
   const blockJobAccess = (action: string) => {
-    if (showerGate.showerGateAccessReady) return false;
+    if (jobAccessReady) return false;
     setCurrentTab('dashboard');
     if (typeof window !== 'undefined') {
       window.history.replaceState(null, '', '#dashboard');
     }
-    setDispatcherMessage(`Shower proof required before ${action}. Verify today's shower in Mission Control to unlock jobs.`);
+    setDispatcherMessage(
+      probationCheckIn.locked
+        ? `Monthly probation check-in required before ${action}. Complete CE Check-In and record it to unlock jobs.`
+        : `Shower proof required before ${action}. Verify today's shower in Mission Control to unlock jobs.`
+    );
     return true;
   };
 
@@ -688,11 +696,15 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   }, [showerGate.handleMissionControlVerified, showerGate.showerCycleKey, habits]);
 
   useEffect(() => {
-    if (!showerGate.showerGateAccessReady && tracker.rideModeActive) {
+    if (!jobAccessReady && tracker.rideModeActive) {
       tracker.exitRideMode();
-      setDispatcherMessage('Daily shower gate reset at 6:00 AM. Confirm shower proof before continuing jobs.');
+      setDispatcherMessage(
+        probationCheckIn.locked
+          ? 'Ride Mode stopped until the monthly probation check-in is recorded.'
+          : 'Daily shower gate reset at 6:00 AM. Confirm shower proof before continuing jobs.'
+      );
     }
-  }, [showerGate.showerGateAccessReady, tracker.rideModeActive]);
+  }, [jobAccessReady, probationCheckIn.locked, tracker.rideModeActive]);
 
   const handleStartRideMode = () => {
     if (blockJobAccess('ride mode')) return;
@@ -1012,6 +1024,10 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
 
         {/* Main Content Body */}
         <main className="app-main mx-auto max-w-7xl px-3 py-4 pb-40 sm:px-6 sm:py-6 lg:px-8 space-y-6">
+          {(currentTab === 'dashboard' || currentTab === 'jobs') && (
+            <ProbationCheckInPanel state={probationCheckIn} />
+          )}
+
           {currentTab === 'dashboard' && !tracker.rideModeActive && SHOWER_GATE_REQUIRED && !showerGate.showerGateUnlocked && (
             <ShowerGatePanel
               cycleId={showerGate.showerCycleKey}
@@ -1068,7 +1084,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                 nextStopDistance={nextStopDistance}
                 nextStopRideMinutes={nextStopRideMinutes}
                 nextStopNavLink={nextStopNavLink}
-                jobAccessLocked={!showerGate.showerGateAccessReady}
+                jobAccessLocked={!jobAccessReady}
                 onBlockJobAccess={() => blockJobAccess('navigation')}
                 onToggleJobProgress={handleToggleJobProgress}
                 onOpenJob={(job) => setRouteDetailJobId(job.id)}
@@ -1090,6 +1106,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                 earningsFooter={earningsTileFooter}
                 routeProgressPct={routeProgressPct}
                 revisionAlerts={revisionAlertJobs}
+                probationCheckInCompleted={probationCheckIn.completed}
               />
             </div>
           )}
@@ -1104,9 +1121,11 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                 routeBJobs={jobs.routeBJobs}
                 overdueJobs={jobs.overdueJobs}
                 unscheduledJobs={jobs.unscheduledJobs}
+                jobAccessLocked={!jobAccessReady}
+                onBlockJobAccess={() => blockJobAccess('job changes')}
                 onOpenJob={(job) => setRouteDetailJobId(job.id)}
-                onAddJob={handleOpenAddModal}
-                onOptimizeRoute={handleOptimizeRouteSequence}
+                onAddJob={() => { if (!blockJobAccess('adding jobs')) handleOpenAddModal(); }}
+                onOptimizeRoute={() => { if (!blockJobAccess('route optimization')) handleOptimizeRouteSequence(); }}
                 onMoveToDay={jobs.setMoveToDayJob}
               />
             </div>
@@ -2113,7 +2132,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
               rideMinutes={rideMinutes}
               navLink={navLink}
               isOutlier={outlierIds.includes(routeDetailJob.id)}
-              jobAccessLocked={!showerGate.showerGateAccessReady}
+              jobAccessLocked={!jobAccessReady}
               onToggleComplete={handleToggleComplete}
               onEdit={handleOpenEditModal}
               onDelete={(id) => {

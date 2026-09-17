@@ -21,7 +21,7 @@
 |-------|-------|
 | **File** | `src/components/aio/TodayScreen.tsx` |
 | **Props** | Theme, username, weather wind, current/next job, remaining jobs, completion state, navigation link, transit result, weekly schedule, battery, earnings, route progress, revision alerts — all derived values passed from `App.tsx` |
-| **Responsibility** | Simplified authoritative route-planning screen (the former Mission Control dashboard) in AIØ style. The top panel preserves the existing dimensional live weather artwork and hosts a visual-only This Week calendar strip whose purple highlight follows the current date automatically. Tapping a day does not move the highlight or open another panel. Next Best Jobs / Current Job and Today's Other Jobs use matching dark purple glass panels. The former Travel Plan panel and inline Preview/Ride Mode readiness content are no longer rendered on the main dashboard. |
+| **Responsibility** | Simplified authoritative route-planning screen (the former Mission Control dashboard) in AIØ style. The top panel preserves the existing dimensional live weather artwork and hosts a visual-only This Week calendar strip whose purple highlight follows the current date automatically. Calendar dates from the 1st–10th carry monthly probation check-in markers. Tapping a day does not move the highlight or open another panel. Next Best Jobs / Current Job and Today's Other Jobs use matching dark purple glass panels. The former Travel Plan panel and inline Preview/Ride Mode readiness content are no longer rendered on the main dashboard. |
 
 ### JobsScreen
 
@@ -30,6 +30,13 @@
 | **File** | `src/features/jobs/JobsScreen.tsx` |
 | **Props** | `today`, `todayJobs`, `weekDays`, `routeBJobs`, `overdueJobs`, `unscheduledJobs`, `onOpenJob`, `onAddJob`, `onOptimizeRoute`, `onMoveToDay` |
 | **Responsibility** | Schedule list in AIØ style. Header with Optimize/Add actions, overdue/unscheduled attention panel with Move actions, Today section, later scheduled days (with pay totals), and Route B Standby section. Every Jobs-page content panel uses the same dark purple glass base, glow, shadow, and text hierarchy as the dashboard panels while preserving all existing row actions and scheduling behavior. |
+
+### ProbationCheckInPanel
+
+| Field | Value |
+|-------|-------|
+| **File** | `src/features/probation/ProbationCheckInPanel.tsx` |
+| **Responsibility** | Device-aware monthly CE Check-In coach displayed above Today and Jobs. Shows Early Action, Coach, Urgent, Overdue, or Complete state; opens the official provider; accepts screenshot proof; supports permission-gated desktop capture; records one-tap completion and audit history; explains the day-8 job lock. |
 
 ### MoreScreen
 
