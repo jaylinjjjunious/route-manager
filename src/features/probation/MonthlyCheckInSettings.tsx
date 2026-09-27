@@ -1,10 +1,7 @@
 import React from "react";
-import { AlertTriangle, Camera, CheckCircle2, ExternalLink, MonitorUp, ShieldCheck, Calendar, Clock, Smartphone } from "lucide-react";
+import { AlertTriangle, Camera, CheckCircle2, MonitorUp, ShieldCheck, Calendar, Clock, Smartphone } from "lucide-react";
 import type { ProbationCheckInState } from "./useProbationCheckIn";
-import { useExternalBrowser } from "../../hooks/useExternalBrowser";
 import { CECheckInPanel } from "../../components/CECheckInPanel";
-
-const CE_CHECK_IN_URL = "https://cecheckin.com/";
 
 const phaseContent = {
   early: {
@@ -56,7 +53,6 @@ function formatDateTime(isoString: string): string {
 }
 
 export default function MonthlyCheckInSettings({ state }: { state: ProbationCheckInState }) {
-  const { open } = useExternalBrowser();
   const content = phaseContent[state.phase];
   const proofAttached = Boolean(state.record?.proofDataUrl);
   const completedAt = state.record?.completedAt
@@ -119,21 +115,6 @@ export default function MonthlyCheckInSettings({ state }: { state: ProbationChec
               <p className="font-bold text-emerald-100">Device</p>
               <p className="text-emerald-100/70 capitalize">{state.device}</p>
 </div>
-        </div>
-
-        <div className="mt-4 rounded-xl border border-emerald-400/20 bg-emerald-500/5 p-4">
-          <h3 className="text-xs font-black uppercase text-emerald-400 tracking-widest mb-3">CE Check-In</h3>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={async () => {
-                await open({ url: CE_CHECK_IN_URL });
-              }}
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-[14px] bg-emerald-500/20 px-4 py-2 text-[13px] font-bold text-emerald-100 hover:bg-emerald-500/30 transition-colors"
-            >
-              <ExternalLink size={15} /> Open CE Check-In
-            </button>
-          </div>
         </div>
 
         <div className="mt-6">
@@ -225,14 +206,7 @@ export default function MonthlyCheckInSettings({ state }: { state: ProbationChec
           </div>
         </div>
 
-        <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <button
-            type="button"
-            onClick={state.openCeCheckIn}
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[16px] bg-white px-4 py-3 text-[14px] font-black text-slate-950 shadow-[0_4px_14px_rgba(0,0,0,0.15)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.2)] transition-shadow"
-          >
-            <ExternalLink size={17} /> Check In Now
-          </button>
+<div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {state.device === "computer" && (
             <button
               type="button"
@@ -253,7 +227,7 @@ export default function MonthlyCheckInSettings({ state }: { state: ProbationChec
           <button
             type="button"
             onClick={state.confirmCompleted}
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[16px] bg-emerald-500 px-4 py-3 text-[14px] font-black text-white shadow-[0_8px_24px_rgba(16,185,129,0.25)] hover:shadow-[0_10px_28px_rgba(16,185,129,0.35)] transition-shadow"
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[16px] bg-emerald-500 px-4 py-3 text-[14px] font-bold text-white shadow-[0_8px_24px_rgba(16,185,129,0.25)] hover:shadow-[0_10px_28px_rgba(16,185,129,0.35)] transition-shadow"
           >
             <CheckCircle2 size={17} /> I Completed It
           </button>
