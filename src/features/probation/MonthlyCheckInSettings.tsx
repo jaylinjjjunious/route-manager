@@ -2,8 +2,9 @@ import React from "react";
 import { AlertTriangle, Camera, CheckCircle2, ExternalLink, MonitorUp, ShieldCheck, Calendar, Clock, Smartphone } from "lucide-react";
 import type { ProbationCheckInState } from "./useProbationCheckIn";
 import { useExternalBrowser } from "../../hooks/useExternalBrowser";
+import { CECheckInPanel } from "../../components/CECheckInPanel";
 
-const CE_CHECK_IN_URL = "https://checkin.ce-connect.com/";
+const CE_CHECK_IN_URL = "https://cecheckin.com/";
 
 const phaseContent = {
   early: {
@@ -133,6 +134,11 @@ export default function MonthlyCheckInSettings({ state }: { state: ProbationChec
               <ExternalLink size={15} /> Open CE Check-In
             </button>
           </div>
+        </div>
+
+        <div className="mt-6">
+          <h3 className="text-xs font-black uppercase text-emerald-400 tracking-widest mb-3">Embedded CE Check-In Panel</h3>
+          <CECheckInPanel />
         </div>
 
         {state.record?.events.length && (

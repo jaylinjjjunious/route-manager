@@ -32,7 +32,7 @@ export function useExternalBrowser() {
 
 export function useCECheckIn() {
   const { open } = useExternalBrowser();
-  const CE_CHECK_IN_URL = "https://checkin.ce-connect.com";
+  const CE_CHECK_IN_URL = "https://cecheckin.com";
 
   const openCheckIn = useCallback(() => open({ url: CE_CHECK_IN_URL }), [open]);
   const openCheckInPath = useCallback((path: string) => open({ url: `${CE_CHECK_IN_URL}${path}` }), [open]);

@@ -41,6 +41,19 @@ export default defineConfig(async () => {
     server: {
       host: "0.0.0.0",
       port: 3000,
+      proxy: {
+        "/api/proxy/ce-checkin": {
+          target: "https://www.cecheckin.com",
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/proxy\/ce-checkin/, ""),
+          configure: (proxy, _options) => {
+            proxy.on("proxyRes", (proxyRes, req, res) => {
+              delete proxyRes.headers["x-frame-options"];
+              delete proxyRes.headers["content-security-policy"];
+            });
+          },
+        },
+      },
     },
     plugins: [
       vinext(),
