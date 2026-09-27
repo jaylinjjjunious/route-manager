@@ -46,7 +46,7 @@ After pushing, verify that the local and remote commits match:
 
 ```bash
 git log --oneline -1
-git log --oneline -1 origin/main
+git log --oneline -1 github/main
 ```
 
 Both should show the same SHA.

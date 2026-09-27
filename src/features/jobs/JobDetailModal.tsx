@@ -5,43 +5,14 @@
  * JobDetailModal
  *
  * A focused mini page / bottom-sheet modal optimized for phone screens.
- * Uses tab-based navigation to reduce scrolling and surface actions quickly.
- * Features backdrop blur, scroll lock, and Escape key support.
+ * Shows job title, photo/logo, address, and navigation button.
  */
 
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Navigation, Clock, MapPin, CheckSquare, Edit2, Trash2, Copy, ArrowRightLeft, ShieldAlert, Calendar, AlertCircle, Sparkles, Hourglass, RefreshCw, CheckCircle2, RotateCcw, Camera, BookOpen, PackageCheck, ChevronRight, List, ClipboardList, FileText } from 'lucide-react';
-import type { Job, JobType } from '../../types';
-import { isJobCompleted, isRevisionJob, normalizeJobLifecycleState } from './jobState';
-import { formatScheduledDate, isValidScheduledDate } from './jobSchedule';
-import { summarizeJobTime } from './jobLifecycle';
-import { evaluateJobCloseout } from './jobCloseout';
-import { buildJobOverview, type JobOverviewActionId } from './jobOverview';
-import type { JobLifecycleMutationResult } from './types';
-import type { VisitEndReason } from './jobLifecycleTypes';
-import type { JobCloseoutRequirement, JobCloseoutRequirementKind } from './jobCloseoutTypes';
-import ProcedureWorkspace, {
-  getProcedureAcknowledgementIds,
-  type ProcedureInventoryRecordInput,
-} from './procedures/ProcedureWorkspace';
-import { DEFAULT_PROCEDURE_CATALOG, type ProcedureCatalog } from './procedures/procedureCatalog';
-import { deriveProcedureWorkspaceModel } from './procedures/procedureProgress';
-import type { ProcedureAssignmentInput, ProcedureAssignmentResult } from './procedures/jobProcedureAssignment';
-import type { ProcedureDefinition } from './procedures/types';
-import type { ProofAssetKind, ProofRecord } from '../proofVault/types';
-import type { ProcedureProofRequirementIdentity } from '../proofVault/procedureProof';
-import { getInventoryDomain } from '../../services/inventory/domain';
-import { loadCustodyLedger, type CustodyLedger } from '../../services/inventory/chainOfCustody';
-import InventoryCustodyPanel from '../../components/InventoryCustodyPanel';
-import { JobTransitSection } from '../../components/transit/JobTransitSection';
-import { isTransitApiEnabled } from '../../services/transit';
+import { X, MapPin, Image, Car, Bike, Footprints } from 'lucide-react';
+import type { Job } from '../../types';
 import { resolveStoreLogo } from '../../services/storeLogos';
-import PreviewGuideModal from '../../features/previewGuide/PreviewGuideModal';
-
-const SCAN_COMPATIBLE_TYPES: JobType[] = ['retail_audit', 'mystery_shop', 'merchandising'];
-
-type JobDetailTab = 'work' | 'procedure' | 'closeout' | 'details';
 
 interface JobDetailModalProps {
   job: Job;
@@ -60,232 +31,77 @@ interface JobDetailModalProps {
   onOpenScan?: (jobId: string) => void;
   transitOrigin?: { latitude: number; longitude: number };
   onMoveToDay?: (job: Job) => void;
-  onCheckInJob?: (id: string) => JobLifecycleMutationResult;
-  onMarkJobReadyToStart?: (id: string) => JobLifecycleMutationResult;
-  onBlockJobBeforeStart?: (id: string, note: string) => JobLifecycleMutationResult;
-  onStartJob?: (id: string) => JobLifecycleMutationResult;
-  onPauseJobWork?: (id: string, note?: string) => JobLifecycleMutationResult;
-  onResumeJobWork?: (id: string) => JobLifecycleMutationResult;
-  onAwaitJobSupport?: (id: string, note: string) => JobLifecycleMutationResult;
-  onMarkJobBlockedOnsite?: (id: string, note: string) => JobLifecycleMutationResult;
-  onEndJobVisit?: (id: string, reason: VisitEndReason, note?: string) => JobLifecycleMutationResult;
-  onMarkJobWorkComplete?: (id: string) => JobLifecycleMutationResult;
-  onCompleteJobCloseout?: (id: string) => JobLifecycleMutationResult;
-  onReopenCompletedJob?: (id: string, reason: string) => JobLifecycleMutationResult;
-  procedureCatalog?: ProcedureCatalog;
-  proofRecords?: ProofRecord[];
-  onAssignProcedure?: (
-    jobId: string,
-    input: ProcedureAssignmentInput,
-    procedure?: ProcedureDefinition,
-    confirmed?: boolean,
-  ) => ProcedureAssignmentResult;
-  onCaptureProcedureProof?: (
-    job: Job,
-    kind: ProofAssetKind,
-    files: FileList | null,
-    requirementContext: Omit<ProcedureProofRequirementIdentity, 'visitId'> & { visitId?: string },
-  ) => void;
-  onRecordInventoryForRequirement?: (job: Job, input: ProcedureInventoryRecordInput) => void | Promise<void>;
+  onCheckInJob?: (id: string) => any;
+  onMarkJobReadyToStart?: (id: string) => any;
+  onBlockJobBeforeStart?: (id: string, note: string) => any;
+  onStartJob?: (id: string) => any;
+  onPauseJobWork?: (id: string, note?: string) => any;
+  onResumeJobWork?: (id: string) => any;
+  onAwaitJobSupport?: (id: string, note: string) => any;
+  onMarkJobBlockedOnsite?: (id: string, note: string) => any;
+  onEndJobVisit?: (id: string, reason: any, note?: string) => any;
+  onMarkJobWorkComplete?: (id: string) => any;
+  onCompleteJobCloseout?: (id: string) => any;
+  onReopenCompletedJob?: (id: string, reason: string) => any;
+  procedureCatalog?: any;
+  proofRecords?: any[];
+  onAssignProcedure?: any;
+  onCaptureProcedureProof?: any;
+  onRecordInventoryForRequirement?: any;
   onSatisfyCloseoutRequirements?: (id: string) => void;
   onClose: () => void;
 }
 
-type LifecycleNoteAction = Extract<JobOverviewActionId, 'blocked_before_start' | 'await_support' | 'blocked_onsite' | 'end_visit' | 'pause_work' | 'reopen'>;
-
-const END_VISIT_REASON_OPTIONS: Array<{ value: VisitEndReason; label: string }> = [
-  { value: 'completed_work', label: 'Completed work' },
-  { value: 'missing_part', label: 'Missing part' },
-  { value: 'awaiting_support', label: 'Awaiting support' },
-  { value: 'customer_not_ready', label: 'Customer not ready' },
-  { value: 'access_denied', label: 'Access denied' },
-  { value: 'reschedule_required', label: 'Reschedule required' },
-  { value: 'safety_issue', label: 'Safety issue' },
-  { value: 'other', label: 'Other' },
-];
-
-const TAB_ORDER: JobDetailTab[] = ['work', 'procedure', 'closeout', 'details'];
-
-const TAB_LABELS: Record<JobDetailTab, string> = {
-  work: 'WORK',
-  procedure: 'PROCEDURE',
-  closeout: 'CLOSEOUT',
-  details: 'DETAILS',
-};
-
-const TAB_ICONS: Record<JobDetailTab, React.ReactNode> = {
-  work: <ClipboardList size={12} />,
-  procedure: <List size={12} />,
-  closeout: <CheckCircle2 size={12} />,
-  details: <FileText size={12} />,
-};
-
-function getJobTypeStyle(type: JobType) {
-  switch (type) {
-    case 'retail_audit':
-      return 'bg-violet-950/30 text-violet-400 border-violet-900/30';
-    case 'merchandising':
-      return 'bg-cyan-950/30 text-cyan-400 border-cyan-900/30';
-    case 'mystery_shop':
-      return 'bg-emerald-950/30 text-emerald-400 border-emerald-900/30';
-    case 'field_task':
-      return 'bg-amber-950/30 text-amber-400 border-amber-900/30';
-    case 'process_serve':
-      return 'bg-red-950/30 text-red-300 border-red-900/30';
-  }
-}
-
-function formatJobType(type: JobType) {
-  if (type === 'process_serve') return 'Process Serve';
-  return type.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-}
-
-function getCategory(job: Job, isOutlier: boolean) {
-  const isDone = isJobCompleted(job);
-  const needsRevision = isRevisionJob(job);
-
-  if (isDone) return 'completed';
-  if (job.status === 'under_review') return 'under_review';
-  if (job.status === 'postponed') return 'postponed';
-  if (job.routeId === 'B') return 'postponed';
-  if (isOutlier || job.status === 'outlier') return 'outlier';
-  if (needsRevision) return 'revisit';
-  return 'ready';
-}
-
-const BADGE_STYLES: Record<string, string> = {
-  ready: 'bg-emerald-950/40 text-emerald-400 border border-emerald-500/10',
-  revisit: 'bg-rose-950/40 text-rose-400 border border-rose-500/10',
-  under_review: 'bg-indigo-950/40 text-indigo-400 border border-indigo-500/10',
-  outlier: 'bg-amber-950/40 text-amber-400 border border-amber-500/10',
-  completed: 'bg-blue-950/40 text-blue-400 border border-blue-500/10',
-  postponed: 'bg-slate-950/40 text-slate-400 border border-slate-500/10',
-};
-
-const BADGE_LABELS: Record<string, string> = {
-  ready: 'READY',
-  revisit: 'REVISION',
-  under_review: 'UNDER REVIEW',
-  outlier: 'RISK',
-  completed: 'DONE',
-  postponed: 'TOMORROW',
-};
-
-const NEXT_ACTION_STYLES = {
-  ready: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-200',
-  working: 'border-cyan-500/20 bg-cyan-500/10 text-cyan-200',
-  blocked: 'border-amber-500/25 bg-amber-500/10 text-amber-200',
-  complete: 'border-blue-500/20 bg-blue-500/10 text-blue-200',
-};
-
-const WARNING_STYLES = {
-  warning: 'border-amber-500/20 bg-amber-500/10 text-amber-200',
-  danger: 'border-rose-500/25 bg-rose-500/10 text-rose-200',
-  info: 'border-cyan-500/20 bg-cyan-500/10 text-cyan-200',
-};
-
-const formatVisitTimestamp = (value?: string) => {
-  if (!value) return '—';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Needs review';
-  return date.toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
-};
-
-const formatVisitReason = (reason?: VisitEndReason) =>
-  reason ? reason.replaceAll('_', ' ') : '—';
-
-const formatCloseoutKind = (kind: JobCloseoutRequirementKind) =>
-  kind.charAt(0).toUpperCase() + kind.slice(1);
-
-const formatTimeSummaryMinutes = (minutes: number) => {
-  const rounded = Math.round(minutes);
-  if (rounded <= 0 && minutes > 0) return '<1m';
-  if (rounded < 60) return `${rounded}m`;
-  const hours = Math.floor(rounded / 60);
-  const remainingMinutes = rounded % 60;
-  return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
-};
-
-function TimeSummaryTile({ label, minutes, primary = false }: { label: string; minutes: number; primary?: boolean }) {
-  return (
-    <div className={`min-w-0 rounded-lg border px-2 py-2 ${primary ? 'border-cyan-500/20 bg-cyan-500/10' : 'border-white/10 bg-white/[0.03]'}`}>
-      <p className="text-xs font-black uppercase text-slate-500">{label}</p>
-      <p className={`mt-0.5 text-sm font-black ${primary ? 'text-cyan-200' : 'text-slate-300'}`}>
-        {formatTimeSummaryMinutes(minutes)}
-      </p>
-    </div>
-  );
-}
-
-function CloseoutRequirementRow({ requirement, blocking, onClick }: { requirement: JobCloseoutRequirement; blocking: boolean; onClick?: () => void }) {
-  const satisfied = requirement.satisfied === true;
-  const iconClass = blocking
-    ? 'text-rose-300'
-    : satisfied
-      ? 'text-emerald-300'
-      : requirement.kind === 'reference'
-        ? 'text-cyan-300'
-        : 'text-amber-300';
-
-  const row = (
-    <div className={`rounded-lg border px-2.5 py-2 ${blocking ? 'border-rose-500/25 bg-rose-500/10' : 'border-white/10 bg-white/[0.03]'}`}>
-      <div className="flex items-start gap-2">
-        {satisfied ? (
-          <CheckCircle2 size={16} className={`mt-0.5 shrink-0 ${iconClass}`} />
-        ) : (
-          <AlertCircle size={16} className={`mt-0.5 shrink-0 ${iconClass}`} />
-        )}
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <p className="text-sm font-black text-slate-200">{requirement.label}</p>
-            <span className={`rounded-full border px-1.5 py-0.5 text-xs font-black uppercase ${blocking ? 'border-rose-400/30 text-rose-200' : 'border-white/10 text-slate-500'}`}>
-              {blocking ? 'Missing' : formatCloseoutKind(requirement.kind)}
-            </span>
-          </div>
-          {requirement.description && (
-            <p className="mt-0.5 text-xs font-semibold leading-relaxed text-slate-500">
-              {requirement.description}
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-
-  if (onClick) {
-    return (
-      <button type="button" onClick={onClick} className="block w-full text-left">
-        {row}
-      </button>
-    );
-  }
-  return row;
-}
-
-function JobIdentitySquare({ job }: { job: Job }) {
+function JobLogo({ job }: { job: Job }) {
   const match = resolveStoreLogo({ companyId: null, texts: [job.storeName, job.notes] });
   const [failed, setFailed] = useState(false);
 
   if (!match || failed) {
-    return <Hourglass size={20} />;
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-white/5 rounded-xl">
+        <Image size={32} className="text-slate-500" />
+      </div>
+    );
   }
 
   return (
     <img
       src={match.logoPath}
       alt={`${match.displayName} logo`}
-      className="h-full w-full object-contain p-1"
+      className="h-full w-full object-contain p-2"
       draggable={false}
       onError={() => setFailed(true)}
     />
   );
 }
+
+function buildGoogleMapsUrl(address: string, mode: TravelMode): string {
+  const encoded = encodeURIComponent(address);
+  return `https://www.google.com/maps/dir/?api=1&destination=${encoded}&travelmode=${mode}`;
+}
+
+type TravelMode = 'driving' | 'bicycling' | 'walking';
+
+function estimateTravelTime(distanceMiles: number, mode: TravelMode): number {
+  if (distanceMiles <= 0) return 0;
+  const speeds = { driving: 25, bicycling: 10, walking: 3 };
+  const hours = distanceMiles / speeds[mode];
+  return Math.round(hours * 60);
+}
+
+function formatTravelTime(minutes: number): string {
+  if (minutes <= 0) return '—';
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+}
+
+const TRAVEL_MODES: Array<{ value: TravelMode; label: string; icon: React.ReactNode }> = [
+  { value: 'driving', label: 'Drive', icon: <Car size={16} /> },
+  { value: 'bicycling', label: 'Bike', icon: <Bike size={16} /> },
+  { value: 'walking', label: 'Walk', icon: <Footprints size={16} /> },
+];
 
 export default function JobDetailModal({
   job,
@@ -316,7 +132,7 @@ export default function JobDetailModal({
   onMarkJobWorkComplete,
   onCompleteJobCloseout,
   onReopenCompletedJob,
-  procedureCatalog = DEFAULT_PROCEDURE_CATALOG,
+  procedureCatalog,
   proofRecords,
   onAssignProcedure,
   onCaptureProcedureProof,
@@ -325,60 +141,9 @@ export default function JobDetailModal({
   onClose,
 }: JobDetailModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const bodyRef = useRef<HTMLDivElement>(null);
-  const noteTextRef = useRef<HTMLTextAreaElement>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [previewGuideOpen, setPreviewGuideOpen] = useState(false);
-  const [noteAction, setNoteAction] = useState<LifecycleNoteAction | null>(null);
-  const [noteText, setNoteText] = useState('');
-  const [endVisitReason, setEndVisitReason] = useState<VisitEndReason>('other');
-  const [lifecycleError, setLifecycleError] = useState<string | null>(null);
-  const [procedureEvidenceVersion, setProcedureEvidenceVersion] = useState(0);
-  const [inventoryLedger, setInventoryLedger] = useState<CustodyLedger>(() =>
-    loadCustodyLedger(job.id, getInventoryDomain(job)),
-  );
-  const [activeTab, setActiveTab] = useState<JobDetailTab>('work');
-  const [targetStepId, setTargetStepId] = useState<string | undefined>();
+  const [travelMode, setTravelMode] = useState<TravelMode>('driving');
 
-  const category = getCategory(job, isOutlier);
-  const isDone = isJobCompleted(job);
-  const needsRevision = isRevisionJob(job);
-  const overview = buildJobOverview(job, { isOutlier, jobAccessLocked });
-  const lifecycle = normalizeJobLifecycleState(job);
-  const closeoutEvaluation = evaluateJobCloseout(job, {
-    procedureCatalog,
-    context: {
-      job,
-      proofRecords,
-      inventoryLedgers: [inventoryLedger],
-      satisfiedRequirementIds: getProcedureAcknowledgementIds(job.id),
-    },
-  });
-  const procedureOverview = deriveProcedureWorkspaceModel(job, {
-    procedureCatalog,
-    context: {
-      job,
-      proofRecords,
-      inventoryLedgers: [inventoryLedger],
-      satisfiedRequirementIds: getProcedureAcknowledgementIds(job.id),
-    },
-  });
-  const procedureNextStepTitle = procedureOverview.summary.nextStep?.step.title;
-  const closeoutRequirements = [
-    ...closeoutEvaluation.missingRequiredItems,
-    ...closeoutEvaluation.satisfiedRequiredItems,
-    ...closeoutEvaluation.recommendedItems,
-    ...closeoutEvaluation.referenceItems,
-  ];
-  const shouldShowCloseout = lifecycle.status === 'work_complete_pending_closeout' || closeoutRequirements.length > 0;
-  const timeSummary = summarizeJobTime(lifecycle);
-  const secondaryTimeBuckets = [
-    { label: 'Paused', minutes: timeSummary.pausedMinutes },
-    { label: 'Support', minutes: timeSummary.awaitingSupportMinutes },
-    { label: 'Blocked', minutes: timeSummary.blockedOnsiteMinutes },
-  ].filter(bucket => bucket.minutes > 0);
-
-  // Lock body scroll while modal is open
   useEffect(() => {
     const body = document.body;
     const html = document.documentElement;
@@ -394,7 +159,6 @@ export default function JobDetailModal({
     };
   }, []);
 
-  // Close on Escape key
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
@@ -403,24 +167,9 @@ export default function JobDetailModal({
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
 
-  // Focus the close button on mount
   useEffect(() => {
     closeButtonRef.current?.focus();
   }, []);
-
-  useEffect(() => {
-    setInventoryLedger(loadCustodyLedger(job.id, getInventoryDomain(job)));
-  }, [job, procedureEvidenceVersion]);
-
-  const refreshProcedureEvidence = () => {
-    setInventoryLedger(loadCustodyLedger(job.id, getInventoryDomain(job)));
-    setProcedureEvidenceVersion(version => version + 1);
-  };
-
-  const handleRecordInventoryForRequirement = async (targetJob: Job, input: ProcedureInventoryRecordInput) => {
-    await onRecordInventoryForRequirement?.(targetJob, input);
-    refreshProcedureEvidence();
-  };
 
   const handleBackdropClick = (event: React.MouseEvent) => {
     if (event.target === event.currentTarget) onClose();
@@ -430,744 +179,8 @@ export default function JobDetailModal({
     event.stopPropagation();
   };
 
-  const jumpToProcedureStep = (stepId?: string) => {
-    if (!stepId) return;
-    setActiveTab('procedure');
-    setTargetStepId(stepId);
-  };
-
-  const handleQuickStatusChange = (statusType: 'completed' | 'revisit' | 'under_review' | 'postponed' | 'ready' | 'finished') => {
-    if (jobAccessLocked && (statusType === 'completed' || statusType === 'under_review' || statusType === 'revisit' || statusType === 'finished')) return;
-    if (!onUpdateStatus) {
-      if (statusType === 'completed') onToggleComplete(job.id);
-      return;
-    }
-    switch (statusType) {
-      case 'completed':
-        onUpdateStatus(job.id, { status: 'completed', isCompleted: true, isRevisionRequired: false, revisionStatus: 'Approved' });
-        break;
-      case 'finished':
-        onUpdateStatus(job.id, { status: 'finished', isCompleted: true, isRevisionRequired: false, revisionStatus: 'Approved' });
-        break;
-      case 'revisit':
-        onUpdateStatus(job.id, { status: 'revisit', isCompleted: false, isRevisionRequired: true });
-        break;
-      case 'under_review':
-        onUpdateStatus(job.id, { status: 'under_review', isCompleted: false, isRevisionRequired: false, revisionStatus: 'Under Review' });
-        break;
-      case 'postponed':
-        onUpdateStatus(job.id, { status: 'postponed', isCompleted: false, isRevisionRequired: false });
-        break;
-      case 'ready':
-        onUpdateStatus(job.id, { status: 'ready', isCompleted: false, isRevisionRequired: false, revisionStatus: job.revisionStatus === 'Under Review' ? undefined : job.revisionStatus });
-        break;
-    }
-  };
-
-  const handleLifecycleResult = (result: JobLifecycleMutationResult | undefined) => {
-    if (!result) {
-      setLifecycleError('This action is not available yet.');
-      return;
-    }
-    if (result.transitionBlocked) {
-      setLifecycleError('That lifecycle step is not available from the current state.');
-      return;
-    }
-    setLifecycleError(null);
-  };
-
-  const openNoteSheet = (action: LifecycleNoteAction) => {
-    setNoteAction(action);
-    setNoteText('');
-    setEndVisitReason(action === 'end_visit' ? 'other' : endVisitReason);
-    setLifecycleError(null);
-  };
-
-  const closeNoteSheet = () => {
-    setNoteAction(null);
-    setNoteText('');
-    setLifecycleError(null);
-  };
-
-  const runLifecycleAction = (actionId: JobOverviewActionId) => {
-    setLifecycleError(null);
-    switch (actionId) {
-      case 'check_in':
-        handleLifecycleResult(onCheckInJob?.(job.id));
-        break;
-      case 'ready_to_start':
-        handleLifecycleResult(onMarkJobReadyToStart?.(job.id));
-        break;
-      case 'start_job':
-        handleLifecycleResult(onStartJob?.(job.id));
-        break;
-      case 'pause_work':
-        openNoteSheet('pause_work');
-        break;
-      case 'resume_work':
-        handleLifecycleResult(onResumeJobWork?.(job.id));
-        break;
-      case 'blocked_before_start':
-      case 'await_support':
-      case 'blocked_onsite':
-      case 'end_visit':
-        openNoteSheet(actionId);
-        break;
-      case 'work_complete':
-        handleLifecycleResult(onMarkJobWorkComplete?.(job.id));
-        break;
-      case 'closeout':
-        if (!closeoutEvaluation.completionAllowed) {
-          setLifecycleError('Complete the missing required closeout items first.');
-          return;
-        }
-        handleLifecycleResult(onCompleteJobCloseout?.(job.id));
-        break;
-      case 'reopen':
-        openNoteSheet('reopen');
-        break;
-      case 'continue_procedure':
-        jumpToProcedureStep(procedureOverview.summary.nextStep?.step.id);
-        break;
-      case 'review_details':
-        setActiveTab('details');
-        break;
-    }
-  };
-
-  const submitNoteAction = () => {
-    if (!noteAction) return;
-    const noteField = noteTextRef.current || document.querySelector<HTMLTextAreaElement>('[data-lifecycle-note="true"]');
-    const note = (noteField?.value ?? noteText).trim();
-    if (noteAction !== 'pause_work' && !note) {
-      setLifecycleError('Add a short reason before saving.');
-      return;
-    }
-
-    if (noteAction === 'blocked_before_start') {
-      handleLifecycleResult(onBlockJobBeforeStart?.(job.id, note));
-    } else if (noteAction === 'await_support') {
-      handleLifecycleResult(onAwaitJobSupport?.(job.id, note));
-    } else if (noteAction === 'blocked_onsite') {
-      handleLifecycleResult(onMarkJobBlockedOnsite?.(job.id, note));
-    } else if (noteAction === 'pause_work') {
-      handleLifecycleResult(onPauseJobWork?.(job.id, note || undefined));
-    } else if (noteAction === 'end_visit') {
-      handleLifecycleResult(onEndJobVisit?.(job.id, endVisitReason, note));
-    } else if (noteAction === 'reopen') {
-      handleLifecycleResult(onReopenCompletedJob?.(job.id, note));
-    }
-
-    setNoteAction(null);
-    setNoteText('');
-  };
-
-  const noteSheetTitle =
-    noteAction === 'blocked_before_start' ? 'Why is work blocked before start?'
-    : noteAction === 'await_support' ? 'What support are you waiting on?'
-    : noteAction === 'blocked_onsite' ? 'What is blocking work onsite?'
-    : noteAction === 'end_visit' ? 'End this visit'
-    : noteAction === 'reopen' ? 'Why reopen this completed job?'
-    : 'Pause work';
-
-  const notePlaceholder =
-    noteAction === 'blocked_before_start' ? 'Example: manager unavailable, access denied, site not ready'
-    : noteAction === 'await_support' ? 'Example: waiting for approval, remote support, missing answer'
-    : noteAction === 'blocked_onsite' ? 'Example: locked case, unsafe area, missing equipment'
-    : noteAction === 'end_visit' ? 'Add any handoff details for the next visit'
-    : noteAction === 'reopen' ? 'Example: missing proof, wrong closeout, follow-up needed'
-    : 'Optional note';
-
-  // Sticky action bar buttons
-  const primaryAction = overview.nextAction.primaryActionId;
-  const showContinueProcedure = procedureOverview.summary.nextStep && activeTab !== 'procedure';
-  const showStickyActions = primaryAction && primaryAction !== 'review_details';
-
-  const renderWorkTab = () => (
-    <div className="min-w-0 space-y-4">
-      {/* Job identity — compact and readable */}
-      <section aria-labelledby="job-overview-title" className="space-y-3">
-        <div className="flex items-start gap-3">
-          <button
-            onClick={() => handleQuickStatusChange(isDone ? 'ready' : job.status === 'under_review' ? 'completed' : 'under_review')}
-            disabled={jobAccessLocked && !isDone}
-            className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-white/5 text-slate-500 transition hover:text-emerald-400 disabled:cursor-not-allowed disabled:opacity-45"
-            title={jobAccessLocked ? 'Required compliance check first' : isDone ? 'Reactivate' : job.status === 'under_review' ? 'Complete after review' : 'Mark under review'}
-          >
-            {isDone ? (
-              <CheckSquare size={22} className="text-blue-500" />
-            ) : job.status === 'under_review' ? (
-              <CheckSquare size={22} className="text-indigo-500" />
-            ) : (
-              <JobIdentitySquare job={job} />
-            )}
-          </button>
-          <div className="min-w-0 flex-1">
-            <h4
-              id="job-detail-modal-title"
-              className={`text-xl font-black leading-snug text-white break-words ${
-                isDone ? 'line-through text-slate-500' : ''
-              }`}
-            >
-              {job.storeName}
-            </h4>
-            <p id="job-overview-title" className="sr-only">Job overview</p>
-            <div className="mt-1 flex items-start gap-1 text-sm font-bold text-slate-400">
-              <MapPin size={14} className="mt-0.5 shrink-0" />
-              <span className="break-words">{job.address}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <span className={`road-pill min-h-8 px-2.5 py-1 text-xs shadow-xs border ${BADGE_STYLES[category]}`}>
-            {category === 'ready' && <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 mr-1" />}
-            {BADGE_LABELS[category]}
-          </span>
-          <span className="road-pill min-h-8 px-2.5 py-1 text-xs shadow-xs border bg-cyan-950/30 text-cyan-300 border-cyan-500/20">
-            {overview.lifecycleStatusLabel} / {overview.workStateLabel}
-          </span>
-          {job.priority && (
-            <span className="road-pill min-h-8 px-2.5 py-1 text-xs shadow-xs border bg-slate-800/40 text-slate-400 border-slate-700/20">
-              {job.priority} Priority
-            </span>
-          )}
-          {job.deviceTypes && job.deviceTypes.length > 0 && (
-            <span className="road-pill min-h-8 px-2.5 py-1 text-xs shadow-xs border bg-amber-950/40 text-amber-400 border-amber-500/20 flex items-center gap-1">
-              <PackageCheck size={12} />
-              {job.deviceTypes.join(' + ')}
-            </span>
-          )}
-          {job.revisionStatus && job.revisionStatus !== 'None' && (
-            <span className={`road-pill min-h-8 px-2.5 py-1 text-xs shadow-xs border flex items-center gap-0.5 ${
-              job.revisionStatus === 'Needs Revision'
-                ? 'bg-rose-950/40 text-rose-400 border-rose-500/20'
-                : job.revisionStatus === 'Approved'
-                ? 'bg-emerald-950/40 text-emerald-400 border-emerald-500/20'
-                : 'bg-indigo-950/40 text-indigo-400 border-indigo-500/20'
-            }`}>
-              <Sparkles size={11} />
-              <span>{job.revisionStatus}</span>
-            </span>
-          )}
-        </div>
-
-        {/* Next Action — dominates the screen */}
-        <div className={`rounded-xl border px-3 py-3 ${NEXT_ACTION_STYLES[overview.nextAction.tone]}`}>
-          <p className="text-xs font-black uppercase tracking-wider opacity-70">Next Action</p>
-          <h5 className="mt-1 text-lg font-black leading-snug">{overview.nextAction.title}</h5>
-          <p className="mt-1 text-xs font-black uppercase tracking-wide opacity-75">
-            Current work state: {overview.workStateLabel}
-          </p>
-          <p className="mt-1 text-sm font-semibold leading-relaxed opacity-80">{overview.nextAction.description}</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => runLifecycleAction(overview.nextAction.primaryActionId)}
-              className="min-h-11 rounded-lg bg-white/20 px-3 py-2 text-sm font-black text-white transition hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-white/40"
-            >
-              {overview.nextAction.primaryLabel}
-            </button>
-            {overview.nextAction.secondaryActions.map(action => (
-              <button
-                key={action.id}
-                type="button"
-                onClick={() => runLifecycleAction(action.id)}
-                className="min-h-11 rounded-lg border border-white/15 px-3 py-2 text-sm font-black transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
-              >
-                {action.label}
-              </button>
-            ))}
-          </div>
-          {lifecycleError && (
-            <p className="mt-2 text-xs font-bold text-amber-100" role="alert">
-              {lifecycleError}
-            </p>
-          )}
-        </div>
-
-        {/* Important warnings only */}
-        {overview.warnings.length > 0 && (
-          <div className="space-y-1.5" aria-label="Important job warnings">
-            {overview.warnings.slice(0, 4).map(warning => (
-              <div key={warning.label} className={`flex items-start gap-2 rounded-lg border px-2.5 py-2 text-xs font-bold ${WARNING_STYLES[warning.tone]}`}>
-                <AlertCircle size={14} className="mt-0.5 shrink-0" />
-                <span>{warning.label}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Compact procedure progress */}
-        <div className={`rounded-xl border px-3 py-2 ${procedureOverview.resolution.status === 'not_found' || procedureOverview.resolution.status === 'invalid_assignment' ? 'border-rose-500/25 bg-rose-500/10' : 'border-white/10 bg-white/[0.03]'}`}>
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-xs font-black uppercase text-slate-500">Procedure</p>
-              <p className="mt-0.5 text-sm font-black leading-snug text-slate-200 break-words">
-                {procedureOverview.procedure
-                  ? `${procedureOverview.procedure.name} v${procedureOverview.procedure.version}`
-                  : procedureOverview.resolution.status === 'unassigned'
-                    ? 'Not assigned'
-                    : 'Assigned procedure unresolved'}
-              </p>
-              <p className="mt-0.5 text-xs font-bold leading-snug text-slate-500 break-words">
-                {procedureOverview.procedure
-                  ? procedureNextStepTitle
-                    ? `Next step: ${procedureNextStepTitle}`
-                    : 'All steps satisfied — review and closeout'
-                  : procedureOverview.resolution.reason}
-              </p>
-            </div>
-            <span className="shrink-0 rounded-full border border-white/10 bg-black/10 px-2 py-1 text-xs font-black uppercase text-slate-300">
-              {procedureOverview.procedure ? `${procedureOverview.summary.percentComplete}%` : 'Assign'}
-            </span>
-          </div>
-        </div>
-
-        {/* Summary tiles — compact */}
-        <div className="grid grid-cols-4 gap-1.5">
-          {overview.summaryItems.map(item => (
-            <div key={item.label} className="min-w-0 rounded-lg border border-white/10 bg-white/[0.03] px-2 py-2 text-center">
-              <p className="text-xs font-black uppercase text-slate-500">{item.label}</p>
-              <p className="mt-0.5 truncate text-xs font-black text-slate-300">{item.value}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-    </div>
-  );
-
-  const renderProcedureTab = () => (
-    <div className="min-w-0 space-y-3">
-      <ProcedureWorkspace
-        job={job}
-        procedureCatalog={procedureCatalog}
-        proofRecords={proofRecords}
-        inventoryLedgers={[inventoryLedger]}
-        onAssignProcedure={onAssignProcedure}
-        onCaptureProcedureProof={onCaptureProcedureProof}
-        onRecordInventoryForRequirement={handleRecordInventoryForRequirement}
-        onEvidenceChanged={refreshProcedureEvidence}
-        initialTargetStepId={targetStepId}
-        onTargetStepReached={() => setTargetStepId(undefined)}
-      />
-    </div>
-  );
-
-  const renderCloseoutTab = () => (
-    <div className="min-w-0 space-y-3">
-      <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3">
-        <div className="mb-2 flex items-start justify-between gap-3">
-          <div>
-            <h5 className="text-sm font-black uppercase tracking-wider text-slate-500">Closeout</h5>
-            <p className="mt-0.5 text-sm font-bold text-slate-300">
-              {closeoutEvaluation.completionAllowed
-                ? 'Ready for final completion.'
-                : `${closeoutEvaluation.missingRequiredItems.length} required item${closeoutEvaluation.missingRequiredItems.length === 1 ? '' : 's'} missing.`}
-            </p>
-          </div>
-          <span className={`shrink-0 rounded-full border px-2 py-1 text-xs font-black uppercase ${closeoutEvaluation.completionAllowed ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-200' : 'border-rose-500/25 bg-rose-500/10 text-rose-200'}`}>
-            {closeoutEvaluation.completionAllowed ? 'Allowed' : 'Blocked'}
-          </span>
-        </div>
-
-        {closeoutRequirements.length > 0 ? (
-          <div className="space-y-1.5">
-            {closeoutEvaluation.missingRequiredItems.length > 0 && procedureOverview.summary.nextStep && (
-              <button
-                type="button"
-                onClick={() => jumpToProcedureStep(procedureOverview.summary.nextStep?.step.id)}
-                className="flex w-full items-center justify-center gap-2 rounded-lg border border-amber-500/25 bg-amber-500/10 px-2.5 py-2 text-xs font-black text-amber-200 transition hover:bg-amber-500/15"
-              >
-                <AlertCircle size={14} />
-                Jump to next missing step: {procedureOverview.summary.nextStep.step.title}
-              </button>
-            )}
-            {closeoutRequirements.map(requirement => (
-              <CloseoutRequirementRow
-                key={requirement.id}
-                requirement={requirement}
-                blocking={closeoutEvaluation.missingRequiredItems.some(item => item.id === requirement.id)}
-                onClick={
-                  closeoutEvaluation.missingRequiredItems.some(item => item.id === requirement.id) && procedureOverview.summary.nextStep
-                    ? () => jumpToProcedureStep(procedureOverview.summary.nextStep?.step.id)
-                    : undefined
-                }
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-2.5 py-2 text-xs font-bold text-cyan-200">
-            No closeout requirements attached.
-          </div>
-        )}
-
-        {onSatisfyCloseoutRequirements && (
-          <button
-            type="button"
-            onClick={() => onSatisfyCloseoutRequirements(job.id)}
-            className="mt-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-sm font-black text-amber-200 transition hover:bg-amber-500/15 focus:outline-none focus:ring-2 focus:ring-amber-300/30"
-          >
-            <RefreshCw size={14} />
-            Satisfy Test Requirements
-          </button>
-        )}
-
-        <button
-          type="button"
-          disabled={!closeoutEvaluation.completionAllowed || lifecycle.status !== 'work_complete_pending_closeout'}
-          onClick={() => runLifecycleAction('closeout')}
-          className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white/15 px-3 py-2 text-sm font-black text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-45 focus:outline-none focus:ring-2 focus:ring-white/30"
-        >
-          <CheckCircle2 size={15} />
-          Complete Job
-        </button>
-      </div>
-    </div>
-  );
-
-  const renderDetailsTab = () => (
-    <div className="min-w-0 space-y-4">
-      {/* Schedule / Pay / Type / Duration */}
-      <div className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-2">
-        <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-          <p className="text-xs font-black uppercase text-slate-500">Schedule</p>
-          <p className="mt-0.5 text-sm font-bold text-slate-300 break-words">
-            {job.scheduledDate && isValidScheduledDate(job.scheduledDate)
-              ? formatScheduledDate(job.scheduledDate)
-              : job.deadline || job.dueTime || 'Needs schedule'}
-          </p>
-        </div>
-        <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-          <p className="text-xs font-black uppercase text-slate-500">Pay</p>
-          <p className={`mt-0.5 text-lg font-black ${category === 'completed' ? 'text-blue-400' : 'text-emerald-400'}`}>
-            ${job.pay.toFixed(2)}
-          </p>
-        </div>
-        <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-          <p className="text-xs font-black uppercase text-slate-500">Type</p>
-          <p className={`mt-0.5 text-sm font-black ${getJobTypeStyle(job.jobType)}`}>
-            <span className="inline-block rounded-md border px-1.5 py-0.5">{formatJobType(job.jobType)}</span>
-          </p>
-        </div>
-        <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-          <p className="text-xs font-black uppercase text-slate-500">Duration</p>
-          <div className="mt-0.5 flex items-center gap-1 text-sm font-black text-slate-300">
-            <Clock size={12} />
-            <span>{job.estimatedMinutes} mins</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Time summary */}
-      {lifecycle.visits.length > 0 && (
-        <section aria-label="Lifecycle time summary" className="rounded-xl border border-white/10 bg-black/10 px-3 py-3">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <p className="text-xs font-black uppercase tracking-wider text-slate-500">Time Summary</p>
-            <p className="text-xs font-black uppercase text-slate-600">
-              {lifecycle.activeVisitId ? 'Through now' : 'Recorded'}
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-1.5">
-            <TimeSummaryTile label="Onsite" minutes={timeSummary.totalOnsiteMinutes} primary />
-            <TimeSummaryTile label="Active Work" minutes={timeSummary.activeWorkMinutes} primary />
-            {secondaryTimeBuckets.map(bucket => (
-              <TimeSummaryTile key={bucket.label} label={bucket.label} minutes={bucket.minutes} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Visit history */}
-      {lifecycle.visits.length > 0 && (
-        <section aria-labelledby="visit-history-title" className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <h5 id="visit-history-title" className="text-xs font-black uppercase tracking-wider text-slate-500">
-              Visit History
-            </h5>
-            <span className="text-xs font-black text-slate-500">
-              {lifecycle.activeVisitId ? 'Onsite now' : 'Offsite'}
-            </span>
-          </div>
-          <div className="space-y-2">
-            {lifecycle.visits.map(visit => (
-              <div
-                key={visit.id}
-                data-visit-id={visit.id}
-                className="rounded-lg border border-white/10 bg-black/10 px-2.5 py-2"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-black text-white">Visit {visit.visitNumber}</p>
-                  <p className="truncate text-xs font-semibold text-slate-600" title={`Visit ID: ${visit.id}`}>
-                    ID {visit.id}
-                  </p>
-                </div>
-                <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-1 text-xs font-semibold text-slate-400">
-                  <p><span className="text-slate-600">Arrived:</span> {formatVisitTimestamp(visit.arrivedAt)}</p>
-                  <p><span className="text-slate-600">Started:</span> {formatVisitTimestamp(visit.startedWorkAt)}</p>
-                  <p><span className="text-slate-600">Ended:</span> {formatVisitTimestamp(visit.endedAt)}</p>
-                  <p className="capitalize"><span className="text-slate-600">Reason:</span> {formatVisitReason(visit.endReason)}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Preview Guide + Move Day / Edit */}
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={() => setPreviewGuideOpen(true)}
-          className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-sm font-black text-cyan-200 transition hover:bg-cyan-500/20"
-        >
-          <BookOpen size={15} />
-          Preview Guide
-        </button>
-        {onMoveToDay && !isDone ? (
-          <button
-            type="button"
-            onClick={() => onMoveToDay(job)}
-            className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-black text-slate-200 hover:bg-white/[0.08]"
-          >
-            <Calendar size={15} />
-            Move Day
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => onEdit(job)}
-            className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-black text-slate-200 hover:bg-white/[0.08]"
-          >
-            <Edit2 size={15} />
-            Edit
-          </button>
-        )}
-      </div>
-
-      {/* Transit */}
-      {isTransitApiEnabled() && transitOrigin && (
-        <JobTransitSection job={job} origin={transitOrigin} />
-      )}
-
-      {/* Inventory custody */}
-      <InventoryCustodyPanel job={job} />
-
-      {/* Notes */}
-      {job.notes && (
-        <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-          <p className="text-xs font-black uppercase text-slate-500">Notes</p>
-          <p className="mt-1 text-sm font-semibold leading-relaxed text-slate-400 break-words">
-            &ldquo;{job.notes}&rdquo;
-          </p>
-        </div>
-      )}
-
-      {/* Smart merge explanation */}
-      {job.smartMergeExplanation && (
-        <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 px-3 py-2">
-          <div className="flex items-start gap-1.5">
-            <ShieldAlert size={14} className="mt-0.5 shrink-0 text-blue-400" />
-            <p className="text-xs font-bold leading-normal text-blue-300 break-words">{job.smartMergeExplanation}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Process serve details */}
-      {job.jobType === 'process_serve' && job.processServe && (
-        <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2">
-          <p className="text-xs font-black uppercase text-red-400">Process Serve</p>
-          <div className="mt-1 space-y-0.5 text-sm font-bold text-red-200">
-            {job.processServe.company && <p className="break-words">{job.processServe.company}</p>}
-            {job.processServe.caseNumber && <p className="break-words">Case: {job.processServe.caseNumber}</p>}
-            {job.processServe.partyName && <p className="break-words">Party: {job.processServe.partyName}</p>}
-            {job.processServe.attemptStatus && (
-              <p className="text-xs uppercase text-red-300">
-                {job.processServe.attemptStatus.replaceAll('_', ' ')}
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Legacy status controls */}
-      <div>
-        <p className="mb-2 text-xs font-black uppercase tracking-wider text-slate-500">
-          {job.status === 'finished' ? 'Legacy Job Finished' : 'Legacy Status'}
-        </p>
-        {job.status === 'finished' ? (
-          <div className="rounded-xl border border-gray-600/20 bg-gray-500/5 p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <CheckCircle2 size={14} className="text-gray-400" />
-              <span className="text-sm font-bold text-gray-400">This job has been finished and removed from active route.</span>
-            </div>
-            <button
-              onClick={() => handleQuickStatusChange('ready')}
-              disabled={jobAccessLocked}
-              className="flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-slate-300 hover:bg-white/10 transition disabled:opacity-45"
-            >
-              <RotateCcw size={12} />
-              <span>Restore to Today</span>
-            </button>
-          </div>
-        ) : job.status === 'under_review' ? (
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => {
-                if (window.confirm('Mark this review as complete and remove the job from Today\'s Route?')) {
-                  handleQuickStatusChange('finished');
-                }
-              }}
-              disabled={jobAccessLocked}
-              className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-emerald-600 bg-emerald-600 px-2 py-2 text-xs font-black text-white transition hover:bg-emerald-500 disabled:opacity-45"
-            >
-              <CheckSquare size={14} />
-              <span>Review Complete</span>
-            </button>
-            <button
-              onClick={() => handleQuickStatusChange('revisit')}
-              disabled={jobAccessLocked}
-              className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-rose-500 bg-rose-500/20 px-2 py-2 text-xs font-black text-rose-300 transition hover:bg-rose-500/30 disabled:opacity-45"
-            >
-              <AlertCircle size={14} />
-              <span>Revision Required</span>
-            </button>
-          </div>
-        ) : needsRevision ? (
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => handleQuickStatusChange('under_review')}
-              disabled={jobAccessLocked}
-              className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-indigo-600 bg-indigo-600 px-2 py-2 text-xs font-black text-white transition hover:bg-indigo-500 disabled:opacity-45"
-            >
-              <RefreshCw size={14} />
-              <span>Resubmitted</span>
-            </button>
-            <button
-              onClick={() => {
-                if (window.confirm('Mark this revision as finished and remove from active route?')) {
-                  handleQuickStatusChange('finished');
-                }
-              }}
-              disabled={jobAccessLocked}
-              className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2 py-2 text-xs font-black text-slate-300 transition hover:bg-white/10 disabled:opacity-45"
-            >
-              <CheckCircle2 size={14} />
-              <span>Mark Finished</span>
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => handleQuickStatusChange('under_review')}
-              disabled={jobAccessLocked}
-              className={`flex min-h-11 items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-xs font-black transition disabled:cursor-not-allowed disabled:opacity-45 ${
-                'border-white/10 bg-white/5 text-slate-300 hover:bg-white/10'
-              }`}
-            >
-              <Hourglass size={14} />
-              <span>Under Review</span>
-            </button>
-            <button
-              onClick={() => handleQuickStatusChange('revisit')}
-              disabled={jobAccessLocked}
-              className={`flex min-h-11 items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-xs font-black transition disabled:cursor-not-allowed disabled:opacity-45 ${
-                'border-white/10 bg-white/5 text-slate-300 hover:bg-white/10'
-              }`}
-            >
-              <AlertCircle size={14} />
-              <span>Revision</span>
-            </button>
-            <button
-              onClick={() => handleQuickStatusChange('postponed')}
-              className={`flex min-h-11 items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-xs font-black transition ${
-                'border-white/10 bg-white/5 text-slate-300 hover:bg-white/10'
-              }`}
-            >
-              <Calendar size={14} />
-              <span>Tomorrow</span>
-            </button>
-            <button
-              onClick={() => onToggleRoute(job.id)}
-              className={`flex min-h-11 items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-xs font-black transition ${
-                job.routeId === 'B'
-                  ? 'border-amber-600 bg-amber-600 text-white'
-                  : 'border-white/10 bg-white/5 text-slate-300 hover:bg-white/10'
-              }`}
-            >
-              <ArrowRightLeft size={14} />
-              <span>{job.routeId === 'B' ? 'Route A' : 'Route B'}</span>
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Status History */}
-      {job.statusHistory && job.statusHistory.length > 0 && (
-        <div>
-          <p className="mb-2 text-xs font-black uppercase tracking-wider text-slate-500">Status History</p>
-          <div className="space-y-1 max-h-32 overflow-y-auto">
-            {job.statusHistory.slice(-6).reverse().map((event, i) => (
-              <div key={i} className="flex items-center gap-2 text-xs text-slate-400">
-                <span className="text-slate-600">{new Date(event.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
-                <span className="text-white/30">→</span>
-                <span className="font-bold text-white/60">{event.to.replace('_', ' ')}</span>
-                {event.note && <span className="text-white/30 italic">({event.note})</span>}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Smart Aisle Scan */}
-      {onOpenScan && SCAN_COMPATIBLE_TYPES.includes(job.jobType) && !isDone && job.status !== 'finished' && (
-        <button
-          onClick={() => onOpenScan(job.id)}
-          className="w-full flex items-center justify-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 py-3 text-sm font-black text-cyan-300 hover:bg-cyan-500/20 transition"
-        >
-          <Camera size={14} />
-          <span>Smart Aisle Scan</span>
-        </button>
-      )}
-
-      {/* Admin row */}
-      <div className="flex items-center justify-between border-t border-dashed border-white/10 pt-3">
-        <span className="text-xs font-medium text-slate-500">ID: {job.id.split('-').pop()}</span>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => onEdit(job)}
-            title="Edit job"
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-transparent text-slate-400 transition hover:bg-white/10 hover:text-white"
-          >
-            <Edit2 size={14} />
-          </button>
-          <button
-            onClick={() => onDuplicate(job)}
-            title="Duplicate job"
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-transparent text-slate-400 transition hover:bg-white/10 hover:text-white"
-          >
-            <Copy size={14} />
-          </button>
-          <button
-            onClick={() => onDelete(job.id)}
-            title="Delete job"
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-transparent text-slate-500 transition hover:bg-rose-950/30 hover:text-rose-400"
-          >
-            <Trash2 size={14} />
-          </button>
-        </div>
-      </div>
-
-      {/* Job access gate warning */}
-      {!jobAccessLocked ? null : (
-        <div className="flex items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2">
-          <span className="text-xs font-bold text-amber-300">
-            A required compliance check is incomplete. Job details are view-only until access is restored.
-          </span>
-        </div>
-      )}
-    </div>
-  );
+  const mapsUrl = buildGoogleMapsUrl(job.address, travelMode);
+  const travelTime = estimateTravelTime(legDistance, travelMode);
 
   const modalContent = (
     <div
@@ -1175,7 +188,7 @@ export default function JobDetailModal({
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
-      aria-labelledby="job-detail-modal-title"
+      aria-label={`Job details for ${job.storeName}`}
     >
       <div
         onClick={handlePanelClick}
@@ -1189,26 +202,7 @@ export default function JobDetailModal({
               {routeIndex + 1}
             </span>
           )}
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-black uppercase text-slate-400">
-              {legDistance > 0 && (
-                <span className="flex items-center gap-1">
-                  <Navigation size={12} className="text-emerald-400" />
-                  {legDistance.toFixed(1)} mi
-                </span>
-              )}
-              {rideMinutes > 0 && (
-                <span className="flex items-center gap-1">
-                  <Clock size={12} className="text-amber-400" />
-                  {rideMinutes} min
-                </span>
-              )}
-              <span className="flex items-center gap-1">
-                <MapPin size={12} className="text-indigo-400" />
-                Stop {routeIndex !== null ? routeIndex + 1 : '—'}
-              </span>
-            </div>
-          </div>
+          <div className="min-w-0 flex-1" />
           <button
             ref={closeButtonRef}
             type="button"
@@ -1220,154 +214,91 @@ export default function JobDetailModal({
           </button>
         </div>
 
-        {/* Sticky tab bar */}
-        <div className="sticky top-0 z-10 flex shrink-0 items-center border-b border-white/10 bg-[#111214]/95 px-2 py-1 backdrop-blur-[8px]">
-          {TAB_ORDER.map(tab => {
-            const isActive = activeTab === tab;
-            return (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setActiveTab(tab)}
-                className={`flex flex-1 items-center justify-center gap-1 rounded-md px-1 py-1.5 text-xs font-black transition ${
-                  isActive
-                    ? 'bg-white/15 text-white'
-                    : 'text-slate-500 hover:bg-white/[0.06] hover:text-slate-300'
-                }`}
-                aria-current={isActive ? 'page' : undefined}
-              >
-                {TAB_ICONS[tab]}
-                {TAB_LABELS[tab]}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Scrollable body */}
+        {/* Content - REARRANGED: Address first, then logo, then title, then travel */}
         <div
-          ref={bodyRef}
-          className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain px-4 py-4"
+          className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain px-4 py-6"
           style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
         >
-          {activeTab === 'work' && renderWorkTab()}
-          {activeTab === 'procedure' && renderProcedureTab()}
-          {activeTab === 'closeout' && renderCloseoutTab()}
-          {activeTab === 'details' && renderDetailsTab()}
+          <div className="space-y-4">
+
+            {/* ADDRESS - MOVED TO TOP, LARGER */}
+            <div className="flex items-center justify-center gap-2 text-slate-400 px-2">
+              <MapPin size={22} className="shrink-0 text-emerald-400" />
+              <p className="text-xl font-black text-white text-center break-words leading-snug">
+                {job.address}
+              </p>
+            </div>
+
+            {/* Travel time/distance - right under address */}
+            {legDistance > 0 && (
+              <div className="flex items-center justify-center gap-2 text-emerald-400 px-4">
+                <span className="text-lg font-black text-emerald-300">
+                  {formatTravelTime(travelTime)}
+                </span>
+                <span className="text-sm font-semibold text-slate-500">
+                  {travelMode === 'driving' ? 'drive' : travelMode === 'bicycling' ? 'bike' : 'walk'}
+                </span>
+                <span className="text-sm font-semibold text-slate-500">
+                  · {legDistance.toFixed(1)} mi
+                </span>
+              </div>
+            )}
+
+            {/* Job Logo/Photo - smaller, below address */}
+            <div className="flex items-center justify-center">
+              <div className="relative h-28 w-28 rounded-xl bg-white/5 overflow-hidden border border-white/10">
+                <JobLogo job={job} />
+              </div>
+            </div>
+
+            {/* Job Title - smaller, below logo */}
+            <div className="text-center">
+              <h2 className="text-lg font-medium text-slate-400 leading-tight break-words uppercase tracking-wide">
+                {job.storeName}
+              </h2>
+            </div>
+
+            {/* Travel mode selector */}
+            <div className="flex items-center justify-center gap-1 px-4 pt-2">
+              {TRAVEL_MODES.map(mode => (
+                <button
+                  key={mode.value}
+                  type="button"
+                  onClick={() => setTravelMode(mode.value)}
+                  className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-black uppercase transition ${
+                    travelMode === mode.value
+                      ? 'bg-white/15 text-white'
+                      : 'text-slate-500 hover:bg-white/[0.06] hover:text-slate-300'
+                  }`}
+                  aria-pressed={travelMode === mode.value}
+                >
+                  {mode.icon}
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+
+          </div>
         </div>
 
-        {/* Sticky bottom action bar */}
-        {showStickyActions && (
-          <div className="flex shrink-0 items-center gap-2 border-t border-white/10 bg-[#111214]/90 px-4 py-2 backdrop-blur-[8px]">
-            <button
-              type="button"
-              onClick={() => runLifecycleAction(primaryAction)}
-              className="min-h-11 flex-1 rounded-lg bg-white/20 px-3 py-2 text-sm font-black text-white transition hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-white/40"
-            >
-              {overview.nextAction.primaryLabel}
-            </button>
-            {showContinueProcedure && (
-              <button
-                type="button"
-                onClick={() => runLifecycleAction('continue_procedure')}
-                className="min-h-11 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-sm font-black text-cyan-200 transition hover:bg-cyan-500/20"
-              >
-                Continue Procedure
-              </button>
-            )}
-          </div>
-        )}
-
-        {noteAction && (
-          <div className="border-t border-white/10 bg-[#15171a] px-4 py-3" role="dialog" aria-modal="false" aria-labelledby="lifecycle-note-title">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h5 id="lifecycle-note-title" className="text-sm font-black text-white">{noteSheetTitle}</h5>
-                <p className="mt-0.5 text-xs font-semibold text-slate-400">
-                  {noteAction === 'pause_work' ? 'A note is optional.' : 'A short reason is required.'}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={closeNoteSheet}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-slate-300 hover:bg-white/15"
-                aria-label="Cancel lifecycle note"
-              >
-                <X size={15} />
-              </button>
-            </div>
-            {noteAction === 'end_visit' && (
-              <label className="mt-3 block">
-                <span className="text-xs font-black uppercase tracking-wide text-slate-500">Reason</span>
-                <select
-                  value={endVisitReason}
-                  onChange={(event) => setEndVisitReason(event.target.value as VisitEndReason)}
-                  className="mt-1 min-h-11 w-full rounded-lg border border-white/10 bg-black/20 px-3 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
-                >
-                  {END_VISIT_REASON_OPTIONS.map(option => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              </label>
-            )}
-            <label className="mt-3 block">
-              <span className="text-xs font-black uppercase tracking-wide text-slate-500">
-                {noteAction === 'pause_work' ? 'Note' : 'Reason / note'}
-              </span>
-              <textarea
-                key={noteAction}
-                ref={noteTextRef}
-                data-lifecycle-note="true"
-                defaultValue=""
-                placeholder={notePlaceholder}
-                rows={3}
-                className="mt-1 w-full resize-none rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm font-semibold text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
-              />
-            </label>
-            {lifecycleError && (
-              <p className="mt-2 text-xs font-bold text-amber-300" role="alert">{lifecycleError}</p>
-            )}
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={closeNoteSheet}
-                className="min-h-11 rounded-lg border border-white/10 px-3 py-2 text-sm font-black text-slate-300 hover:bg-white/10"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={submitNoteAction}
-                className="min-h-11 rounded-lg bg-cyan-600 px-3 py-2 text-sm font-black text-white hover:bg-cyan-500"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Fixed sticky footer */}
-        <div className="flex shrink-0 items-center gap-2 border-t border-white/10 px-4 py-3">
+        {/* Fixed sticky footer - Navigate button */}
+        <div className="flex shrink-0 items-center gap-2 border-t border-white/10 px-4 py-4 pb-6">
           <a
-            href={navLink}
+            href={jobAccessLocked ? undefined : mapsUrl}
+            aria-disabled={jobAccessLocked}
+            onClick={(event) => { if (jobAccessLocked) event.preventDefault(); }}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 text-sm font-black uppercase text-white transition hover:bg-emerald-500"
-            aria-label={`Navigate to ${job.storeName}`}
+            className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 text-base font-black uppercase text-white transition hover:bg-emerald-500 active:scale-[0.98]"
+            aria-label={`Navigate to ${job.storeName} at ${job.address} by ${travelMode}`}
           >
-            <Navigation size={15} />
-            <span>Navigate</span>
+            <MapPin size={20} />
+            <span>{jobAccessLocked ? 'Check-in required' : 'Navigate'}</span>
           </a>
         </div>
       </div>
     </div>
   );
 
-  return createPortal(<>{modalContent}{previewGuideOpen && (
-    <PreviewGuideModal
-      job={job}
-      navLink={navLink}
-      transitOrigin={transitOrigin}
-      onClose={() => setPreviewGuideOpen(false)}
-    />
-  )}</>, document.body);
+  return createPortal(<>{modalContent}</>, document.body);
 }

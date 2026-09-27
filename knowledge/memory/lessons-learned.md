@@ -98,3 +98,7 @@
 ---
 
 **Last Updated:** 2026-09-15 (User-request scope rule added)
+
+## 2026-09-26 release review
+
+Provider opening and audit logging should share one launcher to prevent duplicate tabs. A simplified navigation popup must still enforce job-access locks. Public local-only workspace entry is an explicit existing product setting; it must never create real API credentials.

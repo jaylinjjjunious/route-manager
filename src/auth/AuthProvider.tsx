@@ -12,6 +12,25 @@ import {
 } from "./authDebug";
 import { isLocalAuthBypassAllowed } from "./localAuthBypass";
 
+function createMockDevUser(): User {
+  return {
+    id: "dev-user-local",
+    aud: "authenticated",
+    role: "authenticated",
+    email: "dev@local.dev",
+    email_confirmed_at: new Date().toISOString(),
+    phone: "",
+    confirmed_at: new Date().toISOString(),
+    last_sign_in_at: new Date().toISOString(),
+    app_metadata: { provider: "dev-bypass", providers: ["dev-bypass"] },
+    user_metadata: { name: "Dev User", email: "dev@local.dev" },
+    identities: [],
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    is_anonymous: false,
+  } as User;
+}
+
 interface AuthContextValue {
   session: Session | null;
   user: User | null;
@@ -37,6 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [verificationMode, setVerificationMode] = useState(false);
+  const [devUser, setDevUser] = useState<User | null>(null);
   const mountedRef = useRef(true);
   const initIdRef = useRef(0);
   const userSignedOutRef = useRef(false);
@@ -138,14 +158,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const enableWorkspaceBypass = useCallback(() => {
     if (!workspaceBypassAvailable) return;
+    const mockUser = createMockDevUser();
+    setDevUser(mockUser);
     setVerificationMode(true);
     setLoading(false);
-    authDebugRaw("Local-only workspace bypass enabled");
+    authDebugRaw("Local-only dev mode bypass enabled with mock user");
   }, [workspaceBypassAvailable]);
 
   const signOut = useCallback(async () => {
     userSignedOutRef.current = true;
     setVerificationMode(false);
+    setDevUser(null);
     authDebugSignOut("AuthProvider.signOut (user-initiated)");
     await supabase.auth.signOut();
   }, []);
@@ -170,7 +193,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value: AuthContextValue = {
     session,
-    user: session?.user ?? null,
+    user: session?.user ?? devUser ?? null,
     loading,
     verificationMode,
     workspaceBypassAvailable,

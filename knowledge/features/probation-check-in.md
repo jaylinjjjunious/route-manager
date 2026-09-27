@@ -20,7 +20,7 @@ The cycle key is the local calendar month (`YYYY-MM`). Completion immediately un
 
 `ProbationCheckInPanel` appears on Today and Jobs. **Check In Now** logs the launch time and opens the official CE Check-In website in a new browser tab. After completing the official flow, the user can attach a screenshot and/or use the one-tap **I Completed It** acknowledgement. The panel records device class, event timestamps, reporting month, proof metadata, and verification level.
 
-Incomplete states use the full coaching panel so the requirement cannot be missed. After completion, the panel collapses to a compact green confirmation row that keeps the monthly status visible without crowding the dashboard. The `AIØ17` header remains unchanged.
+Incomplete states use the full coaching panel so the requirement cannot be missed. After completion, the Today/Jobs panel is hidden. More → Monthly Check-In retains the completion status, details, activity log, proof preview, and provider link. The `AIØ17` header remains unchanged.
 
 Phone and tablet users receive the image picker. Computer users additionally receive browser screen capture, which always requires the browser's permission prompt. The app never claims a screenshot exists when capture was canceled or unavailable.
 
@@ -48,3 +48,7 @@ The probation lock composes with the existing shower gate through the shared `jo
 - `src/App.tsx`
 - `src/components/aio/TodayScreen.tsx`
 - `src/features/jobs/JobsScreen.tsx`
+
+## Update 2026-09-26
+
+More → Monthly Check-In opens MonthlyCheckInPage/MonthlyCheckInSettings. The shared useProbationCheckIn launcher records one launch event and opens the provider once through useExternalBrowser: a new web tab or Capacitor native browser. Launch failures appear as an error. The dedicated page uses the existing monthly state and storage. Native iOS behavior still requires device verification.

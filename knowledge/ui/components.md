@@ -395,3 +395,7 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 | **Responsibility** | Development/testing feature for Smart Aisle Scan. Home screen with Live Camera Practice, Imported Test Sequence, Controlled Test Scenarios, Test Markers, Sensor Diagnostics, Test Results/Scorecard, and Test Data Cleanup. Wraps real SmartAisleScan in test_lab mode, and the browser harness validates start capture, hold-for-burst long-press no-selection behavior, pointer cancel/lost-capture interruption paths, release-to-pause Burst Complete feedback plus Reached the End stitching, and stitched-photo acceptance. Feature-gated via `VITE_ENABLE_SMART_AISLE_TEST_LAB` in dev builds only; production builds ignore the flag. |
 | **Entry** | Settings > Developer Tools (only when flag enabled) |
 
+
+## 2026-09-26 component update
+
+JobDetailModal now shows only address, logo/name, travel modes/estimates, and gated navigation; its previous workflow tabs were removed by explicit user choice. MonthlyCheckInPage wraps MonthlyCheckInSettings, exposing the shared monthly state from More. CECheckInButton is a reusable provider launcher; it is not currently placed in navigation.

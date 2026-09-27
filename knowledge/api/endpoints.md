@@ -376,3 +376,7 @@ Authenticated selected-page extraction for the per-job Preview Guide.
 - Response: structured title/time/pay when visible, beforeYouGo, whatYouWillDo, proofRequirements, warnings, referenceTopics, and uncertainItems.
 - Every returned action item retains valid submitted source page IDs; items without valid source references are dropped.
 - Errors use plain messages and server logs omit image data and extracted text.
+
+## Build identification (2026-09-26)
+
+GET /api/build-info is public and uncached. commitSha resolves RENDER_GIT_COMMIT, then RAILWAY_GIT_COMMIT_SHA, then GIT_COMMIT_SHA, otherwise local. Render is the primary Express host. builtAt currently falls back to response time when no Railway deployment timestamp is supplied; use commitSha for release identity.

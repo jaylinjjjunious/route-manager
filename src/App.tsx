@@ -82,6 +82,7 @@ import type { ShowerProofRecord } from './features/showerGate/showerProofApi';
 import type { ShowerProof } from './features/showerGate/types';
 import { useShowerGate } from './features/showerGate/useShowerGate';
 import ProbationCheckInPanel from './features/probation/ProbationCheckInPanel';
+import MonthlyCheckInPage from './features/probation/MonthlyCheckInPage';
 import { useProbationCheckIn } from './features/probation/useProbationCheckIn';
 import { authFetch, authFetchJson } from './services/apiClient';
 import { isTransitApiEnabled } from './services/transit';
@@ -91,7 +92,8 @@ import {
   LayoutDashboard, Briefcase, Battery, Settings, AlertTriangle, ArrowRightLeft,
   Sparkles, Compass, ExternalLink, Navigation, CheckCircle2,
   ChevronDown, ChevronUp, ChevronRight, DollarSign, Zap, Award, Volume2, VolumeX,
-  FolderOpen, Camera, FileImage, Hourglass, Bug, FlaskConical, PackageCheck
+  FolderOpen, Camera, FileImage, Hourglass, Bug, FlaskConical, PackageCheck,
+  Clock
 } from 'lucide-react';
 
 const isSmartAisleTestLabEnabled = import.meta.env.DEV && import.meta.env.VITE_ENABLE_SMART_AISLE_TEST_LAB === 'true';
@@ -103,9 +105,9 @@ const SHOWER_HABIT_NAME = 'Mandatory Shower';
 // Temporary operational bypass. Set true to restore the scan/access gate without removing its implementation.
 const SHOWER_GATE_REQUIRED = false;
 
-type AppTab = 'dashboard' | 'jobs' | 'more' | 'inventory' | 'battery' | 'tracker' | 'habits' | 'tools' | 'settings';
+type AppTab = 'dashboard' | 'jobs' | 'more' | 'inventory' | 'battery' | 'tracker' | 'habits' | 'tools' | 'settings' | 'checkin';
 
-const APP_TABS: AppTab[] = ['dashboard', 'jobs', 'more', 'inventory', 'battery', 'tracker', 'habits', 'tools', 'settings'];
+const APP_TABS: AppTab[] = ['dashboard', 'jobs', 'more', 'inventory', 'battery', 'tracker', 'habits', 'tools', 'settings', 'checkin'];
 const SHOWER_PROTECTED_TABS: AppTab[] = ['battery', 'tracker'];
 
 const RETIRED_ROUTE_DESTINATIONS = new Set(['route', 'routes']);
@@ -1024,7 +1026,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
 
         {/* Main Content Body */}
         <main className="app-main mx-auto max-w-7xl px-3 py-4 pb-40 sm:px-6 sm:py-6 lg:px-8 space-y-6">
-          {(currentTab === 'dashboard' || currentTab === 'jobs') && (
+          {(currentTab === 'dashboard' || currentTab === 'jobs') && !probationCheckIn.completed && (
             <ProbationCheckInPanel state={probationCheckIn} />
           )}
 
@@ -1934,6 +1936,11 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
             </div>
           )}
 
+          {/* Tab: Monthly Check-In */}
+          {currentTab === 'checkin' && (
+            <MonthlyCheckInPage state={probationCheckIn} />
+          )}
+
           {/* Tab 6: Settings and Instructions */}
           {currentTab === 'settings' && (
             <div className="space-y-6 animate-fade-in" id="tab-view-settings">
@@ -2072,6 +2079,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                       </button>
                     </div>
                   )}
+
                 </div>
 
                 {/* FAQ Instructions */}

@@ -191,7 +191,7 @@ app.get("/api/build-info", (_req, res) => {
   res.json({
     app: "All in One 667",
     version: process.env.npm_package_version || "0.0.0",
-    commitSha: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT_SHA || "local",
+    commitSha: process.env.RENDER_GIT_COMMIT || process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT_SHA || "local",
     railwayDeploymentId: process.env.RAILWAY_DEPLOYMENT_ID || null,
     builtAt: process.env.RAILWAY_DEPLOYMENT_CREATED_AT || new Date().toISOString(),
     environment: process.env.NODE_ENV || "development",

@@ -11,6 +11,7 @@ let mockUser: { email: string } | null = { email: 'owner@example.com' };
 vi.mock('../src/auth/AuthProvider', () => ({
   useAuth: () => ({
     user: mockUser,
+    session: mockUser ? { user: mockUser } : null,
     updatePassword,
   }),
 }));

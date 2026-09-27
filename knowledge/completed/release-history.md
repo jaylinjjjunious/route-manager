@@ -60,3 +60,7 @@ Plus approximately 45 earlier commits covering the full feature progression: hab
 
 **Last Updated:** 2026-09-15 (ce14cc4)
 
+
+## 2026-09-26 — CLI changes prepared for production
+
+Includes the dedicated Monthly Check-In page, native/web CE browser launcher, local-only development identity, and user-approved simplified job popup. Fixed duplicate launches, navigation lock enforcement, and session-dependent account controls. Render now reports its deployment commit. Local UI verified entry, More → Monthly Check-In, and Jobs → locked navigation popup. Native iOS and protected authenticated cloud flows remain unverified; no checkpoint is created for those flows.

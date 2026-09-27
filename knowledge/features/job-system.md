@@ -36,21 +36,9 @@ Dashboard Today's Route cards open a `DashboardJobDetailSheet` bottom-sheet moda
 
 ### Job Detail Overview
 
-`JobDetailModal` is a tab-based mobile-first bottom-sheet modal with four sections: **WORK**, **PROCEDURE**, **CLOSEOUT**, and **DETAILS**. A sticky segmented tab bar sits below the compact route-info header. The modal defaults to **WORK** so technicians see actions immediately without scrolling through procedure steps or administrative details.
+As requested on 2026-09-26, `JobDetailModal` is a simplified address-first popup. It shows the store logo/name, leg distance, estimated travel time, Drive/Bike/Walk selectors, and a Google Maps navigation link. Estimates use fixed speeds (25/10/3 mph) and are not live traffic predictions. Navigation has no destination link while job access is locked. Escape, backdrop, and the close button dismiss the dialog.
 
-**WORK tab** surfaces the most important active-job information: store/customer identity and address, device badges, lifecycle/work state badges, a visually dominant Next Action card with the primary lifecycle button and any secondary actions, important blocking warnings, a compact procedure-progress tile, and summary chips. The Next Action is derived by `src/features/jobs/jobOverview.ts` from lifecycle state. All secondary information (schedule, pay, type, duration, time summary, visit history, admin controls, legacy status UI) lives in other tabs.
-
-**PROCEDURE tab** hosts the full `ProcedureWorkspace`. It shows the assigned procedure name/version, a Guided/Quick toggle, percent complete, and a phase accordion. Each phase header displays the phase name, completion count, and missing-item count, and is tap-to-expand/collapse. The current phase is expanded by default; completed and future phases are collapsed by default. Steps inside a phase use progressive disclosure: the current step and any step with blocking requirements are expanded by default; satisfied steps are collapsed and visually quieted.
-
-**CLOSEOUT tab** shows the Closeout Gate as a self-contained section. A compact summary displays how many required items are complete vs missing, lists every blocker as a tappable row, and includes the final Complete Job button (disabled until completion is allowed). Tapping a blocker jumps to the PROCEDURE tab, opens the correct phase, and expands the relevant step.
-
-**DETAILS tab** collects low-frequency administrative information: schedule/pay/type/duration tiles, lifecycle Time Summary (onsite, active work, paused, support, blocked), Visit History (visit numbers, timestamps, end reasons, stable visit IDs), Preview Guide, Move Day, Transit, InventoryCustodyPanel, notes, process-serve details, Smart Aisle Scan, status history, and the admin row (edit/duplicate/delete).
-
-**Sticky bottom action bar** appears inside the modal when a primary lifecycle action is available. It shows the main Next Action button and, when appropriate, a Continue Procedure button that switches to the PROCEDURE tab and opens the next unresolved step. The bar respects safe-area insets for iPhone and never shows more than two emphasized buttons.
-
-Lifecycle actions (Arrive/Check In, Ready to Start, Blocked Before Start, Start Job, Pause/Resume, Await Support, Blocked Onsite, End Visit, Work Complete, Closeout, Reopen) are wired through the same action handlers regardless of tab. Blocker/support/end-visit/reopen flows use the in-modal note sheet. Work Complete closes the active visit/timing into `work_complete_pending_closeout`, keeps legacy `JobStatus` open, removes active-work controls, and surfaces Closeout as the next action.
-
-**Typography minimums:** meaningful technician-facing content uses no font size below 12px. Store name uses 18–20px, section headings 14–16px, step titles 15–17px, body/instructions 14–16px, button labels 14–16px, and secondary metadata 12–13px. Tiny 8–10px text was eliminated from the refactored surfaces.
+The former WORK/PROCEDURE/CLOSEOUT/DETAILS tabs and their lifecycle, inventory, proof, assignment, and administrative controls are deliberately no longer accessible in this popup. Existing job records and underlying engines remain intact. The procedure/closeout sections below describe retained engine capabilities and the former workflow; they do not imply those controls remain available in the simplified popup. Corresponding retired modal UI tests were replaced with navigation, lock, logo, and dismissal coverage.
 
 ### Job Interface (src/types.ts)
 

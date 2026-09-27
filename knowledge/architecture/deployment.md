@@ -2,15 +2,15 @@
 
 ## Purpose
 
-Describes how the application is built, deployed, and hosted across Railway and Cloudflare.
+Render is the current primary production host; Railway is a rollback host and Cloudflare is an alternate build path.
 
 ## Current Implementation
 
-### Primary Deployment: Railway
+### Primary Deployment: Render
 
 **Branch:** `main`
 **Builder:** nixpacks (Node 22.16.0)
-**Config:** `railway.toml`, `nixpacks.toml`
+**Config:** `render.yaml` (primary), `railway.toml` and `nixpacks.toml` (rollback)
 
 **Build pipeline:**
 ```
@@ -41,7 +41,7 @@ Railway detects pushes to `main` branch and automatically starts a build. The `r
 
 ```sh
 # Deploy from local
-git push origin main
+git push github main
 
 # Check deployment status
 railway status
@@ -93,3 +93,7 @@ Set in Railway dashboard or `.env` file:
 ## Last Updated
 
 2026-08-15 (apple-ios-wrap-github-actions)
+
+## Render release verification (2026-09-26)
+
+Render watches GitHub main. The public /api/build-info response now resolves RENDER_GIT_COMMIT before Railway/GIT_COMMIT_SHA fallbacks. Compare it with github/main before claiming the release is live. Railway-specific commands above apply only to the rollback host.

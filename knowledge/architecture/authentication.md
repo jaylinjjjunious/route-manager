@@ -53,16 +53,9 @@ local technician identity, not a Supabase session, and contains no records.
 This mode is not compiled into production behavior, does not mint tokens, and
 does not relax `requireAuth()` for protected APIs.
 
-### Local Sign-In Bypass
+### Local-Only Workspace Entry
 
-For local UI inspection without a Supabase session, the login page can turn its
-existing shield logo into a development-only entry control. It is available
-only when all three conditions are true: Vite is running in development mode,
-`VITE_LOCAL_AUTH_BYPASS=true`, and the browser hostname is loopback
-(`localhost`, `127.0.0.1`, or IPv6 loopback). Activating it sets the existing
-client `verificationMode`; it does not mint a Supabase session and does not
-bypass authentication on protected backend APIs. Production builds and
-non-loopback hosts render the shield as a non-interactive brand mark.
+The login page offers Continue in Dev Mode when the development/loopback guard passes, or when the existing `VITE_PUBLIC_WORKSPACE_BYPASS=true` build flag is enabled (as in render.yaml). Entry sets verificationMode and provides an in-memory synthetic dev-user-local identity for local UI consumers. It creates no Supabase session or access token. Protected cloud APIs still require real authentication. Signing out clears the synthetic identity. A real session user takes precedence.
 
 **Worker (`worker/index.ts`):**
 - The Worker does not currently validate Supabase bearer tokens.
@@ -123,3 +116,5 @@ Required env vars:
 ## Last Updated
 
 2026-08-15 (authenticated Change Password panel and localhost reset redirect verification)
+
+Account status and password-change availability use the real session, not the synthetic local user.

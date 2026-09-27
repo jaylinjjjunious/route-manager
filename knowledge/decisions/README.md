@@ -36,3 +36,5 @@ Place new files in `knowledge/decisions/` with the format `adr-XXX-kebab-case-ti
 ---
 
 **Last Updated:** 2026-08-02 (aio-three-tab-redesign)
+
+- [Simplified job details popup](2026-09-26-simplified-job-popup.md) — accepted 2026-09-26; user-approved removal of workflow controls from the popup.

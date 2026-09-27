@@ -7,6 +7,7 @@ const authMock = vi.hoisted(() => ({
   workspaceBypassAvailable: true,
   enableWorkspaceBypass: vi.fn(),
   signIn: vi.fn(async () => ({})),
+  user: { email: "dev@local.dev" } as any,
 }));
 
 vi.mock("../src/auth/AuthProvider", () => ({
@@ -38,7 +39,7 @@ describe("isLocalAuthBypassAllowed", () => {
   });
 });
 
-describe("LoginPage workspace bypass control", () => {
+describe("LoginPage dev mode bypass control", () => {
   let container: HTMLDivElement;
   let root: Root;
 
@@ -50,13 +51,14 @@ describe("LoginPage workspace bypass control", () => {
     root = createRoot(container);
   });
 
-  it("uses the existing shield as the workspace bypass control", () => {
+  it("shows Continue in Dev Mode button when bypass is available", () => {
     act(() => root.render(React.createElement(LoginPage, { onForgotPassword: vi.fn() })));
 
     const button = container.querySelector<HTMLButtonElement>(
-      'button[aria-label="Enter workspace without signing in"]',
+      'button[aria-label="Continue in development mode without signing in"]',
     );
     expect(button).not.toBeNull();
+    expect(button?.textContent).toContain("Continue in Dev Mode");
 
     act(() => button?.click());
     expect(authMock.enableWorkspaceBypass).toHaveBeenCalledOnce();
@@ -69,7 +71,7 @@ describe("LoginPage workspace bypass control", () => {
     authMock.workspaceBypassAvailable = false;
     act(() => root.render(React.createElement(LoginPage, { onForgotPassword: vi.fn() })));
 
-    expect(container.querySelector('[aria-label="Enter workspace without signing in"]')).toBeNull();
+    expect(container.querySelector('[aria-label="Continue in development mode without signing in"]')).toBeNull();
 
     act(() => root.unmount());
     container.remove();

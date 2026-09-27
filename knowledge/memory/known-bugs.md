@@ -33,3 +33,9 @@
 ---
 
 **Last Updated:** 2026-09-09 (Railway build dependency and timezone-independent scheduling fixes)
+
+## 2026-09-26 release review
+
+Fixed duplicate provider launch in the new monthly page and restored navigation gating in the simplified job popup. Added Render commit identification. Native Capacitor browser interaction remains unverified on a real iOS device. The retired job popup workflow controls are intentionally unavailable by user decision.
+
+Release verification also corrected the synthetic local user's misleading Authenticated label and password-change form; both now require a real session.

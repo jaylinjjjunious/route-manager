@@ -15,7 +15,7 @@ function validatePassword(password: string, confirmPassword: string): string | n
 }
 
 export default function ChangePasswordPanel() {
-  const { user, updatePassword } = useAuth();
+  const { session, updatePassword } = useAuth();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -71,7 +71,7 @@ export default function ChangePasswordPanel() {
         </div>
       </div>
 
-      {!user ? (
+      {!session?.user ? (
         <div className="mt-3 rounded-[14px] border border-[#FF9F0A]/25 bg-[#FF9F0A]/10 px-3 py-2 text-[13px] font-bold text-[#B25000] dark:text-[#FFCC00]">
           Sign in with your real account to change your password. Local development bypass mode cannot update Supabase credentials.
         </div>

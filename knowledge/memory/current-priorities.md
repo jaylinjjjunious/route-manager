@@ -47,3 +47,7 @@
 ---
 
 **Last Updated:** 2026-09-15 (Today dashboard simplification reflected in verification priorities)
+
+## 2026-09-26 release
+
+Publish the approved local-only login identity, Monthly Check-In page, and simplified job popup. Verify the deployed commit plus public navigation; native iOS browser behavior requires separate device validation.

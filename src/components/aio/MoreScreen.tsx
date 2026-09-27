@@ -4,6 +4,7 @@ import {
   Battery,
   Briefcase,
   Bug,
+  Calendar,
   Camera,
   FileImage,
   FolderOpen,
@@ -20,10 +21,11 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { GradientIconTile } from "./primitives";
 import ChangePasswordPanel from "../auth/ChangePasswordPanel";
+import { useAuth } from "../../auth/AuthProvider";
 
 const AVATAR_PATH = "/profile/avatar.webp";
 
-type LegacyTab = "inventory" | "battery" | "tracker" | "habits" | "tools" | "settings";
+type LegacyTab = "inventory" | "battery" | "tracker" | "habits" | "tools" | "settings" | "checkin";
 
 export interface MoreScreenProps {
   theme: "dark" | "light";
@@ -47,6 +49,7 @@ const FEATURES: { id: LegacyTab; label: string; subtitle: string; icon: LucideIc
   { id: "tracker", label: "Tracker", subtitle: "Ride timer and earnings tracker", icon: Timer, gradient: "bg-gradient-to-br from-[#FF9F0A] to-[#FFD60A]" },
   { id: "habits", label: "Habits", subtitle: "Daily routines and streaks", icon: Award, gradient: "bg-gradient-to-br from-[#BF5AF2] to-[#FF2D55]" },
   { id: "tools", label: "Tools", subtitle: "Smart Aisle Scan, imports, transit tools", icon: Camera, gradient: "bg-gradient-to-br from-[#30B0C7] to-[#64D2FF]" },
+  { id: "checkin", label: "Monthly Check-In", subtitle: "Probation check-in status & actions", icon: Calendar, gradient: "bg-gradient-to-br from-[#FF6B35] to-[#F7931A]" },
   { id: "settings", label: "Settings", subtitle: "Hub address, theme, database", icon: Settings, gradient: "bg-gradient-to-br from-[#8E8E93] to-[#C7C7CC]" },
 ];
 
@@ -90,6 +93,7 @@ function FeatureRow({
 }
 
 export default function MoreScreen(props: MoreScreenProps) {
+  const { session } = useAuth();
   return (
     <div className="space-y-5" id="tab-view-more">
       <div>
@@ -110,7 +114,7 @@ export default function MoreScreen(props: MoreScreenProps) {
             <div className="min-w-0 flex-1">
               <p className="truncate text-[16px] font-bold text-[var(--color-aio-text)]">{props.userEmail || "Signed in"}</p>
               <p className="flex items-center gap-1 text-[12px] font-medium text-[var(--color-aio-text-2)]">
-                <ShieldCheck size={13} /> Authenticated
+                <ShieldCheck size={13} /> {session ? 'Authenticated' : 'Local-only mode'}
               </p>
             </div>
             <button

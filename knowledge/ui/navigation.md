@@ -79,3 +79,7 @@ The `AioHeader` component is sticky at the top and conditionally rendered:
 - **Shown** on the Today, Jobs, and More tabs.
 - **Hidden** on legacy tabs (those use the classic `Header`).
 - Provides greeting, AIØ wordmark, formatted date, theme toggle, and a More shortcut.
+
+## 2026-09-26 update
+
+More includes Monthly Check-In (checkin tab), available even while job access is locked. Completed monthly status is viewed there; Today/Jobs only show the incomplete coaching panel.

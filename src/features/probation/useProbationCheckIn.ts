@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import safeStorage from "../../utils/safeStorage";
+import { useExternalBrowser } from "../../hooks/useExternalBrowser";
 import { resizeProofImage } from "../showerGate/showerGateService";
 import {
   getProbationCheckInPhase,
@@ -69,6 +70,7 @@ export interface ProbationCheckInState {
 }
 
 export function useProbationCheckIn(now: Date): ProbationCheckInState {
+  const { open } = useExternalBrowser();
   const monthKey = getProbationMonthKey(now);
   const [records, setRecords] = useState<ProbationCheckInRecord[]>(loadRecords);
   const [device, setDevice] = useState<ProbationDeviceClass>(detectDeviceClass);
@@ -109,8 +111,10 @@ export function useProbationCheckIn(now: Date): ProbationCheckInState {
       startedAt: current.startedAt || at,
       events: [...current.events, { type: "opened_ce", at, device }],
     }));
-    window.open(CE_CHECK_IN_URL, "_blank", "noopener,noreferrer");
-  }, [device, updateCurrentRecord]);
+    void open({ url: CE_CHECK_IN_URL }).catch(() => {
+      setError("Could not open CE Check-In. Please try again.");
+    });
+  }, [device, open, updateCurrentRecord]);
 
   const saveProof = useCallback((proofName: string, proofDataUrl: string) => {
     const at = new Date().toISOString();
