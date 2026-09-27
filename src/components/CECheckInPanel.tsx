@@ -100,7 +100,7 @@ export function CECheckInPanel() {
         </div>
       </div>
 
-      <div className="flex-1 relative overflow-auto" style={{ overscrollBehavior: "contain" }}>
+      <div className="flex-1 relative overflow-y-auto overflow-x-hidden" style={{ overscrollBehavior: "contain" }}>
         <div style={iframeWrapperStyle}>
           <iframe
             ref={iframeRef}
