@@ -4,6 +4,7 @@ import type { Job } from "../../types";
 import type { ScheduledDaySummary } from "./jobSchedule";
 import { AioSectionLabel, AioButton, CompactJobRow } from "../../components/aio/primitives";
 import { StoreLogo } from "../../components/aio/StoreLogo";
+import BlueAiResultsPanel from './BlueAiResultsPanel';
 
 const jobsGlassPanelClass =
   "relative overflow-hidden rounded-[24px] bg-[#0C0A16] shadow-[0_18px_50px_rgba(88,28,135,0.28)] [--color-aio-line:rgba(255,255,255,0.10)] [--color-aio-surface:rgba(255,255,255,0.06)] [--color-aio-surface-2:rgba(255,255,255,0.10)] [--color-aio-text:#ffffff] [--color-aio-text-2:rgba(255,255,255,0.68)] [--color-aio-text-3:rgba(255,255,255,0.42)]";
@@ -65,6 +66,8 @@ export default function JobsScreen(props: JobsScreenProps) {
           </AioButton>
         </div>
       </div>
+
+      <BlueAiResultsPanel />
 
       {needsAttention && (
         <JobsGlassPanel className="p-4">

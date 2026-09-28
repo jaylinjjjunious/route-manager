@@ -399,3 +399,7 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 ## 2026-09-26 component update
 
 JobDetailModal now shows only address, logo/name, travel modes/estimates, and gated navigation; its previous workflow tabs were removed by explicit user choice. MonthlyCheckInPage wraps MonthlyCheckInSettings, exposing the shared monthly state from More. CECheckInButton is a reusable provider launcher; it is not currently placed in navigation.
+
+## BlueAI export review (2026-09-27)
+
+JobsScreen includes BlueAiResultsPanel: a local JSON file preview with separate assigned and available groups, no calendar mutation, and no upload or storage. See [BlueAI export review](../features/blueai-export-review.md).
