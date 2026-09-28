@@ -27,6 +27,8 @@ These decisions are documented in the legacy `docs/DECISIONS.md` file. New ADRs 
 
 ## Creating New ADRs
 
+- [BlueAI ingestion bridge](2026-09-27-blueai-ingestion.md) — durable receiver and revision-aware browser merge.
+
 Use the template at `knowledge/decisions/adr-template.md`.
 
 Number new ADRs sequentially starting from D018.

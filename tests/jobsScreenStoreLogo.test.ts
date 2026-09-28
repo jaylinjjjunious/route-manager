@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import JobsScreen from "../src/features/jobs/JobsScreen";
 import { resolveStoreLogo } from "../src/services/storeLogos";
 import type { Job } from "../src/types";
+import type { BlueAiRecord } from "../src/features/jobs/blueAiJobs";
 import type { ScheduledDaySummary } from "../src/features/jobs/jobSchedule";
 
 let container: HTMLDivElement;
@@ -34,6 +35,8 @@ function renderJobsScreen(jobs: {
   laterDayJobs?: Job[];
   overdueJobs?: Job[];
   unscheduledJobs?: Job[];
+  blueAiAssignedRecords?: BlueAiRecord[];
+  blueAiAvailableRecords?: BlueAiRecord[];
 }) {
   const todayDay: ScheduledDaySummary = {
     date: "2026-08-04",
@@ -58,6 +61,8 @@ function renderJobsScreen(jobs: {
         routeBJobs: jobs.routeBJobs ?? [],
         overdueJobs: jobs.overdueJobs ?? [],
         unscheduledJobs: jobs.unscheduledJobs ?? [],
+        blueAiAssignedRecords: jobs.blueAiAssignedRecords ?? [],
+        blueAiAvailableRecords: jobs.blueAiAvailableRecords ?? [],
         onOpenJob: () => undefined,
         onAddJob: () => undefined,
         onOptimizeRoute: () => undefined,

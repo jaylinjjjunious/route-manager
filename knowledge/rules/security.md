@@ -9,6 +9,11 @@
 
 ## Authentication
 
+- BlueAI POST is a machine endpoint with a dedicated server-only bearer secret,
+  constant-time digest comparison, fixed owner mapping, 16 KiB body limit and
+  60 authenticated writes/minute. Its GET feed still requires Supabase auth.
+  Never expose the machine secret in VITE variables, UI, source or logs.
+
 - Express protected application endpoints require authentication. Public
   operational routes include `GET /api/health`, `GET /api/build-info`, and
   `GET /api/debug/auth-check`; the development verification handshake is also
@@ -22,6 +27,9 @@
   production build/shared environment.
 
 ## Data Isolation
+
+- BlueAI is owner-scoped on the server and imported browser records carry that
+  owner. The legacy storage limitations below still apply to other app data.
 
 - There is **no per-user data isolation** — all users share the same storage namespace.
 - This is a known limitation (see `knowledge/memory/known-bugs.md`).

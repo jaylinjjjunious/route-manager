@@ -85,6 +85,14 @@ There are no `INTEGER`, `BOOLEAN`, or `TIMESTAMP` columns — everything is stor
 
 ## Express Local Storage
 
+BlueAI addition (2026-09-27): `BLUEAI_DATA_DIR/jobs.json` stores normalized
+existing `Job` snapshots plus optional `blueAi` source/owner/revision metadata.
+The directory must be private and persistent; it has no ephemeral default.
+Writes serialize within one process and atomically replace the file. Browser
+jobs otherwise remain in `route_optimizer_jobs`; there is no shared jobs table.
+See [BlueAI ingestion](../features/blueai-ingestion.md) for lifecycle ownership,
+device-local deletion tombstones, capacity and deployment limitations.
+
 The Express server does not use a database. Instead it uses:
 
 1. **Local JSON file** — contains serialized proof records and app state

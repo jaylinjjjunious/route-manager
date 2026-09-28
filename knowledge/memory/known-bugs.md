@@ -2,6 +2,20 @@
 
 ## Active Issues
 
+Validation baseline observed 2026-09-27: the full suite has two failures in
+unchanged tests/components. `aioHeaderProfile.test.ts` expects Authenticated
+while its auth mock supplies no session (the component shows Local-only mode).
+`monthlyCheckInSettings.test.ts` searches for a Check In Now button that the
+current panel no longer renders. Both reproduce in an isolated run. Lint,
+build and the five new BlueAI tests pass; commit/push is held by the repository
+failed-check rule until these unrelated test baselines are repaired.
+
+BlueAI v1 operational limitation (2026-09-27): receiver code and automated
+tests exist, but actual sender delivery and signed-in production visibility
+are pending configuration/access. The current Render free service has no
+persistent disk. v1 requires one Express process with persistent storage;
+it is not a multi-replica or bidirectional job-sync system.
+
 | ID | Severity | Description | Status |
 |----|----------|-------------|--------|
 | P001 | Medium | Proof images stored as base64 in D1 — not ideal for large files | Open |

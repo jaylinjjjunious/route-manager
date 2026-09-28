@@ -83,6 +83,8 @@ export interface JobProcedureAssignmentHistoryEvent {
 }
 
 export interface Job {
+  /** BlueAI source identity and revision; lifecycle remains locally owned. */
+  blueAi?: import('./features/jobs/blueAiJobs').BlueAiSource;
   id: string;
   storeName: string;
   address: string;

@@ -43,6 +43,11 @@ This data is device-specific and does not sync across devices.
 
 ## Backend Data Ownership
 
+BlueAI exception (2026-09-27): the dedicated machine token maps to one
+server-configured Supabase owner UUID; request bodies cannot override it.
+Authenticated feeds only return that user's records. Browser merging also
+checks the owner. This does not migrate other legacy data namespaces.
+
 ### Express Backend (Railway)
 
 - All proof records are stored in a **single local JSON file** and `local-shower-proofs/` directory.

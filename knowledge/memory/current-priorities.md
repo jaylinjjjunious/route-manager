@@ -2,6 +2,11 @@
 
 ## High
 
+- Configure BlueAI's server-only token, owner UUID and persistent private data
+  directory, then verify a real sender create/update in the signed-in calendar.
+  The current Render free configuration has no disk; leave the receiver disabled
+  until durable storage is available. See `features/blueai-ingestion.md`.
+
 - Complete the final signed-in Render verification: the Blueprint is deployed,
   the public sign-in page loads, and `/api/health` passes at
   `https://route-manager-phtj.onrender.com`. Verify authentication, protected

@@ -40,6 +40,7 @@ Use this map to select relevant documents before editing code. Read only what yo
 - `architecture/observability.md` — Debug Center, logging, health checks
 
 ### Features (read relevant one)
+- `features/blueai-ingestion.md` — machine-authenticated job receiver, durable inbox, automatic calendar merge and sender setup
 - `features/shower-gate.md` — Daily barcode-based shower proof gate
 - `features/job-system.md` — Job types, statuses, completion workflow
 - `features/route-system.md` — Route optimization, ride mode, battery routing

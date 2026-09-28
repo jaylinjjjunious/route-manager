@@ -1,0 +1,11 @@
+{
+  "title": "Store display audit",
+  "date": "2026-09-28",
+  "startTime": "09:00",
+  "endTime": "10:30",
+  "location": "2151 S Chester Ave, Bakersfield, CA",
+  "pay": 35.5,
+  "sourceApp": "Example Jobs",
+  "externalId": "audit-1042",
+  "timezone": "America/Los_Angeles"
+}

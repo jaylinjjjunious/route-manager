@@ -7,6 +7,11 @@
 
 ## Overview
 
+BlueAI Express endpoints (2026-09-27): `POST /api/integrations/blueai/jobs`
+accepts one validated job using a dedicated machine bearer secret;
+`GET /api/integrations/blueai/jobs` returns only the configured owner's feed
+using the existing Supabase session. See [full payload, errors and setup](../features/blueai-ingestion.md).
+
 The All in One 667 exposes two backend variants:
 
 1. **Express server** (`server.ts`) — local development and Railway production. Serves the React app and API.

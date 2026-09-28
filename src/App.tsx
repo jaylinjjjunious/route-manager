@@ -154,7 +154,7 @@ declare global {
 }
 
 export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCenter }: { debugCenterOpen?: boolean; onCloseDebugCenter?: () => void; onOpenDebugCenter?: () => void } = {}) {
-  const { signOut, user } = useAuth();
+  const { signOut, user, session } = useAuth();
   const [startAddress, setStartAddress] = useState('1951 Golden State Ave');
   const [startCoord, setStartCoord] = useState<Coordinates>({ lat: 35.3904, lng: -119.0255 });
   const battery = useBattery();
@@ -178,6 +178,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
 
   const [today, setToday] = useState<string>(() => todayString());
   const jobs = useJobs(today, {
+    blueAiUserId: session?.user.id,
     includeLifecycleHarness: isLifecycleHarnessEnabled,
     includeSonicProcedureHarness: sonicHarnessEnabled,
   });
@@ -1123,6 +1124,8 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                 routeBJobs={jobs.routeBJobs}
                 overdueJobs={jobs.overdueJobs}
                 unscheduledJobs={jobs.unscheduledJobs}
+                blueAiAssignedRecords={jobs.blueAiAssignedRecords}
+                blueAiAvailableRecords={jobs.blueAiAvailableRecords}
                 jobAccessLocked={!jobAccessReady}
                 onBlockJobAccess={() => blockJobAccess('job changes')}
                 onOpenJob={(job) => setRouteDetailJobId(job.id)}

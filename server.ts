@@ -9,6 +9,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { createClient } from "@supabase/supabase-js";
 import { createAssistantRouter } from "./server/assistant/assistantRoute";
 import { createTransitRouter } from "./server/transit/transitRoutes";
+import { createBlueAiRouter } from "./server/blueai/blueAiRoutes";
 
 // Load environment variables
 dotenv.config();
@@ -18,6 +19,25 @@ const PORT = Number(process.env.PORT || 3000);
 const REQUIRED_SHOWER_BARCODE = "075371003233";
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+
+const serverSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
+  },
+});
+
+const serverSupabaseAdmin = SUPABASE_SERVICE_ROLE_KEY
+  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+    })
+  : null;
 const showerProofRoot = path.join(process.cwd(), ".local-shower-proofs");
 const showerProofImageRoot = path.join(showerProofRoot, "images");
 const showerProofMetadataPath = path.join(showerProofRoot, "proofs.json");
@@ -104,6 +124,13 @@ app.use("/shower-proof-assets", express.static(showerProofImageRoot, {
   setHeaders: (res) => res.setHeader("Cache-Control", "private, no-store"),
 }));
 
+// Bridge has its own small parser and machine authentication, before screenshot parsing.
+app.use('/api/integrations/blueai', createBlueAiRouter(requireAuth, {
+  token: process.env.BLUEAI_INGEST_TOKEN,
+  ownerId: process.env.BLUEAI_OWNER_ID,
+  admin: serverSupabaseAdmin,
+}));
+
 // Body parser with 15MB limit for Base64 screenshot uploads
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
@@ -114,14 +141,6 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   console.error('[FATAL] SUPABASE_URL and SUPABASE_ANON_KEY must be set. Server cannot start without valid Supabase configuration.');
   process.exit(1);
 }
-
-const serverSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-    detectSessionInUrl: false,
-  },
-});
 
 interface AuthenticatedRequest extends Request {
   userId?: string;

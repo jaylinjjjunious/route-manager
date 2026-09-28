@@ -6,6 +6,7 @@ test-results/
 .local-shower-proofs/
 .local-transit-usage/
 .local-error-reports/
+.local-blueai/
 screenshots/
 .DS_Store
 *.log

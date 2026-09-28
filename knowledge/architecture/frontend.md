@@ -58,6 +58,12 @@ Protected tabs (`battery`, `tracker`) show a "Shower Gate Locked" overlay when `
 
 ### State Management
 
+BlueAI (2026-09-27): App passes the real session user ID to `useJobs`.
+The hook polls the authenticated receiver every 15 seconds while visible and
+on focus, merging changed revisions into the existing Job state/localStorage.
+Weekly groups update through existing derivations. See
+[BlueAI ingestion](../features/blueai-ingestion.md) for ownership and merge rules.
+
 `App.tsx` remains the top-level orchestrator for screen composition and cross-feature workflows. Feature-owned state now lives in focused hooks where extracted (`useJobs`, `useBattery`, `useShowerGate`, `useHabits`), while App keeps shared settings, route/travel orchestration, proof vault state, dispatcher wiring, and integration state. No Redux or Zustand is used; auth uses AuthProvider context.
 
 Key state groups:

@@ -2,6 +2,11 @@
 
 ## Authentication
 
+- Machine ingestion must map a dedicated credential to a fixed account rather
+  than accepting an owner from the payload. With browser-local jobs, durable
+  ingestion also needs an authenticated feed and revision-aware frontend merge;
+  adding a POST endpoint alone cannot update the visible calendar.
+
 - Supabase token refresh must be handled explicitly — implement a 401 retry pattern to catch stale tokens before upload requests fail.
 - A local UI bypass must require an explicit development flag and a loopback
   hostname, compile out of production behavior, and never weaken protected API

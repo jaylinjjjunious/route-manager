@@ -1,10 +1,11 @@
 import React from "react";
-import { AlertTriangle, CalendarDays, ChevronRight, Plus, Route as RouteIcon } from "lucide-react";
+import { AlertTriangle, CalendarDays, ChevronRight, Plus, Route as RouteIcon, Briefcase } from "lucide-react";
 import type { Job } from "../../types";
 import type { ScheduledDaySummary } from "./jobSchedule";
 import { AioSectionLabel, AioButton, CompactJobRow } from "../../components/aio/primitives";
 import { StoreLogo } from "../../components/aio/StoreLogo";
 import BlueAiResultsPanel from './BlueAiResultsPanel';
+import type { BlueAiRecord } from './blueAiJobs';
 
 const jobsGlassPanelClass =
   "relative overflow-hidden rounded-[24px] bg-[#0C0A16] shadow-[0_18px_50px_rgba(88,28,135,0.28)] [--color-aio-line:rgba(255,255,255,0.10)] [--color-aio-surface:rgba(255,255,255,0.06)] [--color-aio-surface-2:rgba(255,255,255,0.10)] [--color-aio-text:#ffffff] [--color-aio-text-2:rgba(255,255,255,0.68)] [--color-aio-text-3:rgba(255,255,255,0.42)]";
@@ -28,6 +29,8 @@ export interface JobsScreenProps {
   routeBJobs: Job[];
   overdueJobs: Job[];
   unscheduledJobs: Job[];
+  blueAiAssignedRecords: BlueAiRecord[];
+  blueAiAvailableRecords: BlueAiRecord[];
   jobAccessLocked?: boolean;
   onBlockJobAccess?: () => void;
   onOpenJob: (job: Job) => void;
@@ -43,6 +46,26 @@ function dayLabel(date: string): string {
     month: "short",
     day: "numeric",
   });
+}
+
+function BlueAiRecordRow({ record }: { record: BlueAiRecord }) {
+  return (
+    <article className="rounded-xl border border-white/15 bg-white/5 p-3">
+      <div className="flex items-start gap-2">
+        <Briefcase className="mt-1 text-white/60" size={18} />
+        <div className="min-w-0 flex-1">
+          <h4 className="font-bold truncate">{record.title}</h4>
+          <p className="mt-1 text-sm opacity-80">Order {record.externalId} · {record.city || 'City not provided'}</p>
+          <dl className="mt-2 grid gap-2 text-sm sm:grid-cols-2">
+            <div><dt className="opacity-60">Pay as reported</dt><dd>{record.payRaw || 'Not provided'}</dd></div>
+            <div><dt className="opacity-60">Schedule as reported</dt><dd>{record.scheduleRaw || 'Not provided'}</dd></div>
+            <div><dt className="opacity-60">Source status</dt><dd>{record.statusRaw || 'Not provided'}</dd></div>
+          </dl>
+          {record.descriptionRaw && <p className="mt-2 whitespace-pre-wrap break-words text-sm">{record.descriptionRaw}</p>}
+        </div>
+      </div>
+    </article>
+  );
 }
 
 export default function JobsScreen(props: JobsScreenProps) {
@@ -68,6 +91,36 @@ export default function JobsScreen(props: JobsScreenProps) {
       </div>
 
       <BlueAiResultsPanel />
+
+      {props.blueAiAssignedRecords.length > 0 && (
+        <section aria-label="Assigned from BlueAI">
+          <AioSectionLabel trailing={<span className="aio-caption">{props.blueAiAssignedRecords.length} assigned</span>}>
+            Assigned from BlueAI
+          </AioSectionLabel>
+          <JobsGlassPanel className="mt-2.5 p-2">
+            <div className="space-y-3">
+              {props.blueAiAssignedRecords.map(record => (
+                <BlueAiRecordRow key={record.id} record={record} />
+              ))}
+            </div>
+          </JobsGlassPanel>
+        </section>
+      )}
+
+      {props.blueAiAvailableRecords.length > 0 && (
+        <section aria-label="Available from BlueAI">
+          <AioSectionLabel trailing={<span className="aio-caption">{props.blueAiAvailableRecords.length} available</span>}>
+            Available from BlueAI
+          </AioSectionLabel>
+          <JobsGlassPanel className="mt-2.5 p-2">
+            <div className="space-y-3">
+              {props.blueAiAvailableRecords.map(record => (
+                <BlueAiRecordRow key={record.id} record={record} />
+              ))}
+            </div>
+          </JobsGlassPanel>
+        </section>
+      )}
 
       {needsAttention && (
         <JobsGlassPanel className="p-4">

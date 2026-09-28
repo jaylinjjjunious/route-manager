@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import type { Job, JobType } from '../../types';
 import safeStorage from '../../utils/safeStorage';
+import { mergeBlueAiJobs, type BlueAiRecord, fetchBlueAiRecords } from './blueAiJobs';
+
 import { BAKERSFIELD_COORDINATES } from '../../utils/bakersfieldCoordinates';
 import {
   arriveAtJob as applyArriveAtJob,
@@ -53,6 +55,13 @@ import {
   type ProcedureAssignmentResult,
 } from './procedures/jobProcedureAssignment';
 import type { ProcedureDefinition } from './procedures/types';
+
+function readBlueAiDeletions(ownerId: string): string[] {
+  try {
+    const value = JSON.parse(safeStorage.getItem(`blueai_deleted:${ownerId}`) || '[]');
+    return Array.isArray(value) ? value.filter(id => typeof id === 'string') : [];
+  } catch { return []; }
+}
 
 export const SEED_JOBS: Job[] = [
   {
@@ -172,6 +181,10 @@ export interface UseJobsReturn {
   routeFilter: RouteFilterType;
   completingJobIds: string[];
 
+  /* ── BlueAI Barrister records (raw source data, no calendar promotion) ── */
+  blueAiAssignedRecords: BlueAiRecord[];
+  blueAiAvailableRecords: BlueAiRecord[];
+
   /* ── UI state setters ── */
   setSelectedStripDate: Dispatch<SetStateAction<string | null>>;
   setShowScheduleReview: Dispatch<SetStateAction<'overdue' | 'unscheduled' | null>>;
@@ -235,6 +248,7 @@ export interface UseJobsReturn {
 }
 
 export interface UseJobsOptions {
+  blueAiUserId?: string;
   includeLifecycleHarness?: boolean;
   includeSonicProcedureHarness?: boolean;
 }
@@ -254,7 +268,7 @@ export function useJobs(today: string, options: UseJobsOptions = {}): UseJobsRet
 
   /* ── Persistence boundary ── */
   const persistJobs = (nextJobs: Job[]): Job[] => {
-    const normalized = normalizeJobsForStorage(nextJobs);
+    const normalized = normalizeJobsForStorage(nextJobs.filter(job => !job.blueAi || job.blueAi.ownerId === options.blueAiUserId));
     setJobs(normalized);
     safeStorage.setItem('route_optimizer_jobs', JSON.stringify(normalized));
     safeStorage.setItem('route_optimizer_jobs_schema_version', JOB_STATE_SCHEMA_VERSION);
@@ -302,8 +316,91 @@ export function useJobs(today: string, options: UseJobsOptions = {}): UseJobsRet
     }
   }, []);
 
+  // Server snapshots merge into current state, never a stale pre-request job array.
+  useEffect(() => {
+    const ownerId = options.blueAiUserId;
+    setJobs(current => {
+      const owned = current.filter(job => !job.blueAi || job.blueAi.ownerId === ownerId);
+      if (owned.length === current.length) return current;
+      safeStorage.setItem('route_optimizer_jobs', JSON.stringify(owned));
+      return owned;
+    });
+    if (!ownerId) return;
+    const controller = new AbortController();
+    let busy = false;
+    let disabled = false;
+    const poll = async () => {
+      if (busy || disabled || document.visibilityState === 'hidden') return;
+      busy = true;
+      try {
+        const { authFetchJson } = await import('../../services/apiClient');
+        const result = await authFetchJson<{ enabled: boolean; jobs: Job[] }>('/api/integrations/blueai/jobs', { signal: controller.signal });
+        if (controller.signal.aborted) return;
+        if (!result.enabled) { disabled = true; return; }
+        setJobs(current => {
+          const next = mergeBlueAiJobs(current, result.jobs, ownerId, readBlueAiDeletions(ownerId));
+          if (next === current) return current;
+          const normalized = normalizeJobsForStorage(next);
+          safeStorage.setItem('route_optimizer_jobs', JSON.stringify(normalized));
+          safeStorage.setItem('route_optimizer_jobs_schema_version', JOB_STATE_SCHEMA_VERSION);
+          return normalized;
+        });
+      } catch {
+        // Offline/auth/storage failures leave current jobs intact; the next poll retries.
+      } finally { busy = false; }
+    };
+    void poll();
+    const timer = window.setInterval(poll, 15000);
+    window.addEventListener('focus', poll);
+    document.addEventListener('visibilitychange', poll);
+    return () => {
+      controller.abort();
+      window.clearInterval(timer);
+      window.removeEventListener('focus', poll);
+      document.removeEventListener('visibilitychange', poll);
+    };
+}, [options.blueAiUserId]);
+
+  // BlueAI Barrister records (separate from calendar jobs) — raw source data, no calendar promotion.
+  const [blueAiAssignedRecords, setBlueAiAssignedRecords] = useState<BlueAiRecord[]>([]);
+  const [blueAiAvailableRecords, setBlueAiAvailableRecords] = useState<BlueAiRecord[]>([]);
+
+  useEffect(() => {
+    const ownerId = options.blueAiUserId;
+    if (!ownerId) return;
+    const controller = new AbortController();
+    let busy = false;
+    let disabled = false;
+    const poll = async () => {
+      if (busy || disabled || document.visibilityState === 'hidden') return;
+      busy = true;
+      try {
+        const { authFetchJson } = await import('../../services/apiClient');
+        const response = await authFetchJson<{ enabled: boolean; assigned: BlueAiRecord[]; available: BlueAiRecord[] }>('/api/integrations/blueai/records', { signal: controller.signal });
+        if (controller.signal.aborted) return;
+        if (!response.enabled) { disabled = true; return; }
+        setBlueAiAssignedRecords(response.assigned);
+        setBlueAiAvailableRecords(response.available);
+      } catch {
+        // Offline/auth/storage failures leave current records intact; the next poll retries.
+      } finally { busy = false; }
+    };
+    void poll();
+    const timer = window.setInterval(poll, 15000);
+    window.addEventListener('focus', poll);
+    document.addEventListener('visibilitychange', poll);
+    return () => {
+      controller.abort();
+      window.clearInterval(timer);
+      window.removeEventListener('focus', poll);
+      document.removeEventListener('visibilitychange', poll);
+    };
+  }, [options.blueAiUserId]);
+
   /* ── Pure job actions (mutate state, return next collection, do NOT persist) ── */
   const deleteJob = (id: string): Job[] => {
+    const source = jobs.find(job => job.id === id)?.blueAi;
+    if (source) safeStorage.setItem(`blueai_deleted:${source.ownerId}`, JSON.stringify([...new Set([...readBlueAiDeletions(source.ownerId), id])]));
     const updated = jobs.filter(job => job.id !== id);
     setJobs(normalizeJobsForStorage(updated));
     return updated;
@@ -340,6 +437,7 @@ export function useJobs(today: string, options: UseJobsOptions = {}): UseJobsRet
   const duplicateJob = (job: Job): Job[] => {
     const duplicate: Job = {
       ...job,
+      blueAi: undefined,
       id: `job-${Date.now()}`,
       storeName: `${job.storeName} (Copy)`,
       status: 'ready',
@@ -698,5 +796,8 @@ export function useJobs(today: string, options: UseJobsOptions = {}): UseJobsRet
     selectedDay,
     routeFilterCounts,
     filteredRouteJobs,
+
+    blueAiAssignedRecords,
+    blueAiAvailableRecords,
   };
 }

@@ -6,6 +6,15 @@ Describes the Express server backend and the Cloudflare Worker API layer.
 
 ## Current Implementation
 
+BlueAI addition (2026-09-27): `server/blueai/` implements the Express-only
+`/api/integrations/blueai/jobs` receiver/feed. It is mounted before the global
+large-body parsers with its own 16 KiB JSON limit. POST uses a dedicated
+server-configured token/owner; GET uses `requireAuth` and `req.userId`.
+The inbox requires configured persistent private storage and one process.
+See [setup and contract](../features/blueai-ingestion.md).
+Render is now primary and Railway is rollback; older Railway-primary references
+below are historical (see deployment.md).
+
 The project has two backend variants:
 
 1. **Express server** (`server.ts`) — Deployed on Railway (primary production)
