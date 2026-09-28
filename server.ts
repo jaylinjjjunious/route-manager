@@ -124,6 +124,24 @@ app.use("/shower-proof-assets", express.static(showerProofImageRoot, {
   setHeaders: (res) => res.setHeader("Cache-Control", "private, no-store"),
 }));
 
+// Temporary diagnostic: report BlueAI config status (no secrets)
+app.get('/api/integrations/blueai/diagnostic', (_req, res) => {
+  const token = process.env.BLUEAI_INGEST_TOKEN || '';
+  const ownerId = process.env.BLUEAI_OWNER_ID || '';
+  const uuidRegex = /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i;
+  res.json({
+    hasToken: token.length > 0,
+    tokenLength: token.length,
+    tokenLengthGe32: token.length >= 32,
+    hasOwnerId: ownerId.length > 0,
+    ownerIdTrimmed: ownerId.trim(),
+    ownerIdLooksLikeUuid: uuidRegex.test(ownerId.trim()),
+    hasServiceRole: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    hasSupabaseUrl: !!(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL),
+    blueAiEnabled: !!(token && token.length >= 32 && ownerId && uuidRegex.test(ownerId.trim())),
+  });
+});
+
 // Bridge has its own small parser and machine authentication, before screenshot parsing.
 app.use('/api/integrations/blueai', createBlueAiRouter(requireAuth, {
   token: process.env.BLUEAI_INGEST_TOKEN,
