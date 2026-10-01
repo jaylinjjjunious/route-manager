@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import type { Job, JobType } from '../../types';
 import safeStorage from '../../utils/safeStorage';
-import { mergeBlueAiJobs, type BlueAiRecord, fetchBlueAiRecords } from './blueAiJobs';
+import { mergeBlueAiJobs, type BlueAiRecord } from './blueAiJobs';
+
+import { useBlueAiRecords } from './useBlueAiRecords';
 
 import { BAKERSFIELD_COORDINATES } from '../../utils/bakersfieldCoordinates';
 import {
@@ -184,6 +186,7 @@ export interface UseJobsReturn {
   /* ── BlueAI Barrister records (raw source data, no calendar promotion) ── */
   blueAiAssignedRecords: BlueAiRecord[];
   blueAiAvailableRecords: BlueAiRecord[];
+  blueAiSyncMessage: string;
 
   /* ── UI state setters ── */
   setSelectedStripDate: Dispatch<SetStateAction<string | null>>;
@@ -361,41 +364,8 @@ export function useJobs(today: string, options: UseJobsOptions = {}): UseJobsRet
     };
 }, [options.blueAiUserId]);
 
-  // BlueAI Barrister records (separate from calendar jobs) — raw source data, no calendar promotion.
-  const [blueAiAssignedRecords, setBlueAiAssignedRecords] = useState<BlueAiRecord[]>([]);
-  const [blueAiAvailableRecords, setBlueAiAvailableRecords] = useState<BlueAiRecord[]>([]);
-
-  useEffect(() => {
-    const ownerId = options.blueAiUserId;
-    if (!ownerId) return;
-    const controller = new AbortController();
-    let busy = false;
-    let disabled = false;
-    const poll = async () => {
-      if (busy || disabled || document.visibilityState === 'hidden') return;
-      busy = true;
-      try {
-        const { authFetchJson } = await import('../../services/apiClient');
-        const response = await authFetchJson<{ enabled: boolean; assigned: BlueAiRecord[]; available: BlueAiRecord[] }>('/api/integrations/blueai/records', { signal: controller.signal });
-        if (controller.signal.aborted) return;
-        if (!response.enabled) { disabled = true; return; }
-        setBlueAiAssignedRecords(response.assigned);
-        setBlueAiAvailableRecords(response.available);
-      } catch {
-        // Offline/auth/storage failures leave current records intact; the next poll retries.
-      } finally { busy = false; }
-    };
-    void poll();
-    const timer = window.setInterval(poll, 15000);
-    window.addEventListener('focus', poll);
-    document.addEventListener('visibilitychange', poll);
-    return () => {
-      controller.abort();
-      window.clearInterval(timer);
-      window.removeEventListener('focus', poll);
-      document.removeEventListener('visibilitychange', poll);
-    };
-  }, [options.blueAiUserId]);
+  // Raw Barrister records remain separate from calendar jobs.
+  const { assigned: blueAiAssignedRecords, available: blueAiAvailableRecords, message: blueAiSyncMessage } = useBlueAiRecords(options.blueAiUserId);
 
   /* ── Pure job actions (mutate state, return next collection, do NOT persist) ── */
   const deleteJob = (id: string): Job[] => {
@@ -799,5 +769,6 @@ export function useJobs(today: string, options: UseJobsOptions = {}): UseJobsRet
 
     blueAiAssignedRecords,
     blueAiAvailableRecords,
+    blueAiSyncMessage,
   };
 }

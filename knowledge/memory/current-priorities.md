@@ -1,5 +1,10 @@
 # Current Priorities
 
+## BlueAI follow-through (2026-10-01)
+
+Verify the deployed Jobs sync status and both synthetic records using the signed-in production session. If configuration/account ownership differs, correct only the authorized integration mapping; do not alter Barrister records. Supabase-backed export storage is already implemented, superseding the older priority below to provision a private data directory for this path. Render is the production target requested by the user.
+
+
 ## High
 
 - Configure BlueAI's server-only token, owner UUID and persistent private data

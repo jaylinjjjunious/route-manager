@@ -1,5 +1,18 @@
 # BlueAI job ingestion (v1)
 
+## Current Barrister export integration (2026-10-01)
+
+The sections below describe the legacy single-job/file-store bridge. The current Express wiring uses SUPABASE_SERVICE_ROLE_KEY with the configured Supabase URL for durable Barrister exports in blueai_records (migration drizzle/0004_blueai_records.sql). BLUEAI_DATA_DIR is not required for this Supabase path. Never expose the service-role key to the browser.
+
+POST /api/integrations/blueai/export authenticates the machine token and maps all records to BLUEAI_OWNER_ID. GET /api/integrations/blueai/records authenticates the browser session and returns { enabled, assigned, available }. Disabled authenticated responses include reason: not_configured or account_mismatch, without exposing the configured owner's identity. Ownership checks are unchanged.
+
+Jobs displays a persistent BlueAI sync status plus separate assigned/available record sections. useBlueAiRecords retries every 15 seconds while visible and on focus/visibility, including after disabled responses. Errors explicitly mark any retained same-account records as potentially stale. Account changes/sign-out hide prior records immediately and aborted responses cannot repopulate them. Source schedules remain raw; neither category is promoted to the calendar and no accept/bid/write action is sent to Barrister.
+
+The public temporary diagnostic endpoint and build key fingerprint have been removed. Production frontend verification must inspect the lazy App chunk, not just index*.js: BlueAI already existed in the deployed App chunk during the September investigation. A 200 response alone does not prove an enabled feed or nonempty data. Relevant regression tests: blueAiRecordsSync, blueAiBridge, blueAiExport, blueAiSync.
+
+The remaining production owner/configuration cause and synthetic-record visibility must be verified against the deployed status before claiming completion.
+
+
 Implemented 2026-09-27. This is an Express receiver and browser sync adapter, not an embedded BlueAI SDK. Actual extraction/HTTP delivery from the installed BlueAI environment remains to be configured and verified.
 
 ## Configure the receiver

@@ -1,5 +1,10 @@
 # Known Bugs
 
+## BlueAI visibility investigation (2026-10-01)
+
+Production's lazy App chunk contains BlueAI polling/display code; the earlier missing-bundle conclusion was false. Confirmed defects: disabled feeds silently stopped polling, failures were hidden, and record state was not cleared on account changes. The new owner-scoped feed hook and visible sync status address these defects. The underlying production empty/disabled feed cause remains to be verified after deployment. Historical file-storage limitations below apply to legacy /jobs, not Supabase-backed /export and /records.
+
+
 ## Active Issues
 
 Validation baseline observed 2026-09-27: the full suite has two failures in

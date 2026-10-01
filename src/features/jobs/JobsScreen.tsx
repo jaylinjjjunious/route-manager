@@ -31,6 +31,7 @@ export interface JobsScreenProps {
   unscheduledJobs: Job[];
   blueAiAssignedRecords: BlueAiRecord[];
   blueAiAvailableRecords: BlueAiRecord[];
+  blueAiSyncMessage?: string;
   jobAccessLocked?: boolean;
   onBlockJobAccess?: () => void;
   onOpenJob: (job: Job) => void;
@@ -90,6 +91,11 @@ export default function JobsScreen(props: JobsScreenProps) {
         </div>
       </div>
 
+      <section aria-label="BlueAI sync" className="rounded-xl border border-[var(--color-aio-line)] p-4">
+        <h2 className="font-bold">BlueAI sync</h2>
+        <p role="status" className="mt-1 text-sm">{props.blueAiSyncMessage || 'Loading BlueAI records…'}</p>
+        <p className="mt-2 text-xs opacity-70">Read-only Barrister records. Nothing is accepted, bid on, or changed in Barrister.</p>
+      </section>
       <BlueAiResultsPanel />
 
       {props.blueAiAssignedRecords.length > 0 && (

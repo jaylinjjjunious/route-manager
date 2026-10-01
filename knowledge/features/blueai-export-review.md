@@ -1,5 +1,10 @@
 # BlueAI export review prototype
 
+## Current status (2026-10-01)
+
+The client-only file review described below remains available. In addition, the authenticated Supabase-backed feed now supplies separate Assigned from BlueAI and Available from BlueAI sections. Its persistent sync status distinguishes loading, empty results, account mismatch/configuration, and read failures; see blueai-ingestion.md. The older statement that durable synchronization is unimplemented is superseded. Production end-to-end visibility is still under verification.
+
+
 Added 2026-09-27. Jobs → BlueAI results accepts a local JSON export with assigned_work_orders and available_jobs arrays. This separate client-only preview does not use or enable the pending machine-authenticated ingestion receiver.
 
 The view preserves the source schedule verbatim, including missing years/end times. Missing fields show Not provided. Available listings never become scheduled/accepted jobs. No calendar, route, lifecycle, or original app record is changed. Results exist only while Jobs is mounted; leaving Jobs or refreshing clears the preview. Files are not uploaded or persisted in browser storage.

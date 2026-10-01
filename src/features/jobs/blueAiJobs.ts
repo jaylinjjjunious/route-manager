@@ -31,6 +31,7 @@ export interface BlueAiRecord {
 
 export interface BlueAiRecordsResponse {
   enabled: boolean;
+  reason?: 'not_configured' | 'account_mismatch';
   assigned: BlueAiRecord[];
   available: BlueAiRecord[];
 }

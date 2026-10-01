@@ -1126,6 +1126,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                 unscheduledJobs={jobs.unscheduledJobs}
                 blueAiAssignedRecords={jobs.blueAiAssignedRecords}
                 blueAiAvailableRecords={jobs.blueAiAvailableRecords}
+                blueAiSyncMessage={jobs.blueAiSyncMessage}
                 jobAccessLocked={!jobAccessReady}
                 onBlockJobAccess={() => blockJobAccess('job changes')}
                 onOpenJob={(job) => setRouteDetailJobId(job.id)}

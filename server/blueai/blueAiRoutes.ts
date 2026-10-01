@@ -77,8 +77,8 @@ export function createBlueAiRouter(requireAuth: RequestHandler, config: BlueAiCo
   router.get('/records', requireAuth, async (req, res) => {
     const ownerId = (req as Request & { userId?: string }).userId;
     if (!ownerId) return res.status(401).json({ error: 'Authentication required.' });
-    if (!store) return res.json({ enabled: false, assigned: [], available: [] });
-    if (ownerId !== config.ownerId) return res.json({ enabled: false, assigned: [], available: [] });
+    if (!store) return res.json({ enabled: false, reason: 'not_configured', assigned: [], available: [] });
+    if (ownerId !== config.ownerId) return res.json({ enabled: false, reason: 'account_mismatch', assigned: [], available: [] });
     try {
       const category = req.query.category as 'assigned' | 'available' | undefined;
       const records = await store.list(ownerId, category);

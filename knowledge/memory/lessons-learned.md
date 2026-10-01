@@ -1,5 +1,12 @@
 # Lessons Learned
 
+## BlueAI visibility (2026-10-01)
+
+- Inspect lazy frontend chunks before concluding deployed code is missing from index*.js.
+- Authenticated HTTP 200 can still be a disabled feed. Show sync status and retry instead of permanently disabling polling.
+- Scope asynchronous record state to the authenticated account and ignore responses after cancellation.
+
+
 ## Authentication
 
 - Machine ingestion must map a dedicated credential to a fixed account rather
