@@ -142,5 +142,6 @@ Before every coding session:
 
 ## Related
 
+- `../APP_LIFELINE.md` — Durable app history, current-context summary, decisions, and session resume notes; reference at startup and meaningful work milestones.
 - `AGENTS.md` — Project-level agent workflow instructions
 - `docs/` — Pre-existing documentation (may be superseded by `knowledge/`)

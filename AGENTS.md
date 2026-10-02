@@ -11,6 +11,12 @@ The user explicitly requests careful, economical usage in every session.
 - Preserve essential safety and verification. Report a real blocker instead of spending usage on speculative retries.
 - Record progress and remaining work so later sessions can resume without repeating completed work.
 
+# App Lifeline Reference
+
+In every Route Manager session, including fresh CLI sessions, read the startup sections of `APP_LIFELINE.md` before substantive work: Current Snapshot, Active Decisions, Open Questions / Future Ideas, and Resume Point. Reference relevant sections periodically during ongoing work, at natural task boundaries and milestones, before important decisions, and after interruptions or context compaction. Reuse unchanged context instead of rereading the full history.
+
+Keep its snapshot, decisions, concise chronological history, and resume notes current as meaningful project changes occur. It complements the knowledge and memory system below. Preserve the economical usage rules above; do not perform unnecessary full-history audits.
+
 # Knowledge System Protocol
 
 Before every coding session:

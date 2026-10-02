@@ -35,7 +35,7 @@ const phaseContent = {
   },
 } as const;
 
-export default function ProbationCheckInPanel({ state }: { state: ProbationCheckInState }) {
+export default function ProbationCheckInPanel({ state, onOpenCheckIn }: { state: ProbationCheckInState; onOpenCheckIn: () => void }) {
   const content = phaseContent[state.phase];
   const proofAttached = Boolean(state.record?.proofDataUrl);
   const completedAt = state.record?.completedAt
@@ -93,7 +93,7 @@ export default function ProbationCheckInPanel({ state }: { state: ProbationCheck
         </div>
 
         <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            <button type="button" onClick={state.openCeCheckIn} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[16px] bg-white px-4 py-3 text-[14px] font-black text-slate-950">
+            <button type="button" onClick={onOpenCheckIn} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[16px] bg-white px-4 py-3 text-[14px] font-black text-slate-950">
               <ExternalLink size={17} /> Check In Now
             </button>
             {state.device === "computer" && (

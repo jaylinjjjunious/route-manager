@@ -1028,7 +1028,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
         {/* Main Content Body */}
         <main className="app-main mx-auto max-w-7xl px-3 py-4 pb-40 sm:px-6 sm:py-6 lg:px-8 space-y-6">
           {(currentTab === 'dashboard' || currentTab === 'jobs') && !probationCheckIn.completed && (
-            <ProbationCheckInPanel state={probationCheckIn} />
+            <ProbationCheckInPanel state={probationCheckIn} onOpenCheckIn={() => handleTabChange('checkin')} />
           )}
 
           {currentTab === 'dashboard' && !tracker.rideModeActive && SHOWER_GATE_REQUIRED && !showerGate.showerGateUnlocked && (

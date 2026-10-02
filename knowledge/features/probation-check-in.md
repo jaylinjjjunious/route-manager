@@ -52,3 +52,13 @@ The probation lock composes with the existing shower gate through the shared `jo
 ## Update 2026-09-26
 
 More → Monthly Check-In opens MonthlyCheckInPage/MonthlyCheckInSettings. The shared useProbationCheckIn launcher records one launch event and opens the provider once through useExternalBrowser: a new web tab or Capacitor native browser. Launch failures appear as an error. The dedicated page uses the existing monthly state and storage. Native iOS behavior still requires device verification.
+
+## Update 2026-10-02 — In-app navigation (local; verification pending)
+
+The Today/Jobs reminder's **Check In Now** button now navigates to the existing More → Monthly Check-In page rather than launching an external browser. The page's existing embedded provider panel and manual completion/proof controls are preserved. Earlier descriptions of the reminder launching the provider directly are superseded by this local change.
+
+Completion still uses browser-local storage. Account-backed persistence, automatic evidence capture, and automatic success recognition are not implemented by this change. Existing unrelated application edits are present; this change is not yet committed, deployed, or verified in the live app.
+
+Local verification: type-checking, production build, and 11 focused probation tests passed. Live interaction remains unverified.
+
+Persistence foundation: `drizzle/0005_probation_check_ins.sql` prepares an account/month-keyed Supabase table with row-level owner isolation and bounded evidence storage. Migration has not been applied or tested against Postgres. Client/API synchronization and safe browser-record migration are not wired yet; current saving behavior remains browser-local.
