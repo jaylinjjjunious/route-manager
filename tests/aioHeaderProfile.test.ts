@@ -7,7 +7,8 @@ import { resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const authMock = vi.hoisted(() => ({
-  user: null,
+  user: { id: "test-user", email: "driver@ai0.app", user_metadata: { name: "Test User" } },
+  session: { user: { id: "test-user", email: "driver@ai0.app" }, access_token: "test-token" },
   updatePassword: vi.fn(async () => ({ error: null })),
 }));
 
@@ -43,6 +44,7 @@ function renderMoreScreen(theme: "dark" | "light" = "dark") {
         onAddProcessServe: () => undefined,
         onImportScreenshots: () => undefined,
         onSignOut: () => undefined,
+        onNavigateChangePassword: () => undefined,
       }),
     );
   });

@@ -8,19 +8,19 @@ import {
   Camera,
   FileImage,
   FolderOpen,
+  KeyRound,
   LogOut,
   Moon,
   PackageCheck,
   Settings,
+  ShieldCheck,
   Sun,
   Timer,
   ChevronRight,
-  ShieldCheck,
   RefreshCw,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { GradientIconTile } from "./primitives";
-import ChangePasswordPanel from "../auth/ChangePasswordPanel";
 import { useAuth } from "../../auth/AuthProvider";
 
 const AVATAR_PATH = "/profile/avatar.webp";
@@ -41,6 +41,7 @@ export interface MoreScreenProps {
   sonicProcedureHarnessEnabled?: boolean;
   onResetSonicProcedureHarness?: () => void;
   onSignOut: () => void;
+  onNavigateChangePassword: () => void;
 }
 
 const FEATURES: { id: LegacyTab; label: string; subtitle: string; icon: LucideIcon; gradient: string }[] = [
@@ -126,7 +127,13 @@ export default function MoreScreen(props: MoreScreenProps) {
               {props.theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
             </button>
           </div>
-          <ChangePasswordPanel />
+          <FeatureRow
+            icon={KeyRound}
+            gradient="bg-gradient-to-br from-[#0A84FF] to-[#5AC8FA]"
+            label="Change Password"
+            subtitle="Update your Supabase account password"
+            onClick={props.onNavigateChangePassword}
+          />
         </div>
       </section>
 
