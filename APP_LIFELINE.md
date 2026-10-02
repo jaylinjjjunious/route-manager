@@ -135,10 +135,17 @@ No app-specific items have been verified yet. A future idea is not authorization
 
 For each item, use a stable ID such as Q-001 and record: the question or idea, its reason, status (idea / needs decision / planned / blocked), and the next useful step. Add relevant evidence and dependencies only if known. When resolved, remove it from this active list and retain the outcome in history or Active Decisions.
 
+### 2026-10-02 · H-004 — Navigation fix pushed for deployment
+
+- **Status:** Committed and pushed to GitHub main as `a75129462d2bcdfa304404a054d8edab0155e42e`; production build-info now reports that commit and health is OK.
+- **Behavior:** Today/Jobs Check In Now opens the existing More → Monthly Check-In page.
+- **Validation:** Type-checking, build, and 11 focused tests passed. Signed-in production verification: Today → Check In Now opens the in-app Monthly Check-In page at `#checkin`.
+- **Scope:** Existing uncommitted embedded-panel and header edits were excluded. Database migration is checked in as preparation only; not applied or connected to client/API saving. Completion remains browser-local.
+
 ## Resume Point
 
 - **Active task (2026-10-02):** Begin probation check-in improvements, starting with in-app navigation and reliable account-backed saving.
-- **Local navigation change:** Reminder's Check In Now callback now opens the existing `checkin` page under More. Files: `src/App.tsx`, `src/features/probation/ProbationCheckInPanel.tsx`; relevant knowledge document updated. Type-checking, production build, and all 11 focused tests passed, including navigation without provider launch/completion and embedded-page rendering. User-visible verification pending; not committed or deployed.
+- **Navigation deployment:** Complete and verified live as recorded in H-004. Account-backed saving remains incomplete. These post-deployment documentation updates are local; the runtime fix is pushed.
 - **Persistence finding / next work:** `useProbationCheckIn.ts` stores records only in browser-local `aio_probation_check_ins_v1`. Design account-scoped server persistence with reliable save/load and migration before implementing automatic screenshot capture or completion recognition. Never infer completion from simply opening the provider.
 - **Working-tree caution:** Pre-existing unrelated application modifications remain. Preserve them and isolate the requested change before any commit/deployment.
 - **Persistence implementation starting point:** Existing `requireAuth` in `server.ts` validates Supabase sessions; `src/services/apiClient.ts` provides authenticated requests; Supabase admin client is optional. No probation database table or connected SQL tool was found. Durable storage needs an account-scoped database migration and confirmed application path; do not substitute ephemeral server files for durable account storage.

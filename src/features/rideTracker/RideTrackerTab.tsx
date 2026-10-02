@@ -12,6 +12,7 @@ import {
   CheckSquare,
 } from 'lucide-react';
 import type { RideTrackerTabProps } from './types';
+import { ToolPageHeader } from '../../components/aio/ToolPageHeader';
 
 const RideTrackerTab: React.FC<RideTrackerTabProps> = (props) => {
   const {
@@ -37,10 +38,16 @@ const RideTrackerTab: React.FC<RideTrackerTabProps> = (props) => {
     onToggleJobComplete,
     onClearHistory,
     onMoveUnfinishedToTomorrow,
+    onBack,
   } = props;
 
   return (
     <div className="space-y-6 animate-fade-in" id="tab-view-tracker">
+      <ToolPageHeader
+        onBack={onBack}
+        title="Tracker"
+        subtitle="Ride timer and earnings tracker"
+      />
       {trackerStatus === 'completed' ? (
         <EndOfDaySummary
           completedJobs={jobs.filter((j) => j.routeId === 'A' && isJobDone(j))}

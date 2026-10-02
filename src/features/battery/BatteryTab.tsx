@@ -17,6 +17,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import type { EbikeConfig, Job, OutlierReport, RouteMetrics } from '../../types';
+import { ToolPageHeader } from '../../components/aio/ToolPageHeader';
 
 interface BatteryTabProps {
   activeMetrics: RouteMetrics;
@@ -54,6 +55,7 @@ interface BatteryTabProps {
   simulationStatus: string;
   outliersReport: OutlierReport[];
   onMoveOutlierToRouteB: (jobId: string) => void;
+  onBack: () => void;
 }
 
 export default function BatteryTab({
@@ -92,9 +94,15 @@ export default function BatteryTab({
   simulationStatus,
   outliersReport,
   onMoveOutlierToRouteB,
+  onBack,
 }: BatteryTabProps) {
   return (
     <div className="space-y-6 animate-fade-in" id="tab-view-battery">
+      <ToolPageHeader
+        onBack={onBack}
+        title="Battery"
+        subtitle="Battery status, range, and charging"
+      />
       {/* Top Summary Banner */}
       <div className="road-card p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">

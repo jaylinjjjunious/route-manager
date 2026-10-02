@@ -256,12 +256,16 @@ export default function MonthlyCheckInSettings({ state }: { state: ProbationChec
       </div>
 
       <div className="mt-6 pt-4 border-t border-white/10">
+        <h3 className="text-xs font-black uppercase text-white/50 tracking-widest mb-3">Embedded CE Check-In Panel</h3>
+        <CECheckInPanel />
+      </div>
+
+      <div className="mt-6 pt-4 border-t border-white/10">
         <h3 className="text-xs font-black uppercase text-white/50 tracking-widest mb-3">About CE Check-In</h3>
         <div className="space-y-2 text-[13px] text-white/70">
           <p>The CE Check-In website (<code className="font-mono text-white/90 bg-black/20 px-1.5 rounded">checkin.ce-connect.com</code>) is the official probation check-in portal.</p>
-          <p>Due to security restrictions on their website, it cannot be embedded directly in this app.</p>
-          <p><strong>"Check In Now"</strong> opens the site: on iOS app it opens in a native in-app browser; on web/PWA it opens in a new tab.</p>
-          <p>After completing the check-in on their site, return here and use <strong>"I Completed It"</strong> to record your completion with optional screenshot proof.</p>
+          <p>It is embedded here via a server-side proxy so you can complete the check-in without leaving the app.</p>
+          <p>Use the panel above to sign in and complete your monthly check-in, then return here and use <strong>"I Completed It"</strong> to record your completion with optional screenshot proof.</p>
         </div>
       </div>
     </section>

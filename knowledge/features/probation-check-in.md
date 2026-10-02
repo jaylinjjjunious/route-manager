@@ -59,6 +59,10 @@ The Today/Jobs reminder's **Check In Now** button now navigates to the existing 
 
 Completion still uses browser-local storage. Account-backed persistence, automatic evidence capture, and automatic success recognition are not implemented by this change. Existing unrelated application edits are present; this change is not yet committed, deployed, or verified in the live app.
 
+Deployment follow-up: navigation-only runtime change was committed and pushed as `a75129462d2bcdfa304404a054d8edab0155e42e`. The embedded-panel changes described above remain local and were excluded from that commit. Production confirmation is pending; the earlier not-committed statement is superseded for navigation only.
+
+Production confirmation: build-info reports that pushed commit, health is OK, and the signed-in Today → Check In Now interaction opens `#checkin` inside the app. Navigation is verified live. Embedded provider flow, account-backed saving, and automatic confirmation are still incomplete.
+
 Local verification: type-checking, production build, and 11 focused probation tests passed. Live interaction remains unverified.
 
 Persistence foundation: `drizzle/0005_probation_check_ins.sql` prepares an account/month-keyed Supabase table with row-level owner isolation and bounded evidence storage. Migration has not been applied or tested against Postgres. Client/API synchronization and safe browser-record migration are not wired yet; current saving behavior remains browser-local.

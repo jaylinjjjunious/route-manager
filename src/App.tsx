@@ -67,6 +67,7 @@ import TodayScreen from './components/aio/TodayScreen';
 import JobsScreen from './features/jobs/JobsScreen';
 import MoreScreen from './components/aio/MoreScreen';
 import { BottomTabBar } from './components/aio/primitives';
+import { ToolPageHeader } from './components/aio/ToolPageHeader';
 import { getPreviewGuide } from './features/previewGuide/storage';
 import PreviewGuideModal from './features/previewGuide/PreviewGuideModal';
 import { getPreviewGuideReadiness } from './components/aio/roadReadiness';
@@ -1652,6 +1653,11 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           {/* Dedicated inventory workspace */}
           {currentTab === 'inventory' && (
             <section id='tab-view-inventory' className='space-y-5 animate-fade-in'>
+              <ToolPageHeader
+                onBack={() => handleTabChange('more')}
+                title="Inventory"
+                subtitle="Store inventory custody & domains"
+              />
               <div className='road-card p-5 sm:p-6'>
                 <div className='flex items-start gap-3'>
                   <div className='rounded-xl bg-cyan-500/10 p-3 text-cyan-500'><PackageCheck size={24} /></div>
@@ -1721,6 +1727,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
               simulationStatus={simulationStatus}
               outliersReport={outliersReport}
               onMoveOutlierToRouteB={(jobId) => handleUpdateJobStatus(jobId, { routeId: 'B' })}
+              onBack={() => handleTabChange('more')}
             />
           )}
 
@@ -1761,6 +1768,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                 const next = jobs.moveUnfinishedToTomorrow();
                 saveJobsToStorage(next);
               }}
+              onBack={() => handleTabChange('more')}
             />
           )}
 
@@ -1822,12 +1830,18 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
               stopBarcodeScanner={showerGate.stopBarcodeScanner}
               startBarcodeScanner={showerGate.startBarcodeScanner}
               toggleBarcodeTorch={showerGate.toggleBarcodeTorch}
+              onBack={() => handleTabChange('more')}
             />
           )}
 
           {/* Tab 5.5: Tools */}
           {currentTab === 'tools' && (
             <div className="space-y-6 animate-fade-in" id="tab-view-tools">
+              <ToolPageHeader
+                onBack={() => handleTabChange('more')}
+                title="Tools"
+                subtitle="Smart Aisle Scan, imports, transit tools"
+              />
               <div className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-white/10 dark:bg-[#17181b] space-y-2">
                 <h2 className="text-lg font-black text-slate-900 dark:text-white">Field Tools</h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -1942,12 +1956,17 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
 
           {/* Tab: Monthly Check-In */}
           {currentTab === 'checkin' && (
-            <MonthlyCheckInPage state={probationCheckIn} />
+            <MonthlyCheckInPage state={probationCheckIn} onBack={() => handleTabChange('more')} />
           )}
 
           {/* Tab 6: Settings and Instructions */}
           {currentTab === 'settings' && (
             <div className="space-y-6 animate-fade-in" id="tab-view-settings">
+              <ToolPageHeader
+                onBack={() => handleTabChange('more')}
+                title="Settings"
+                subtitle="Hub address, theme, database"
+              />
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                 <div className="lg:col-span-2 space-y-6">
                   {/* Start Location Config Card */}

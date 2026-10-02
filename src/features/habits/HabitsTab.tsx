@@ -14,6 +14,7 @@ import { Camera, CheckCircle2, Plus, Zap } from 'lucide-react';
 import type { HabitTask, HabitLog } from './types';
 import type { ShowerProof, BarcodePermissionStatus, ShowerProofSyncStatus } from '../showerGate/types';
 import ShowerGateSection from '../showerGate/ShowerGateSection';
+import { ToolPageHeader } from '../../components/aio/ToolPageHeader';
 
 type HabitSyncStatus = 'loading' | 'synced' | 'offline' | 'saving';
 
@@ -89,6 +90,7 @@ export interface HabitsTabProps {
   stopBarcodeScanner: () => void;
   startBarcodeScanner: () => void;
   toggleBarcodeTorch: () => void;
+  onBack: () => void;
 }
 
 export default function HabitsTab({
@@ -148,9 +150,15 @@ export default function HabitsTab({
   stopBarcodeScanner,
   startBarcodeScanner,
   toggleBarcodeTorch,
+  onBack,
 }: HabitsTabProps) {
   return (
     <div className="space-y-6 animate-fade-in" id="tab-view-habits">
+      <ToolPageHeader
+        onBack={onBack}
+        title="Habits"
+        subtitle="Daily routines and streaks"
+      />
       <div className="rounded-[8px] border-4 border-slate-950 bg-white p-5 shadow-lg dark:border-white dark:bg-[#17181b]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>

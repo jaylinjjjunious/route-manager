@@ -62,6 +62,7 @@ export interface RideTrackerTabProps {
   onToggleJobComplete: (jobId: string) => void;
   onClearHistory: () => void;
   onMoveUnfinishedToTomorrow: () => void;
+  onBack: () => void;
 }
 
 export interface FinishTrackerDayParams {
