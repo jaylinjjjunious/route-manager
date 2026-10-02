@@ -7,6 +7,8 @@ The production integration owner and two legacy-test synthetic rows have been co
 
 ## High
 
+- Apply Admin Portal migration `drizzle/0006_activity_log.sql` to production Supabase and assign admin role via Supabase Dashboard. Verify production `/admin` access.
+
 - Configure BlueAI's server-only token, owner UUID and persistent private data
   directory, then verify a real sender create/update in the signed-in calendar.
   The current Render free configuration has no disk; leave the receiver disabled

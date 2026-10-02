@@ -9,7 +9,7 @@ vi.mock('../src/hooks/useExternalBrowser', () => ({ useExternalBrowser: () => br
 it('renders embedded CE Check-In panel in incomplete state', () => {
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
   const el = document.createElement('div'); const root = createRoot(el);
-  const state: ProbationCheckInState = { monthKey: '2026-09', phase: 'overdue', locked: true, completed: false, device: 'computer', record: null, error: '', openCeCheckIn: vi.fn(), attachProof: vi.fn(), captureComputerProof: vi.fn(), confirmCompleted: vi.fn() };
+  const state: ProbationCheckInState = { monthKey: '2026-09', phase: 'overdue', locked: true, completed: false, device: 'computer', record: null, error: '', syncStatus: { pendingSync: false }, syncToServer: vi.fn(), loadFromServer: vi.fn(), openCeCheckIn: vi.fn(), attachProof: vi.fn(), captureComputerProof: vi.fn(), confirmCompleted: vi.fn() };
   act(() => root.render(React.createElement(MonthlyCheckInSettings, { state })));
   const iframe = el.querySelector('iframe');
   expect(iframe).toBeTruthy();

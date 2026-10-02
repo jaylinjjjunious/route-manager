@@ -12,7 +12,8 @@ it('opens the in-app check-in page without launching the provider or recording c
   const onOpenCheckIn = vi.fn();
   const state: ProbationCheckInState = {
     monthKey: '2026-10', phase: 'early', locked: false, completed: false,
-    device: 'phone', record: null, error: '', openCeCheckIn: vi.fn(),
+    device: 'phone', record: null, error: '', syncStatus: { pendingSync: false },
+    syncToServer: vi.fn(), loadFromServer: vi.fn(), openCeCheckIn: vi.fn(),
     attachProof: vi.fn(), captureComputerProof: vi.fn(), confirmCompleted: vi.fn(),
   };
   try {

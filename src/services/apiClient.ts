@@ -59,3 +59,65 @@ export async function authFetchJson<T extends object>(input: RequestInfo, init: 
   }
   return data as T;
 }
+
+export interface ProbationCheckInRecord {
+  owner_id: string;
+  month_key: string;
+  started_at?: string;
+  completed_at?: string;
+  device: "phone" | "tablet" | "computer";
+  verification_level?: "self_confirmed" | "screenshot_documented" | "provider_verified";
+  proof_name?: string;
+  proof_data_url?: string;
+  provider_receipt_id?: string;
+  confirmation_url?: string;
+  confirmation_message_id?: string;
+  events: Array<{
+    type: "opened_ce" | "proof_attached" | "completed";
+    at: string;
+    device: "phone" | "tablet" | "computer";
+  }>;
+  updated_at: string;
+}
+
+export interface ProbationCheckInPayload {
+  monthKey: string;
+  startedAt?: string;
+  completedAt?: string;
+  device: "phone" | "tablet" | "computer";
+  verificationLevel?: "self_confirmed" | "screenshot_documented" | "provider_verified";
+  proofName?: string;
+  proofDataUrl?: string;
+  providerReceiptId?: string;
+  confirmationUrl?: string;
+  confirmationMessageId?: string;
+  events: Array<{
+    type: "opened_ce" | "proof_attached" | "completed";
+    at: string;
+    device: "phone" | "tablet" | "computer";
+  }>;
+}
+
+export async function fetchProbationCheckIns(): Promise<{ records: ProbationCheckInRecord[] }> {
+  return authFetchJson("/api/probation-check-ins");
+}
+
+export async function fetchCurrentProbationCheckIn(): Promise<{ record: ProbationCheckInRecord | null }> {
+  return authFetchJson("/api/probation-check-ins/current");
+}
+
+export async function saveProbationCheckIn(payload: ProbationCheckInPayload): Promise<{ record: ProbationCheckInRecord }> {
+  return authFetchJson("/api/probation-check-ins", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function syncProbationCheckIns(records: ProbationCheckInPayload[]): Promise<{ results: Array<{ monthKey: string; success: boolean; error?: string }> }> {
+  return authFetchJson("/api/probation-check-ins/sync", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ records }),
+  });
+}

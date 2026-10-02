@@ -10,6 +10,8 @@ import { createClient } from "@supabase/supabase-js";
 import { createAssistantRouter } from "./server/assistant/assistantRoute";
 import { createTransitRouter } from "./server/transit/transitRoutes";
 import { createBlueAiRouter } from "./server/blueai/blueAiRoutes";
+import probationRouter from "./server/admin/probationRoutes";
+import adminRouter from "./server/admin/adminRoutes";
 
 // Load environment variables
 dotenv.config();
@@ -199,6 +201,12 @@ app.use("/api/assistant", createAssistantRouter(requireAuth));
 
 // Official Transit API (server-side proxy, rate-limited, cached)
 app.use("/api/transit", createTransitRouter(requireAuth));
+
+// Probation check-in durable server API (authenticated user)
+app.use("/api/probation-check-ins", probationRouter);
+
+// Admin portal API (admin only)
+app.use("/api/admin", adminRouter);
 
 // CE Check-In Proxy (embeds cecheckin.com in app panel)
 const CE_CHECK_IN_TARGET = "https://www.cecheckin.com";

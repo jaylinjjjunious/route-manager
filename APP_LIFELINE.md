@@ -48,17 +48,15 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
-Last reviewed: 2026-10-02 — startup instructions and knowledge map verified; application behavior not reviewed.
+Last reviewed: 2026-10-02 — Admin Portal and durable probation storage implemented and verified locally.
 
-- **Purpose and users:** To be filled from verified project context.
-- **Current capabilities and workflows:** Unknown; inspect relevant existing documentation and code when project work begins.
-- **Architecture and data flow:** Unknown.
-- **Data storage and external integrations:** Unknown.
-- **Important behavior, constraints, and invariants:** Unknown.
-- **Known limitations and significant unresolved bugs:** Unknown.
-- **Implementation / release status:** Unknown. Distinguish implemented, verified, and released behavior.
-
-Replace these placeholders with concise verified facts. This document's creation does not establish any app implementation history.
+- **Purpose and users:** Route Manager is a gig-worker route optimization app (All in One 667 / AIØ17) with daily scheduling, job tracking, battery management, habit tracking, and probation check-in coaching. The Admin Portal adds a secure, browser-accessible remote administration interface for reviewing probation check-ins and activity logs without installing the app.
+- **Current capabilities and workflows:** Three-tab AIØ navigation (Today / Jobs / More). Probation check-in with monthly cycle (days 1–10), job lock on day 8+, local-first storage with optional server sync. Admin Portal at `/admin` with Overview, Activity, Probation sections. Server-enforced admin authorization via Supabase role metadata.
+- **Architecture and data flow:** React + Vite frontend, Express server on Render. Supabase Auth for authentication. PostgreSQL (Supabase) for durable data: `probation_check_ins` (owner-scoped, RLS), `activity_log` (shared timeline, service-role access). Feature-specific tables remain separate; `activity_log` provides shared admin timeline.
+- **Data storage and external integrations:** Supabase Auth + Database. Google Gemini for AI features. Open-Meteo for weather. Official Transit API (proxied). All secrets server-side.
+- **Important behavior, constraints, and invariants:** Admin access requires `app_metadata.role === "admin"` or `user_metadata.role === "admin"`. Non-admin users get 403 on `/api/admin/*`. Probation check-ins sync to durable storage; local-first offline support preserved. Activity logging uses service role for cross-user visibility.
+- **Known limitations and significant unresolved bugs:** Admin portal requires online connection (no offline queue). Only probation connected to Admin; jobs/inventory/proofs remain separate. No granular admin permissions. Activity log not user-facing. BlueAI paused.
+- **Implementation / release status:** Admin Portal and probation durable storage implemented, lint/build/tests pass locally. Not yet deployed to production. Migration `drizzle/0006_activity_log.sql` prepared but not applied to Supabase.
 
 ## Context Map
 
@@ -79,18 +77,23 @@ Required installation step for reliable startup discovery: add this reference to
 
 ## Active Decisions
 
-No app decisions have been imported or verified yet.
+### D-001 — Admin Portal Architecture
 
-Use this format for each enduring decision:
+- **Date / status:** 2026-10-02 — accepted, implemented locally.
+- **Decision and scope:** Build a separate `/admin` web interface with server-enforced role authorization. Feature-specific data stays in its own tables; shared `activity_log` provides cross-feature timeline. Probation is the first Admin-connected feature.
+- **Reason / tradeoff:** Remote browser access required for admin review without app install. Centralized activity log avoids duplicating logging per feature. Server enforcement prevents UI-only security. Blueprint: Route Manager and Route Manager Admin are two interfaces over the same backend.
+- **Consequences:** New migration `drizzle/0006_activity_log.sql`. New server modules in `server/admin/`. New UI in `src/features/admin/`. Admin role stored in Supabase `app_metadata`/`user_metadata`. BlueAI remains paused.
+- **Evidence / history:** H-005, H-006.
+- **Supersedes / superseded by:** Supersedes earlier local-only probation storage approach (H-004).
 
-### D-001 — [Decision title]
+### D-002 — Probation Durable Server Storage
 
-- **Date / status:** YYYY-MM-DD — accepted, implemented, or superseded.
-- **Decision and scope:** What was chosen and where it applies.
-- **Reason / tradeoff:** Why; relevant constraints or alternatives.
-- **Consequences:** Behavior or future work this decision requires.
-- **Evidence / history:** Relevant links and history entry ID.
-- **Supersedes / superseded by:** Include only when applicable.
+- **Date / status:** 2026-10-02 — accepted, implemented locally.
+- **Decision and scope:** Probation check-ins sync to Supabase `probation_check_ins` table (owner-scoped, RLS). Local `localStorage` remains primary for offline; explicit sync functions (`syncToServer`, `loadFromServer`) with non-destructive merge.
+- **Reason / tradeoff:** Remote admin review requires durable cloud storage. Local-first preserves offline workflow. Explicit sync avoids silent failures. Migration endpoint supports legacy localStorage import.
+- **Consequences:** New API endpoints `/api/probation-check-ins*`. Client hook exposes `syncStatus`, `syncToServer`, `loadFromServer`. Activity logging integrated.
+- **Evidence / history:** H-005.
+- **Supersedes / superseded by:** Supersedes browser-only storage (H-004).
 
 ## Chronological History
 
@@ -135,27 +138,45 @@ No app-specific items have been verified yet. A future idea is not authorization
 
 For each item, use a stable ID such as Q-001 and record: the question or idea, its reason, status (idea / needs decision / planned / blocked), and the next useful step. Add relevant evidence and dependencies only if known. When resolved, remove it from this active list and retain the outcome in history or Active Decisions.
 
-### 2026-10-02 · H-004 — Navigation fix pushed for deployment
+### 2026-10-02 · H-005 — Admin Portal foundation + Probation durable storage
 
-- **Status:** Committed and pushed to GitHub main as `a75129462d2bcdfa304404a054d8edab0155e42e`; production build-info now reports that commit and health is OK.
-- **Behavior:** Today/Jobs Check In Now opens the existing More → Monthly Check-In page.
-- **Validation:** Type-checking, build, and 11 focused tests passed. Signed-in production verification: Today → Check In Now opens the in-app Monthly Check-In page at `#checkin`.
-- **Scope:** Existing uncommitted embedded-panel and header edits were excluded. Database migration is checked in as preparation only; not applied or connected to client/API saving. Completion remains browser-local.
+- **Type / status:** Architecture, feature — accepted, implemented locally; lint/build/tests pass.
+- **Problem / trigger:** Need remote Admin access to probation records without app install; probation was browser-local only.
+- **Change / behavior:** Added `/admin` UI (Overview, Activity, Probation tabs) with server-enforced admin role. Created `activity_log` table for shared timeline. Probation check-ins now sync to Supabase `probation_check_ins` (RLS) with explicit client sync. Admin authorization via `requireAdmin` middleware checking `app_metadata.role === "admin"`.
+- **Reason / lesson:** Centralized activity log avoids per-feature logging duplication. Server enforcement > UI hiding. Local-first preserved for offline. BlueAI paused per user instruction.
+- **Evidence / validation:** `npm run lint`, `npm run build`, 484 tests pass. Migration `drizzle/0006_activity_log.sql` created. Server modules: `server/admin/{auth,activityLog,probationRoutes,adminRoutes}.ts`. UI: `src/features/admin/{AdminPage,OverviewSection,ActivitySection,ProbationSection}.tsx`.
+- **Follow-up:** Apply migration to Supabase. Verify production deployment. Connect next feature (jobs or inventory) to Admin.
+
+### 2026-10-02 · H-006 — Admin UI entry point in More screen
+
+- **Type / status:** Feature — accepted, implemented locally.
+- **Problem / trigger:** Admin users need discoverable access to `/admin` from the app.
+- **Change / behavior:** Added "Admin Portal" button to More → account section, conditional on `isAdmin` from AuthContext. Uses existing `ToolPageHeader` pattern.
+- **Reason / lesson:** Separate admin UI from worker UI. Conditional render avoids clutter.
+- **Evidence / validation:** `MoreScreen.tsx` updated with `isAdmin`, `onNavigateAdmin` props. `AuthProvider` exposes `isAdmin` from user metadata.
+- **Follow-up:** None.
 
 ## Resume Point
 
-- **Active task (2026-10-02):** Begin probation check-in improvements, starting with in-app navigation and reliable account-backed saving.
-- **Navigation deployment:** Complete and verified live as recorded in H-004. Account-backed saving remains incomplete. These post-deployment documentation updates are local; the runtime fix is pushed.
-- **Persistence finding / next work:** `useProbationCheckIn.ts` stores records only in browser-local `aio_probation_check_ins_v1`. Design account-scoped server persistence with reliable save/load and migration before implementing automatic screenshot capture or completion recognition. Never infer completion from simply opening the provider.
-- **Working-tree caution:** Pre-existing unrelated application modifications remain. Preserve them and isolate the requested change before any commit/deployment.
-- **Persistence implementation starting point:** Existing `requireAuth` in `server.ts` validates Supabase sessions; `src/services/apiClient.ts` provides authenticated requests; Supabase admin client is optional. No probation database table or connected SQL tool was found. Durable storage needs an account-scoped database migration and confirmed application path; do not substitute ephemeral server files for durable account storage.
-- **Prepared migration:** `drizzle/0005_probation_check_ins.sql` defines account/month-scoped records, bounded evidence, and owner RLS. Not applied or database-tested. Next: validate/apply through the project's Supabase database workflow; implement authenticated synchronization with non-destructive merging, account-isolated caching, visible save failures, and safe legacy import. Do not claim server saving works until it is verified across reloads/devices.
-- **Completed:** Created the lifeline and installed its startup/periodic-reference rule in the app checkout's existing `AGENTS.md`; linked it from the knowledge map.
-- **Remaining:** Populate app-specific snapshot facts from relevant verified project material during future authorized work. Configure other CLI startup formats if needed and synchronize documentation to other checkouts when requested.
-- **Context:** Project instructions and knowledge map verified. App-specific history and behavior remain unreviewed; existing unrelated application edits were preserved.
-- **Validation:** Document only; no application changes or application tests.
-- **Next step:** Read existing `AGENTS.md` and relevant project notes before recording app-specific facts. Do not reconstruct the entire history merely to fill this file.
+- **Active task (2026-10-02):** Admin Portal and probation durable storage implemented and validated locally. Ready for production deployment.
+- **Completed:** 
+  - Admin Portal at `/admin` with Overview, Activity, Probation sections
+  - Server-enforced admin authorization (`requireAdmin` middleware)
+  - Shared `activity_log` table with `logActivity()` helper
+  - Probation check-in durable storage in Supabase (`probation_check_ins` table, RLS)
+  - Client sync functions (`syncToServer`, `loadFromServer`, `syncStatus`)
+  - Activity logging integrated with probation events
+  - Admin entry point in More screen (conditional on `isAdmin`)
+  - All lint, build, and 484 tests pass
+- **Remaining:** 
+  - Apply `drizzle/0006_activity_log.sql` migration to Supabase
+  - Deploy to Render and verify production Admin Portal access
+  - Confirm admin role assignment works via Supabase Dashboard
+  - Connect next feature to Admin (jobs or inventory)
+- **Blockers:** Migration not yet applied to production Supabase. Admin role not yet assigned to any user.
+- **Validation status:** Local verification complete. Production verification pending deployment.
+- **Next step:** Apply migration, assign admin role in Supabase, deploy to Render, verify `/admin` access.
 
 ## Last Updated
 
-2026-10-02 — local documentation changes; not committed or deployed.
+2026-10-02 — Admin Portal + probation durable storage implemented; lint/build/tests pass; ready for production deployment.

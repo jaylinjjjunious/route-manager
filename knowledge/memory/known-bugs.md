@@ -33,6 +33,11 @@ it is not a multi-replica or bidirectional job-sync system.
 | P008 | Low | Lens cleanliness detection may produce false uncertain results on naturally low-detail scenes (plain walls); controlled testing with real smudge samples is needed to calibrate confidence thresholds | Open |
 | P010 | Low | Legacy jobs moved with the old "Move → Route B" control before Phase 1 scheduling shipped have no `scheduledDate`; they surface as unscheduled rather than pinned to a day until rescheduled | Open |
 | P011 | High | Cloudflare Worker API routes do not validate Supabase bearer tokens even though the Express deployment uses `requireAuth()`; client token injection alone does not protect Worker endpoints | Open |
+| P012 | Medium | Admin Portal requires online connection — no offline queue for admin actions | Open |
+| P013 | Medium | Only probation check-in connected to Admin Portal; jobs, inventory, proofs remain in separate UIs | Open |
+| P014 | Low | No granular admin permissions (view vs edit vs delete) — single admin role | Open |
+| P015 | Low | Activity log not user-facing — regular users cannot see their own activity timeline | Open |
+| P016 | Medium | Admin Portal migration `drizzle/0006_activity_log.sql` not yet applied to production Supabase | Open |
 
 
 ## Resolved Bugs

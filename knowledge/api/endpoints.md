@@ -1,7 +1,7 @@
 # API Endpoints Reference
 
-**Last Updated:** 2026-08-02 (transit-trip-stop-accuracy)
-**Related Source Files:** `server.ts`, `worker/index.ts`, `server/transit/transitRoutes.ts`, `src/features/showerGate/showerProofApi.ts`, `src/services/apiClient.ts`, `src/services/transit/transitApiClient.ts`
+**Last Updated:** 2026-10-02 (add admin portal, activity log, probation durable storage)
+**Related Source Files:** `server.ts`, `worker/index.ts`, `server/transit/transitRoutes.ts`, `src/features/showerGate/showerProofApi.ts`, `src/services/apiClient.ts`, `src/services/transit/transitApiClient.ts`, `server/admin/probationRoutes.ts`, `server/admin/adminRoutes.ts`, `server/admin/auth.ts`, `server/admin/activityLog.ts`
 
 ---
 
@@ -385,3 +385,134 @@ Authenticated selected-page extraction for the per-job Preview Guide.
 ## Build identification (2026-09-26)
 
 GET /api/build-info is public and uncached. commitSha resolves RENDER_GIT_COMMIT, then RAILWAY_GIT_COMMIT_SHA, then GIT_COMMIT_SHA, otherwise local. Render is the primary Express host. builtAt currently falls back to response time when no Railway deployment timestamp is supplied; use commitSha for release identity.
+
+---
+
+## Domain: Probation Check-In (Durable Storage)
+
+### GET `/api/probation-check-ins`
+
+| Field | Value |
+|-------|-------|
+| **Auth** | JWT (Express `requireAuth`) |
+| **Query Params** | None |
+| **Response** | `{ records: ProbationCheckInRecord[] }` |
+| **Error** | `{ error: string }` (401/500) |
+
+Returns all probation check-in records for the authenticated user, ordered by month_key DESC (newest first).
+
+---
+
+### GET `/api/probation-check-ins/current`
+
+| Field | Value |
+|-------|-------|
+| **Auth** | JWT (Express `requireAuth`) |
+| **Query Params** | None |
+| **Response** | `{ record: ProbationCheckInRecord \| null }` |
+| **Error** | `{ error: string }` (401/500) |
+
+Returns the current month's probation check-in record for the authenticated user, or null if not yet started.
+
+---
+
+### POST `/api/probation-check-ins`
+
+| Field | Value |
+|-------|-------|
+| **Auth** | JWT (Express `requireAuth`) |
+| **Content-Type** | `application/json` |
+| **Body** | `ProbationCheckInPayload` (monthKey, startedAt?, completedAt?, device, verificationLevel?, proofName?, proofDataUrl?, providerReceiptId?, confirmationUrl?, confirmationMessageId?, events[]) |
+| **Response** | `{ record: ProbationCheckInRecord }` |
+| **Error** | `{ error: string }` (400/401/500) |
+
+Creates or updates (upsert) a probation check-in record for the authenticated user. Uses `owner_id, month_key` as the conflict key. Returns the saved record with server-generated `updated_at`.
+
+**ProbationCheckInPayload:**
+```typescript
+interface ProbationCheckInPayload {
+  monthKey: string;                    // YYYY-MM format
+  startedAt?: string;                  // ISO timestamp
+  completedAt?: string;                // ISO timestamp
+  device: "phone" | "tablet" | "computer";
+  verificationLevel?: "self_confirmed" | "screenshot_documented" | "provider_verified";
+  proofName?: string;
+  proofDataUrl?: string;               // Base64 data URL (compressed)
+  providerReceiptId?: string;
+  confirmationUrl?: string;
+  confirmationMessageId?: string;
+  events: Array<{ type: "opened_ce" | "proof_attached" | "completed"; at: string; device: "phone" | "tablet" | "computer" }>;
+}
+```
+
+---
+
+### POST `/api/probation-check-ins/sync`
+
+| Field | Value |
+|-------|-------|
+| **Auth** | JWT (Express `requireAuth`) |
+| **Content-Type** | `application/json` |
+| **Body** | `{ records: ProbationCheckInPayload[] }` |
+| **Response** | `{ results: Array<{ monthKey: string; success: boolean; error?: string }> }` |
+| **Error** | `{ error: string }` (400/401/500) |
+
+Bulk sync multiple local probation check-in records to the server. Performs upsert per record. Useful for migrating from browser-only localStorage to durable server storage.
+
+---
+
+## Domain: Admin Portal
+
+All admin endpoints require admin role authorization via `requireAdmin` middleware. The middleware validates the Supabase Bearer token and verifies `app_metadata.role === "admin"` or `user_metadata.role === "admin"`. Non-admin users receive `403 { error: "Admin access required.", code: "ADMIN_REQUIRED" }`.
+
+### GET `/api/admin/overview`
+
+| Field | Value |
+|-------|-------|
+| **Auth** | Admin JWT (Express `requireAdmin`) |
+| **Query Params** | None |
+| **Response** | `{ stats: { totalActivity, totalProbation, completedProbation, pendingProbation }, recentActivity: ActivityLogEntry[], recentProbation: ProbationCheckInRecord[] }` |
+| **Error** | `{ error: string }` (401/403/500) |
+
+Returns summary statistics for the admin dashboard: total activity log entries, total probation records, completed/pending counts, plus the 10 most recent activity and probation records.
+
+---
+
+### GET `/api/admin/activity`
+
+| Field | Value |
+|-------|-------|
+| **Auth** | Admin JWT (Express `requireAdmin`) |
+| **Query Params** | `limit` (default 100, max 500), `offset` (default 0), `feature`, `action`, `ownerId`, `from` (ISO date), `to` (ISO date) |
+| **Response** | `{ activities: ActivityLogEntry[], pagination: { limit, offset, total } }` |
+| **Error** | `{ error: string }` (401/403/500) |
+
+Returns paginated activity log entries in reverse chronological order. Supports filtering by feature, action, ownerId, and date range.
+
+**ActivityLogEntry:**
+```typescript
+interface ActivityLogEntry {
+  id: string;
+  owner_id: string;
+  feature: string;
+  action: string;
+  related_record_type: string | null;
+  related_record_id: string | null;
+  summary: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+```
+
+---
+
+### GET `/api/admin/probation`
+
+| Field | Value |
+|-------|-------|
+| **Auth** | Admin JWT (Express `requireAdmin`) |
+| **Query Params** | `limit` (default 50, max 200), `offset` (default 0), `ownerId`, `monthKey`, `completed` ("true"/"false"), `from` (ISO date), `to` (ISO date) |
+| **Response** | `{ records: ProbationCheckInRecord[], pagination: { limit, offset, total } }` |
+| **Error** | `{ error: string }` (401/403/500) |
+
+Returns paginated probation check-in records across all users. Supports filtering by user, month, completion status, and completion date range.

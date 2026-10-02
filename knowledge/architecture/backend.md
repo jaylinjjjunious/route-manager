@@ -52,6 +52,15 @@ server.ts → bootstrap()
 | GET | `/api/transit/stops/:stopId/arrivals` | JWT | Live arrivals for a stop |
 | POST | `/api/transit/trip-plan` | JWT | Plan a transit trip |
 | GET | `/api/transit/alerts` | JWT | Active service alerts |
+| GET | `/api/probation-check-ins` | JWT | List user's probation check-in records |
+| GET | `/api/probation-check-ins/current` | JWT | Get current month's probation check-in |
+| POST | `/api/probation-check-ins` | JWT | Create or update probation check-in record |
+| POST | `/api/probation-check-ins/sync` | JWT | Sync multiple local records to server |
+| GET | `/api/admin/overview` | Admin JWT | Admin dashboard summary stats |
+| GET | `/api/admin/activity` | Admin JWT | Activity log with filtering |
+| GET | `/api/admin/probation` | Admin JWT | Probation check-in records with filtering |
+
+#### Admin Portal Layer
 
 #### Transit Layer
 
@@ -117,6 +126,7 @@ Receives FormData with `barcode`, `image` (Blob), `cycleId`, `localDate`, `captu
 
 - `server.ts` — Express backend (724 lines)
 - `server/transit/` — Transit API proxy layer (router, service, client, cache, limiter, budget, types)
+- `server/admin/` — Admin portal (auth, activityLog, probationRoutes, adminRoutes)
 - `worker/index.ts` — Cloudflare Worker (700 lines)
 
 ## Related Knowledge
@@ -126,7 +136,8 @@ Receives FormData with `barcode`, `image` (Blob), `cycleId`, `localDate`, `captu
 - `api/error-contracts.md` — Error response shapes
 - `database/schema.md` — Database schema
 - `features/transit.md` — Transit Mode feature behavior
+- `features/admin-portal.md` — Admin portal feature behavior
 
 ## Last Updated
 
-2026-07-30 (integrate-official-transit-api)
+2026-10-02 (add admin portal, activity log, probation durable storage)

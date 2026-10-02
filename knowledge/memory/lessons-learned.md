@@ -113,16 +113,13 @@ The user explicitly requests careful, economical usage in every session.
 - Any service test that imports a module pulling in `src/lib/supabase.ts` must mock it: that module throws at import time when `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` are missing, so the transit provider-selection test needed a hoisted supabase mock to run without env vars.
 - A client error reporter must not import modules that can throw at module scope in a "missing config" startup path; init it only after Supabase config is validated (inside the existing try/catch in `main.tsx`).
 
-## External API Integration (Weather & Dynamic Artwork)
+## Admin Portal (2026-10-02)
 
-- Open-Meteo provides keyless, rate-limit-friendly current weather (`temperature_2m`, `apparent_temperature`, `weather_code`, `is_day`, `precipitation`, `wind_speed_10m`) and daily solar events (`sunrise`, `sunset`). In-memory caching (5-minute TTL) prevents redundant network requests during tab switching.
-- Separating weather normalization (`selectSemanticWeatherState`) and asset resolution (`resolveWeatherArtwork`) keeps the feature deterministic while letting the existing TodayScreen weather slot preserve its approved layout.
-- Graceful UI degradation via `onError` on artwork images ensures the application never crashes or breaks when 3D artwork files are missing or loading, smoothly preserving the existing Lucide vector glyphs.
-
----
-
-**Last Updated:** 2026-09-15 (User-request scope rule added)
-
-## 2026-09-26 release review
-
-Provider opening and audit logging should share one launcher to prevent duplicate tabs. A simplified navigation popup must still enforce job-access locks. Public local-only workspace entry is an explicit existing product setting; it must never create real API credentials.
+- Separate admin web interface (`/admin`) from worker app — same backend, different UI entry point. Server-enforced role authorization (`requireAdmin`) is mandatory; hiding buttons in frontend is not a security boundary.
+- Shared `activity_log` table with service-role access provides cross-user audit trail. Use `logActivity()` helper after successful feature operations. Avoid logging every UI render — log meaningful events (completion, sync, start).
+- Admin role stored in Supabase `app_metadata.role` (preferred, server-controlled) or `user_metadata.role`. AuthContext exposes `isAdmin` for conditional UI rendering.
+- Feature-specific data stays in its own tables (probation_check_ins, shower_proof_records). Centralized `activity_log` provides the timeline; do not create one giant table.
+- Local-first offline support preserved for client features. Server sync is explicit (`syncToServer`, `loadFromServer`) with non-destructive merge (local unsynced changes preserved).
+- Admin Portal requires online connection — no offline queue. Document as limitation (P012).
+- Only probation connected to Admin in first slice. Other features (jobs, inventory, proofs) remain in their own UIs. Document as limitation (P013).
+- Migration `drizzle/0006_activity_log.sql` must be applied to Supabase before Admin Portal works in production (P016).

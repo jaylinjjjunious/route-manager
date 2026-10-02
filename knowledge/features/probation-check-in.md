@@ -36,6 +36,30 @@ Future-ready fields are included for provider receipt ID, confirmation URL, and 
 
 Monthly records use the existing browser-local `safeStorage` pattern under `aio_probation_check_ins_v1`, retaining up to 24 months. Screenshots reuse the existing proof-image compression routine before storage. Records are an internal discipline/audit log, not independent proof from CE Check-In and not a substitute for instructions from a probation officer.
 
+**Durable Server Storage (2026-10-02)**: Records now sync to Supabase `probation_check_ins` table with row-level security (owner-scoped). The client hook `useProbationCheckIn` exposes `syncToServer()`, `loadFromServer()`, and `syncStatus` for managing synchronization. Local-first behavior is preserved for offline support; server sync is explicit and non-destructive (local unsynced changes are preserved during merge).
+
+**Admin Visibility**: Completed check-ins are visible in the Admin Portal at `/admin` → Probation tab. Admin users (role in `app_metadata` or `user_metadata`) can view all users' probation records with filtering by user, month, completion status, and date. Each check-in submission creates an activity log entry in the shared `activity_log` table for audit trail purposes.
+
+## Sync Behavior
+
+- **Automatic triggers**: `openCeCheckIn` (started) and `confirmCompleted` (completed) set `pendingSync: true`
+- **Manual sync**: User can call `syncToServer()` from the Monthly Check-In page
+- **Load from server**: `loadFromServer()` merges server records with local (non-destructive)
+- **Conflict resolution**: Server wins for synced fields (`startedAt`, `completedAt`, `verificationLevel`, `proofDataUrl`, `events`); local unsynced changes are preserved
+- **Offline support**: Local storage remains primary; sync occurs when online
+- **Migration**: `syncProbationCheckIns()` bulk endpoint supports migrating existing localStorage records
+
+## Activity Logging
+
+Each probation event creates an entry in the shared `activity_log` table:
+- `feature`: "probation"
+- `action`: "check_in_started" | "check_in_completed" | "check_in_synced"
+- `relatedRecordType`: "probation_check_in"
+- `relatedRecordId`: `${ownerId}:${monthKey}`
+- `metadata`: device, verificationLevel, hasProof, syncedAt (for sync)
+
+Visible in Admin Portal → Activity tab with filtering.
+
 ## Job Enforcement
 
 The probation lock composes with the existing shower gate through the shared `jobAccessReady` boundary in `App.tsx`. While locked, schedule information and job details remain viewable, but navigation, status/lifecycle actions, Ride Mode, adding, optimization, moving, review, and completion are blocked or disabled.

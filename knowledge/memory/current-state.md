@@ -65,11 +65,11 @@ Implemented on top of the existing job system:
 - Mobile Wrapper: Capacitor (iOS Xcode Workspace).
 - Backend: Express.js server bundled with esbuild.
 - Alternative backend: Cloudflare Worker.
-- Database: Cloudflare D1 (for proofs) + Supabase (for auth).
+- Database: Cloudflare D1 (for proofs) + Supabase (for auth + durable data: `probation_check_ins`, `activity_log`).
 - Hosting: Render (primary) + Railway (temporary rollback) + Cloudflare Workers (alternative).
 - CI/CD: GitHub Actions (Apple iOS Wrap).
 - Latest checkpoint: `checkpoint-2026-07-21-remove-road-card-slab` (SHA cef52e5).
 
 ---
 
-**Last Updated:** 2026-09-15 (Today dashboard simplified; Travel Plan and inline Preview/Ride Mode readiness content removed from the main dashboard)
+**Last Updated:** 2026-10-02 (Admin Portal, probation durable storage, activity logging, admin authorization)

@@ -85,6 +85,7 @@ import { useShowerGate } from './features/showerGate/useShowerGate';
 import ProbationCheckInPanel from './features/probation/ProbationCheckInPanel';
 import MonthlyCheckInPage from './features/probation/MonthlyCheckInPage';
 import ChangePasswordPage from './components/auth/ChangePasswordPage';
+import AdminPage from './features/admin/AdminPage';
 import { useProbationCheckIn } from './features/probation/useProbationCheckIn';
 import { authFetch, authFetchJson } from './services/apiClient';
 import { isTransitApiEnabled } from './services/transit';
@@ -107,9 +108,9 @@ const SHOWER_HABIT_NAME = 'Mandatory Shower';
 // Temporary operational bypass. Set true to restore the scan/access gate without removing its implementation.
 const SHOWER_GATE_REQUIRED = false;
 
-type AppTab = 'dashboard' | 'jobs' | 'more' | 'inventory' | 'battery' | 'tracker' | 'habits' | 'tools' | 'settings' | 'checkin' | 'changepassword';
+type AppTab = 'dashboard' | 'jobs' | 'more' | 'inventory' | 'battery' | 'tracker' | 'habits' | 'tools' | 'settings' | 'checkin' | 'changepassword' | 'admin';
 
-const APP_TABS: AppTab[] = ['dashboard', 'jobs', 'more', 'inventory', 'battery', 'tracker', 'habits', 'tools', 'settings', 'checkin', 'changepassword'];
+const APP_TABS: AppTab[] = ['dashboard', 'jobs', 'more', 'inventory', 'battery', 'tracker', 'habits', 'tools', 'settings', 'checkin', 'changepassword', 'admin'];
 const SHOWER_PROTECTED_TABS: AppTab[] = ['battery', 'tracker'];
 
 const RETIRED_ROUTE_DESTINATIONS = new Set(['route', 'routes']);
@@ -156,7 +157,7 @@ declare global {
 }
 
 export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCenter }: { debugCenterOpen?: boolean; onCloseDebugCenter?: () => void; onOpenDebugCenter?: () => void } = {}) {
-  const { signOut, user, session } = useAuth();
+  const { signOut, user, session, isAdmin } = useAuth();
   const [startAddress, setStartAddress] = useState('1951 Golden State Ave');
   const [startCoord, setStartCoord] = useState<Coordinates>({ lat: 35.3904, lng: -119.0255 });
   const battery = useBattery();
@@ -1159,6 +1160,8 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                   if (window.confirm("Sign out of AIØ?")) await signOut();
                 }}
                 onNavigateChangePassword={() => handleTabChange('changepassword')}
+                isAdmin={isAdmin}
+                onNavigateAdmin={() => handleTabChange('admin')}
               />
             </div>
           )}
@@ -1964,6 +1967,11 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           {/* Tab: Change Password */}
           {currentTab === 'changepassword' && (
             <ChangePasswordPage onBack={() => handleTabChange('more')} />
+          )}
+
+          {/* Tab: Admin Portal */}
+          {currentTab === 'admin' && (
+            <AdminPage onBack={() => handleTabChange('more')} />
           )}
 
           {/* Tab 6: Settings and Instructions */}

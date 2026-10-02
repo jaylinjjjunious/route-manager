@@ -42,6 +42,7 @@ interface AuthContextValue {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error?: string }>;
   updatePassword: (newPassword: string) => Promise<{ error?: string }>;
+  isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -191,9 +192,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return {};
   }, []);
 
+  const currentUser = session?.user ?? devUser ?? null;
+  const isAdmin = currentUser?.app_metadata?.role === "admin" || currentUser?.user_metadata?.role === "admin";
+
   const value: AuthContextValue = {
     session,
-    user: session?.user ?? devUser ?? null,
+    user: currentUser,
     loading,
     verificationMode,
     workspaceBypassAvailable,
@@ -202,6 +206,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut,
     resetPassword,
     updatePassword,
+    isAdmin,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

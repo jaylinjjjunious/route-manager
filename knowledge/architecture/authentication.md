@@ -10,7 +10,9 @@ Describes how user authentication works across the frontend and backend.
 
 Supabase email/password authentication managed by `AuthProvider.tsx`.
 
-**Context:** `AuthContextValue` exposes `session`, `user`, `loading`, `signIn`, `signOut`, `resetPassword`, `updatePassword`.
+**Context:** `AuthContextValue` exposes `session`, `user`, `loading`, `signIn`, `signOut`, `resetPassword`, `updatePassword`, `isAdmin`.
+
+The `isAdmin` flag is derived from the user's `app_metadata.role` or `user_metadata.role` being set to `"admin"`. This enables conditional UI rendering for the Admin Portal entry point in the More screen.
 
 **Boot sequence (main.tsx):**
 1. Render `StartupScreen` while loading.
@@ -41,6 +43,12 @@ Supabase email/password authentication managed by `AuthProvider.tsx`.
 - Calls `supabaseAdmin.auth.getUser(token)` to verify.
 - Attaches `req.user` with user metadata.
 - Returns 401 JSON response on failure.
+
+**Admin Authorization (`server/admin/auth.ts` `requireAdmin()`):**
+- Extends `requireAuth()` by verifying the authenticated user has admin role.
+- Checks `app_metadata.role === "admin"` or `user_metadata.role === "admin"` via Supabase Admin API.
+- Returns 403 `{ error: "Admin access required.", code: "ADMIN_REQUIRED" }` for non-admin users.
+- Used by all `/api/admin/*` endpoints.
 
 ### Local Inventory Verification Mode
 
@@ -98,7 +106,7 @@ Required env vars:
 
 ## Related Source Files
 
-- `src/auth/AuthProvider.tsx` — Auth context (141 lines)
+- `src/auth/AuthProvider.tsx` — Auth context with isAdmin flag
 - `src/auth/localAuthBypass.ts` — Development/flag/loopback bypass guard
 - `src/auth/ProtectedApp.tsx` — Auth guard (91 lines)
 - `src/components/LoginPage.tsx` — Login UI and local-only shield entry control
@@ -107,6 +115,7 @@ Required env vars:
 - `src/services/apiClient.ts` — Auth-fetch wrapper (61 lines)
 - `src/main.tsx` — Boot sequence (62 lines)
 - `server.ts` — requireAuth middleware (724 lines)
+- `server/admin/auth.ts` — requireAdmin middleware and admin role verification
 
 ## Related Knowledge
 
@@ -115,6 +124,6 @@ Required env vars:
 
 ## Last Updated
 
-2026-08-15 (authenticated Change Password panel and localhost reset redirect verification)
+2026-10-02 (add admin role authorization, requireAdmin middleware, isAdmin in AuthContext)
 
 Account status and password-change availability use the real session, not the synthetic local user.

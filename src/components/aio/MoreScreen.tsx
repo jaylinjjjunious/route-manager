@@ -9,6 +9,7 @@ import {
   FileImage,
   FolderOpen,
   KeyRound,
+  LayoutDashboard,
   LogOut,
   Moon,
   PackageCheck,
@@ -42,6 +43,8 @@ export interface MoreScreenProps {
   onResetSonicProcedureHarness?: () => void;
   onSignOut: () => void;
   onNavigateChangePassword: () => void;
+  isAdmin?: boolean;
+  onNavigateAdmin?: () => void;
 }
 
 const FEATURES: { id: LegacyTab; label: string; subtitle: string; icon: LucideIcon; gradient: string }[] = [
@@ -214,6 +217,22 @@ export default function MoreScreen(props: MoreScreenProps) {
               <RefreshCw size={16} />
               Reset Sonic Test Jobs
             </button>
+          </div>
+        </section>
+      )}
+
+      {props.isAdmin && props.onNavigateAdmin && (
+        <section aria-label="Admin portal">
+          <div className="aio-card p-2">
+            <div className="divide-y divide-[var(--color-aio-line)]">
+              <FeatureRow
+                icon={LayoutDashboard}
+                gradient="bg-gradient-to-br from-[#7C3AED] to-[#A855F7]"
+                label="Admin Portal"
+                subtitle="Remote administration dashboard"
+                onClick={props.onNavigateAdmin}
+              />
+            </div>
           </div>
         </section>
       )}
