@@ -2,7 +2,7 @@
 
 ## Current status (2026-10-01)
 
-The client-only file review described below remains available. In addition, the authenticated Supabase-backed feed now supplies separate Assigned from BlueAI and Available from BlueAI sections. Its persistent sync status distinguishes loading, empty results, account mismatch/configuration, and read failures; see blueai-ingestion.md. The older statement that durable synchronization is unimplemented is superseded. Production end-to-end visibility is still under verification.
+The client-only file review described below remains available. In addition, the authenticated Supabase-backed feed now supplies separate Assigned from BlueAI and Available from BlueAI sections. Its persistent sync status distinguishes loading, empty results, account mismatch/configuration, and read failures; see blueai-ingestion.md. The older statement that durable synchronization is unimplemented is superseded. Production visibility of both synthetic records was verified in the signed-in Jobs page on 2026-10-02 after correcting the integration account mapping.
 
 
 Added 2026-09-27. Jobs → BlueAI results accepts a local JSON export with assigned_work_orders and available_jobs arrays. This separate client-only preview does not use or enable the pending machine-authenticated ingestion receiver.

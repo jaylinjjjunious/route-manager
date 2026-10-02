@@ -1,3 +1,16 @@
+## User preference: conserve usage (2026-10-02)
+
+The user explicitly requests careful, economical usage in every session.
+- Check the five-hour usage window at the start and at meaningful milestones. At 85% used or higher, stop work and notify the user. Do not continue until they authorize resuming or the window resets.
+- Keep work focused on the requested outcome; use concise updates and answers.
+- Reuse established context and verified results. Read only relevant files and sections.
+- Batch independent checks and avoid repeated searches, full-file dumps, or frequent polling.
+- Do not spawn extra agents unless the user explicitly asks for them.
+- Run only relevant tests and required checks; repeat them only after meaningful changes or failures.
+- Avoid unsolicited artifacts, research, refactors, and extra features.
+- Preserve essential safety and verification. Report a real blocker instead of spending usage on speculative retries.
+- Record progress and remaining work so later sessions can resume without repeating completed work.
+
 # Knowledge System Protocol
 
 Before every coding session:

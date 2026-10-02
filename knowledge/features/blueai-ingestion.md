@@ -1,5 +1,7 @@
 # BlueAI job ingestion (v1)
 
+Verified 2026-10-02 in the signed-in production Jobs page: BlueAI records synced; BLUEAI-TEST-001 appears under Assigned from BlueAI and BLUEAI-TEST-002 under Available from BlueAI. Application commit b690196 passed lint, production build, and 28 focused tests. No Barrister writes were performed. This verifies the receiver-to-UI path with existing synthetic data; a new real Barrister extraction was not run.
+
 ## Current Barrister export integration (2026-10-01)
 
 The sections below describe the legacy single-job/file-store bridge. The current Express wiring uses SUPABASE_SERVICE_ROLE_KEY with the configured Supabase URL for durable Barrister exports in blueai_records (migration drizzle/0004_blueai_records.sql). BLUEAI_DATA_DIR is not required for this Supabase path. Never expose the service-role key to the browser.
@@ -10,7 +12,7 @@ Jobs displays a persistent BlueAI sync status plus separate assigned/available r
 
 The public temporary diagnostic endpoint and build key fingerprint have been removed. Production frontend verification must inspect the lazy App chunk, not just index*.js: BlueAI already existed in the deployed App chunk during the September investigation. A 200 response alone does not prove an enabled feed or nonempty data. Relevant regression tests: blueAiRecordsSync, blueAiBridge, blueAiExport, blueAiSync.
 
-The remaining production owner/configuration cause and synthetic-record visibility must be verified against the deployed status before claiming completion.
+Production investigation confirmed BLUEAI_OWNER_ID pointed to a legacy test account, while the app session used the newer user account. The two synthetic test rows were present under the legacy test and older real accounts, not the newer account. On 2026-10-01, Render ownership was corrected to the newer account and only the two legacy-test synthetic rows were reassigned to it; the older real account copies and all source data were preserved. No Barrister requests or modifications were made.
 
 
 Implemented 2026-09-27. This is an Express receiver and browser sync adapter, not an embedded BlueAI SDK. Actual extraction/HTTP delivery from the installed BlueAI environment remains to be configured and verified.

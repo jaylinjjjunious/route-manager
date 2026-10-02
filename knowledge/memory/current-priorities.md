@@ -2,7 +2,7 @@
 
 ## BlueAI follow-through (2026-10-01)
 
-Verify the deployed Jobs sync status and both synthetic records using the signed-in production session. If configuration/account ownership differs, correct only the authorized integration mapping; do not alter Barrister records. Supabase-backed export storage is already implemented, superseding the older priority below to provision a private data directory for this path. Render is the production target requested by the user.
+The production integration owner and two legacy-test synthetic rows have been corrected to the newer signed-in account. Completed 2026-10-02: personally verified both synthetic records and successful sync in production Jobs. No further debugging is needed for this visibility issue. Do not alter Barrister records. Supabase-backed export storage is already implemented, superseding the older priority below to provision a private data directory for this path. Render is the production target requested by the user.
 
 
 ## High

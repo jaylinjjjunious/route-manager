@@ -1,3 +1,15 @@
+## User preference: conserve usage (2026-10-02)
+
+The user explicitly requests careful, economical usage in every session.
+- Keep work focused on the requested outcome; use concise updates and answers.
+- Reuse established context and verified results. Read only relevant files and sections.
+- Batch independent checks and avoid repeated searches, full-file dumps, or frequent polling.
+- Do not spawn extra agents unless the user explicitly asks for them.
+- Run only relevant tests and required checks; repeat them only after meaningful changes or failures.
+- Avoid unsolicited artifacts, research, refactors, and extra features.
+- Preserve essential safety and verification. Report a real blocker instead of spending usage on speculative retries.
+- Record progress and remaining work so later sessions can resume without repeating completed work.
+
 # Lessons Learned
 
 ## BlueAI visibility (2026-10-01)

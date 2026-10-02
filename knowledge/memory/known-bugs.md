@@ -1,8 +1,10 @@
 # Known Bugs
 
+Verified 2026-10-02 in the signed-in production Jobs page: BlueAI records synced; BLUEAI-TEST-001 appears under Assigned from BlueAI and BLUEAI-TEST-002 under Available from BlueAI. Application commit b690196 passed lint, production build, and 28 focused tests. No Barrister writes were performed. This verifies the receiver-to-UI path with existing synthetic data; a new real Barrister extraction was not run.
+
 ## BlueAI visibility investigation (2026-10-01)
 
-Production's lazy App chunk contains BlueAI polling/display code; the earlier missing-bundle conclusion was false. Confirmed defects: disabled feeds silently stopped polling, failures were hidden, and record state was not cleared on account changes. The new owner-scoped feed hook and visible sync status address these defects. The underlying production empty/disabled feed cause remains to be verified after deployment. Historical file-storage limitations below apply to legacy /jobs, not Supabase-backed /export and /records.
+Production's lazy App chunk contains BlueAI polling/display code; the earlier missing-bundle conclusion was false. Confirmed defects: disabled feeds silently stopped polling, failures were hidden, and record state was not cleared on account changes. The new owner-scoped feed hook and visible sync status address these defects. The deployed status confirmed account_mismatch: Render pointed at a legacy test account, and the newer signed-in account had no synthetic rows. The mapping and only the two legacy-test synthetic rows were corrected on 2026-10-01. Historical file-storage limitations below apply to legacy /jobs, not Supabase-backed /export and /records.
 
 
 ## Active Issues
