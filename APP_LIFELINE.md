@@ -48,7 +48,7 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
-**Remediation in progress (2026-10-03):** Admin trusts only server-controlled app metadata. Owner-isolated automatic sync and atomic retry-safe activity saving are implemented locally. Required tables and the atomic function are applied to Supabase; rollback-only reliability checks passed. Production deployment has routes mounted (401 for unauthenticated), but signed-in sync fails with 404 due to missing `SUPABASE_SERVICE_ROLE_KEY` in Render dashboard. No admin accounts are assigned.
+**Verified production progress (2026-10-03):** Signed-in import, account acknowledgment, reload, and matching Supabase/activity records are verified. Required Render configuration was already present; no secrets were changed. User explicitly approved a server-controlled Admin role for the signed-in account. Admin Overview, Activity, Probation, month filter, and record details now work. Fresh-login More entry and cross-browser loading remain pending.
 
 Last reviewed: 2026-10-03 — Admin Portal and durable probation storage implemented; production routes mounted but signed-in sync blocked by missing server env var.
 
@@ -58,7 +58,7 @@ Last reviewed: 2026-10-03 — Admin Portal and durable probation storage impleme
 - **Data storage and external integrations:** Supabase Auth + Database. Google Gemini for AI features. Open-Meteo for weather. Official Transit API (proxied). All secrets server-side.
 - **Important behavior, constraints, and invariants:** Admin access requires `app_metadata.role === "admin"` only. Non-admin users get 403 on `/api/admin/*`. Probation check-ins sync to durable storage; local-first offline support preserved. Activity logging uses service role for cross-user visibility.
 - **Known limitations and significant unresolved bugs:** Admin portal requires online connection (no offline queue). Only probation connected to Admin; jobs/inventory/proofs remain separate. No granular admin permissions. Activity log not user-facing. BlueAI paused.
-- **Implementation / release status:** Admin Portal and probation durable storage implemented, lint/build/tests pass locally. Not yet deployed to production. Migration `drizzle/0006_activity_log.sql` prepared but not applied to Supabase.
+- **Implementation / release status:** Runtime remediation is deployed; tables/RPC are installed. Local lint/build and focused tests passed. Live saving/reload and Admin server screens are verified; fresh-login discoverability and a second browser remain.
 
 ## Context Map
 
@@ -183,18 +183,11 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 - **Follow-up:** Set `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY` in Render dashboard → Environment; redeploy; verify authenticated sync returns 200/503 not 404.
 
 ## Resume Point
-- **Active task (2026-10-03):** Resolve production 404 on authenticated probation sync. Render dashboard missing `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY` (declared in `render.yaml` with `sync: false`; must be set manually in Render dashboard → Environment). Without service role key, `database` client is null; authenticated requests return 404 instead of 503.
-- **Completed:** 
-  - Admin Portal and durable probation storage implemented; lint/build/494 tests pass
-  - Production routes mounted: unauthenticated `/api/probation-check-ins` → 401, `/api/admin/overview` → 401
-  - `render.yaml` updated with missing server env vars (c5f9f9e deployed)
-- **Blockers:** 
-  - Render dashboard env vars not set (manual step required)
-  - Admin role not assigned
-  - Migration `drizzle/0006_activity_log.sql` not applied to production Supabase
-- **Validation status:** Local lint/build/494 tests pass. Production unauthenticated routes verified. Signed-in sync and Admin verification blocked by missing env vars.
-- **Next step:** Set `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY` in Render dashboard → Environment; redeploy; verify authenticated `/api/probation-check-ins` returns 200/503 not 404; then proceed with signed-in verification steps below.
-
+- Finish fresh-login and second-browser verification. An Edge production tab is open at the sign-in page, but browser input control repeatedly detaches; the user must enter their own credentials. Do not extract tokens, reset passwords, or weaken authentication.
+- After the user signs in, verify the same account's imported check-in loads and More shows Admin Portal. Then personally verify Admin navigation from that entry.
+- User approved Admin assignment for the signed-in account; app_metadata was merged, preserving other metadata. Overview, Activity, Probation, month filtering, and current-month detail are verified. Ordinary account was denied before activation.
+- Save/reload verified for both imported months with one activity entry each. Current month remains incomplete. Provider completion recognition is not implemented.
+- A second ordinary-account isolation check and in-flight sync race verification remain. No code changes are currently needed to configure Render.
 ## Last Updated
 2026-10-03 — Production 404 root cause identified (missing Render env vars); render.yaml fix deployed; dashboard config and signed-in verification pending.
 
@@ -203,7 +196,7 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 Documentation handoff only; do not build new features. The remediation is pushed and deployed at commit c5f9f9e. Production health passed. Routes mounted but signed-in sync blocked by missing Render dashboard env vars. Local lint/build/494 tests pass; rollback-only database reliability checks passed. The live signed-in flow remains unverified.
 
 1. Read AGENTS.md and this lifeline's startup sections; check usage and Git status. Preserve existing changes. Reuse the deployed work instead of repeating migrations or implementation.
-2. Set `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY` in Render dashboard → Environment; trigger redeploy.
+2. Render configuration is already present and saving is verified; do not change secrets or redeploy for this old hypothesis. Proceed to a fresh login in the second browser.
 3. Open https://route-manager-phtj.onrender.com and sign in to the intended Route Manager account. Confirm its actual identity; the app header may contain a hardcoded unrelated email. Do not confuse the Supabase dashboard account with the app account.
 4. Open More → Monthly Check-In. Confirm Today/Jobs Check In Now reaches that page too. Read the account-sync status. If it shows an error, inspect the authenticated API response and Render storage configuration safely; never expose credentials or forge sessions.
 5. Open official CE Check-In from the in-app page to record a harmless start event, then return and wait for Saved to your account. Do not mark completion or upload private proof just to test. Only confirm an actual completed check-in.
@@ -224,3 +217,5 @@ Remaining: signed-in save/reload, second-browser loading, in-flight sync races, 
 Render Environment already contains SUPABASE_SERVICE_ROLE_KEY plus VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY. Server code supports the VITE values as fallbacks; separate URL/anon aliases are not required. No secrets were revealed or changed. Production reports 4c62ec5. Reloading the signed-in production check-in page and retrying sync shows no error; Render logs confirm authenticated GET requests reach the server. Record saving/reload is still unverified because the account cache has no current record and older shared records require ownership confirmation before import. Do not repeat migrations: both tables and the atomic RPC were installed and rollback-tested previously. Missing environment settings were a hypothesis, not a proven explanation of the earlier 404. Next confirm ownership of older browser check-ins, import only the user's own records, and verify account acknowledgment, reload, and matching database/activity rows. Admin assignment and cross-browser testing remain separate.
 ## Signed-in saving verified — 2026-10-03
 User confirmed ownership of the older browser records and authorized import. The production UI acknowledged Saved to your account; after reload it retained the imported start event and account-save status. Supabase read-only verification found both imported months for the signed-in owner, with one activity entry per month: September has its pre-existing completion, October has a start event and remains incomplete. No fabricated completion or proof was created. This resolves the live single-browser save/reload verification blocker. Cross-browser loading and Admin activation/screens remain unverified. The legacy import prompt reappears after reload because the shared cache is intentionally retained; note for later UI cleanup, not a saving failure. Do not repeat migrations or change Render secrets: the service key was already configured and the VITE URL/anon fallbacks are supported.
+## Admin activation and screens verified — 2026-10-03
+After explicit action-time user confirmation, assigned server-controlled Admin to the signed-in account by merging app metadata; other metadata and credentials were preserved. Production Overview shows two records/two activity entries, Activity lists both, and Probation correctly separates completed September from pending October. Month filtering and record detail/event log were verified. Before activation the ordinary account received Admin access required. Fresh-login More discoverability and cross-browser account loading still require the user to sign in to the prepared Edge tab; browser input control detached repeatedly, so credentials were not entered. Do not claim these remaining checks are done.
