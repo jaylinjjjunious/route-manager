@@ -224,7 +224,8 @@ export function useProbationCheckIn(now: Date, ownerId?: string): ProbationCheck
     const active = () => ownerRef.current === ownerId && generation.current === run;
     setSyncStatus(prev => ({ ...prev, lastError: undefined, pendingSync: recordsRef.current.some(r => !r.serverSynced) }));
     try {
-      const response = await authFetchJson<{ records: ServerRecord[] }>('/api/probation-check-ins');
+      const apiBase = typeof window !== 'undefined' ? window.location.origin : '';
+      const response = await authFetchJson<{ records: ServerRecord[] }>(`${apiBase}/api/probation-check-ins`);
       if (!active()) return;
       if (!Array.isArray(response.records) || response.records.some(r => r.owner_id !== ownerId)) throw new Error('Account changed. Reload before saving.');
       let merged = new Map(recordsRef.current.map(r => [r.monthKey, r]));
@@ -234,7 +235,7 @@ export function useProbationCheckIn(now: Date, ownerId?: string): ProbationCheck
       setRecords(next);
       for (const snapshot of next.filter(r => !r.serverSynced)) {
         if (!active()) return;
-        const result = await authFetchJson<{ record: ServerRecord }>('/api/probation-check-ins', {
+        const result = await authFetchJson<{ record: ServerRecord }>(`${apiBase}/api/probation-check-ins`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...payload(snapshot), expectedOwnerId: ownerId }),
         });
