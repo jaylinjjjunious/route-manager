@@ -123,3 +123,5 @@ The user explicitly requests careful, economical usage in every session.
 - Admin Portal requires online connection — no offline queue. Document as limitation (P012).
 - Only probation connected to Admin in first slice. Other features (jobs, inventory, proofs) remain in their own UIs. Document as limitation (P013).
 - Migration `drizzle/0006_activity_log.sql` must be applied to Supabase before Admin Portal works in production (P016).
+
+- Admin authorization must ignore client-editable user metadata. Account sync requires actual lifecycle consumers, owner-scoped caches, and acknowledgment guards. Saving audit data in the same database transaction prevents false success; deterministic retry keys prevent duplicate activity.

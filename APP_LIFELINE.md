@@ -48,13 +48,15 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
+**Remediation in progress (2026-10-02):** Admin trusts only server-controlled app metadata. Owner-isolated automatic sync and atomic retry-safe activity saving are implemented locally. Required tables and the atomic function are applied to Supabase; rollback-only reliability checks passed. Deployment and signed-in end-to-end verification remain pending; no admin accounts are assigned.
+
 Last reviewed: 2026-10-02 — Admin Portal and durable probation storage implemented and verified locally.
 
 - **Purpose and users:** Route Manager is a gig-worker route optimization app (All in One 667 / AIØ17) with daily scheduling, job tracking, battery management, habit tracking, and probation check-in coaching. The Admin Portal adds a secure, browser-accessible remote administration interface for reviewing probation check-ins and activity logs without installing the app.
-- **Current capabilities and workflows:** Three-tab AIØ navigation (Today / Jobs / More). Probation check-in with monthly cycle (days 1–10), job lock on day 8+, local-first storage with optional server sync. Admin Portal at `/admin` with Overview, Activity, Probation sections. Server-enforced admin authorization via Supabase role metadata.
+- **Current capabilities and workflows:** Three-tab AIØ navigation (Today / Jobs / More). Probation check-in with monthly cycle (days 1–10), job lock on day 8+, account-scoped local storage with automatic server sync. Admin Portal at `/admin` with Overview, Activity, Probation sections. Server-enforced admin authorization via Supabase role metadata.
 - **Architecture and data flow:** React + Vite frontend, Express server on Render. Supabase Auth for authentication. PostgreSQL (Supabase) for durable data: `probation_check_ins` (owner-scoped, RLS), `activity_log` (shared timeline, service-role access). Feature-specific tables remain separate; `activity_log` provides shared admin timeline.
 - **Data storage and external integrations:** Supabase Auth + Database. Google Gemini for AI features. Open-Meteo for weather. Official Transit API (proxied). All secrets server-side.
-- **Important behavior, constraints, and invariants:** Admin access requires `app_metadata.role === "admin"` or `user_metadata.role === "admin"`. Non-admin users get 403 on `/api/admin/*`. Probation check-ins sync to durable storage; local-first offline support preserved. Activity logging uses service role for cross-user visibility.
+- **Important behavior, constraints, and invariants:** Admin access requires `app_metadata.role === "admin"` only. Non-admin users get 403 on `/api/admin/*`. Probation check-ins sync to durable storage; local-first offline support preserved. Activity logging uses service role for cross-user visibility.
 - **Known limitations and significant unresolved bugs:** Admin portal requires online connection (no offline queue). Only probation connected to Admin; jobs/inventory/proofs remain separate. No granular admin permissions. Activity log not user-facing. BlueAI paused.
 - **Implementation / release status:** Admin Portal and probation durable storage implemented, lint/build/tests pass locally. Not yet deployed to production. Migration `drizzle/0006_activity_log.sql` prepared but not applied to Supabase.
 
@@ -82,14 +84,14 @@ Required installation step for reliable startup discovery: add this reference to
 - **Date / status:** 2026-10-02 — accepted, implemented locally.
 - **Decision and scope:** Build a separate `/admin` web interface with server-enforced role authorization. Feature-specific data stays in its own tables; shared `activity_log` provides cross-feature timeline. Probation is the first Admin-connected feature.
 - **Reason / tradeoff:** Remote browser access required for admin review without app install. Centralized activity log avoids duplicating logging per feature. Server enforcement prevents UI-only security. Blueprint: Route Manager and Route Manager Admin are two interfaces over the same backend.
-- **Consequences:** New migration `drizzle/0006_activity_log.sql`. New server modules in `server/admin/`. New UI in `src/features/admin/`. Admin role stored in Supabase `app_metadata`/`user_metadata`. BlueAI remains paused.
+- **Consequences:** New migration `drizzle/0006_activity_log.sql`. New server modules in `server/admin/`. New UI in `src/features/admin/`. Admin role stored in server-controlled Supabase `app_metadata`. BlueAI remains paused.
 - **Evidence / history:** H-005, H-006.
 - **Supersedes / superseded by:** Supersedes earlier local-only probation storage approach (H-004).
 
 ### D-002 — Probation Durable Server Storage
 
 - **Date / status:** 2026-10-02 — accepted, implemented locally.
-- **Decision and scope:** Probation check-ins sync to Supabase `probation_check_ins` table (owner-scoped, RLS). Local `localStorage` remains primary for offline; explicit sync functions (`syncToServer`, `loadFromServer`) with non-destructive merge.
+- **Decision and scope:** Probation check-ins sync to Supabase `probation_check_ins` table (owner-scoped, RLS). Local `localStorage` remains primary for offline; automatic startup/focus/online loading and mutation saving, with retry controls and non-destructive merge.
 - **Reason / tradeoff:** Remote admin review requires durable cloud storage. Local-first preserves offline workflow. Explicit sync avoids silent failures. Migration endpoint supports legacy localStorage import.
 - **Consequences:** New API endpoints `/api/probation-check-ins*`. Client hook exposes `syncStatus`, `syncToServer`, `loadFromServer`. Activity logging integrated.
 - **Evidence / history:** H-005.
@@ -156,27 +158,26 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 - **Evidence / validation:** `MoreScreen.tsx` updated with `isAdmin`, `onNavigateAdmin` props. `AuthProvider` exposes `isAdmin` from user metadata.
 - **Follow-up:** None.
 
-## Resume Point
+### 2026-10-02 · H-007 — Independent Admin / probation verification
 
-- **Active task (2026-10-02):** Admin Portal and probation durable storage implemented and validated locally. Ready for production deployment.
-- **Completed:** 
-  - Admin Portal at `/admin` with Overview, Activity, Probation sections
-  - Server-enforced admin authorization (`requireAdmin` middleware)
-  - Shared `activity_log` table with `logActivity()` helper
-  - Probation check-in durable storage in Supabase (`probation_check_ins` table, RLS)
-  - Client sync functions (`syncToServer`, `loadFromServer`, `syncStatus`)
-  - Activity logging integrated with probation events
-  - Admin entry point in More screen (conditional on `isAdmin`)
-  - All lint, build, and 484 tests pass
-- **Remaining:** 
-  - Apply `drizzle/0006_activity_log.sql` migration to Supabase
-  - Deploy to Render and verify production Admin Portal access
-  - Confirm admin role assignment works via Supabase Dashboard
-  - Connect next feature to Admin (jobs or inventory)
-- **Blockers:** Migration not yet applied to production Supabase. Admin role not yet assigned to any user.
-- **Validation status:** Local verification complete. Production verification pending deployment.
-- **Next step:** Apply migration, assign admin role in Supabase, deploy to Render, verify `/admin` access.
+- **Result:** Not ready to move on. Review of commit `45bd90612151c3060981febac72f2187de944b14` confirmed code deployment and `/api/health` OK; unauthenticated admin and probation requests return 401.
+- **Signed-in behavior:** More has no Admin entry for the current account. Direct `#admin` loads the UI but shows “Admin access required.” No admin privileges were granted and no check-in was marked complete.
+- **Database evidence:** Read-only Supabase REST checks for `activity_log` and `probation_check_ins` each returned 404 / PGRST205 (table not found in schema cache). A dashboard SQL check could not be executed because browser commands timed out; physical table existence and role counts remain unconfirmed.
+- **Code blockers:** Server and frontend trust user-editable metadata for admin status; save/load functions have no consumer calls; browser caches lack account namespaces; server data can overwrite unsynced local fields/events during loading; activity failures are ignored and retries create duplicate log entries. Client-supplied provider verification is accepted without independent receipt validation.
+- **Checks:** Production build and 11 focused probation policy/navigation/panel tests passed. These tests do not exercise new admin authorization, durable save/load, or activity logging. Type-checking was started; result not yet collected.
+- **Next:** Fix authorization and add regression coverage before granting admin access. Confirm/apply required schemas, connect owner-isolated synchronization with non-destructive merging and visible failure states, make activity logging reliable and retry-safe, then verify signed-in save/reload and a second browser. This was verification only; no application or database configuration changes were made.
+
+### H-008 — Remediate independently verified Admin/probation blockers
+- Admin authorization now accepts only server-controlled app metadata; four denial/failure regression tests pass.
+- Added account-scoped browser caches, startup/focus/online loading, automatic save attempts, visible pending/error/retry states, and explicit legacy import without silently assigning shared browser data.
+- Added validated server requests and migration 0007: monthly records and idempotent activity logs commit together; stale device updates retain completion, proof, and merged events. Client writes bypassing audit are denied; provider verification cannot be asserted by clients.
+- Applied required tables and atomic function to Supabase. Rollback-only SQL checks passed for retries, stale updates, and write restrictions; no fake completion remained.
+- Local focused tests: 21 passed. Lint/build passed before the final account-switch guard; final checks and deployment still required. No server-assigned admin account exists.
+
+## Resume Point
+- Deploy the tested remediation after final lint/build and diff review. Verify production build, signed-in save/reload, and activity rows.
+- Admin activation needs explicit action-time confirmation because it expands access to other users' sensitive records. Do not assign a role silently.
+- Verify a second browser and Admin Overview/Activity/Probation before signing off. Automatic provider completion recognition remains future work.
 
 ## Last Updated
-
-2026-10-02 — Admin Portal + probation durable storage implemented; lint/build/tests pass; ready for production deployment.
+2026-10-02 — Remediation implemented; database activated and rollback-only reliability checks passed; deployment pending.

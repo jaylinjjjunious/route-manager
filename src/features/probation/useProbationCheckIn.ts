@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { fromServer, payload, fingerprint, mergeRecord } from './probationSync';
+import type { ProbationCheckInRecord as ServerRecord } from '../../services/apiClient';
 import safeStorage from "../../utils/safeStorage";
 import { useExternalBrowser } from "../../hooks/useExternalBrowser";
 import { resizeProofImage } from "../showerGate/showerGateService";
@@ -36,6 +38,7 @@ export interface ProbationCheckInRecord {
   confirmationMessageId?: string;
   events: ProbationAuditEvent[];
   // Server sync metadata
+  clientUpdatedAt?: string;
   serverSynced?: boolean;
   serverUpdatedAt?: string;
 }
@@ -55,8 +58,8 @@ function detectDeviceClass(): ProbationDeviceClass {
   return "computer";
 }
 
-function loadRecords(): ProbationCheckInRecord[] {
-  const raw = safeStorage.getItem(STORAGE_KEY);
+function loadRecords(key = STORAGE_KEY): ProbationCheckInRecord[] {
+  const raw = safeStorage.getItem(key);
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
@@ -66,21 +69,9 @@ function loadRecords(): ProbationCheckInRecord[] {
   }
 }
 
-function loadSyncStatus(): ProbationSyncStatus {
-  const raw = safeStorage.getItem(SYNC_STATUS_KEY);
-  if (!raw) return { pendingSync: false };
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return { pendingSync: false };
-  }
-}
-
-function saveSyncStatus(status: ProbationSyncStatus) {
-  safeStorage.setItem(SYNC_STATUS_KEY, JSON.stringify(status));
-}
-
 export interface ProbationCheckInState {
+  hasLegacyRecords?: boolean;
+  importLegacyRecords?: () => void;
   monthKey: string;
   phase: ProbationCheckInPhase;
   locked: boolean;
@@ -97,14 +88,23 @@ export interface ProbationCheckInState {
   loadFromServer: () => Promise<void>;
 }
 
-export function useProbationCheckIn(now: Date): ProbationCheckInState {
+export function useProbationCheckIn(now: Date, ownerId?: string): ProbationCheckInState {
   const { open } = useExternalBrowser();
   const monthKey = getProbationMonthKey(now);
-  const [records, setRecords] = useState<ProbationCheckInRecord[]>(loadRecords);
+  const [records, setRecords] = useState<ProbationCheckInRecord[]>([]);
   const [device, setDevice] = useState<ProbationDeviceClass>(detectDeviceClass);
   const [error, setError] = useState("");
-  const [syncStatus, setSyncStatus] = useState<ProbationSyncStatus>(loadSyncStatus);
-  const record = records.find(item => item.monthKey === monthKey) || null;
+  const [syncStatus, setSyncStatus] = useState<ProbationSyncStatus>({ pendingSync: false });
+  const cacheKey = ownerId ? `${STORAGE_KEY}:${ownerId}` : `${STORAGE_KEY}:signed-out`;
+  const ownerRef = useRef(ownerId);
+  ownerRef.current = ownerId;
+  const recordsRef = useRef(records);
+  const [loadedOwner, setLoadedOwner] = useState<string | undefined>();
+  const busy = useRef(false);
+  const generation = useRef(0);
+  const [hasLegacyRecords, setHasLegacyRecords] = useState(() => loadRecords().length > 0);
+  recordsRef.current = records;
+  const record = (loadedOwner === ownerId ? records : []).find(item => item.monthKey === monthKey) || null;
   const completed = Boolean(record?.completedAt);
   const phase = getProbationCheckInPhase(now, completed);
 
@@ -115,21 +115,33 @@ export function useProbationCheckIn(now: Date): ProbationCheckInState {
   }, []);
 
   useEffect(() => {
-    safeStorage.setItem(STORAGE_KEY, JSON.stringify(records.slice(-24)));
-  }, [records]);
-
+    generation.current++;
+    busy.current = false;
+    const cached = ownerId ? loadRecords(cacheKey) : [];
+    recordsRef.current = cached;
+    setRecords(cached);
+    setLoadedOwner(ownerId);
+    setSyncStatus({ pendingSync: cached.some(r => !r.serverSynced) });
+  }, [ownerId, cacheKey]);
+  useEffect(() => {
+    if (ownerId && loadedOwner === ownerId) safeStorage.setItem(cacheKey, JSON.stringify(records.slice(-24)));
+  }, [records, ownerId, loadedOwner, cacheKey]);
   const updateCurrentRecord = useCallback((update: (current: ProbationCheckInRecord) => ProbationCheckInRecord) => {
+    if (!ownerId || ownerRef.current !== ownerId) return;
     setRecords(previous => {
+      if (ownerRef.current !== ownerId) return previous;
       const existing = previous.find(item => item.monthKey === monthKey) || {
         monthKey,
         device,
         events: [],
       };
-      const next = update(existing);
-      return [...previous.filter(item => item.monthKey !== monthKey), next]
+      const next = { ...update(existing), serverSynced: false, clientUpdatedAt: new Date().toISOString() };
+      const updated = [...previous.filter(item => item.monthKey !== monthKey), next]
         .sort((a, b) => a.monthKey.localeCompare(b.monthKey));
+      recordsRef.current = updated;
+      return updated;
     });
-  }, [device, monthKey]);
+  }, [device, monthKey, ownerId]);
 
   const saveProof = useCallback((proofName: string, proofDataUrl: string) => {
     const at = new Date().toISOString();
@@ -185,7 +197,7 @@ export function useProbationCheckIn(now: Date): ProbationCheckInState {
       events: [...current.events, { type: "opened_ce", at, device }],
     }));
     setSyncStatus(prev => ({ ...prev, pendingSync: true }));
-    saveSyncStatus({ ...syncStatus, pendingSync: true });
+
     void open({ url: CE_CHECK_IN_URL }).catch(() => {
       setError("Could not open CE Check-In. Please try again.");
     });
@@ -202,158 +214,70 @@ export function useProbationCheckIn(now: Date): ProbationCheckInState {
       events: [...current.events, { type: "completed", at, device }],
     }));
     setSyncStatus(prev => ({ ...prev, pendingSync: true }));
-    saveSyncStatus({ ...syncStatus, pendingSync: true });
+
   }, [device, updateCurrentRecord, syncStatus]);
 
-  // Sync current month's record to server
-  const syncToServer = useCallback(async () => {
-    if (!record) return;
-    
-    setSyncStatus(prev => ({ ...prev, pendingSync: true, lastError: undefined }));
-    saveSyncStatus({ ...syncStatus, pendingSync: true, lastError: undefined });
-
+  const synchronize = useCallback(async () => {
+    if (!ownerId || loadedOwner !== ownerId || busy.current) return;
+    busy.current = true;
+    const run = generation.current;
+    const active = () => ownerRef.current === ownerId && generation.current === run;
+    setSyncStatus(prev => ({ ...prev, lastError: undefined, pendingSync: recordsRef.current.some(r => !r.serverSynced) }));
     try {
-      const payload = {
-        monthKey: record.monthKey,
-        startedAt: record.startedAt,
-        completedAt: record.completedAt,
-        device: record.device,
-        verificationLevel: record.verificationLevel,
-        proofName: record.proofName,
-        proofDataUrl: record.proofDataUrl,
-        providerReceiptId: record.providerReceiptId,
-        confirmationUrl: record.confirmationUrl,
-        confirmationMessageId: record.confirmationMessageId,
-        events: record.events,
-      };
-
-      interface ServerProbationRecord {
-        owner_id: string;
-        month_key: string;
-        started_at?: string;
-        completed_at?: string;
-        device: "phone" | "tablet" | "computer";
-        verification_level?: "self_confirmed" | "screenshot_documented" | "provider_verified";
-        proof_name?: string;
-        proof_data_url?: string;
-        provider_receipt_id?: string;
-        confirmation_url?: string;
-        confirmation_message_id?: string;
-        events: Array<{ type: string; at: string; device: string }>;
-        updated_at: string;
+      const response = await authFetchJson<{ records: ServerRecord[] }>('/api/probation-check-ins');
+      if (!active()) return;
+      if (!Array.isArray(response.records) || response.records.some(r => r.owner_id !== ownerId)) throw new Error('Account changed. Reload before saving.');
+      let merged = new Map(recordsRef.current.map(r => [r.monthKey, r]));
+      for (const r of response.records) merged.set(r.month_key, mergeRecord(merged.get(r.month_key), fromServer(r)));
+      let next = [...merged.values()].sort((a,b) => a.monthKey.localeCompare(b.monthKey)).slice(-24);
+      recordsRef.current = next;
+      setRecords(next);
+      for (const snapshot of next.filter(r => !r.serverSynced)) {
+        if (!active()) return;
+        const result = await authFetchJson<{ record: ServerRecord }>('/api/probation-check-ins', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...payload(snapshot), expectedOwnerId: ownerId }),
+        });
+        if (!active()) return;
+        if (!result.record || result.record.owner_id !== ownerId) throw new Error('Account changed. Reload before saving.');
+        setRecords(current => {
+          const updated = current.map(r => r.monthKey !== snapshot.monthKey ? r : fingerprint(r) === fingerprint(snapshot)
+            ? fromServer(result.record) : mergeRecord(r, fromServer(result.record)));
+          recordsRef.current = updated;
+          return updated;
+        });
       }
-
-      const { record: serverRecord } = await authFetchJson<{ record: ServerProbationRecord }>("/api/probation-check-ins", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      // Update local record with server sync info
-      updateCurrentRecord(current => ({
-        ...current,
-        serverSynced: true,
-        serverUpdatedAt: serverRecord.updated_at,
-      }));
-
-      const now = new Date().toISOString();
-      setSyncStatus({ lastSyncedAt: now, pendingSync: false });
-      saveSyncStatus({ lastSyncedAt: now, pendingSync: false });
+      if (active()) setSyncStatus({ lastSyncedAt: new Date().toISOString(), pendingSync: recordsRef.current.some(r => !r.serverSynced) });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to sync to server.";
-      setSyncStatus(prev => ({ ...prev, pendingSync: false, lastError: message }));
-      saveSyncStatus({ ...syncStatus, pendingSync: false, lastError: message });
-      setError(message);
-    }
-  }, [record, updateCurrentRecord, syncStatus]);
-
-  // Load records from server (merge with local)
-  const loadFromServer = useCallback(async () => {
-    try {
-      interface ServerProbationRecord {
-        owner_id: string;
-        month_key: string;
-        started_at?: string;
-        completed_at?: string;
-        device: "phone" | "tablet" | "computer";
-        verification_level?: "self_confirmed" | "screenshot_documented" | "provider_verified";
-        proof_name?: string;
-        proof_data_url?: string;
-        provider_receipt_id?: string;
-        confirmation_url?: string;
-        confirmation_message_id?: string;
-        events: Array<{ type: string; at: string; device: string }>;
-        updated_at: string;
-      }
-
-      const { records: serverRecords } = await authFetchJson<{ records: ServerProbationRecord[] }>("/api/probation-check-ins");
-      
-      setRecords(previous => {
-        const merged = new Map<string, ProbationCheckInRecord>();
-        
-        // Add local records first
-        for (const r of previous) {
-          merged.set(r.monthKey, r);
-        }
-        
-        // Merge server records (server wins for synced fields)
-        for (const sr of serverRecords) {
-          const local = merged.get(sr.month_key);
-          if (local) {
-            // Keep local unsynced changes, but update server metadata
-            merged.set(sr.month_key, {
-              ...local,
-              startedAt: sr.started_at || local.startedAt,
-              completedAt: sr.completed_at || local.completedAt,
-              device: sr.device || local.device,
-              verificationLevel: sr.verification_level || local.verificationLevel,
-              proofName: sr.proof_name || local.proofName,
-              proofDataUrl: sr.proof_data_url || local.proofDataUrl,
-              providerReceiptId: sr.provider_receipt_id || local.providerReceiptId,
-              confirmationUrl: sr.confirmation_url || local.confirmationUrl,
-              confirmationMessageId: sr.confirmation_message_id || local.confirmationMessageId,
-              events: sr.events && sr.events.length > 0
-                ? sr.events.map(e => ({ type: e.type as ProbationAuditEvent["type"], at: e.at, device: e.device as ProbationDeviceClass }))
-                : local.events,
-              serverSynced: true,
-              serverUpdatedAt: sr.updated_at,
-            });
-          } else {
-            // New record from server
-            merged.set(sr.month_key, {
-              monthKey: sr.month_key,
-              startedAt: sr.started_at,
-              completedAt: sr.completed_at,
-              device: sr.device,
-              verificationLevel: sr.verification_level,
-              proofName: sr.proof_name,
-              proofDataUrl: sr.proof_data_url,
-              providerReceiptId: sr.provider_receipt_id,
-              confirmationUrl: sr.confirmation_url,
-              confirmationMessageId: sr.confirmation_message_id,
-              events: sr.events && sr.events.length > 0
-                ? sr.events.map(e => ({ type: e.type as ProbationAuditEvent["type"], at: e.at, device: e.device as ProbationDeviceClass }))
-                : [],
-              serverSynced: true,
-              serverUpdatedAt: sr.updated_at,
-            });
-          }
-        }
-        
-        return Array.from(merged.values()).sort((a, b) => a.monthKey.localeCompare(b.monthKey));
-      });
-
-      const now = new Date().toISOString();
-      setSyncStatus({ lastSyncedAt: now, pendingSync: false });
-      saveSyncStatus({ lastSyncedAt: now, pendingSync: false });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to load from server.";
-      setSyncStatus(prev => ({ ...prev, pendingSync: false, lastError: message }));
-      saveSyncStatus({ ...syncStatus, pendingSync: false, lastError: message });
-    }
-  }, [syncStatus]);
-
+      if (active()) setSyncStatus(prev => ({ ...prev, pendingSync: recordsRef.current.some(r => !r.serverSynced), lastError: err instanceof Error ? err.message : 'Account sync failed. Please retry.' }));
+    } finally { if (active()) busy.current = false; }
+  }, [ownerId, loadedOwner]);
+  const syncToServer = synchronize;
+  const loadFromServer = synchronize;
+  const dirtyFingerprint = records.filter(r => !r.serverSynced).map(fingerprint).join('|');
+  useEffect(() => { void synchronize(); }, [synchronize]);
+  useEffect(() => {
+    if (!dirtyFingerprint) return;
+    const timer = window.setTimeout(() => { void synchronize(); }, 700);
+    return () => window.clearTimeout(timer);
+  }, [dirtyFingerprint, synchronize]);
+  useEffect(() => {
+    const refresh = () => { void synchronize(); };
+    window.addEventListener('focus', refresh);
+    window.addEventListener('online', refresh);
+    return () => { window.removeEventListener('focus', refresh); window.removeEventListener('online', refresh); };
+  }, [synchronize]);
+  const importLegacyRecords = useCallback(() => {
+    if (!ownerId) return;
+    setRecords(current => {
+      const merged = new Map(current.map(r => [r.monthKey,r]));
+      for (const r of loadRecords()) merged.set(r.monthKey, mergeRecord({ ...r, serverSynced: false }, merged.get(r.monthKey) || { ...r, serverSynced: false }));
+      return [...merged.values()].sort((a,b) => a.monthKey.localeCompare(b.monthKey)).slice(-24);
+    });
+    setHasLegacyRecords(false);
+  }, [ownerId]);
   return useMemo(() => ({
+    hasLegacyRecords, importLegacyRecords,
     monthKey,
     phase,
     locked: isProbationJobLockRequired(phase),
@@ -368,5 +292,5 @@ export function useProbationCheckIn(now: Date): ProbationCheckInState {
     confirmCompleted,
     syncToServer,
     loadFromServer,
-  }), [attachProof, captureComputerProof, completed, confirmCompleted, device, error, monthKey, openCeCheckIn, phase, record, syncStatus, syncToServer, loadFromServer]);
+  }), [hasLegacyRecords, importLegacyRecords, attachProof, captureComputerProof, completed, confirmCompleted, device, error, monthKey, openCeCheckIn, phase, record, syncStatus, syncToServer, loadFromServer]);
 }

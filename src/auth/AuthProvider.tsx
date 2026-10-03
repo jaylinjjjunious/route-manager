@@ -193,7 +193,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const currentUser = session?.user ?? devUser ?? null;
-  const isAdmin = currentUser?.app_metadata?.role === "admin" || currentUser?.user_metadata?.role === "admin";
+  const isAdmin = currentUser?.app_metadata?.role === "admin";
 
   const value: AuthContextValue = {
     session,

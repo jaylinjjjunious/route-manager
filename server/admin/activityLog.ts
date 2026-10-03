@@ -76,7 +76,7 @@ export async function isAdmin(userId: string): Promise<boolean> {
   try {
     const { data: { user }, error } = await adminSupabase.auth.admin.getUserById(userId);
     if (error || !user) return false;
-    return user.app_metadata?.role === "admin" || user.user_metadata?.role === "admin";
+    return user.app_metadata?.role === "admin";
   } catch {
     return false;
   }

@@ -7,6 +7,8 @@ The production integration owner and two legacy-test synthetic rows have been co
 
 ## High
 
+- Independent review hold (2026-10-02): fix the user-editable admin-role trust in `server/admin/activityLog.ts` before granting admin privileges; add security regression coverage. Wire owner-isolated probation save/load, preserve dirty data during merging, and make activity failures/retries reliable. Then confirm database setup and verify the real cross-browser Admin/probation flow. See `known-bugs.md` and lifeline H-007; deployed code alone is not readiness.
+
 - Apply Admin Portal migration `drizzle/0006_activity_log.sql` to production Supabase and assign admin role via Supabase Dashboard. Verify production `/admin` access.
 
 - Configure BlueAI's server-only token, owner UUID and persistent private data
@@ -63,3 +65,5 @@ The production integration owner and two legacy-test synthetic rows have been co
 ## 2026-09-26 release
 
 Publish the approved local-only login identity, Monthly Check-In page, and simplified job popup. Verify the deployed commit plus public navigation; native iOS browser behavior requires separate device validation.
+## Remediation status — 2026-10-02
+This supersedes the earlier independent review findings for local code. Admin authorization trusts only app_metadata; client-editable metadata is denied. Account-scoped automatic loading/saving, visible sync failures/retry, and explicit legacy import are connected to the app. Migration 0007 atomically saves records and idempotent activity; stale proof/events are merged without erasing completion. Supabase tables and RPC are installed; rollback-only reliability tests passed. Local focused tests: 21 passed. Final deployment and signed-in account/Admin/cross-browser checks remain pending; no admin account is assigned. Provider recognition remains unimplemented.

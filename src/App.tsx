@@ -623,7 +623,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const todayKey = getDateKey(now);
   const habits = useHabits(todayKey);
   const showerGate = useShowerGate(now);
-  const probationCheckIn = useProbationCheckIn(now);
+  const probationCheckIn = useProbationCheckIn(now, session?.user.id);
   const jobAccessReady = showerGate.showerGateAccessReady && !probationCheckIn.locked;
   const showerHabitLogs = habits.habitLogs.filter(log => log.taskId === SHOWER_HABIT_TASK_ID || log.taskName === SHOWER_HABIT_NAME);
   const showerHabitLoggedForCycle = showerHabitLogs.some(log => log.date === showerGate.showerCycleKey);
@@ -2317,25 +2317,3 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   </AssistantProvider>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -9,6 +9,18 @@ Production's lazy App chunk contains BlueAI polling/display code; the earlier mi
 
 ## Active Issues
 
+### Independent Admin / probation review — 2026-10-02
+
+Review target: deployed commit `45bd90612151c3060981febac72f2187de944b14`. Not cleared for production activation.
+
+- **Critical authorization:** `server/admin/activityLog.ts:isAdmin` accepts `user.user_metadata.role` as well as server-controlled `app_metadata`. The frontend repeats this in `src/auth/AuthProvider.tsx`. User-editable metadata must not grant admin authority.
+- **High persistence gap:** `syncToServer` and `loadFromServer` are only defined/exported by `useProbationCheckIn.ts`; no app/UI/startup calls were found. Current completion stays local in the normal flow. Both records and sync status use shared browser keys, so account switching is not isolated.
+- **High merge gap:** `loadFromServer` overwrites nonempty unsynced local proof/verification/event fields with server values and marks records synced without checking local dirty state. Server upserts also have no revision/conflict check.
+- **High audit gap:** `logActivity` failures are returned but ignored by probation routes, allowing successful save responses without activity. Inserts use fresh IDs and no idempotency key; retry/sync can duplicate events. Client-supplied `provider_verified` is accepted without provider receipt validation.
+- **Activation / verification blocker:** Supabase REST returns 404 / PGRST205 for both required tables; dashboard SQL execution was blocked by browser timeouts. The current signed-in app has no Admin entry and `#admin` displays “Admin access required.” Table/role setup and true cross-browser persistence are not verified.
+
+Build and 11 focused probation tests passed, but those tests cover policy/navigation/rendering rather than the new security/persistence/logging contracts. No runtime fix or database change was made during this review.
+
 Validation baseline observed 2026-09-27: the full suite has two failures in
 unchanged tests/components. `aioHeaderProfile.test.ts` expects Authenticated
 while its auth mock supplies no session (the component shows Local-only mode).
@@ -65,3 +77,5 @@ it is not a multi-replica or bidirectional job-sync system.
 Fixed duplicate provider launch in the new monthly page and restored navigation gating in the simplified job popup. Added Render commit identification. Native Capacitor browser interaction remains unverified on a real iOS device. The retired job popup workflow controls are intentionally unavailable by user decision.
 
 Release verification also corrected the synthetic local user's misleading Authenticated label and password-change form; both now require a real session.
+## Remediation status — 2026-10-02
+This supersedes the earlier independent review findings for local code. Admin authorization trusts only app_metadata; client-editable metadata is denied. Account-scoped automatic loading/saving, visible sync failures/retry, and explicit legacy import are connected to the app. Migration 0007 atomically saves records and idempotent activity; stale proof/events are merged without erasing completion. Supabase tables and RPC are installed; rollback-only reliability tests passed. Local focused tests: 21 passed. Final deployment and signed-in account/Admin/cross-browser checks remain pending; no admin account is assigned. Provider recognition remains unimplemented.

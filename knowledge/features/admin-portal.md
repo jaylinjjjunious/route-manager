@@ -15,7 +15,7 @@ The Admin Portal is a secure, browser-accessible administration interface for Ro
 ### Authorization Model
 
 - **Normal user**: Authenticated via Supabase email/password, can access their own data via `/api/*` endpoints
-- **Admin**: Same authentication, but with `app_metadata.role === "admin"` or `user_metadata.role === "admin"`
+- **Admin**: Same authentication, but with `app_metadata.role === "admin"` only
 - **Server enforcement**: All `/api/admin/*` routes use `requireAdmin` middleware which:
   1. Validates Supabase Bearer token (`requireAuth`)
   2. Checks admin role via Supabase Admin API
@@ -174,4 +174,8 @@ To connect a new feature to Admin:
 
 ## Last Updated
 
+Independent verification (2026-10-02): build and focused probation UI/policy tests pass, but activation is blocked. The current admin check trusts user-editable metadata; save/load methods are not called by the UI/startup; owner-specific browser caching and safe dirty-data merging are missing; activity failures are ignored and retries are not deduplicated. Production APIs reject unauthenticated requests, and the current signed-in user sees “Admin access required.” Supabase REST cannot find either required table. See `../memory/known-bugs.md` for evidence and required follow-up. No admin role or database schema was changed during verification.
+
 2026-10-02 — Initial Admin Portal implementation with probation check-in integration
+## Remediation status — 2026-10-02
+This supersedes the earlier independent review findings for local code. Admin authorization trusts only app_metadata; client-editable metadata is denied. Account-scoped automatic loading/saving, visible sync failures/retry, and explicit legacy import are connected to the app. Migration 0007 atomically saves records and idempotent activity; stale proof/events are merged without erasing completion. Supabase tables and RPC are installed; rollback-only reliability tests passed. Local focused tests: 21 passed. Final deployment and signed-in account/Admin/cross-browser checks remain pending; no admin account is assigned. Provider recognition remains unimplemented.
