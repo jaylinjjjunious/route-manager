@@ -172,12 +172,33 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 - Added account-scoped browser caches, startup/focus/online loading, automatic save attempts, visible pending/error/retry states, and explicit legacy import without silently assigning shared browser data.
 - Added validated server requests and migration 0007: monthly records and idempotent activity logs commit together; stale device updates retain completion, proof, and merged events. Client writes bypassing audit are denied; provider verification cannot be asserted by clients.
 - Applied required tables and atomic function to Supabase. Rollback-only SQL checks passed for retries, stale updates, and write restrictions; no fake completion remained.
-- Local focused tests: 21 passed. Lint/build passed before the final account-switch guard; final checks and deployment still required. No server-assigned admin account exists.
+- Local focused tests: 21 passed. Final lint/build and diff checks passed. Commit 253fe63e6065b44ad3ce8d922bd4e96a91cda4d0 is pushed to github/main; Production now reports this commit and health passes; signed-in flow and Admin verification remain pending. No server-assigned admin account exists.
 
 ## Resume Point
-- Deploy the tested remediation after final lint/build and diff review. Verify production build, signed-in save/reload, and activity rows.
+- Remediation commit 253fe63e6065b44ad3ce8d922bd4e96a91cda4d0 is pushed and final lint/build passed. Render deployment identity and health are verified. Next verify signed-in save/reload and activity rows. Work paused at 86% five-hour usage used; resume requires user authorization or reset.
 - Admin activation needs explicit action-time confirmation because it expands access to other users' sensitive records. Do not assign a role silently.
 - Verify a second browser and Admin Overview/Activity/Probation before signing off. Automatic provider completion recognition remains future work.
 
 ## Last Updated
+
+## Next CLI: Signed-In Saving Verification
+
+Documentation handoff only; do not build new features. The remediation is pushed and deployed at commit 253fe63e6065b44ad3ce8d922bd4e96a91cda4d0. Production health passed. Database tables and the atomic save function are installed. Local lint/build and 21 focused tests passed; rollback-only database reliability checks passed. The live signed-in flow remains unverified.
+
+1. Read AGENTS.md and this lifeline's startup sections; check usage and Git status. Preserve existing changes. Reuse the deployed work instead of repeating migrations or implementation.
+2. Open https://route-manager-phtj.onrender.com and sign in to the intended Route Manager account. Confirm its actual identity; the app header may contain a hardcoded unrelated email. Do not confuse the Supabase dashboard account with the app account.
+3. Open More → Monthly Check-In. Confirm Today/Jobs Check In Now reaches that page too. Read the account-sync status. If it shows an error, inspect the authenticated API response and Render storage configuration safely; never expose credentials or forge sessions.
+4. Open official CE Check-In from the in-app page to record a harmless start event, then return and wait for Saved to your account. Do not mark completion or upload private proof just to test. Only confirm an actual completed check-in.
+5. Reload. Confirm the same start event and timestamp remain and the account-save status is successful. In Supabase, confirm the matching owner/month record and activity event exist. A local/pending save alone is not evidence of account persistence.
+6. Sign into the same account in a second browser/device. Open Monthly Check-In and confirm the same month/events load. Do not claim cross-browser verification from a single reload or SQL alone.
+7. If older shared browser records exist, use Import my older check-ins only after confirming they belong to this account. Confirm import persists after reload. Preserve the original shared cache; skip this step when none exists.
+8. In a controlled test environment, verify failed storage/logging leaves edits pending with a visible error. Retry and confirm activity is not duplicated. Test a new edit during an in-flight save and an account switch during loading/saving; stale responses must not acknowledge newer edits or expose another account's data.
+9. Verify an ordinary account is denied Admin access. Authorization must use server-controlled app_metadata only; user_metadata cannot grant access. No server-assigned admin existed at the last database check.
+10. Identify the intended Admin account and obtain action-time confirmation before granting its server-controlled Admin role through the dashboard. Browser confirmation policy requires this because it expands access to other users' sensitive records. Preserve existing metadata. Refresh the session afterward. Never change credentials or use user-editable metadata.
+11. Confirm Admin Portal appears under More. Verify Overview, Activity, and Probation show the correct account's start event and no false completion. Confirm a different ordinary account remains denied Admin access and sees only its own check-in history. Report any unavailable account/browser check explicitly.
+12. Update this lifeline and affected knowledge/memory files with evidence and remaining gaps. Fix only reproduced problems. If code changes, run relevant tests and required lint/build, commit/push, and verify production plus the actual signed-in interaction. Deployment alone is not feature sign-off.
+
+Relevant implementation: src/features/probation/useProbationCheckIn.ts, probationSync.ts, MonthlyCheckInPage.tsx; server/admin/probationRoutes.ts, activityLog.ts; drizzle/0007_probation_atomic_sync.sql.
+
+Remaining: signed-in save/reload, second-browser loading, in-flight sync races, Admin activation/screens, and ordinary-account isolation. Automatic provider completion recognition is future work. The deployment monitor is paused; no background flow verification is running.
 2026-10-02 — Remediation implemented; database activated and rollback-only reliability checks passed; deployment pending.
