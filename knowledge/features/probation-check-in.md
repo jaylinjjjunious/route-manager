@@ -18,7 +18,7 @@ The cycle key is the local calendar month (`YYYY-MM`). Completion immediately un
 
 ## Workflow
 
-`ProbationCheckInPanel` appears on Today and Jobs. **Check In Now** logs the launch time and opens the official CE Check-In website in a new browser tab. After completing the official flow, the user can attach a screenshot and/or use the one-tap **I Completed It** acknowledgement. The panel records device class, event timestamps, reporting month, proof metadata, and verification level.
+`ProbationCheckInPanel` appears on Today and Jobs. **Check In Now** opens the in-app Monthly Check-In page under More. That page displays an embedded provider panel; this is separate from Route Manager account sign-in. The embedded provider submission is currently incomplete (see the audit below). Navigation alone does not currently call the legacy launch logger. After completing the official flow, the user can attach a screenshot and/or use the one-tap **I Completed It** acknowledgement. The panel records device class, event timestamps, reporting month, proof metadata, and verification level.
 
 Incomplete states use the full coaching panel so the requirement cannot be missed. After completion, the Today/Jobs panel is hidden. More → Monthly Check-In retains the completion status, details, activity log, proof preview, and provider link. The `AIØ17` header remains unchanged.
 
@@ -34,32 +34,18 @@ Future-ready fields are included for provider receipt ID, confirmation URL, and 
 
 ## Storage And Limits
 
-Monthly records use the existing browser-local `safeStorage` pattern under `aio_probation_check_ins_v1`, retaining up to 24 months. Screenshots reuse the existing proof-image compression routine before storage. Records are an internal discipline/audit log, not independent proof from CE Check-In and not a substitute for instructions from a probation officer.
+Monthly records use account-scoped browser caches under `aio_probation_check_ins_v1:<ownerId>`, retaining up to 24 months. The older shared key is retained for explicit ownership-confirmed import. Screenshots reuse the existing proof-image compression routine before storage. Records are an internal discipline/audit log, not independent proof from CE Check-In and not a substitute for instructions from a probation officer.
 
-**Durable Server Storage (2026-10-02)**: Records now sync to Supabase `probation_check_ins` table with row-level security (owner-scoped). The client hook `useProbationCheckIn` exposes `syncToServer()`, `loadFromServer()`, and `syncStatus` for managing synchronization. Local-first behavior is preserved for offline support; server sync is explicit and non-destructive (local unsynced changes are preserved during merge).
+**Durable Server Storage (2026-10-02)**: Records now sync to Supabase `probation_check_ins` table with row-level security (owner-scoped). The client hook `useProbationCheckIn` exposes `syncToServer()`, `loadFromServer()`, and `syncStatus` for managing synchronization. Local-first behavior is preserved for offline support; server sync runs at startup/focus/online and after local mutations, with explicit retry; merging preserves pending edits.
 
 **Admin Visibility**: Completed check-ins are visible in the Admin Portal at `/admin` → Probation tab. Admin users (server-assigned role in `app_metadata`) can view all users' probation records with filtering by user, month, completion status, and date. Each check-in submission creates an activity log entry in the shared `activity_log` table for audit trail purposes.
 
 ## Sync Behavior
-
-- **Automatic triggers**: `openCeCheckIn` (started) and `confirmCompleted` (completed) set `pendingSync: true`
-- **Manual sync**: User can call `syncToServer()` from the Monthly Check-In page
-- **Load from server**: `loadFromServer()` merges server records with local (non-destructive)
-- **Conflict resolution**: Server wins for synced fields (`startedAt`, `completedAt`, `verificationLevel`, `proofDataUrl`, `events`); local unsynced changes are preserved
-- **Offline support**: Local storage remains primary; sync occurs when online
-- **Migration**: `syncProbationCheckIns()` bulk endpoint supports migrating existing localStorage records
-
-## Activity Logging
-
-Each probation event creates an entry in the shared `activity_log` table:
-- `feature`: "probation"
-- `action`: "check_in_started" | "check_in_completed" | "check_in_synced"
-- `relatedRecordType`: "probation_check_in"
-- `relatedRecordId`: `${ownerId}:${monthKey}`
-- `metadata`: device, verificationLevel, hasProof, syncedAt (for sync)
-
-Visible in Admin Portal → Activity tab with filtering.
-
+- Startup, focus, and online events load account records; mutations trigger debounced save attempts. Retry account sync is available.
+- Owner-scoped caches and request/account guards prevent responses from acknowledging another account's edits. Dirty proof/events are merged; completion is retained.
+- Failed saves stay pending with a visible error. Records and their activity entries commit in one database transaction; normalized request hashes deduplicate retries.
+- Activity actions are check_in_saved, proof_attached, or check_in_completed, with owner/month linkage and minimal metadata. Authenticated clients cannot write directly around server audit.
+- Live import, save acknowledgment, reload, Supabase/activity rows, and same-account Edge loading are verified. Screenshot attachment/capture on real devices and in-flight sync race checks remain unverified.
 ## Job Enforcement
 
 The probation lock composes with the existing shower gate through the shared `jobAccessReady` boundary in `App.tsx`. While locked, schedule information and job details remain viewable, but navigation, status/lifecycle actions, Ride Mode, adding, optimization, moving, review, and completion are blocked or disabled.
@@ -98,3 +84,8 @@ Render Environment already contains SUPABASE_SERVICE_ROLE_KEY plus VITE_SUPABASE
 User confirmed ownership of the older browser records and authorized import. The production UI acknowledged Saved to your account; after reload it retained the imported start event and account-save status. Supabase read-only verification found both imported months for the signed-in owner, with one activity entry per month: September has its pre-existing completion, October has a start event and remains incomplete. No fabricated completion or proof was created. This resolves the live single-browser save/reload verification blocker. Cross-browser loading and Admin activation/screens remain unverified. The legacy import prompt reappears after reload because the shared cache is intentionally retained; note for later UI cleanup, not a saving failure. Do not repeat migrations or change Render secrets: the service key was already configured and the VITE URL/anon fallbacks are supported.
 ## Fresh login and cross-browser verification complete — 2026-10-03
 The user signed into the deployed app in Edge. A newly opened production tab loaded the same account's saved October start event and timestamp without local legacy import, confirming second-browser loading. More showed the actual authenticated account and Admin Portal entry; opening that entry loaded Overview with the expected two records/two activity entries. This closes the fresh-login discoverability and cross-browser loading blockers. The local development tab was a separate app; no credentials were read, reset, or copied. Browser input sometimes reported detached after a successful SPA navigation, so resulting DOM state was checked before any retry. Remaining follow-up coverage: in-flight save/account-switch races and a second ordinary-account isolation exercise. Do not confuse these with the now-verified main flow.
+## Scope audit — 2026-10-03
+Completed and live-verified: in-app reminder navigation; ownership-confirmed account import; save acknowledgment; reload; same-account Edge loading; database/activity persistence; explicitly approved server-controlled Admin role; Admin Overview/Activity/Probation, month filter, details, and More entry after fresh login. Lifeline startup integration and concise resume notes are installed and pushed.
+Missing/incomplete: automatic official provider recognition (future implementation); embedded CE login/submission (real blocker); new provider-launch logging wiring; real-device screenshot attachment/capture verification; in-flight save/account-switch and second ordinary-account isolation checks. Proof/manual confirmation UI exists, but its complete real-device flow was not verified. Do not label the entire official check-in workflow finished.
+Embedded blocker evidence: the deployed public sign-in HTML has a POST form whose action repeats the proxy prefix. server.ts registers only a GET proxy and rewrites form action URLs twice; provider session cookies are not relayed back to the client. Showing the official sign-in screen therefore does not establish a working submission. No actual provider credentials or check-in submission were used in this audit. Fixing this is a separate next task; no application code was changed during the audit.
+Documentation was reconciled where current sections contradicted live results. Older dated review/migration notes are historical and superseded by this audit and the verified production snapshot.

@@ -7,11 +7,11 @@ The production integration owner and two legacy-test synthetic rows have been co
 
 ## High
 
-- **Production 404 blocker (2026-10-03):** Set `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY` in Render dashboard → Environment; trigger redeploy. Without service role key, `database` client in `server/admin/probationRoutes.ts` is null; authenticated `/api/probation-check-ins` returns 404 instead of 503. `render.yaml` updated (c5f9f9e deployed); dashboard config pending.
+- Completed: production account saving/reload, second-browser loading, and approved Admin activation/screens. Required Render settings already existed; no secrets were changed.
 
-- Independent review hold (2026-10-02): fix the user-editable admin-role trust in `server/admin/activityLog.ts` before granting admin privileges; add security regression coverage. Wire owner-isolated probation save/load, preserve dirty data during merging, and make activity failures/retries reliable. Then confirm database setup and verify the real cross-browser Admin/probation flow. See `known-bugs.md` and lifeline H-007; deployed code alone is not readiness.
+- Remediation is deployed and verified. Remaining work in this slice: official embedded CE submission, provider completion recognition, real-device proof checks, in-flight sync races, and a separate ordinary-account isolation exercise.
 
-- Apply Admin Portal migration `drizzle/0006_activity_log.sql` to production Supabase and assign admin role via Supabase Dashboard. Verify production `/admin` access.
+- Completed: required Admin/probation tables and atomic RPC are installed; Admin access was explicitly approved and verified.
 
 - Configure BlueAI's server-only token, owner UUID and persistent private data
   directory, then verify a real sender create/update in the signed-in calendar.
