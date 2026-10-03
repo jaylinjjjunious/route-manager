@@ -225,7 +225,13 @@ export function useProbationCheckIn(now: Date, ownerId?: string): ProbationCheck
     setSyncStatus(prev => ({ ...prev, lastError: undefined, pendingSync: recordsRef.current.some(r => !r.serverSynced) }));
     try {
       const apiBase = typeof window !== 'undefined' ? window.location.origin : '';
-      const response = await authFetchJson<{ records: ServerRecord[] }>(`${apiBase}/api/probation-check-ins`);
+      const getUrl = `${apiBase}/api/probation-check-ins`;
+      const postUrl = `${apiBase}/api/probation-check-ins`;
+      
+      // Diagnostics: log the exact request URLs
+      console.debug('[PROBATION SYNC] GET', getUrl);
+      
+      const response = await authFetchJson<{ records: ServerRecord[] }>(getUrl);
       if (!active()) return;
       if (!Array.isArray(response.records) || response.records.some(r => r.owner_id !== ownerId)) throw new Error('Account changed. Reload before saving.');
       let merged = new Map(recordsRef.current.map(r => [r.monthKey, r]));
@@ -235,7 +241,8 @@ export function useProbationCheckIn(now: Date, ownerId?: string): ProbationCheck
       setRecords(next);
       for (const snapshot of next.filter(r => !r.serverSynced)) {
         if (!active()) return;
-        const result = await authFetchJson<{ record: ServerRecord }>(`${apiBase}/api/probation-check-ins`, {
+        console.debug('[PROBATION SYNC] POST', postUrl, 'payload', JSON.stringify({ ...payload(snapshot), expectedOwnerId: ownerId }));
+        const result = await authFetchJson<{ record: ServerRecord }>(postUrl, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...payload(snapshot), expectedOwnerId: ownerId }),
         });
@@ -250,7 +257,19 @@ export function useProbationCheckIn(now: Date, ownerId?: string): ProbationCheck
       }
       if (active()) setSyncStatus({ lastSyncedAt: new Date().toISOString(), pendingSync: recordsRef.current.some(r => !r.serverSynced) });
     } catch (err) {
-      if (active()) setSyncStatus(prev => ({ ...prev, pendingSync: recordsRef.current.some(r => !r.serverSynced), lastError: err instanceof Error ? err.message : 'Account sync failed. Please retry.' }));
+      // Enhanced error logging to capture the exact failing request details
+      const errorMsg = err instanceof Error ? err.message : 'Account sync failed. Please retry.';
+      const apiBase = typeof window !== 'undefined' ? window.location.origin : '';
+      const getUrl = `${apiBase}/api/probation-check-ins`;
+      const postUrl = `${apiBase}/api/probation-check-ins`;
+      console.error('[PROBATION SYNC ERROR]', {
+        message: errorMsg,
+        ownerId,
+        getUrl,
+        postUrl,
+        error: err,
+      });
+      if (active()) setSyncStatus(prev => ({ ...prev, pendingSync: recordsRef.current.some(r => !r.serverSynced), lastError: errorMsg }));
     } finally { if (active()) busy.current = false; }
   }, [ownerId, loadedOwner]);
   const syncToServer = synchronize;
