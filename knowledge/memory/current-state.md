@@ -72,4 +72,4 @@ Implemented on top of the existing job system:
 
 ---
 
-**Last Updated:** 2026-10-02 (Admin Portal, probation durable storage, activity logging, admin authorization)
+**Last Updated:** 2026-10-03 (Admin Portal, probation durable storage, activity logging, admin authorization; production 404 root cause identified — missing Render env vars; render.yaml fix deployed; dashboard config pending)

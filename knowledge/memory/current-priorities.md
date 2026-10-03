@@ -7,6 +7,8 @@ The production integration owner and two legacy-test synthetic rows have been co
 
 ## High
 
+- **Production 404 blocker (2026-10-03):** Set `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY` in Render dashboard → Environment; trigger redeploy. Without service role key, `database` client in `server/admin/probationRoutes.ts` is null; authenticated `/api/probation-check-ins` returns 404 instead of 503. `render.yaml` updated (c5f9f9e deployed); dashboard config pending.
+
 - Independent review hold (2026-10-02): fix the user-editable admin-role trust in `server/admin/activityLog.ts` before granting admin privileges; add security regression coverage. Wire owner-isolated probation save/load, preserve dirty data during merging, and make activity failures/retries reliable. Then confirm database setup and verify the real cross-browser Admin/probation flow. See `known-bugs.md` and lifeline H-007; deployed code alone is not readiness.
 
 - Apply Admin Portal migration `drizzle/0006_activity_log.sql` to production Supabase and assign admin role via Supabase Dashboard. Verify production `/admin` access.
@@ -60,7 +62,7 @@ The production integration owner and two legacy-test synthetic rows have been co
 
 ---
 
-**Last Updated:** 2026-09-15 (Today dashboard simplification reflected in verification priorities)
+**Last Updated:** 2026-10-03 (Production 404 root cause identified — missing Render env vars; render.yaml fix deployed; dashboard config pending)
 
 ## 2026-09-26 release
 

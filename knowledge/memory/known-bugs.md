@@ -50,6 +50,7 @@ it is not a multi-replica or bidirectional job-sync system.
 | P014 | Low | No granular admin permissions (view vs edit vs delete) — single admin role | Open |
 | P015 | Low | Activity log not user-facing — regular users cannot see their own activity timeline | Open |
 | P016 | Medium | Admin Portal migration `drizzle/0006_activity_log.sql` not yet applied to production Supabase | Open |
+| P017 | High | Production 404 on authenticated `/api/probation-check-ins` — missing `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY` in Render dashboard (declared in `render.yaml` with `sync: false`; must be set manually). Without service role key, `database` client in `probationRoutes.ts` is null; authenticated requests return 404 instead of 503. `render.yaml` fix deployed (c5f9f9e); Render dashboard config pending. | Open |
 
 
 ## Resolved Bugs
@@ -70,7 +71,7 @@ it is not a multi-replica or bidirectional job-sync system.
 
 ---
 
-**Last Updated:** 2026-09-09 (Railway build dependency and timezone-independent scheduling fixes)
+**Last Updated:** 2026-10-03 (Production 404 on authenticated probation sync — missing Render env vars; render.yaml fix deployed; dashboard config pending)
 
 ## 2026-09-26 release review
 

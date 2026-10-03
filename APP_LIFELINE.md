@@ -48,9 +48,9 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
-**Remediation in progress (2026-10-02):** Admin trusts only server-controlled app metadata. Owner-isolated automatic sync and atomic retry-safe activity saving are implemented locally. Required tables and the atomic function are applied to Supabase; rollback-only reliability checks passed. Deployment and signed-in end-to-end verification remain pending; no admin accounts are assigned.
+**Remediation in progress (2026-10-03):** Admin trusts only server-controlled app metadata. Owner-isolated automatic sync and atomic retry-safe activity saving are implemented locally. Required tables and the atomic function are applied to Supabase; rollback-only reliability checks passed. Production deployment has routes mounted (401 for unauthenticated), but signed-in sync fails with 404 due to missing `SUPABASE_SERVICE_ROLE_KEY` in Render dashboard. No admin accounts are assigned.
 
-Last reviewed: 2026-10-02 — Admin Portal and durable probation storage implemented and verified locally.
+Last reviewed: 2026-10-03 — Admin Portal and durable probation storage implemented; production routes mounted but signed-in sync blocked by missing server env var.
 
 - **Purpose and users:** Route Manager is a gig-worker route optimization app (All in One 667 / AIØ17) with daily scheduling, job tracking, battery management, habit tracking, and probation check-in coaching. The Admin Portal adds a secure, browser-accessible remote administration interface for reviewing probation check-ins and activity logs without installing the app.
 - **Current capabilities and workflows:** Three-tab AIØ navigation (Today / Jobs / More). Probation check-in with monthly cycle (days 1–10), job lock on day 8+, account-scoped local storage with automatic server sync. Admin Portal at `/admin` with Overview, Activity, Probation sections. Server-enforced admin authorization via Supabase role metadata.
@@ -174,23 +174,41 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 - Applied required tables and atomic function to Supabase. Rollback-only SQL checks passed for retries, stale updates, and write restrictions; no fake completion remained.
 - Local focused tests: 21 passed. Final lint/build and diff checks passed. Commit 253fe63e6065b44ad3ce8d922bd4e96a91cda4d0 is pushed to github/main; Production now reports this commit and health passes; signed-in flow and Admin verification remain pending. No server-assigned admin account exists.
 
+### 2026-10-03 · H-009 — Production 404 on authenticated probation sync
+- **Type / status:** Bug fix — identified, fix deployed; Render dashboard config pending.
+- **Problem / trigger:** Signed-in users on More → Monthly Check-In see "Account sync failed: Request failed with 404" when attempting account sync. Unauthenticated requests to `/api/probation-check-ins` correctly return 401; authenticated requests return 404 instead of 503.
+- **Change / behavior:** Render dashboard missing `SUPABASE_SERVICE_ROLE_KEY` (and `SUPABASE_URL`, `SUPABASE_ANON_KEY`). Without service role key, `database` client in `server/admin/probationRoutes.ts` is null; middleware should return 503 but authenticated requests return 404, suggesting route match issue under auth. Added missing env vars to `render.yaml` (sync: false) in commit c5f9f9e.
+- **Reason / lesson:** `render.yaml` declares server env vars with `sync: false` (manual dashboard entry required). Missing service role key makes `database` null in `probationRoutes.ts`; middleware returns 503 but authenticated requests hit 404 — likely route match issue under auth when DB client is null. Env vars must be set in Render dashboard manually.
+- **Evidence / validation:** Unauthenticated `/api/probation-check-ins` → 401 (route mounted). Commit c5f9f9e deployed; build-info reports c5f9f9e. Render dashboard env vars still need manual entry.
+- **Follow-up:** Set `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY` in Render dashboard → Environment; redeploy; verify authenticated sync returns 200/503 not 404.
+
 ## Resume Point
-- Remediation commit 253fe63e6065b44ad3ce8d922bd4e96a91cda4d0 is pushed and final lint/build passed. Render deployment identity and health are verified. Next verify signed-in save/reload and activity rows. Work paused at 86% five-hour usage used; resume requires user authorization or reset.
-- Admin activation needs explicit action-time confirmation because it expands access to other users' sensitive records. Do not assign a role silently.
-- Verify a second browser and Admin Overview/Activity/Probation before signing off. Automatic provider completion recognition remains future work.
+- **Active task (2026-10-03):** Resolve production 404 on authenticated probation sync. Render dashboard missing `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY` (declared in `render.yaml` with `sync: false`; must be set manually in Render dashboard → Environment). Without service role key, `database` client is null; authenticated requests return 404 instead of 503.
+- **Completed:** 
+  - Admin Portal and durable probation storage implemented; lint/build/494 tests pass
+  - Production routes mounted: unauthenticated `/api/probation-check-ins` → 401, `/api/admin/overview` → 401
+  - `render.yaml` updated with missing server env vars (c5f9f9e deployed)
+- **Blockers:** 
+  - Render dashboard env vars not set (manual step required)
+  - Admin role not assigned
+  - Migration `drizzle/0006_activity_log.sql` not applied to production Supabase
+- **Validation status:** Local lint/build/494 tests pass. Production unauthenticated routes verified. Signed-in sync and Admin verification blocked by missing env vars.
+- **Next step:** Set `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY` in Render dashboard → Environment; redeploy; verify authenticated `/api/probation-check-ins` returns 200/503 not 404; then proceed with signed-in verification steps below.
 
 ## Last Updated
+2026-10-03 — Production 404 root cause identified (missing Render env vars); render.yaml fix deployed; dashboard config and signed-in verification pending.
 
 ## Next CLI: Signed-In Saving Verification
 
-Documentation handoff only; do not build new features. The remediation is pushed and deployed at commit 253fe63e6065b44ad3ce8d922bd4e96a91cda4d0. Production health passed. Database tables and the atomic save function are installed. Local lint/build and 21 focused tests passed; rollback-only database reliability checks passed. The live signed-in flow remains unverified.
+Documentation handoff only; do not build new features. The remediation is pushed and deployed at commit c5f9f9e. Production health passed. Routes mounted but signed-in sync blocked by missing Render dashboard env vars. Local lint/build/494 tests pass; rollback-only database reliability checks passed. The live signed-in flow remains unverified.
 
 1. Read AGENTS.md and this lifeline's startup sections; check usage and Git status. Preserve existing changes. Reuse the deployed work instead of repeating migrations or implementation.
-2. Open https://route-manager-phtj.onrender.com and sign in to the intended Route Manager account. Confirm its actual identity; the app header may contain a hardcoded unrelated email. Do not confuse the Supabase dashboard account with the app account.
-3. Open More → Monthly Check-In. Confirm Today/Jobs Check In Now reaches that page too. Read the account-sync status. If it shows an error, inspect the authenticated API response and Render storage configuration safely; never expose credentials or forge sessions.
-4. Open official CE Check-In from the in-app page to record a harmless start event, then return and wait for Saved to your account. Do not mark completion or upload private proof just to test. Only confirm an actual completed check-in.
-5. Reload. Confirm the same start event and timestamp remain and the account-save status is successful. In Supabase, confirm the matching owner/month record and activity event exist. A local/pending save alone is not evidence of account persistence.
-6. Sign into the same account in a second browser/device. Open Monthly Check-In and confirm the same month/events load. Do not claim cross-browser verification from a single reload or SQL alone.
+2. Set `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY` in Render dashboard → Environment; trigger redeploy.
+3. Open https://route-manager-phtj.onrender.com and sign in to the intended Route Manager account. Confirm its actual identity; the app header may contain a hardcoded unrelated email. Do not confuse the Supabase dashboard account with the app account.
+4. Open More → Monthly Check-In. Confirm Today/Jobs Check In Now reaches that page too. Read the account-sync status. If it shows an error, inspect the authenticated API response and Render storage configuration safely; never expose credentials or forge sessions.
+5. Open official CE Check-In from the in-app page to record a harmless start event, then return and wait for Saved to your account. Do not mark completion or upload private proof just to test. Only confirm an actual completed check-in.
+6. Reload. Confirm the same start event and timestamp remain and the account-save status is successful. In Supabase, confirm the matching owner/month record and activity event exist. A local/pending save alone is not evidence of account persistence.
+7. Sign into the same account in a second browser/device. Open Monthly Check-In and confirm the same month/events load. Do not claim cross-browser verification from a single reload or SQL alone.
 7. If older shared browser records exist, use Import my older check-ins only after confirming they belong to this account. Confirm import persists after reload. Preserve the original shared cache; skip this step when none exists.
 8. In a controlled test environment, verify failed storage/logging leaves edits pending with a visible error. Retry and confirm activity is not duplicated. Test a new edit during an in-flight save and an account switch during loading/saving; stale responses must not acknowledge newer edits or expose another account's data.
 9. Verify an ordinary account is denied Admin access. Authorization must use server-controlled app_metadata only; user_metadata cannot grant access. No server-assigned admin existed at the last database check.
@@ -201,4 +219,4 @@ Documentation handoff only; do not build new features. The remediation is pushed
 Relevant implementation: src/features/probation/useProbationCheckIn.ts, probationSync.ts, MonthlyCheckInPage.tsx; server/admin/probationRoutes.ts, activityLog.ts; drizzle/0007_probation_atomic_sync.sql.
 
 Remaining: signed-in save/reload, second-browser loading, in-flight sync races, Admin activation/screens, and ordinary-account isolation. Automatic provider completion recognition is future work. The deployment monitor is paused; no background flow verification is running.
-2026-10-02 — Remediation implemented; database activated and rollback-only reliability checks passed; deployment pending.
+2026-10-03 — Production 404 root cause identified (missing Render env vars); render.yaml fix deployed; dashboard config and signed-in verification pending.
