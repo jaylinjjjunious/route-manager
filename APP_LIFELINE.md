@@ -48,7 +48,7 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
-**Verified production progress (2026-10-03):** Signed-in import, account acknowledgment, reload, and matching Supabase/activity records are verified. Required Render configuration was already present; no secrets were changed. User explicitly approved a server-controlled Admin role for the signed-in account. Admin Overview, Activity, Probation, month filter, and record details now work. Fresh-login More entry and cross-browser loading remain pending.
+**Verified production progress (2026-10-03):** Signed-in import, account acknowledgment, reload, and matching Supabase/activity records are verified. Required Render configuration was already present; no secrets were changed. User explicitly approved a server-controlled Admin role for the signed-in account. Admin Overview, Activity, Probation, month filter, and record details now work. Fresh-login More entry, opening Admin from that entry, and same-account loading in Edge are verified.
 
 Last reviewed: 2026-10-03 — Admin Portal and durable probation storage implemented; production routes mounted but signed-in sync blocked by missing server env var.
 
@@ -58,7 +58,7 @@ Last reviewed: 2026-10-03 — Admin Portal and durable probation storage impleme
 - **Data storage and external integrations:** Supabase Auth + Database. Google Gemini for AI features. Open-Meteo for weather. Official Transit API (proxied). All secrets server-side.
 - **Important behavior, constraints, and invariants:** Admin access requires `app_metadata.role === "admin"` only. Non-admin users get 403 on `/api/admin/*`. Probation check-ins sync to durable storage; local-first offline support preserved. Activity logging uses service role for cross-user visibility.
 - **Known limitations and significant unresolved bugs:** Admin portal requires online connection (no offline queue). Only probation connected to Admin; jobs/inventory/proofs remain separate. No granular admin permissions. Activity log not user-facing. BlueAI paused.
-- **Implementation / release status:** Runtime remediation is deployed; tables/RPC are installed. Local lint/build and focused tests passed. Live saving/reload and Admin server screens are verified; fresh-login discoverability and a second browser remain.
+- **Implementation / release status:** Runtime remediation is deployed; tables/RPC are installed. Local lint/build and focused tests passed. Live saving/reload and Admin server screens are verified; fresh-login discoverability and a second browser are verified.
 
 ## Context Map
 
@@ -183,13 +183,12 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 - **Follow-up:** Set `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY` in Render dashboard → Environment; redeploy; verify authenticated sync returns 200/503 not 404.
 
 ## Resume Point
-- Finish fresh-login and second-browser verification. An Edge production tab is open at the sign-in page, but browser input control repeatedly detaches; the user must enter their own credentials. Do not extract tokens, reset passwords, or weaken authentication.
-- After the user signs in, verify the same account's imported check-in loads and More shows Admin Portal. Then personally verify Admin navigation from that entry.
-- User approved Admin assignment for the signed-in account; app_metadata was merged, preserving other metadata. Overview, Activity, Probation, month filtering, and current-month detail are verified. Ordinary account was denied before activation.
-- Save/reload verified for both imported months with one activity entry each. Current month remains incomplete. Provider completion recognition is not implemented.
-- A second ordinary-account isolation check and in-flight sync race verification remain. No code changes are currently needed to configure Render.
+- Requested Render/signed-in saving/Admin activation work is complete and verified in production. Required settings already existed; no secrets were changed. The user approved ownership/import and expanded Admin access.
+- Verified real account import, save acknowledgment, reload, Supabase/activity rows, same-account loading in Edge, More Admin discoverability after fresh login, and opening Admin from More. Overview, Activity, Probation, month filter, and detail/event log work. Ordinary account was denied before its approved activation.
+- No further implementation or deployment is needed for this verified flow. In-flight sync races and a separate second ordinary-account isolation exercise remain follow-up test coverage. Provider completion recognition is unimplemented future work; current-month completion was not fabricated.
+- Source changes remain deployed, and documentation updates are committed/pushed. Admin tab in Edge is kept open for the user. No deployment monitor is running.
 ## Last Updated
-2026-10-03 — Production 404 root cause identified (missing Render env vars); render.yaml fix deployed; dashboard config and signed-in verification pending.
+2026-10-03 — Signed-in saving/reload, second-browser loading, and approved Admin activation/navigation/screens verified in production.
 
 ## Next CLI: Signed-In Saving Verification
 
@@ -219,3 +218,5 @@ Render Environment already contains SUPABASE_SERVICE_ROLE_KEY plus VITE_SUPABASE
 User confirmed ownership of the older browser records and authorized import. The production UI acknowledged Saved to your account; after reload it retained the imported start event and account-save status. Supabase read-only verification found both imported months for the signed-in owner, with one activity entry per month: September has its pre-existing completion, October has a start event and remains incomplete. No fabricated completion or proof was created. This resolves the live single-browser save/reload verification blocker. Cross-browser loading and Admin activation/screens remain unverified. The legacy import prompt reappears after reload because the shared cache is intentionally retained; note for later UI cleanup, not a saving failure. Do not repeat migrations or change Render secrets: the service key was already configured and the VITE URL/anon fallbacks are supported.
 ## Admin activation and screens verified — 2026-10-03
 After explicit action-time user confirmation, assigned server-controlled Admin to the signed-in account by merging app metadata; other metadata and credentials were preserved. Production Overview shows two records/two activity entries, Activity lists both, and Probation correctly separates completed September from pending October. Month filtering and record detail/event log were verified. Before activation the ordinary account received Admin access required. Fresh-login More discoverability and cross-browser account loading still require the user to sign in to the prepared Edge tab; browser input control detached repeatedly, so credentials were not entered. Do not claim these remaining checks are done.
+## Fresh login and cross-browser verification complete — 2026-10-03
+The user signed into the deployed app in Edge. A newly opened production tab loaded the same account's saved October start event and timestamp without local legacy import, confirming second-browser loading. More showed the actual authenticated account and Admin Portal entry; opening that entry loaded Overview with the expected two records/two activity entries. This closes the fresh-login discoverability and cross-browser loading blockers. The local development tab was a separate app; no credentials were read, reset, or copied. Browser input sometimes reported detached after a successful SPA navigation, so resulting DOM state was checked before any retry. Remaining follow-up coverage: in-flight save/account-switch races and a second ordinary-account isolation exercise. Do not confuse these with the now-verified main flow.
