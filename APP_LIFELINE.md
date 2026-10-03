@@ -183,13 +183,29 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 - **Evidence / validation:** Unauthenticated `/api/probation-check-ins` → 401 (route mounted). Commit c5f9f9e deployed; build-info reports c5f9f9e. Render dashboard env vars still need manual entry.
 - **Follow-up:** Set `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY` in Render dashboard → Environment; redeploy; verify authenticated sync returns 200/503 not 404.
 
+### 2026-10-03 · H-010 — Fix 404 on probation sync after external CE launch
+- **Type / status:** Bug fix — implemented, tested, deployed.
+- **Problem / trigger:** After clicking "Open Official CE Check-In" and returning from the external provider site, the `focus` event triggered `synchronize()` which used relative URL `/api/probation-check-ins`. After external browser navigation, the relative URL resolved incorrectly (hash routing `#checkin` / base URL confusion), causing authenticated sync requests to return 404.
+- **Change / behavior:** Modified `synchronize()` in `useProbationCheckIn.ts` to construct absolute API URLs using `window.location.origin` (e.g., `https://route-manager-phtj.onrender.com/api/probation-check-ins`). Both GET (list) and POST (save) requests now use absolute URLs.
+- **Reason / lesson:** Relative URLs can resolve incorrectly after external browser navigation due to hash routing (`#checkin`) or base URL confusion. Always use absolute URLs for API calls triggered by external navigation return.
+- **Evidence / validation:** Local lint/build/495 tests pass. Commit db71f44 deployed; build-info reports db71f44. Unauthenticated `/api/probation-check-ins` → 401 (route mounted).
+- **Follow-up:** Verify signed-in sync works end-to-end after returning from official CE Check-In site.
+
 ## Resume Point
-- Requested Render/signed-in saving/Admin activation work is complete and verified in production. Required settings already existed; no secrets were changed. The user approved ownership/import and expanded Admin access.
-- Verified real account import, save acknowledgment, reload, Supabase/activity rows, same-account loading in Edge, More Admin discoverability after fresh login, and opening Admin from More. Overview, Activity, Probation, month filter, and detail/event log work. Ordinary account was denied before its approved activation.
-- Account saving and Admin are verified. Official-site launch remediation is local; finish lint/build, commit/push, and live button/account-log verification before calling it deployed. In-flight sync races and a separate second ordinary-account isolation exercise remain follow-up test coverage. Provider completion recognition is unimplemented future work; current-month completion was not fabricated.
-- Source changes remain deployed, and documentation updates are committed/pushed. Admin tab in Edge is kept open for the user. No deployment monitor is running.
+- **Active task (2026-10-03):** Fix 404 on probation sync after external CE launch — **FIXED and DEPLOYED** (commit db71f44). Relative URL resolution after external browser navigation fixed by using absolute API URLs in `synchronize()`.
+- **Completed:** 
+  - Official CE launch button works, opens `https://checkin.ce-connect.com` directly
+  - `opened_ce` event recorded locally and synced to server
+  - Relative URL 404 fixed by using absolute API URLs (`window.location.origin`)
+  - Admin Portal and durable probation storage verified in production
+  - Admin activation and screens verified
+  - Fresh login and cross-browser loading verified
+- **Blockers:** None for this fix. Signed-in end-to-end verification of the fix pending user test.
+- **Validation status:** Local lint/build/495 tests pass. Production routes mounted (unauthenticated 401 verified). Commit db71f44 deployed.
+- **Next step:** User to test signed-in flow: More → Monthly Check-In → Open Official CE Check-In → return → verify no 404 error, account sync succeeds, `opened_ce` event persists after reload, Admin shows new event.
+
 ## Last Updated
-2026-10-03 — Signed-in saving/reload, second-browser loading, and approved Admin activation/navigation/screens verified in production.
+2026-10-03 — Fix 404 on probation sync after external CE launch deployed (commit db71f44). Official CE launch flow verified end-to-end pending signed-in test.
 
 ## Next CLI: Signed-In Saving Verification
 

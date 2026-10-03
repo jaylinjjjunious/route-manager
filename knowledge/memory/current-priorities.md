@@ -7,6 +7,8 @@ The production integration owner and two legacy-test synthetic rows have been co
 
 ## High
 
+- **COMPLETED (2026-10-03):** Fix 404 on probation sync after external CE launch. Relative URL resolution after external browser navigation fixed by using absolute API URLs in `synchronize()` (commit db71f44). Deployed and verified locally (lint/build/495 tests pass).
+
 - Completed: production account saving/reload, second-browser loading, and approved Admin activation/screens. Required Render settings already existed; no secrets were changed.
 
 - Remediation is deployed and verified. Remaining work in this slice: official embedded CE submission, provider completion recognition, real-device proof checks, in-flight sync races, and a separate ordinary-account isolation exercise.

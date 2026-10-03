@@ -50,7 +50,7 @@ it is not a multi-replica or bidirectional job-sync system.
 | P014 | Low | No granular admin permissions (view vs edit vs delete) — single admin role | Open |
 | P015 | Low | Activity log not user-facing — regular users cannot see their own activity timeline | Open |
 | P016 | Medium | Admin schema activation | Resolved: tables and atomic RPC applied and live records verified |
-| P017 | High | Authenticated probation sync error | Resolved operationally: required Render settings already existed; refreshed production saving/reload and Edge loading verified. Earlier missing-key cause was not proven. |
+| P017 | High | Authenticated probation sync 404 after external CE launch | Resolved: relative URL `/api/probation-check-ins` resolved incorrectly after external browser navigation (hash routing `#checkin` / base URL confusion). Fixed by using absolute API URLs via `window.location.origin` in `synchronize()` (commit db71f44). Verified: lint/build/495 tests pass, deployed commit db71f44. |
 
 
 ## Resolved Bugs
@@ -71,7 +71,7 @@ it is not a multi-replica or bidirectional job-sync system.
 
 ---
 
-**Last Updated:** 2026-10-03 (Production 404 on authenticated probation sync — missing Render env vars; render.yaml fix deployed; dashboard config pending)
+**Last Updated:** 2026-10-03 — 404 on probation sync after external CE launch fixed by absolute API URLs in synchronize() (commit db71f44)
 
 ## 2026-09-26 release review
 
