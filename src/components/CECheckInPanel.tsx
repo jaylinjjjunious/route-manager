@@ -1,126 +1,13 @@
-"use client";
+import { ExternalLink } from 'lucide-react';
 
-import { useEffect, useRef, useState } from "react";
-import { Maximize2, Minimize2, RefreshCw, Loader2 } from "lucide-react";
-
-const PROXY_BASE = "/api/proxy/ce-checkin";
-
-export function CECheckInPanel() {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [src, setSrc] = useState<string>(PROXY_BASE + "/");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [fullscreen, setFullscreen] = useState(false);
-  const [zoom, setZoom] = useState(0.75);
-
-  useEffect(() => {
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-
-    const handleLoad = () => {
-      setLoading(false);
-      setError(null);
-    };
-
-    const handleError = () => {
-      setLoading(false);
-      setError("Failed to load CE Check-In. The site may block embedding.");
-    };
-
-    iframe.addEventListener("load", handleLoad);
-    iframe.addEventListener("error", handleError);
-
-    return () => {
-      iframe.removeEventListener("load", handleLoad);
-      iframe.removeEventListener("error", handleError);
-    };
-  }, []);
-
-  const reload = () => {
-    setLoading(true);
-    setError(null);
-    const iframe = iframeRef.current;
-    if (iframe) {
-      iframe.src = PROXY_BASE + "/";
-    }
-  };
-
-  const goHome = () => {
-    setLoading(true);
-    setError(null);
-    setSrc(PROXY_BASE + "/");
-  };
-
-  if (error && !fullscreen) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-slate-900/50 rounded-2xl border border-red-500/30">
-        <div className="text-red-400 mb-4 text-4xl">⚠️</div>
-        <p className="text-white/80 mb-4">{error}</p>
-        <button
-          onClick={goHome}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          Try Again
-        </button>
-      </div>
-    );
-  }
-
-  const containerClass = `
-    flex flex-col h-full bg-slate-950 rounded-2xl border border-white/10 overflow-hidden
-    ${fullscreen ? "fixed inset-0 z-50" : "h-[800px]"}
-  `.trim();
-
-  const iframeWrapperStyle = {
-    transform: `scale(${zoom})`,
-    transformOrigin: "top center",
-    width: `${100 / zoom}%`,
-    height: `${100 / zoom}%`,
-  } as React.CSSProperties;
-
+export function CECheckInPanel({ onOpen }: { onOpen: () => void }) {
   return (
-    <div className={containerClass}>
-      <div className="flex items-center justify-between px-4 py-2 bg-slate-900/80 border-b border-white/10 sticky top-0 z-10">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-white/60">CE Check-In</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-          <span className="text-[11px] text-white/50 font-mono">cecheckin.com</span>
-        </div>
-        <div className="flex items-center gap-1">
-          {loading && <Loader2 className="w-4 h-4 text-white/50 animate-spin" />}
-          <button onClick={reload} title="Reload" className="p-1.5 rounded hover:bg-white/10 text-white/70 hover:text-white transition-colors">
-            <RefreshCw className="w-4 h-4" />
-          </button>
-          <button onClick={goHome} title="Home" className="p-1.5 rounded hover:bg-white/10 text-white/70 hover:text-white transition-colors">
-            <span className="w-4 h-4" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z%22/%3E%3Cpolyline points=%229 22 9 12 15 12%22/%3E%3C/svg%3E")', backgroundSize: 'cover' }} />
-          </button>
-          <button onClick={() => setFullscreen(!fullscreen)} title={fullscreen ? "Exit fullscreen" : "Fullscreen"} className="p-1.5 rounded hover:bg-white/10 text-white/70 hover:text-white transition-colors">
-            {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-          </button>
-        </div>
-      </div>
-
-      <div className="flex-1 relative overflow-y-auto overflow-x-hidden" style={{ overscrollBehavior: "contain" }}>
-        <div style={iframeWrapperStyle}>
-          <iframe
-            ref={iframeRef}
-            src={src}
-            className="w-full h-full border-0"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads allow-presentation allow-top-navigation-by-user-activation"
-            allow="camera; microphone; geolocation"
-            referrerPolicy="origin-when-cross-origin"
-            style={{ width: "100%", height: "100%", minHeight: "1000px" }}
-          />
-        </div>
-        {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-950 z-10">
-            <div className="text-center">
-              <Loader2 className="w-8 h-8 text-blue-400 animate-spin mx-auto mb-3" />
-              <p className="text-white/70">Loading CE Check-In...</p>
-            </div>
-          </div>
-        )}
-      </div>
+    <div className="rounded-2xl border border-white/15 bg-slate-950 p-5 space-y-3">
+      <p className="text-sm text-white/75">Sign in and submit your monthly check-in on the official CE website. Return here afterward to record completion and attach a screenshot.</p>
+      <button type="button" onClick={onOpen} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-blue-600 px-4 py-3 font-bold text-white hover:bg-blue-500">
+        <ExternalLink size={18} /> Open Official CE Check-In
+      </button>
+      <p className="text-xs text-white/60">Opens checkin.ce-connect.com in your browser. Opening the site does not mark your check-in completed.</p>
     </div>
   );
 }

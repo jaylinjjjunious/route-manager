@@ -118,8 +118,8 @@ export default function MonthlyCheckInSettings({ state }: { state: ProbationChec
         </div>
 
         <div className="mt-6">
-          <h3 className="text-xs font-black uppercase text-emerald-400 tracking-widest mb-3">Embedded CE Check-In Panel</h3>
-          <CECheckInPanel />
+          <h3 className="text-xs font-black uppercase text-emerald-400 tracking-widest mb-3">Official CE Check-In</h3>
+          <CECheckInPanel onOpen={state.openCeCheckIn} />
         </div>
 
         {state.record?.events.length && (
@@ -256,16 +256,16 @@ export default function MonthlyCheckInSettings({ state }: { state: ProbationChec
       </div>
 
       <div className="mt-6 pt-4 border-t border-white/10">
-        <h3 className="text-xs font-black uppercase text-white/50 tracking-widest mb-3">Embedded CE Check-In Panel</h3>
-        <CECheckInPanel />
+        <h3 className="text-xs font-black uppercase text-white/50 tracking-widest mb-3">Official CE Check-In</h3>
+        <CECheckInPanel onOpen={state.openCeCheckIn} />
       </div>
 
       <div className="mt-6 pt-4 border-t border-white/10">
         <h3 className="text-xs font-black uppercase text-white/50 tracking-widest mb-3">About CE Check-In</h3>
         <div className="space-y-2 text-[13px] text-white/70">
           <p>The CE Check-In website (<code className="font-mono text-white/90 bg-black/20 px-1.5 rounded">checkin.ce-connect.com</code>) is the official probation check-in portal.</p>
-          <p>It is embedded here via a server-side proxy so you can complete the check-in without leaving the app.</p>
-          <p>Use the panel above to sign in and complete your monthly check-in, then return here and use <strong>"I Completed It"</strong> to record your completion with optional screenshot proof.</p>
+          <p>Sign in and submit on the official website, then return to this page. Your Route Manager account stores your internal completion record.</p>
+          <p>Open the official site above, complete your monthly check-in there, then return here and use <strong>"I Completed It"</strong> to record your completion with optional screenshot proof.</p>
         </div>
       </div>
     </section>

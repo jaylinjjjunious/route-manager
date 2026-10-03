@@ -40,3 +40,13 @@ it('keeps failed saves pending and sends the expected account on retry', async (
   const post = mocks.fetch.mock.calls.find(call => call[1]?.method === 'POST');
   expect(JSON.parse(post![1].body).expectedOwnerId).toBe('a');
 });
+
+it('records an official-site launch and opens the correct provider without confirming completion', async () => {
+  mocks.open.mockClear();
+  await act(async () => root.render(React.createElement(Harness, { owner: 'a' })));
+  await act(async () => state.openCeCheckIn());
+  expect(mocks.open).toHaveBeenCalledTimes(1);
+  expect(mocks.open).toHaveBeenCalledWith({ url: 'https://checkin.ce-connect.com/' });
+  expect(state.record?.events.filter(e => e.type === 'opened_ce')).toHaveLength(1);
+  expect(state.completed).toBe(false);
+});
