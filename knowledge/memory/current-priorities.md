@@ -85,3 +85,6 @@ Five focused navigation/launch/account tests, type-checking, and the production 
 
 ## 2026-10-05 — Production evidence and acknowledgment
 Diagnostics side task is deployed/live verified. Finish release verification of the reproduced stale pending acknowledgment; original 404 did not reproduce in Edge. Next remains real-device CE/proof verification and the established sequence; no speculative 404 fix or iOS sign-off.
+
+## 2026-10-05 — Final release handoff
+Resume at final d8d8ede acknowledgment UI/reload verification when production browser access works; do not repeat Diagnostics implementation or migrations. Then actual iPhone/CE proof and the recorded follow-up sequence. Public exact-SHA deployment and health are already verified.

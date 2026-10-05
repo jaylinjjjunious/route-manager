@@ -79,3 +79,6 @@ Diagnostics is the agreed side task for the unresolved probation 404. Implemente
 
 ## 2026-10-05 — Production evidence and acknowledgment
 Diagnostics 96a3170 deployed and signed-in verified: More discovery, API/Sync/Auth/System, safe Copy, frontend/server identity and service-worker state. GET/POST launch sync 200 JSON. Stale pending acknowledgment reproduced and fixed locally; release validation pending. Prior startup blocker cleared; no real-iPhone verification.
+
+## 2026-10-05 — Final release handoff
+Acknowledgment fix d8d8ede pushed and deployed; exact public SHA and health verified. Nine focused tests and lint/build passed after the fix. Final acknowledgment UI/reload check blocked by blank existing/fresh Edge pages after deployment. Earlier signed-in Diagnostics/GET+POST 200 JSON verification stands; iPhone remains unverified.

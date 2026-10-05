@@ -105,3 +105,6 @@ Diagnostics consumes the existing app sync state and invokes its retry callback.
 
 ## 2026-10-05 — Production evidence and acknowledgment
 Live Edge verification: launch sync GET/POST both return 200 JSON. Found pendingSync remained true after successful acknowledgment with zero dirty records; update recordsRef synchronously before final pending calculation. No completion was fabricated. iPhone behavior/original 404 cause remain unverified.
+
+## 2026-10-05 — Final release handoff
+Acknowledgment fix deployed at d8d8ede; nine focused regression tests and lint/build pass. Public SHA/health confirmed. Final post-fix user-visible save/reload acknowledgment remains unverified due blank Edge pages after deployment; original 404 did not reproduce in the earlier signed-in launch GET/POST checks.

@@ -99,3 +99,6 @@ Five focused navigation/launch/account tests, type-checking, and the production 
 
 ## 2026-10-05 — Production evidence and acknowledgment
 P017 remains unverified on iPhone; Edge launch sync now returns GET/POST 200 JSON, no 404 reproduced. Separate reproduced bug: pendingSync true after acknowledgment/zero pending records; ref-before-status fix implemented, release validation pending. Initial production App bundle failure cleared after deployment/reload.
+
+## 2026-10-05 — Final release handoff
+Stale pending acknowledgment fixed and deployed at d8d8ede; regression/lint/build pass. Final UI/reload validation unavailable because production browser pages became blank after deployment. Prior authenticated launch requests returned 200 JSON, so original P017 cause remains unknown rather than proven resolved.
