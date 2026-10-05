@@ -102,3 +102,6 @@ Five focused navigation/launch/account tests, type-checking, and the production 
 
 ## 2026-10-05 — Diagnostics investigation
 Diagnostics consumes the existing app sync state and invokes its retry callback. Pending count, last success/error, GET/POST origin/status/type/auth presence are available. Earlier absolute-URL resolved claims are superseded: the authenticated post-return 404 cause is still unverified.
+
+## 2026-10-05 — Production evidence and acknowledgment
+Live Edge verification: launch sync GET/POST both return 200 JSON. Found pendingSync remained true after successful acknowledgment with zero dirty records; update recordsRef synchronously before final pending calculation. No completion was fabricated. iPhone behavior/original 404 cause remain unverified.

@@ -50,3 +50,19 @@ it('records an official-site launch and opens the correct provider without confi
   expect(state.record?.events.filter(e => e.type === 'opened_ce')).toHaveLength(1);
   expect(state.completed).toBe(false);
 });
+
+it('acknowledges a saved launch without leaving a stale pending status', async () => {
+  await act(async () => root.render(React.createElement(Harness, { owner: 'a' })));
+  await act(async () => state.openCeCheckIn());
+  expect(state.pendingRecordCount).toBe(1);
+  mocks.fetch.mockImplementation(async (_url: string, init?: RequestInit) => {
+    if (init?.method !== 'POST') return { records: [] };
+    const sent = JSON.parse(init.body as string);
+    return { record: { owner_id: 'a', month_key: sent.monthKey, started_at: sent.startedAt, device: sent.device, events: sent.events, updated_at: new Date().toISOString() } };
+  });
+  await act(async () => state.syncToServer());
+  expect(state.pendingRecordCount).toBe(0);
+  expect(state.syncStatus.pendingSync).toBe(false);
+  expect(state.syncStatus.lastSyncedAt).toBeTruthy();
+  expect(state.completed).toBe(false);
+});

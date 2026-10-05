@@ -246,12 +246,11 @@ export function useProbationCheckIn(now: Date, ownerId?: string): ProbationCheck
         });
         if (!active()) return;
         if (!result.record || result.record.owner_id !== ownerId) throw new Error('Account changed. Reload before saving.');
-        setRecords(current => {
-          const updated = current.map(r => r.monthKey !== snapshot.monthKey ? r : fingerprint(r) === fingerprint(snapshot)
-            ? fromServer(result.record) : mergeRecord(r, fromServer(result.record)));
-          recordsRef.current = updated;
-          return updated;
-        });
+        // Acknowledge before calculating pending state; React may defer its render.
+        const updated = recordsRef.current.map(r => r.monthKey !== snapshot.monthKey ? r : fingerprint(r) === fingerprint(snapshot)
+          ? fromServer(result.record) : mergeRecord(r, fromServer(result.record)));
+        recordsRef.current = updated;
+        setRecords(updated);
       }
       if (active()) setSyncStatus({ lastSyncedAt: new Date().toISOString(), pendingSync: recordsRef.current.some(r => !r.serverSynced) });
     } catch (err) {

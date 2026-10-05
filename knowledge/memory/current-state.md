@@ -76,3 +76,6 @@ Implemented on top of the existing job system:
 
 ## 2026-10-05 — Diagnostics investigation
 Diagnostics is the agreed side task for the unresolved probation 404. Implemented locally: shared bounded logs and app sync state; API/Sync/Auth/Errors/System, safe copy, log-only clearing, retry, frontend/server builds and service-worker evidence. Implementation 96a3170 pushed and remote verified; local More entry/API/Sync/System/Copy verified, lint/build/500 tests pass. Public health passes but build-info still reports 487ec6e, and Render dashboard does not load. Deployment and signed-in 404 diagnosis remain blocked/unverified. iOS wrap remains later in the work sequence.
+
+## 2026-10-05 — Production evidence and acknowledgment
+Diagnostics 96a3170 deployed and signed-in verified: More discovery, API/Sync/Auth/System, safe Copy, frontend/server identity and service-worker state. GET/POST launch sync 200 JSON. Stale pending acknowledgment reproduced and fixed locally; release validation pending. Prior startup blocker cleared; no real-iPhone verification.

@@ -128,3 +128,6 @@ The user explicitly requests careful, economical usage in every session.
 
 ## 2026-10-05 — Diagnostics investigation
 Absolute URLs and local tests do not prove a 404 cause. Capture actual response evidence first. Consume shared sync state rather than creating competing hooks. Never log proof/request bodies; sanitize before storing/exporting. Use the store-issued ID to keep request updates aligned across producers.
+
+## 2026-10-05 — Production evidence and acknowledgment
+React can defer functional state updaters: do not calculate an async save acknowledgment from a ref updated only inside setState. Update the ref from the current records synchronously, then schedule the render; retain fingerprint/account guards.
