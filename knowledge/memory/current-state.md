@@ -73,3 +73,6 @@ Implemented on top of the existing job system:
 ---
 
 **Last Updated:** 2026-10-03 (Admin Portal, probation durable storage, activity logging, admin authorization; 404 on probation sync after external CE launch fixed by absolute API URLs in commit db71f44)
+
+## 2026-10-05 — Diagnostics investigation
+Diagnostics is the agreed side task for the unresolved probation 404. Implemented locally: shared bounded logs and app sync state; API/Sync/Auth/Errors/System, safe copy, log-only clearing, retry, frontend/server builds and service-worker evidence. Deployment and signed-in verification pending. iOS wrap remains later in the work sequence.

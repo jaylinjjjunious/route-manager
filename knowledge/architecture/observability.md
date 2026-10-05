@@ -81,4 +81,10 @@ Server (`POST /api/errors` in `server.ts`):
 
 ## Last Updated
 
-2026-08-03 (error-reporting)
+2026-10-05 (diagnostics console)
+
+## Diagnostics Console
+
+More → Admin → Diagnostics Console reuses the existing DebugProvider request/error logs (50 requests, 100 errors, memory only). Production access requires server-controlled Admin metadata. API shows sanitized origin/path, method, status, duration, media type, JSON/HTML classification, and authentication presence only. Sync consumes the existing app hook state and invokes its existing retry callback; no second sync hook is created.
+
+Copy Diagnostics includes safe authentication state, pending sync count, frontend/server commits, service-worker registration/control and cache count. Clear Logs affects diagnostics only. Headers, request bodies, tokens and proof images are never retained; centralized sanitization removes URL queries/fragments and common credential formats before storage/export. Focused tests cover tracking, redaction, history bounds, clearing, safe copying, and retry.

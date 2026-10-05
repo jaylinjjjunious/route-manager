@@ -86,6 +86,7 @@ import ProbationCheckInPanel from './features/probation/ProbationCheckInPanel';
 import MonthlyCheckInPage from './features/probation/MonthlyCheckInPage';
 import ChangePasswordPage from './components/auth/ChangePasswordPage';
 import AdminPage from './features/admin/AdminPage';
+import DiagnosticsPage from './features/diagnostics/DiagnosticsPage';
 import { useProbationCheckIn } from './features/probation/useProbationCheckIn';
 import { authFetch, authFetchJson } from './services/apiClient';
 import { isTransitApiEnabled } from './services/transit';
@@ -108,9 +109,9 @@ const SHOWER_HABIT_NAME = 'Mandatory Shower';
 // Temporary operational bypass. Set true to restore the scan/access gate without removing its implementation.
 const SHOWER_GATE_REQUIRED = false;
 
-type AppTab = 'dashboard' | 'jobs' | 'more' | 'inventory' | 'battery' | 'tracker' | 'habits' | 'tools' | 'settings' | 'checkin' | 'changepassword' | 'admin';
+type AppTab = 'dashboard' | 'jobs' | 'more' | 'inventory' | 'battery' | 'tracker' | 'habits' | 'tools' | 'settings' | 'checkin' | 'changepassword' | 'admin' | 'diagnostics';
 
-const APP_TABS: AppTab[] = ['dashboard', 'jobs', 'more', 'inventory', 'battery', 'tracker', 'habits', 'tools', 'settings', 'checkin', 'changepassword', 'admin'];
+const APP_TABS: AppTab[] = ['dashboard', 'jobs', 'more', 'inventory', 'battery', 'tracker', 'habits', 'tools', 'settings', 'checkin', 'changepassword', 'admin', 'diagnostics'];
 const SHOWER_PROTECTED_TABS: AppTab[] = ['battery', 'tracker'];
 
 const RETIRED_ROUTE_DESTINATIONS = new Set(['route', 'routes']);
@@ -1162,6 +1163,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                 onNavigateChangePassword={() => handleTabChange('changepassword')}
                 isAdmin={isAdmin}
                 onNavigateAdmin={() => handleTabChange('admin')}
+                onNavigateDiagnostics={() => handleTabChange('diagnostics')}
               />
             </div>
           )}
@@ -1972,6 +1974,11 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           {/* Tab: Admin Portal */}
           {currentTab === 'admin' && (
             <AdminPage onBack={() => handleTabChange('more')} />
+          )}
+
+          {/* Tab: Diagnostics Console */}
+          {currentTab === 'diagnostics' && (
+            <DiagnosticsPage probation={probationCheckIn} onBack={() => handleTabChange('more')} />
           )}
 
           {/* Tab 6: Settings and Instructions */}

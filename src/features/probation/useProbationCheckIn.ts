@@ -80,6 +80,7 @@ export interface ProbationCheckInState {
   record: ProbationCheckInRecord | null;
   error: string;
   syncStatus: ProbationSyncStatus;
+  pendingRecordCount?: number;
   openCeCheckIn: () => void;
   attachProof: (file: File) => Promise<void>;
   captureComputerProof: () => Promise<void>;
@@ -228,8 +229,6 @@ export function useProbationCheckIn(now: Date, ownerId?: string): ProbationCheck
       const getUrl = `${apiBase}/api/probation-check-ins`;
       const postUrl = `${apiBase}/api/probation-check-ins`;
       
-      // Diagnostics: log the exact request URLs
-      console.debug('[PROBATION SYNC] GET', getUrl);
       
       const response = await authFetchJson<{ records: ServerRecord[] }>(getUrl);
       if (!active()) return;
@@ -241,7 +240,6 @@ export function useProbationCheckIn(now: Date, ownerId?: string): ProbationCheck
       setRecords(next);
       for (const snapshot of next.filter(r => !r.serverSynced)) {
         if (!active()) return;
-        console.debug('[PROBATION SYNC] POST', postUrl, 'payload', JSON.stringify({ ...payload(snapshot), expectedOwnerId: ownerId }));
         const result = await authFetchJson<{ record: ServerRecord }>(postUrl, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...payload(snapshot), expectedOwnerId: ownerId }),
@@ -257,18 +255,7 @@ export function useProbationCheckIn(now: Date, ownerId?: string): ProbationCheck
       }
       if (active()) setSyncStatus({ lastSyncedAt: new Date().toISOString(), pendingSync: recordsRef.current.some(r => !r.serverSynced) });
     } catch (err) {
-      // Enhanced error logging to capture the exact failing request details
       const errorMsg = err instanceof Error ? err.message : 'Account sync failed. Please retry.';
-      const apiBase = typeof window !== 'undefined' ? window.location.origin : '';
-      const getUrl = `${apiBase}/api/probation-check-ins`;
-      const postUrl = `${apiBase}/api/probation-check-ins`;
-      console.error('[PROBATION SYNC ERROR]', {
-        message: errorMsg,
-        ownerId,
-        getUrl,
-        postUrl,
-        error: err,
-      });
       if (active()) setSyncStatus(prev => ({ ...prev, pendingSync: recordsRef.current.some(r => !r.serverSynced), lastError: errorMsg }));
     } finally { if (active()) busy.current = false; }
   }, [ownerId, loadedOwner]);
@@ -306,11 +293,12 @@ export function useProbationCheckIn(now: Date, ownerId?: string): ProbationCheck
     record,
     error,
     syncStatus,
+    pendingRecordCount: loadedOwner === ownerId ? records.filter(r => !r.serverSynced).length : 0,
     openCeCheckIn,
     attachProof,
     captureComputerProof,
     confirmCompleted,
     syncToServer,
     loadFromServer,
-  }), [hasLegacyRecords, importLegacyRecords, attachProof, captureComputerProof, completed, confirmCompleted, device, error, monthKey, openCeCheckIn, phase, record, syncStatus, syncToServer, loadFromServer]);
+  }), [hasLegacyRecords, importLegacyRecords, attachProof, captureComputerProof, completed, confirmCompleted, device, error, monthKey, openCeCheckIn, phase, record, records, loadedOwner, ownerId, syncStatus, syncToServer, loadFromServer]);
 }

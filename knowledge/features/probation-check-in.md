@@ -18,7 +18,7 @@ The cycle key is the local calendar month (`YYYY-MM`). Completion immediately un
 
 ## Workflow
 
-`ProbationCheckInPanel` appears on Today and Jobs. **Check In Now** opens the in-app Monthly Check-In page under More. That page displays an embedded provider panel; this is separate from Route Manager account sign-in. The embedded provider submission is currently incomplete (see the audit below). Navigation alone does not currently call the legacy launch logger. After completing the official flow, the user can attach a screenshot and/or use the one-tap **I Completed It** acknowledgement. The panel records device class, event timestamps, reporting month, proof metadata, and verification level.
+`ProbationCheckInPanel` appears on Today and Jobs. **Check In Now** opens More → Monthly Check-In. **Open Official CE Check-In** opens the official provider directly and records `opened_ce` without marking completion. Provider login/submission happens on the official site; return to attach proof or acknowledge a genuinely completed check-in. Automatic provider recognition remains future work.
 
 Incomplete states use the full coaching panel so the requirement cannot be missed. After completion, the Today/Jobs panel is hidden. More → Monthly Check-In retains the completion status, details, activity log, proof preview, and provider link. The `AIØ17` header remains unchanged.
 
@@ -99,3 +99,6 @@ Five focused navigation/launch/account tests, type-checking, and the production 
 **Fix:** Modified `synchronize()` in `useProbationCheckIn.ts` to construct absolute API URLs using `window.location.origin` (e.g., `https://route-manager-phtj.onrender.com/api/probation-check-ins`). Both GET (list) and POST (save) requests now use absolute URLs.
 
 **Verification:** Local lint/build/495 tests pass. Commit db71f44 deployed; build-info reports db71f44. Unauthenticated `/api/probation-check-ins` → 401 (route mounted). Signed-in sync verification pending user test.
+
+## 2026-10-05 — Diagnostics investigation
+Diagnostics consumes the existing app sync state and invokes its retry callback. Pending count, last success/error, GET/POST origin/status/type/auth presence are available. Earlier absolute-URL resolved claims are superseded: the authenticated post-return 404 cause is still unverified.

@@ -16,6 +16,7 @@ import {
   Settings,
   ShieldCheck,
   Sun,
+  Terminal,
   Timer,
   ChevronRight,
   RefreshCw,
@@ -45,6 +46,7 @@ export interface MoreScreenProps {
   onNavigateChangePassword: () => void;
   isAdmin?: boolean;
   onNavigateAdmin?: () => void;
+  onNavigateDiagnostics?: () => void;
 }
 
 const FEATURES: { id: LegacyTab; label: string; subtitle: string; icon: LucideIcon; gradient: string }[] = [
@@ -221,16 +223,23 @@ export default function MoreScreen(props: MoreScreenProps) {
         </section>
       )}
 
-      {props.isAdmin && props.onNavigateAdmin && (
+      {(props.isAdmin || import.meta.env.DEV) && props.onNavigateDiagnostics && (
         <section aria-label="Admin portal">
           <div className="aio-card p-2">
             <div className="divide-y divide-[var(--color-aio-line)]">
-              <FeatureRow
+              {props.isAdmin && props.onNavigateAdmin && <FeatureRow
                 icon={LayoutDashboard}
                 gradient="bg-gradient-to-br from-[#7C3AED] to-[#A855F7]"
                 label="Admin Portal"
                 subtitle="Remote administration dashboard"
                 onClick={props.onNavigateAdmin}
+              />}
+              <FeatureRow
+                icon={Terminal}
+                gradient="bg-gradient-to-br from-[#06B6D4] to-[#0EA5E9]"
+                label="Diagnostics Console"
+                subtitle="API, Sync, Auth, Errors, System"
+                onClick={props.onNavigateDiagnostics}
               />
             </div>
           </div>

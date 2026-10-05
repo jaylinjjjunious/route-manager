@@ -50,7 +50,7 @@ it is not a multi-replica or bidirectional job-sync system.
 | P014 | Low | No granular admin permissions (view vs edit vs delete) — single admin role | Open |
 | P015 | Low | Activity log not user-facing — regular users cannot see their own activity timeline | Open |
 | P016 | Medium | Admin schema activation | Resolved: tables and atomic RPC applied and live records verified |
-| P017 | High | Authenticated probation sync 404 after external CE launch | Resolved: relative URL `/api/probation-check-ins` resolved incorrectly after external browser navigation (hash routing `#checkin` / base URL confusion). Fixed by using absolute API URLs via `window.location.origin` in `synchronize()` (commit db71f44). Verified: lint/build/495 tests pass, deployed commit db71f44. |
+| P017 | High | Authenticated probation sync 404 after external CE launch | Open: absolute URLs and temporary logging were deployed, but root cause/post-return signed-in behavior remain unverified. Complete Diagnostics and capture request evidence before another fix. |
 
 
 ## Resolved Bugs

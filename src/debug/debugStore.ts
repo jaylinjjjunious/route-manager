@@ -1,3 +1,5 @@
+import { safeDiagnosticText, safeDiagnosticUrl } from './sanitizeDiagnostics';
+
 export interface DebugRequest {
   id: number;
   path: string;
@@ -9,6 +11,8 @@ export interface DebugRequest {
   errorCategory: string;
   authRequired: boolean;
   retryOccurred: boolean;
+  contentType?: string;
+  responseKind?: 'json' | 'html' | 'other';
 }
 
 export interface DebugError {
@@ -127,10 +131,11 @@ export function clearAllDebugLogs() {
 }
 
 export function addDebugRequest(entry: Omit<DebugRequest, 'id'>) {
-  const req: DebugRequest = { id: ++requestId, ...entry };
+  const req: DebugRequest = { id: ++requestId, ...entry, path: safeDiagnosticUrl(entry.path) };
   requestLog.unshift(req);
   while (requestLog.length > MAX_REQUESTS) requestLog.pop();
   notify();
+  return req.id;
 }
 
 export function updateDebugRequest(id: number, updates: Partial<DebugRequest>) {
@@ -146,6 +151,9 @@ export function addDebugError(entry: Omit<DebugError, 'id' | 'timestamp'>) {
     id: ++errorId,
     timestamp: new Date().toISOString(),
     ...entry,
+    message: safeDiagnosticText(entry.message),
+    pathname: safeDiagnosticUrl(entry.pathname),
+    source: safeDiagnosticText(entry.source),
   };
   errorLog.unshift(err);
   while (errorLog.length > MAX_ERRORS) errorLog.pop();
@@ -219,6 +227,9 @@ export function buildDiagnosticReport(): Record<string, unknown> {
       status: r.status,
       duration: r.duration,
       category: r.errorCategory,
+      contentType: r.contentType,
+      responseKind: r.responseKind,
+      authAttached: r.authRequired,
     })),
   };
 }

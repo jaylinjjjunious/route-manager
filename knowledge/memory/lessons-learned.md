@@ -125,3 +125,6 @@ The user explicitly requests careful, economical usage in every session.
 - Migration `drizzle/0006_activity_log.sql` must be applied to Supabase before Admin Portal works in production (P016).
 
 - Admin authorization must ignore client-editable user metadata. Account sync requires actual lifecycle consumers, owner-scoped caches, and acknowledgment guards. Saving audit data in the same database transaction prevents false success; deterministic retry keys prevent duplicate activity.
+
+## 2026-10-05 — Diagnostics investigation
+Absolute URLs and local tests do not prove a 404 cause. Capture actual response evidence first. Consume shared sync state rather than creating competing hooks. Never log proof/request bodies; sanitize before storing/exporting. Use the store-issued ID to keep request updates aligned across producers.

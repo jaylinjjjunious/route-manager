@@ -1,14 +1,11 @@
-import { addDebugRequest, updateDebugRequest, addDebugError, captureSafeErrorInfo } from './debugStore';
-
-let nextId = 1;
+import { addDebugRequest, updateDebugRequest, addDebugError, captureSafeErrorInfo, getRequestLog } from './debugStore';
 
 export function trackFetchRequest(
   url: string,
   method: string,
   authRequired: boolean,
 ): number {
-  const id = nextId++;
-  addDebugRequest({
+  return addDebugRequest({
     path: url,
     method,
     status: null,
@@ -19,19 +16,23 @@ export function trackFetchRequest(
     authRequired,
     retryOccurred: false,
   });
-  return id;
 }
 
 export function completeFetchRequest(
   id: number,
   status: number,
   duration: number,
+  contentType = '',
 ) {
   const success = status >= 200 && status < 400;
   const errorCategory = !success
     ? status >= 500 ? 'server' : status === 401 ? 'auth' : status === 403 ? 'forbidden' : status === 404 ? 'not-found' : 'client'
     : '';
-  updateDebugRequest(id, { status, duration, success, errorCategory });
+  const mediaType = contentType.split(';')[0].trim().toLowerCase();
+  updateDebugRequest(id, { status, duration, success, errorCategory,
+    contentType: mediaType.replace(/[^a-z0-9.+/-]/g, '').slice(0, 80),
+    responseKind: mediaType.includes('json') ? 'json' : mediaType === 'text/html' ? 'html' : 'other',
+  });
 
   if (!success) {
     addDebugError({
@@ -52,7 +53,7 @@ function methodFromStatus(_status: number): string {
 export function failFetchRequest(id: number, error: unknown) {
   const { message, category } = captureSafeErrorInfo(error);
   updateDebugRequest(id, {
-    duration: Date.now() - (Date.now()),
+    duration: Date.now() - (getRequestLog().find(r => r.id === id)?.startTime ?? Date.now()),
     success: false,
     errorCategory: category || 'network',
   });

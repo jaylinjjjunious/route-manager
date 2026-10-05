@@ -38,7 +38,7 @@ export async function authFetch(input: RequestInfo, init: RequestInit = {}): Pro
     throw err;
   }
 
-  completeFetchRequest(requestId, response.status, Date.now() - startTime);
+  completeFetchRequest(requestId, response.status, Date.now() - startTime, response.headers.get('content-type') || '');
 
   authDebugApiStatus(response.status, url);
 

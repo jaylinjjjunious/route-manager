@@ -48,6 +48,8 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
+**2026-10-05 correction:** Prior chats confirm Diagnostics is a side task to diagnose the still-unverified probation 404. Absolute URLs and local tests did not establish its cause/resolution. Console implementation now uses shared app sync state and existing bounded logs; lint/build and 500 tests pass. Production is Render (build-info reports 487ec6e); signed-in Edge startup currently fails loading its dynamic App bundle, reproduced after reload. iOS Capacitor wrap follows the existing CE verification/proof/race/isolation sequence; BlueAI remains paused.
+
 **Verified production progress (2026-10-03):** Signed-in import, account acknowledgment, reload, and matching Supabase/activity records are verified. Required Render configuration was already present; no secrets were changed. User explicitly approved a server-controlled Admin role for the signed-in account. Admin Overview, Activity, Probation, month filter, and record details now work. Fresh-login More entry, opening Admin from that entry, and same-account loading in Edge are verified.
 
 Last reviewed: 2026-10-03 — Admin Portal and durable probation storage implemented; production routes mounted but signed-in sync blocked by missing server env var.
@@ -192,6 +194,8 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 - **Follow-up:** Verify signed-in sync works end-to-end after returning from official CE Check-In site.
 
 ## Resume Point
+**Superseding handoff (2026-10-05):** Local More entry, API/Sync/System tabs and Copy Diagnostics verified; commit/push Diagnostics, verify exact Render deployment, and personally inspect More → Diagnostics and account sync if production browser access works. The existing draft was repaired: broken callback/duplicate declarations removed, no second sync hook; API/Sync/Auth/Errors/System, safe Copy, log-only Clear, existing Retry, frontend/server commits and service-worker evidence. Lint/build/500 tests pass. Root cause/post-return 404 behavior remains unverified. Production Edge currently fails dynamically importing App despite HTTP 200/partial transfer; reload reproduced it. Do not claim iPhone or native verification. Main work afterward: CE signed-in verification → real-device proof → sync races/account switches → ordinary-account isolation → automatic recognition brainstorming → iOS wrap. The older fixed/deployed wording below is historical and not proof of resolution.
+
 - **Active task (2026-10-03):** Fix 404 on probation sync after external CE launch — **FIXED and DEPLOYED** (commit db71f44). Relative URL resolution after external browser navigation fixed by using absolute API URLs in `synchronize()`.
 - **Completed:** 
   - Official CE launch button works, opens `https://checkin.ce-connect.com` directly
@@ -245,3 +249,9 @@ Documentation was reconciled where current sections contradicted live results. O
 ## Official CE launch remediation — 2026-10-03
 The broken embedded login is replaced with Open Official CE Check-In on the existing in-app Monthly Check-In page. It uses the tracked launcher to open https://checkin.ce-connect.com directly, recording opened_ce and triggering account sync without marking completion. Return to Route Manager to attach proof and manually confirm a genuinely completed check-in. Provider authentication and submission happen on the provider's own origin, not through Route Manager. The old proxy returns 410 and no longer forwards cookies, rewrites forms, or removes provider framing protections. Automatic provider recognition remains unimplemented; do not confuse direct official-site access with independently verified completion.
 Five focused navigation/launch/account tests, type-checking, and the production build pass. The change is prepared for Render automatic deployment; verify production build and signed-in launch/save before calling it live. Actual provider submission cannot be tested without a genuine user check-in; do not create a false completion. Real-device proof flow and concurrency/second ordinary-account isolation checks remain follow-up coverage.
+
+## 2026-10-05 · H-011 — Recover and complete the Diagnostics side task
+- Recovered the explicit Diagnostics-first plan from the Repo overview check chat; the probation 404 is not proven resolved by absolute URLs.
+- Repaired the unfinished console and reused shared app sync state and DebugProvider logs. Added response type/classification, frontend/server identity, safe copying and retry; removed payload console logging.
+- Fixed store-issued request IDs and elapsed network-failure time; centralized credential/query/proof redaction. Lint/build and all 500 tests pass.
+- Local More entry, API/Sync/System and safe Copy verified; deployment verification pending; production Edge currently fails loading its dynamic App bundle. No false provider completion or iPhone verification claimed.
