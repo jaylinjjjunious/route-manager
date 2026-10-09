@@ -86,4 +86,4 @@ Acknowledgment fix d8d8ede pushed and deployed; exact public SHA and health veri
 ## 2026-10-08 — Header detail
 AioHeader adds a fixed, small green 10/12 immediately after 17, per the user's requested branding. Lint/build and 11 header tests pass. Deployed f561889; signed-in public header and green placement visually verified.
 
-2026-10-08 header follow-up: green 10/12 marker uses black font weight (900) at the existing size/position. Lint/build pass; deployment verification pending.
+2026-10-08 header follow-up: green 10/12 marker uses black font weight (900) at the existing size/position. Lint/build pass; a31e4fc deployed to Render, with the public build SHA and signed-in header visually verified.

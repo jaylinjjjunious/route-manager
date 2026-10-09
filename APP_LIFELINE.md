@@ -269,4 +269,4 @@ Final 2026-10-05 release evidence: d8d8ede pushed and remote verified; public bu
 - User requested a fixed green 10/12 close to the seven in AIØ17. Added an 11px bold marker with a 4px gap and accessible heading label.
 - Lint/build and 11 existing header tests pass. Commit f561889 pushed and exact public deployment verified; screenshot confirms the small green marker beside the 7. Existing probation/iPhone follow-ups remain separate.
 
-2026-10-08 — User requested a heavier 10/12 marker. Changed its weight from bold (700) to black (900); lint/build pass, deployment verification pending.
+2026-10-08 — User requested a heavier 10/12 marker. Changed its weight from bold (700) to black (900); lint/build pass. Commit a31e4fc deployed to Render; public build SHA and signed-in header visually verified.
