@@ -91,7 +91,7 @@ Notes:
 
 ## Apple iOS Wrap Workflow
 
-2026-10-09 current: `npm run ios:prepare` packages a local connection-error page and syncs the shell configured to load the live HTTPS Render website. No Supabase build variables are needed. Normal CI builds simulator and unsigned archive artifacts; simulator startup capture requires manual dispatch with `simulator_smoke=true` because the previous hosted runtime could not boot. Markdown-only pushes skip native CI. This supersedes the bundled-build instructions below. Review remote-loading security/policy and test actual native interaction before distribution; see [iOS wrap guide](../../docs/IOS_WRAP.md).
+2026-10-09 current: `npm run ios:prepare` packages local connection-error and native navigation bridge assets and syncs the shell configured to load the live HTTPS Render website. No Supabase build variables are needed. Normal CI builds simulator and unsigned archive artifacts; simulator startup capture requires manual dispatch with `simulator_smoke=true` because the previous hosted runtime could not boot. Markdown-only pushes skip native CI. This supersedes the bundled-build instructions below. Review remote-loading security/policy and test actual native interaction before distribution; see [iOS wrap guide](../../docs/IOS_WRAP.md).
 
 2026-10-09: Run 37864986666 attempt 3 completed successfully with both artifacts after billing was cleared and the existing public Supabase client settings were configured in Actions variables. Simulator/device interaction and Apple signing remain separate validation gates.
 

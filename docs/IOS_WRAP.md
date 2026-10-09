@@ -36,4 +36,6 @@ Run 37951706894 compiled the old simulator app but timed out after four minutes 
 
 References: [Capacitor configuration](https://capacitorjs.com/docs/config), [environment requirements](https://capacitorjs.com/docs/getting-started/environment-setup), [live-site decision](../knowledge/decisions/adr-2026-10-09-live-site-ios-wrapper.md).
 
-Native Liquid Glass local validation: all five focused website-bridge tests, lint, web/server build and shell sync pass. New Swift/Mac compilation pending. Earlier successful shell artifacts do not yet contain this native controller.
+Native Liquid Glass local validation: all five focused website-bridge tests, lint, web/server build and shell sync pass. Swift/Mac simulator and unsigned device compilation and uploads pass in run 37956316687. Earlier successful shell artifacts do not yet contain this native controller.
+
+2026-10-09 native Liquid Glass validation: source 4b1c4c34cf77c5f382af96f098e47e346f0b0ee8 passed Mac run 37956316687 (bridge tests, simulator compile, unsigned device archive and uploads). Simulator artifact 11627853505; archive artifact 11627653818. Startup smoke was intentionally skipped. Native visual/tap/layout/accessibility/signing verification remains blocked on a working runtime/device.

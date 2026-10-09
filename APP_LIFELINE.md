@@ -48,7 +48,7 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
-**2026-10-09 live-site clarification:** User approved the complete live website inside the iOS shell, with native features added later. Wrapper now targets the fixed HTTPS Render site; local assets contain only a connection-error/retry page. This supersedes bundled-loading notes below. Native capture is opt-in because the hosted simulator previously failed to boot. Website production is unchanged; wrapper startup/signing/distribution remain unverified. See `docs/IOS_WRAP.md`.
+**2026-10-09 live-site clarification:** User approved the complete live website inside the iOS shell, with native features added later. Wrapper now targets the fixed HTTPS Render site; local assets contain a connection-error/retry page and native navigation bridge. This supersedes bundled-loading notes below. Native capture is opt-in because the hosted simulator previously failed to boot. Website production is unchanged; wrapper startup/signing/distribution remain unverified. See `docs/IOS_WRAP.md`.
 
 **2026-10-09 iOS update (supersedes billing blocker below):** Billing cleared. Existing public Supabase client settings configured in Actions variables after attempt 2 exposed missing configuration. Run 37864986666 attempt 3 passed frontend/sync, simulator compilation and unsigned device archive on Xcode 26.6; both artifacts uploaded. Actual simulator UI/iPhone/signing and deployed native CORS remain unverified. No payment action was performed by the agent.
 
@@ -210,7 +210,7 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 
 ## Resume Point
 
-**2026-10-09 native Liquid Glass:** User explicitly asked to proceed with actual native integration. Custom UIKit controller and restricted UI-state script add native Today/Jobs/More controls; compile and runtime verification are separate gates. Verify native layout/taps/state/modal behavior on a working simulator; the hosted boot blocker and Apple signing gates remain.
+**2026-10-09 native Liquid Glass:** User explicitly asked to proceed with actual native integration. Custom UIKit controller and restricted UI-state script add native Today/Jobs/More controls; Mac run 37956316687 compiles/uploads successfully. Runtime verification is still blocked by the hosted simulator boot issue. Verify native layout/taps/state/modal behavior on a working simulator; the hosted boot blocker and Apple signing gates remain.
 
 **2026-10-09 live-site wrapper:** Source 8031d9e and Mac run 37954581365 compile/artifact uploads pass. Next verify native startup, live login/account saving, external navigation and connection retry on a working simulator. The existing hosted boot failure is still a blocker; avoid unchanged smoke retries. Signing requires Apple enrollment. No production CORS release is needed solely for same-origin hosted website loading. Older handoffs below describe the superseded bundled approach.
 
@@ -306,3 +306,5 @@ User clarified and approved loading the whole live website in an iPhone shell. F
 ## 2026-10-09 · H-016 — Native Liquid Glass navigation
 
 User requested actual native Liquid Glass integration. Added UIKit glass navigation (iOS 26+), older-iOS blur fallback, trusted main-frame state/click bridge and tests. Native visual readiness is not established by compilation.
+
+2026-10-09 native Liquid Glass validation: source 4b1c4c34cf77c5f382af96f098e47e346f0b0ee8 passed Mac run 37956316687 (bridge tests, simulator compile, unsigned device archive and uploads). Simulator artifact 11627853505; archive artifact 11627653818. Startup smoke was intentionally skipped. Native visual/tap/layout/accessibility/signing verification remains blocked on a working runtime/device.
