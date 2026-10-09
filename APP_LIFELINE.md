@@ -48,7 +48,7 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
-**2026-10-08 header detail:** User requested a small green `10/12` immediately beside the 7 in AIØ17. Implemented as a fixed 11px marker in `AioHeader`; lint/build and 11 existing header tests pass; deployment/visual verification pending.
+**2026-10-08 header detail:** User requested a small green `10/12` immediately beside the 7 in AIØ17. Implemented as a fixed 11px marker in `AioHeader`; lint/build and 11 existing header tests pass. Deployed f561889 and personally verified the visible green marker in the signed-in public app.
 
 **2026-10-05 current:** Diagnostics deployed and signed-in More/API/Sync/Auth/System/Copy verified at 96a3170. Official launch sync GET/POST returned authenticated 200 JSON, without false completion. Separate stale pending acknowledgment fixed, regression/lint/build passed, pushed and deployed at d8d8edecc2ed77c072e28fe0ce4d9d618cd340e9; public build-info and health verified. Final post-fix UI/reload validation is blocked: existing and fresh Edge tabs expose blank app pages after deployment. Original 404 did not reproduce in Edge; iPhone/native behavior remains unverified. BlueAI paused; iOS wrap follows existing CE proof/race/isolation work.
 
@@ -267,4 +267,4 @@ Final 2026-10-05 release evidence: d8d8ede pushed and remote verified; public bu
 
 ## 2026-10-08 · H-013 — Small green header marker
 - User requested a fixed green 10/12 close to the seven in AIØ17. Added an 11px bold marker with a 4px gap and accessible heading label.
-- Lint/build and 11 existing header tests pass; commit/push and public visual verification pending. Existing probation/iPhone follow-ups remain separate.
+- Lint/build and 11 existing header tests pass. Commit f561889 pushed and exact public deployment verified; screenshot confirms the small green marker beside the 7. Existing probation/iPhone follow-ups remain separate.

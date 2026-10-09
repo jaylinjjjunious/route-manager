@@ -84,4 +84,4 @@ Diagnostics 96a3170 deployed and signed-in verified: More discovery, API/Sync/Au
 Acknowledgment fix d8d8ede pushed and deployed; exact public SHA and health verified. Nine focused tests and lint/build passed after the fix. Final acknowledgment UI/reload check blocked by blank existing/fresh Edge pages after deployment. Earlier signed-in Diagnostics/GET+POST 200 JSON verification stands; iPhone remains unverified.
 
 ## 2026-10-08 — Header detail
-AioHeader adds a fixed, small green 10/12 immediately after 17, per the user's requested branding. Lint/build and 11 header tests pass; public visual verification pending.
+AioHeader adds a fixed, small green 10/12 immediately after 17, per the user's requested branding. Lint/build and 11 header tests pass. Deployed f561889; signed-in public header and green placement visually verified.
