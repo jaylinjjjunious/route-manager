@@ -1,5 +1,7 @@
 # Known Bugs
 
+2026-10-09 live-site shell: native startup and retry remain unverified; the hosted simulator boot blocker below persists. Capacitor labels server.url for development, so production security/policy review is a release gate. Older successful artifacts contain the bundled app, not the new live-site shell.
+
 ## 2026-10-09 — Hosted simulator boot blocker
 
 Run 37951706894 job 113891862701: native simulator compilation passed, but xcrun simctl bootstatus timed out after 240 seconds during Apple first-boot data migration, last reported plugin CoreLocationMigrator. App was never installed/launched; no screenshot exists. This is not evidence of an app startup failure. Successful prior compiled artifacts remain in run 37864986666 attempt 3. Do not repeat unchanged runs without new runtime evidence.

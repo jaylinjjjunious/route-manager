@@ -5,6 +5,10 @@ const config: CapacitorConfig = {
   appName: 'All in One 667',
   webDir: 'dist-native',
   server: {
+    // Live-site wrapper preview; App Store release remains a separate review.
+    url: 'https://route-manager-phtj.onrender.com/',
+    errorPath: 'connection-error.html',
+    cleartext: false,
     androidScheme: 'https',
     iosScheme: 'capacitor',
   },

@@ -48,6 +48,8 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
+**2026-10-09 live-site clarification:** User approved the complete live website inside the iOS shell, with native features added later. Wrapper now targets the fixed HTTPS Render site; local assets contain only a connection-error/retry page. This supersedes bundled-loading notes below. Native capture is opt-in because the hosted simulator previously failed to boot. Website production is unchanged; wrapper startup/signing/distribution remain unverified. See `docs/IOS_WRAP.md`.
+
 **2026-10-09 iOS update (supersedes billing blocker below):** Billing cleared. Existing public Supabase client settings configured in Actions variables after attempt 2 exposed missing configuration. Run 37864986666 attempt 3 passed frontend/sync, simulator compilation and unsigned device archive on Xcode 26.6; both artifacts uploaded. Actual simulator UI/iPhone/signing and deployed native CORS remain unverified. No payment action was performed by the agent.
 
 **2026-10-08 iOS focus:** User explicitly diverted to iOS wrapping. Draft branch `codex/ios-wrap-readiness` prepares frontend-only bundling, correct Capacitor scheme, native API/proof routing and narrow CORS, Browser plugin sync, permissions, and simulator/unsigned archive workflow. Local builds/sync and focused tests pass; GitHub Mac builds are blocked by a verified billing lock. Native compile/device/signing and production deployment of this branch remain unverified. See [iOS wrap guide](docs/IOS_WRAP.md).
@@ -87,6 +89,10 @@ Required installation step for reliable startup discovery: add this reference to
 > In every Route Manager session, read the startup sections of `APP_LIFELINE.md` before substantive work. Reference its relevant sections periodically during ongoing work, at milestones, before important decisions, and after interruptions or context compaction. Keep its snapshot, decisions, history, and resume notes current as meaningful project changes occur; reuse unchanged context instead of rereading the entire history.
 
 ## Active Decisions
+
+### D-iOS — Live website wrapper (2026-10-09)
+
+User explicitly approved loading the live website in an iPhone shell. Supersedes the bundled frontend decision. Fixed HTTPS URL, no wildcard navigation or cleartext; local retry page. Capacitor documents this URL mode for development, so distribution needs separate review. Native abilities require explicit integration and permissions; ordinary browser access remains available.
 
 ### D-001 — Admin Portal Architecture
 
@@ -204,6 +210,8 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 
 ## Resume Point
 
+**2026-10-09 live-site wrapper:** Latest authorized task changes loading to the live website. Verify the new shell compile/artifacts, then native startup, live login/account saving, external navigation and connection retry on a working simulator. The existing hosted boot failure is still a blocker; avoid unchanged smoke retries. Signing requires Apple enrollment. No production CORS release is needed solely for same-origin hosted website loading. Older handoffs below describe the superseded bundled approach.
+
 **2026-10-09 simulator follow-up:** User has no Apple Developer membership/device available. Capture code 5b61396 is pushed. Run 37951706894 compiled the simulator app but timed out in simctl bootstatus during Apple CoreLocationMigrator first-boot migration, before app install/launch. No screenshots or native startup sign-off. Preserve successful build artifacts from run 37864986666 attempt 3. Resume with a working Mac/simulator runtime or a documented runner fix; do not repeat unchanged CI runs. Apple enrollment/signing and physical-device gates remain open.
 **2026-10-09 superseding handoff:** Billing cleared, Actions public client config installed, run 37864986666 attempt 3 native builds/artifact uploads pass. Obtain the simulator app and unsigned archive from the run. Next: actual simulator interaction, production native CORS deployment after review, Apple team/signing, and real-iPhone validation. No payment was submitted by the agent. Source implementation is 606abd1 in draft PR #9; UI/device/signing remain unverified.
 **Pushed iOS handoff:** Implementation `606abd1` is remote-verified in [draft PR #9](https://github.com/jaylinjjjunious/route-manager/pull/9). Its Mac run 37864986666 failed before starting: account locked for billing. No native artifact produced. Working tree clean after handoff documentation commit; resume from this branch, not older main notes.
@@ -286,3 +294,7 @@ Final 2026-10-05 release evidence: d8d8ede pushed and remote verified; public bu
 ## 2026-10-08 · H-014 — iOS wrap preparation
 
 User diverted to autonomous iOS wrap work. Draft branch `codex/ios-wrap-readiness` corrects scheme, frontend-only packaging, Browser SPM sync/Windows paths, permissions, native API/proof routing and exact-origin CORS, and prepares simulator/unsigned archive workflow. Lint, web/native builds, Capacitor sync and 25 focused tests pass. Local native OPTIONS 204 and unauthenticated GET 401 verified; unrelated origin gets no CORS access. Actions billing lock prevents Mac compilation, so native UI/device/signing and production release remain unverified. Full resume guide: `docs/IOS_WRAP.md`.
+
+## 2026-10-09 · H-015 — Live-site iOS shell
+
+User clarified and approved loading the whole live website in an iPhone shell. Fixed HTTPS remote loading and local retry page replace bundled frontend assets. Native compilation stays in CI; startup smoke is opt-in due to known hosted boot failure. Local lint/build/preparation pass. Native UI and distribution remain unverified; production website unchanged. Supersedes bundled-loading ADR.

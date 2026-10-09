@@ -2,7 +2,7 @@
 
 ## Available Commands
 
-Native iOS CI runs `node scripts/ios-simulator-smoke.mjs` on a Mac after simulator compilation. It boots an available iPhone simulator, installs/launches the native app, captures first launch, terminates/reopens and captures again. `apple-ios-startup` artifacts require visual review. This does not establish signed-in account flows, physical camera behavior or real-device readiness.
+Native iOS startup capture is opt-in: manually dispatch Apple iOS Wrap with `simulator_smoke=true` on a working Mac runtime. `node scripts/ios-simulator-smoke.mjs` boots an available iPhone simulator, installs/launches the shell, captures first launch, terminates/reopens and captures again. Regular CI only compiles simulator/device packages because the previous hosted simulator timed out before app launch. `apple-ios-startup` artifacts require visual review. Verify that the live website loads and connection failure offers a working retry. This does not establish signed-in account flows, physical camera behavior or real-device readiness.
 
 | Command | Purpose | Tool |
 |---------|---------|------|

@@ -1,5 +1,7 @@
 # API Authentication
 
+2026-10-09 current wrapper loading: the live HTTPS site uses its existing same-origin API/auth flow. Native local-origin resolver/CORS code remains as draft compatibility support, but is not needed to load the hosted site and has not been deployed. See ../../docs/IOS_WRAP.md.
+
 **Last Updated:** 2026-07-20 (c12bd44)
 **Related Source Files:** `src/services/apiClient.ts`, `server.ts`, `worker/index.ts`
 

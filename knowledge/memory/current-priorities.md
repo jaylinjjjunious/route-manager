@@ -1,5 +1,7 @@
 # Current Priorities
 
+2026-10-09 active: finish live-site shell compile verification, then actual native website login/save/navigation/retry on a working runtime. No native-CORS production deploy is needed solely for hosted same-origin loading. Review remote-content security/policy before distribution. Apple enrollment/device gates remain. This supersedes bundled-wrapper priorities below.
+
 ## BlueAI follow-through (2026-10-01)
 
 The production integration owner and two legacy-test synthetic rows have been corrected to the newer signed-in account. Completed 2026-10-02: personally verified both synthetic records and successful sync in production Jobs. No further debugging is needed for this visibility issue. Do not alter Barrister records. Supabase-backed export storage is already implemented, superseding the older priority below to provision a private data directory for this path. Render is the production target requested by the user.

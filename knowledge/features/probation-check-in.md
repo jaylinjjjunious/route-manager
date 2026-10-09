@@ -1,5 +1,7 @@
 # Monthly Probation Check-In
 
+2026-10-09 live-site wrapper: the shell loads the deployed website rather than the draft bundled frontend. Provider browser/return and saving must be verified against that actual website in native iOS. Earlier draft routing/plugin notes do not establish deployed native behavior. See ../../docs/IOS_WRAP.md.
+
 2026-10-08 iOS draft: sync URLs use the shared native origin resolver, directing bundled app requests to Render. Auth/ownership guards are unchanged. Browser plugin is synced into SPM. Actual native provider launch, proof capture and saving remain unverified; see `../../docs/IOS_WRAP.md`.
 
 ## Purpose

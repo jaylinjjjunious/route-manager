@@ -1,5 +1,7 @@
 ## User preference: conserve usage (2026-10-02)
 
+2026-10-09: confirm whether iOS wrapping means a bundled website or loading the live hosted website. User chose hosted loading. Distinguish native compile success from actual website/bridge interaction, and keep known-broken simulator smoke opt-in rather than blocking every archive build.
+
 The user explicitly requests careful, economical usage in every session.
 - Keep work focused on the requested outcome; use concise updates and answers.
 - Reuse established context and verified results. Read only relevant files and sections.
