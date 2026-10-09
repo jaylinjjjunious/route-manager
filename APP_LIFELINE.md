@@ -48,6 +48,8 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
+**2026-10-08 header detail:** User requested a small green `10/12` immediately beside the 7 in AIØ17. Implemented as a fixed 11px marker in `AioHeader`; lint/build and 11 existing header tests pass; deployment/visual verification pending.
+
 **2026-10-05 current:** Diagnostics deployed and signed-in More/API/Sync/Auth/System/Copy verified at 96a3170. Official launch sync GET/POST returned authenticated 200 JSON, without false completion. Separate stale pending acknowledgment fixed, regression/lint/build passed, pushed and deployed at d8d8edecc2ed77c072e28fe0ce4d9d618cd340e9; public build-info and health verified. Final post-fix UI/reload validation is blocked: existing and fresh Edge tabs expose blank app pages after deployment. Original 404 did not reproduce in Edge; iPhone/native behavior remains unverified. BlueAI paused; iOS wrap follows existing CE proof/race/isolation work.
 
 **Verified production progress (2026-10-03):** Signed-in import, account acknowledgment, reload, and matching Supabase/activity records are verified. Required Render configuration was already present; no secrets were changed. User explicitly approved a server-controlled Admin role for the signed-in account. Admin Overview, Activity, Probation, month filter, and record details now work. Fresh-login More entry, opening Admin from that entry, and same-account loading in Edge are verified.
@@ -262,3 +264,7 @@ Five focused navigation/launch/account tests, type-checking, and the production 
 - Successful save left pendingSync true despite zero pending records. Fixed the stale ref calculation; nine focused regression tests and lint/build pass; live verification pending. iPhone behavior and original 404 cause remain unverified.
 
 Final 2026-10-05 release evidence: d8d8ede pushed and remote verified; public build-info reports exact SHA and health is OK. Nine focused diagnostics/sync tests plus lint/build pass. Final acknowledgment UI/reload verification blocked by blank pages in existing/fresh Edge tabs; earlier signed-in Diagnostics and GET/POST 200 JSON checks remain valid. No provider submission or false completion occurred.
+
+## 2026-10-08 · H-013 — Small green header marker
+- User requested a fixed green 10/12 close to the seven in AIØ17. Added an 11px bold marker with a 4px gap and accessible heading label.
+- Lint/build and 11 existing header tests pass; commit/push and public visual verification pending. Existing probation/iPhone follow-ups remain separate.

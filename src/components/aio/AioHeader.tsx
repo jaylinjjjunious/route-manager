@@ -37,7 +37,7 @@ export default function AioHeader({
           </p>
           <h1
             className="mt-0.5 text-[34px] font-black leading-none tracking-[-0.02em] text-[var(--color-aio-text)]"
-            aria-label="AIØ 17"
+            aria-label="AIØ 17 10/12"
           >
             <span aria-hidden="true">AIØ</span>
             <span
@@ -50,6 +50,9 @@ export default function AioHeader({
               }}
             >
               17
+            </span>
+            <span aria-hidden="true" className="ml-1 inline-block align-middle text-[11px] font-bold leading-none tracking-normal text-green-600 dark:text-green-400">
+              10/12
             </span>
           </h1>
           <p className="mt-1.5 text-[13px] font-medium text-[var(--color-aio-text-2)]">{formatToday()}</p>

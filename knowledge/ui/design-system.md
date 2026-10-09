@@ -1,11 +1,13 @@
 # UI Design System
 
-**Last Updated:** 2026-09-16 (Jobs page glass panels)
+**Last Updated:** 2026-10-08 (AIØ17 header marker)
 **Related Source Files:** `src/index.css`, `src/components/aio/*.tsx`
 
 ---
 
 ## AIØ Design Tokens
+
+`AioHeader` displays a fixed green `10/12` immediately to the right of the gradient `17`, with a 4px gap, 11px bold type, and middle alignment. The heading's accessible label includes the marker. It is a user-requested brand detail, not a calculated date or status.
 
 The AIØ surfaces (Today / Jobs / More) use an iOS-style system implemented with CSS custom properties in `src/index.css`. Light defaults are declared on `:root`; `.dark` overrides them under `@layer base`.
 
