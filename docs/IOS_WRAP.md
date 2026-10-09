@@ -2,6 +2,16 @@
 
 Updated: 2026-10-09. Work branch: codex/ios-wrap-readiness. [Draft wrapper pull request](https://github.com/jaylinjjjunious/route-manager/pull/9).
 
+## Latest handoff — saved for the next session
+
+The user asked to keep all progress in the Markdown file (clarified “MD file,” not a new MVP scope). The live-site shell and actual native Liquid Glass navigation are implemented and pushed. Latest native source is 4b1c4c3; successful Mac build is [37956316687](https://github.com/jaylinjjjunious/route-manager/actions/runs/37956316687). Simulator artifact: 11627853505; unsigned device archive: 11627653818. Tests, lint, web build, native sync and native compilation pass. Native appearance/taps remain unverified because of the hosted simulator boot blocker.
+
+Uploaded to GitHub does not mean deployed to an iPhone. This branch remains a draft; nothing was submitted to TestFlight or the App Store. The existing website remains available at https://route-manager-phtj.onrender.com/; native glass appears only inside the installed wrapper, not in an ordinary browser.
+
+For public App Store deployment, Apple Developer Program membership, signing, native verification and release review are still required. User has no membership/device available. TestFlight is optional beta distribution, not a mandatory stage before App Store submission. Enrollment involves the user’s identity, agreement and payment and must be completed by the user. A free website host does not supply native signing/distribution. Adding the existing website to an iPhone Home Screen is a free web-app option, but does not run this UIKit glass integration. Do not replace the requested native release with a website deploy and claim completion.
+
+Resume with enrollment/signing access or a working native runtime; preserve the existing compiled packages and avoid unchanged simulator retries. No Apple payments, enrollment, signing credentials or publishing have been performed by the agent.
+
 ## Current architecture
 
 The user clarified and approved showing the entire live website inside an iPhone shell. Capacitor loads https://route-manager-phtj.onrender.com/ through server.url. The fixed HTTPS root includes a trailing slash; cleartext is disabled and no wildcard navigation is granted. External destinations retain Capacitor's external navigation behavior. App ID is com.allinone667.routeoptimizer; display name remains All in One 667.
@@ -14,7 +24,7 @@ Earlier native API routing/CORS helpers remain on the draft branch but are not r
 
 ## Preparation and builds
 
-Run npm ci, then npm run ios:prepare. build:ios replaces generated dist-native content with the local startup/error screen; cap:sync copies it and normalizes Windows SPM paths. Public Supabase variables are no longer needed for the shell build. Generated assets, Capacitor JSON, build outputs and .env files remain ignored.
+Run npm ci, then npm run ios:prepare. build:ios replaces generated dist-native content with the local startup/error screen and native navigation bridge script; cap:sync copies them and normalizes Windows SPM paths. Public Supabase variables are no longer needed for the shell build. Generated assets, Capacitor JSON, build outputs and .env files remain ignored.
 
 Apple iOS Wrap runs on macos-latest / Xcode 26+ and builds simulator and unsigned device archive artifacts. Normal CI skips startup capture; manual workflow dispatch with simulator_smoke=true enables it on a working runtime. Markdown-only pushes skip the native job. Unsigned archives cannot be installed on an iPhone or uploaded to TestFlight.
 
