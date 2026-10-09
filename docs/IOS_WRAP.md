@@ -20,7 +20,7 @@ Apple iOS Wrap runs on macos-latest / Xcode 26+ and builds simulator and unsigne
 
 ## Established results and blockers
 
-Local lint, web/server build and shell preparation/sync pass for the live-site change. Generated config points to the fixed live HTTPS root with the local error path; generated assets contain no bundled React app or Node server. New Mac compilation is pending until the pushed branch's CI completes. No live-site wrapper startup or retry behavior has been verified on native iOS.
+Local lint, web/server build and shell preparation/sync pass for the live-site change. Generated config points to the fixed live HTTPS root with the local error path; generated assets contain no bundled React app or Node server. New Mac compilation and both artifact uploads passed in [run 37954581365](https://github.com/jaylinjjjunious/route-manager/actions/runs/37954581365) at source 8031d9e; startup smoke was intentionally skipped. No live-site wrapper startup or retry behavior has been verified on native iOS.
 
 Historical bundled build: GitHub billing cleared, existing public client variables configured, and run 37864986666 attempt 3 passed simulator compilation and unsigned device archive/upload on Xcode 26.6. Its simulator artifact ID is 11625493181 and archive ID is 11625078613. These older artifacts contain the superseded bundled frontend, not the live-site shell.
 
@@ -28,7 +28,7 @@ Run 37951706894 compiled the old simulator app but timed out after four minutes 
 
 ## Resume in order
 
-1. Inspect the new Mac compile and simulator/unsigned archive artifacts.
+1. Download the new live-site simulator/unsigned archive artifacts from successful run 37954581365 (older artifacts contain bundled loading).
 2. On a working simulator, verify live website startup, login, Today/Jobs/More, saving/reload, external provider navigation and return. Verify offline startup offers the local screen and Try again reconnects. Never fabricate provider completion.
 3. Verify native bridge behavior with the actual deployed website before adding features. Changes on this draft do not automatically alter the hosted frontend. No native-CORS release is required solely for same-origin hosted loading.
 4. Review icon, privacy, remote-content security and Apple distribution policy.

@@ -95,3 +95,5 @@ Acknowledgment fix d8d8ede pushed and deployed; exact public SHA and health veri
 AioHeader adds a fixed, small green 10/12 immediately after 17, per the user's requested branding. Lint/build and 11 header tests pass. Deployed f561889; signed-in public header and green placement visually verified.
 
 2026-10-08 header follow-up: green 10/12 marker uses black font weight (900) at the existing size/position. Lint/build pass; a31e4fc deployed to Render, with the public build SHA and signed-in header visually verified.
+
+2026-10-09 verified live-site shell build: source 8031d9ef0917f3c1954b248878d78d67c0f74705, Apple iOS Wrap run 37954581365 passed typecheck, shell preparation/sync, simulator compilation, unsigned device archive and both artifact uploads. Startup smoke was intentionally skipped because of the known hosted runtime boot blocker. Actual native website/login/navigation/retry and signing remain unverified.
