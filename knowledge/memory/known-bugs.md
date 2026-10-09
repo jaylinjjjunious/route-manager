@@ -1,5 +1,7 @@
 # Known Bugs
 
+2026-10-09 supersedes the billing blocker below: Billing cleared, missing public Supabase client settings configured in Actions variables, and run 37864986666 attempt 3 simulator/archive builds and uploads pass. Native UI/device/signing validation remains pending.
+
 ## 2026-10-08 — iOS wrap blockers
 
 Actions check 113604397557 reports a billing lock; Mac job did not start. Existing wrapper had invalid `iosScheme: https`, unsynced Browser plugin, API requests aimed at the local origin, and missing permission descriptions. Draft branch addresses these locally; native compile/device validation remains blocked. Native CORS is not deployed from this draft. See `docs/IOS_WRAP.md`.

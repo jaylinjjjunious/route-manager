@@ -91,6 +91,8 @@ Notes:
 
 ## Apple iOS Wrap Workflow
 
+2026-10-09: Run 37864986666 attempt 3 completed successfully with both artifacts after billing was cleared and the existing public Supabase client settings were configured in Actions variables. Simulator/device interaction and Apple signing remain separate validation gates.
+
 1. Pushing to `main` branch or opening a pull request automatically triggers `.github/workflows/apple-wrap.yml`.
 2. The GitHub Actions job runs on `macos-latest` with Xcode 26+, compiles the frontend-only bundle via `npm run build:ios`, and syncs assets to `ios/App/App/public` using `npm run cap:sync`. Required public Supabase settings must be supplied as repository variables or secrets.
 3. `xcodebuild` creates `build/App.xcarchive` which is zipped and uploaded to GitHub Actions Artifacts as `apple-ios-archive`.

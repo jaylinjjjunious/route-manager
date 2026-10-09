@@ -48,6 +48,8 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
+**2026-10-09 iOS update (supersedes billing blocker below):** Billing cleared. Existing public Supabase client settings configured in Actions variables after attempt 2 exposed missing configuration. Run 37864986666 attempt 3 passed frontend/sync, simulator compilation and unsigned device archive on Xcode 26.6; both artifacts uploaded. Actual simulator UI/iPhone/signing and deployed native CORS remain unverified. No payment action was performed by the agent.
+
 **2026-10-08 iOS focus:** User explicitly diverted to iOS wrapping. Draft branch `codex/ios-wrap-readiness` prepares frontend-only bundling, correct Capacitor scheme, native API/proof routing and narrow CORS, Browser plugin sync, permissions, and simulator/unsigned archive workflow. Local builds/sync and focused tests pass; GitHub Mac builds are blocked by a verified billing lock. Native compile/device/signing and production deployment of this branch remain unverified. See [iOS wrap guide](docs/IOS_WRAP.md).
 
 **2026-10-08 header detail:** User requested a small green `10/12` immediately beside the 7 in AIØ17. Implemented as a fixed 11px marker in `AioHeader`; lint/build and 11 existing header tests pass. Deployed f561889 and personally verified the visible green marker in the signed-in public app.
@@ -143,7 +145,7 @@ Use this format for subsequent entries:
 
 ## Open Questions / Future Ideas
 
-- **Q-iOS-001 — blocked:** GitHub account billing prevents Actions Mac jobs from starting. Account owner action or an available Mac is required.
+- **Q-iOS-001 — resolved 2026-10-09:** Billing cleared; public Supabase build settings configured; Mac simulator/device compilation and artifact uploads pass.
 - **Q-iOS-002 — unverified:** Apple developer team/signing and App Store Connect app. Verify when preparing a signed device build.
 
 No app-specific items have been verified yet. A future idea is not authorization to implement it.
@@ -201,6 +203,7 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 - **Follow-up:** Verify signed-in sync works end-to-end after returning from official CE Check-In site.
 
 ## Resume Point
+**2026-10-09 superseding handoff:** Billing cleared, Actions public client config installed, run 37864986666 attempt 3 native builds/artifact uploads pass. Obtain the simulator app and unsigned archive from the run. Next: actual simulator interaction, production native CORS deployment after review, Apple team/signing, and real-iPhone validation. No payment was submitted by the agent. Source implementation is 606abd1 in draft PR #9; UI/device/signing remain unverified.
 **Pushed iOS handoff:** Implementation `606abd1` is remote-verified in [draft PR #9](https://github.com/jaylinjjjunious/route-manager/pull/9). Its Mac run 37864986666 failed before starting: account locked for billing. No native artifact produced. Working tree clean after handoff documentation commit; resume from this branch, not older main notes.
 **Superseding handoff (2026-10-08):** Continue the user's iOS diversion on `codex/ios-wrap-readiness`. See [iOS wrap guide](docs/IOS_WRAP.md) for changes, validation and billing evidence. Resolve Actions billing or use a Mac with Xcode 26+, compile/test the simulator, deploy native CORS after review, then sign and verify on iPhone. Native icon and Apple account/signing setup are unverified. Earlier CE/race/isolation follow-ups remain open; no native readiness or TestFlight claim.
 **Superseding handoff (2026-10-05):** Application change d8d8ede is pushed, GitHub main verified, and public build-info/health confirm deployment. Console 96a3170 was fully discoverable and API/Sync/Auth/System/Copy verified signed-in; authenticated launch GET/POST returned 200 JSON. PendingSync acknowledgment bug reproduced and fixed; nine focused tests and lint/build pass after the fix (full 500-test suite passed for Diagnostics). Next: restore responsive production browser access, verify final pending=false/Saved to your account after a genuine launch/save/reload, then real-iPhone proof flow. Existing/fresh Edge app pages were blank on final post-deployment check; do not claim the final acknowledgment UI or iPhone verified. No further speculative 404 change. Continue afterward with races/account switches, ordinary-account isolation, recognition brainstorming, then iOS wrap.

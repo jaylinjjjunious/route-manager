@@ -53,6 +53,8 @@ railway up
 
 ### Apple iOS Wrap (GitHub Actions)
 
+2026-10-09 supersedes the billing blocker below: Mac simulator and unsigned device archive builds/upload pass in run 37864986666 attempt 3, using Xcode 26.6. Billing cleared and existing public client configuration installed as repository Actions variables. Actual native UI/device/signing and reviewed production deployment remain pending.
+
 The app is wrapped into a native Apple iOS workspace via **Capacitor** (`@capacitor/core`, `@capacitor/ios`).
 - **Configuration:** `capacitor.config.ts` (`appId: 'com.allinone667.routeoptimizer'`, `webDir: 'dist-native'`, iOS scheme `capacitor`).
 - **iOS Project:** `ios/App/App.xcodeproj`, with Swift Package Manager dependencies. The previously documented top-level `.xcworkspace` does not exist.
