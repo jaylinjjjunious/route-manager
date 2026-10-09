@@ -2,6 +2,8 @@
 
 Updated: 2026-10-08. Work branch: `codex/ios-wrap-readiness`.
 
+Pushed implementation: `606abd1416d81994ab8e19e2f4bfd6ac5806a7dc`, [draft PR #9](https://github.com/jaylinjjjunious/route-manager/pull/9). The PR's [Mac run 37864986666](https://github.com/jaylinjjjunious/route-manager/actions/runs/37864986666) also failed before starting with the same account billing lock. No native artifact was produced.
+
 ## Current state
 
 The existing Capacitor 8 project is being prepared for a bundled native app, not a remote website loader. App ID remains `com.allinone667.routeoptimizer`; display name remains All in One 667. Native compilation and device behavior are **unverified**.
