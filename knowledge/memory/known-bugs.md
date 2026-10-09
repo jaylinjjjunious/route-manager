@@ -1,5 +1,7 @@
 # Known Bugs
 
+2026-10-09 native navigation draft requires runtime validation. Hosted first-boot blocker prevents native visual/tap checks; Swift compilation is a separate gate. The website bridge depends on stable nav-tab IDs and modal markup; if controls are unavailable native navigation hides. Jobs count is shown in the native Jobs label, rather than the website red badge.
+
 2026-10-09 live-site shell: native startup and retry remain unverified; the hosted simulator boot blocker below persists. Capacitor labels server.url for development, so production security/policy review is a release gate. Older successful artifacts contain the bundled app, not the new live-site shell.
 
 ## 2026-10-09 — Hosted simulator boot blocker

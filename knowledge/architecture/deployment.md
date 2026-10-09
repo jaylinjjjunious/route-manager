@@ -1,5 +1,7 @@
 # Deployment Architecture
 
+2026-10-09 native glass integration: the shell packages native-navigation.js in addition to the local error page. SceneDelegate and Main.storyboard select RouteManagerViewController, registered in Xcode Sources. The controller presents UIGlassEffect on iOS 26+ and exchanges only UI state/fixed tab actions with the trusted website main frame. No backend or website deployment is needed for this injected integration. Native visual/interaction verification remains pending.
+
 ## Purpose
 
 Render is the current primary production host; Railway is a rollback host and Cloudflare is an alternate build path.

@@ -1,5 +1,7 @@
 # UI Design System
 
+2026-10-09 native Liquid Glass draft: the iPhone shell now implements an actual UIKit UIGlassEffect navigation surface on iOS 26+, with standard systemMaterial blur fallback on older iOS. Dynamic system colors, labelled native buttons and selected accessibility traits mirror Today/Jobs/More and the existing jobs count. This is native wrapper UI, not a CSS website restyle. Native appearance and accessibility/layout interaction remain unverified until a working simulator/device is available.
+
 **Last Updated:** 2026-10-08 (AIØ17 header marker)
 **Related Source Files:** `src/index.css`, `src/components/aio/*.tsx`
 

@@ -1,5 +1,7 @@
 # Testing Workflow
 
+2026-10-09: npx vitest run tests/nativeNavigation.test.ts verifies the isolated website contract: selection/count/theme, existing click handlers, ride-mode/navigation removal, modal hiding, acknowledgement-before-web-hide and untrusted-origin rejection. CI runs these tests before packaging. Native iOS visual, tap, safe-area, Dynamic Type and VoiceOver behavior still require actual runtime verification.
+
 ## Available Commands
 
 Native iOS startup capture is opt-in: manually dispatch Apple iOS Wrap with `simulator_smoke=true` on a working Mac runtime. `node scripts/ios-simulator-smoke.mjs` boots an available iPhone simulator, installs/launches the shell, captures first launch, terminates/reopens and captures again. Regular CI only compiles simulator/device packages because the previous hosted simulator timed out before app launch. `apple-ios-startup` artifacts require visual review. Verify that the live website loads and connection failure offers a working retry. This does not establish signed-in account flows, physical camera behavior or real-device readiness.

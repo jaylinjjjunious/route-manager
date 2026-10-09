@@ -1,5 +1,7 @@
 # Current Priorities
 
+2026-10-09 active native Liquid Glass: compile the new controller, then verify Today/Jobs/More taps, website saving, selection/count/theme, modal/ride hiding, safe area, Dynamic Type and VoiceOver on a working simulator. Do not claim the native effect is visible on the ordinary website. Known hosted boot/signing gates remain.
+
 2026-10-09 active: finish live-site shell compile verification, then actual native website login/save/navigation/retry on a working runtime. No native-CORS production deploy is needed solely for hosted same-origin loading. Review remote-content security/policy before distribution. Apple enrollment/device gates remain. This supersedes bundled-wrapper priorities below.
 
 ## BlueAI follow-through (2026-10-01)

@@ -1,5 +1,7 @@
 # Navigation System
 
+2026-10-09 native draft: RouteManagerViewController replaces the web bottom navigation inside the iOS wrapper with native Today/Jobs/More buttons on UIGlassEffect (iOS 26+) or systemMaterial blur (older iOS). A main-frame, exact-HTTPS-origin script observes existing controls and invokes their clicks, preserving React handlers. Selection, jobs count, theme and ride/dialog visibility are mirrored. Web navigation hides only after native acknowledgement; ordinary website rendering remains unchanged. Source: ios/App/App/RouteManagerViewController.swift and ios-shell/native-navigation.js. Native visual/tap testing remains blocked by the hosted simulator boot issue.
+
 **Last Updated:** 2026-08-02 (aio-three-tab-redesign)
 **Related Source Files:** `src/App.tsx`, `src/components/aio/primitives.tsx`
 

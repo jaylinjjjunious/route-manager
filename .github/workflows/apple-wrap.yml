@@ -55,6 +55,9 @@ jobs:
       - name: Type check
         run: npm run lint
 
+      - name: Test native website navigation bridge
+        run: npx vitest run tests/nativeNavigation.test.ts
+
       - name: Prepare live-site iOS shell
         run: npm run build:ios
 

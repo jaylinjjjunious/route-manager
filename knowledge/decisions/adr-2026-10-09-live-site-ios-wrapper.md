@@ -11,3 +11,9 @@ Capacitor documents `server.url` as a live-reload option not intended for produc
 The known hosted simulator first-boot failure is not an application failure. Startup capture is explicitly opt-in through workflow dispatch; regular compilation still builds both simulator and unsigned device artifacts. No native UI, signing or physical-device verification is claimed.
 
 Source: [Capacitor configuration](https://capacitorjs.com/docs/config). Resume: [iOS wrap guide](../../docs/IOS_WRAP.md).
+
+## Native Liquid Glass navigation (2026-10-09)
+
+User explicitly asked to proceed with native integration. A custom CAPBridgeViewController adds UIKit UIGlassEffect (iOS 26+) to Today/Jobs/More controls with a systemMaterial fallback for older iOS. A packaged main-frame script mirrors website UI state and invokes existing button handlers. It is limited to the exact HTTPS website origin; native messages verify frame/origin and accept only fixed tab IDs. Web navigation hides after native acknowledgement. Modal/ride mode and local error-page navigation hide the native bar. No account/session data crosses this UI bridge. The website remains unchanged in ordinary browsers. Actual native visuals/taps, accessibility and layout still require a working simulator/device.
+
+Reference: [Apple UIKit Liquid Glass APIs](https://developer.apple.com/videos/play/wwdc2025/284/).

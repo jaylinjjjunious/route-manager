@@ -1,5 +1,7 @@
 ## User preference: conserve usage (2026-10-02)
 
+2026-10-09: distinguish a CSS glass-style website from Apple native UIGlassEffect. Native controls over a hosted web view must reuse existing guarded actions, mirror selection and visibility, and hide web controls only after acknowledgement. Restrict UI bridge messages to the trusted main frame and use a weak message-handler owner.
+
 2026-10-09: confirm whether iOS wrapping means a bundled website or loading the live hosted website. User chose hosted loading. Distinguish native compile success from actual website/bridge interaction, and keep known-broken simulator smoke opt-in rather than blocking every archive build.
 
 The user explicitly requests careful, economical usage in every session.

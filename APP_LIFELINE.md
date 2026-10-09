@@ -210,6 +210,8 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 
 ## Resume Point
 
+**2026-10-09 native Liquid Glass:** User explicitly asked to proceed with actual native integration. Custom UIKit controller and restricted UI-state script add native Today/Jobs/More controls; compile and runtime verification are separate gates. Verify native layout/taps/state/modal behavior on a working simulator; the hosted boot blocker and Apple signing gates remain.
+
 **2026-10-09 live-site wrapper:** Source 8031d9e and Mac run 37954581365 compile/artifact uploads pass. Next verify native startup, live login/account saving, external navigation and connection retry on a working simulator. The existing hosted boot failure is still a blocker; avoid unchanged smoke retries. Signing requires Apple enrollment. No production CORS release is needed solely for same-origin hosted website loading. Older handoffs below describe the superseded bundled approach.
 
 **2026-10-09 simulator follow-up:** User has no Apple Developer membership/device available. Capture code 5b61396 is pushed. Run 37951706894 compiled the simulator app but timed out in simctl bootstatus during Apple CoreLocationMigrator first-boot migration, before app install/launch. No screenshots or native startup sign-off. Preserve successful build artifacts from run 37864986666 attempt 3. Resume with a working Mac/simulator runtime or a documented runner fix; do not repeat unchanged CI runs. Apple enrollment/signing and physical-device gates remain open.
@@ -300,3 +302,7 @@ User diverted to autonomous iOS wrap work. Draft branch `codex/ios-wrap-readines
 User clarified and approved loading the whole live website in an iPhone shell. Fixed HTTPS remote loading and local retry page replace bundled frontend assets. Native compilation stays in CI; startup smoke is opt-in due to known hosted boot failure. Local lint/build/preparation pass. Native UI and distribution remain unverified; production website unchanged. Supersedes bundled-loading ADR.
 
 2026-10-09 verified live-site shell build: source 8031d9ef0917f3c1954b248878d78d67c0f74705, Apple iOS Wrap run 37954581365 passed typecheck, shell preparation/sync, simulator compilation, unsigned device archive and both artifact uploads. Startup smoke was intentionally skipped because of the known hosted runtime boot blocker. Actual native website/login/navigation/retry and signing remain unverified.
+
+## 2026-10-09 · H-016 — Native Liquid Glass navigation
+
+User requested actual native Liquid Glass integration. Added UIKit glass navigation (iOS 26+), older-iOS blur fallback, trusted main-frame state/click bridge and tests. Native visual readiness is not established by compilation.

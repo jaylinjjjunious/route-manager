@@ -1,5 +1,7 @@
 # Current Implementation State
 
+2026-10-09 next native feature: real UIKit Liquid Glass navigation drafted for Today/Jobs/More, with older-iOS blur fallback and a restricted website UI-state bridge. Five focused website-bridge tests, lint, web build and shell sync pass; new Mac compile pending. Native UI/startup/signing still unverified.
+
 2026-10-09 current: user-approved live-site iOS shell supersedes bundled loading. Fixed HTTPS Render website plus local connection-error/retry page; lint, web build and shell sync pass. Native UI/signing remain unverified. Startup smoke is opt-in because of the known hosted boot blocker. See docs/IOS_WRAP.md. Older bundled notes below are historical.
 
 2026-10-09 follow-up: capture code 5b61396 pushed. Run 37951706894 compiled but timed out in simulator first-boot CoreLocationMigrator before app launch. No startup screenshots; only simulator metadata artifact 11625913965. Native startup and signed-in/camera/device flows remain unverified. User has no Apple membership/device; successful prior native build artifacts remain available.

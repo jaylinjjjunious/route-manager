@@ -11,4 +11,5 @@ for (const name of await readdir(output)) {
 for (const name of ['index.html', 'connection-error.html']) {
   await copyFile('ios-shell/connection-error.html', resolve(output, name));
 }
-console.log('Prepared live-site iOS shell and connection-error screen.');
+await copyFile('ios-shell/native-navigation.js', resolve(output, 'native-navigation.js'));
+console.log('Prepared live-site iOS shell, native navigation bridge and connection-error screen.');
