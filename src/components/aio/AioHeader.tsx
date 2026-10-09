@@ -51,7 +51,7 @@ export default function AioHeader({
             >
               17
             </span>
-            <span aria-hidden="true" className="ml-1 inline-block align-middle text-[11px] font-bold leading-none tracking-normal text-green-600 dark:text-green-400">
+            <span aria-hidden="true" className="ml-1 inline-block align-middle text-[11px] font-black leading-none tracking-normal text-green-600 dark:text-green-400">
               10/12
             </span>
           </h1>
