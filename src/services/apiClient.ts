@@ -1,4 +1,5 @@
 import { supabase } from "../lib/supabase";
+import { apiFetch, serverUrl } from './apiOrigin';
 import { authDebugApiStatus, authDebugRaw } from "../auth/authDebug";
 import { trackFetchRequest, completeFetchRequest, failFetchRequest } from "../debug/apiDiagnostics";
 
@@ -24,7 +25,7 @@ export async function authFetch(input: RequestInfo, init: RequestInit = {}): Pro
     headers: { ...authHeaders, ...headers },
   };
 
-  const url = typeof input === 'string' ? input : input instanceof URL ? input.pathname : input.url;
+  const url = serverUrl(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url);
   const method = init.method || 'GET';
 
   const requestId = trackFetchRequest(url, method, !!authHeaders.Authorization);
@@ -32,7 +33,7 @@ export async function authFetch(input: RequestInfo, init: RequestInit = {}): Pro
 
   let response: Response;
   try {
-    response = await fetch(input, mergedInit);
+    response = await apiFetch(input, mergedInit);
   } catch (err) {
     failFetchRequest(requestId, err);
     throw err;

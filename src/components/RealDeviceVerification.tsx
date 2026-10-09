@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { apiFetch } from '../services/apiOrigin';
 import { Camera, Clipboard, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react';
 import SmartAisleScan, { type SmartAisleScanVerificationEvent } from './SmartAisleScan';
 import { deleteAllTestLabData, getActivePhotos, getTestLabSessions } from '../services/scan/sessionService';
@@ -134,7 +135,7 @@ export default function RealDeviceVerification() {
   }, []);
 
   useEffect(() => {
-    fetch('/api/build-info', { cache: 'no-store' })
+    apiFetch('/api/build-info', { cache: 'no-store' })
       .then(response => response.json())
       .then(data => setBuildInfo(data))
       .catch(error => appendEvent('build_info_error', { message: error instanceof Error ? error.message : String(error) }));

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { serverUrl } from '../../services/apiOrigin';
 import { ArrowLeft, CheckCircle2, Flashlight, FlashlightOff, History, Image as ImageIcon, Loader2, ScanLine, ShieldAlert, ShieldCheck, X } from 'lucide-react';
 import { getBarcodeEnding, getLocalDateKey, REQUIRED_SHOWER_BARCODE } from '../../utils/showerCycle';
 import { getCurrentShowerProof, getShowerProofHistory, ShowerProofRecord, uploadShowerProof } from './showerProofApi';
@@ -544,7 +545,7 @@ export default function ShowerGatePanel({ cycleId, cycleLabel, completedProof, o
                           <ImageIcon size={20} />
                         </div>
                       ) : (
-                        <img src={proof.imageUrl} alt="Saved shower proof thumbnail" onError={() => setHistoryImageFailures(prev => ({ ...prev, [proof.id]: true }))} className="h-20 w-20 shrink-0 rounded-[8px] object-cover" />
+                        <img src={serverUrl(proof.imageUrl)} alt="Saved shower proof thumbnail" onError={() => setHistoryImageFailures(prev => ({ ...prev, [proof.id]: true }))} className="h-20 w-20 shrink-0 rounded-[8px] object-cover" />
                       )}
                       <div className="min-w-0 flex-1">
                         <p className="font-black">{formatProofDate(proof.capturedAt)} at {formatProofTime(proof.capturedAt)}</p>
@@ -572,7 +573,7 @@ export default function ShowerGatePanel({ cycleId, cycleLabel, completedProof, o
               {currentProof && <p className="mt-2 text-sm font-bold opacity-80">{formatProofDate(currentProof.capturedAt)} at {formatProofTime(currentProof.capturedAt)} · Verification {currentProof.verificationStatus}</p>}
             </div>
             {currentProof && !proofImageFailed ? (
-              <img src={currentProof.imageUrl} alt="Today shower proof" onError={() => setProofImageFailed(true)} className="max-h-[70vh] w-full rounded-[8px] object-contain" />
+              <img src={serverUrl(currentProof.imageUrl)} alt="Today shower proof" onError={() => setProofImageFailed(true)} className="max-h-[70vh] w-full rounded-[8px] object-contain" />
             ) : (
               <p className="rounded-[8px] border border-current/20 bg-white/70 p-4 font-bold dark:bg-black/20">Image unavailable.</p>
             )}
@@ -596,7 +597,7 @@ export default function ShowerGatePanel({ cycleId, cycleLabel, completedProof, o
 
             {isComplete && currentProof ? (
               <div className="grid gap-3 lg:grid-cols-[120px_1fr]">
-                <img src={currentProof.imageUrl} alt="Today shower proof thumbnail" onError={() => setProofImageFailed(true)} className="h-28 w-full rounded-[8px] object-cover lg:h-full" />
+                <img src={serverUrl(currentProof.imageUrl)} alt="Today shower proof thumbnail" onError={() => setProofImageFailed(true)} className="h-28 w-full rounded-[8px] object-cover lg:h-full" />
                 <div className="rounded-[8px] border border-current/20 bg-white/70 p-3 text-sm font-bold dark:bg-black/20">
                   <p>Product barcode matched.</p>
                   <p>Proof saved on file.</p>

@@ -1,5 +1,9 @@
 ## User preference: conserve usage (2026-10-02)
 
+2026-10-09: distinguish a CSS glass-style website from Apple native UIGlassEffect. Native controls over a hosted web view must reuse existing guarded actions, mirror selection and visibility, and hide web controls only after acknowledgement. Restrict UI bridge messages to the trusted main frame and use a weak message-handler owner.
+
+2026-10-09: confirm whether iOS wrapping means a bundled website or loading the live hosted website. User chose hosted loading. Distinguish native compile success from actual website/bridge interaction, and keep known-broken simulator smoke opt-in rather than blocking every archive build.
+
 The user explicitly requests careful, economical usage in every session.
 - Keep work focused on the requested outcome; use concise updates and answers.
 - Reuse established context and verified results. Read only relevant files and sections.
@@ -11,6 +15,10 @@ The user explicitly requests careful, economical usage in every session.
 - Record progress and remaining work so later sessions can resume without repeating completed work.
 
 # Lessons Learned
+
+## 2026-10-08 — Native wrapping
+
+Capacitor cannot register HTTPS as an iOS custom scheme. Custom-scheme URL origin can be null; use location.href and protocol/host matching. Build only frontend assets for native packaging and exclude generated native bundles from TypeScript source checks. Normalize Windows-generated SPM paths through the sync script. Inspect Actions annotations before retrying: a billing lock prevents execution regardless of source correctness. An unsigned archive is not a distributable IPA.
 
 ## BlueAI visibility (2026-10-01)
 

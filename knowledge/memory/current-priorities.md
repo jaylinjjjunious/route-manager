@@ -1,11 +1,21 @@
 # Current Priorities
 
+2026-10-09 active native Liquid Glass: controller compilation passes; next verify Today/Jobs/More taps, website saving, selection/count/theme, modal/ride hiding, safe area, Dynamic Type and VoiceOver on a working simulator. Do not claim the native effect is visible on the ordinary website. Known hosted boot/signing gates remain.
+
+2026-10-09 active: finish live-site shell compile verification, then actual native website login/save/navigation/retry on a working runtime. No native-CORS production deploy is needed solely for hosted same-origin loading. Review remote-content security/policy before distribution. Apple enrollment/device gates remain. This supersedes bundled-wrapper priorities below.
+
 ## BlueAI follow-through (2026-10-01)
 
 The production integration owner and two legacy-test synthetic rows have been corrected to the newer signed-in account. Completed 2026-10-02: personally verified both synthetic records and successful sync in production Jobs. No further debugging is needed for this visibility issue. Do not alter Barrister records. Supabase-backed export storage is already implemented, superseding the older priority below to provision a private data directory for this path. Render is the production target requested by the user.
 
 
 ## High
+
+- **2026-10-09 simulator follow-up:** User has no Apple Developer membership/device. Cloud check 37951706894 timed out in Apple first-boot CoreLocationMigrator before app launch. Resume on a working Mac/runtime or with a documented runner fix; avoid unchanged retries. Signing/TestFlight requires user enrollment; physical-device validation remains open.
+
+- **2026-10-09 update:** Billing/config blockers cleared; Mac simulator and unsigned device builds plus uploads pass in run 37864986666 attempt 3. Next: simulator UI, reviewed native CORS production release, Apple signing and real-iPhone validation.
+
+- **Active (2026-10-08, user diversion):** Prepare iOS wrap on `codex/ios-wrap-readiness`; Mac compilation is blocked by Actions billing. Follow `docs/IOS_WRAP.md` for simulator, native backend deployment, real iPhone/signing and TestFlight gates. Earlier CE verification remains open; BlueAI remains paused.
 
 - **Active (2026-10-05):** Finish Diagnostics as the agreed side task, then identify the authenticated probation 404 from method/origin/status/content-type/auth/build evidence. Absolute URLs are deployed but do not establish the cause or resolution. Continue afterward with CE signed-in verification, real-device proof, sync races/account switches, ordinary-account isolation, automatic recognition brainstorming, then iOS Capacitor wrap. BlueAI remains paused.
 

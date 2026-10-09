@@ -48,6 +48,12 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
+**2026-10-09 live-site clarification:** User approved the complete live website inside the iOS shell, with native features added later. Wrapper now targets the fixed HTTPS Render site; local assets contain a connection-error/retry page and native navigation bridge. This supersedes bundled-loading notes below. Native capture is opt-in because the hosted simulator previously failed to boot. Website production is unchanged; wrapper startup/signing/distribution remain unverified. See `docs/IOS_WRAP.md`.
+
+**2026-10-09 iOS update (supersedes billing blocker below):** Billing cleared. Existing public Supabase client settings configured in Actions variables after attempt 2 exposed missing configuration. Run 37864986666 attempt 3 passed frontend/sync, simulator compilation and unsigned device archive on Xcode 26.6; both artifacts uploaded. Actual simulator UI/iPhone/signing and deployed native CORS remain unverified. No payment action was performed by the agent.
+
+**2026-10-08 iOS focus:** User explicitly diverted to iOS wrapping. Draft branch `codex/ios-wrap-readiness` prepares frontend-only bundling, correct Capacitor scheme, native API/proof routing and narrow CORS, Browser plugin sync, permissions, and simulator/unsigned archive workflow. Local builds/sync and focused tests pass; GitHub Mac builds are blocked by a verified billing lock. Native compile/device/signing and production deployment of this branch remain unverified. See [iOS wrap guide](docs/IOS_WRAP.md).
+
 **2026-10-08 header detail:** User requested a small green `10/12` immediately beside the 7 in AIØ17. Implemented as a fixed 11px marker in `AioHeader`; lint/build and 11 existing header tests pass. Deployed f561889 and personally verified the visible green marker in the signed-in public app.
 
 **2026-10-05 current:** Diagnostics deployed and signed-in More/API/Sync/Auth/System/Copy verified at 96a3170. Official launch sync GET/POST returned authenticated 200 JSON, without false completion. Separate stale pending acknowledgment fixed, regression/lint/build passed, pushed and deployed at d8d8edecc2ed77c072e28fe0ce4d9d618cd340e9; public build-info and health verified. Final post-fix UI/reload validation is blocked: existing and fresh Edge tabs expose blank app pages after deployment. Original 404 did not reproduce in Edge; iPhone/native behavior remains unverified. BlueAI paused; iOS wrap follows existing CE proof/race/isolation work.
@@ -83,6 +89,10 @@ Required installation step for reliable startup discovery: add this reference to
 > In every Route Manager session, read the startup sections of `APP_LIFELINE.md` before substantive work. Reference its relevant sections periodically during ongoing work, at milestones, before important decisions, and after interruptions or context compaction. Keep its snapshot, decisions, history, and resume notes current as meaningful project changes occur; reuse unchanged context instead of rereading the entire history.
 
 ## Active Decisions
+
+### D-iOS — Live website wrapper (2026-10-09)
+
+User explicitly approved loading the live website in an iPhone shell. Supersedes the bundled frontend decision. Fixed HTTPS URL, no wildcard navigation or cleartext; local retry page. Capacitor documents this URL mode for development, so distribution needs separate review. Native abilities require explicit integration and permissions; ordinary browser access remains available.
 
 ### D-001 — Admin Portal Architecture
 
@@ -141,6 +151,9 @@ Use this format for subsequent entries:
 
 ## Open Questions / Future Ideas
 
+- **Q-iOS-001 — resolved 2026-10-09:** Billing cleared; public Supabase build settings configured; Mac simulator/device compilation and artifact uploads pass.
+- **Q-iOS-002 — unverified:** Apple developer team/signing and App Store Connect app. Verify when preparing a signed device build.
+
 No app-specific items have been verified yet. A future idea is not authorization to implement it.
 
 For each item, use a stable ID such as Q-001 and record: the question or idea, its reason, status (idea / needs decision / planned / blocked), and the next useful step. Add relevant evidence and dependencies only if known. When resolved, remove it from this active list and retain the outcome in history or Active Decisions.
@@ -196,6 +209,15 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 - **Follow-up:** Verify signed-in sync works end-to-end after returning from official CE Check-In site.
 
 ## Resume Point
+
+**2026-10-09 native Liquid Glass:** User explicitly asked to proceed with actual native integration. Custom UIKit controller and restricted UI-state script add native Today/Jobs/More controls; Mac run 37956316687 compiles/uploads successfully. Runtime verification is still blocked by the hosted simulator boot issue. Verify native layout/taps/state/modal behavior on a working simulator; the hosted boot blocker and Apple signing gates remain.
+
+**2026-10-09 live-site wrapper:** Source 8031d9e and Mac run 37954581365 compile/artifact uploads pass. Next verify native startup, live login/account saving, external navigation and connection retry on a working simulator. The existing hosted boot failure is still a blocker; avoid unchanged smoke retries. Signing requires Apple enrollment. No production CORS release is needed solely for same-origin hosted website loading. Older handoffs below describe the superseded bundled approach.
+
+**2026-10-09 simulator follow-up:** User has no Apple Developer membership/device available. Capture code 5b61396 is pushed. Run 37951706894 compiled the simulator app but timed out in simctl bootstatus during Apple CoreLocationMigrator first-boot migration, before app install/launch. No screenshots or native startup sign-off. Preserve successful build artifacts from run 37864986666 attempt 3. Resume with a working Mac/simulator runtime or a documented runner fix; do not repeat unchanged CI runs. Apple enrollment/signing and physical-device gates remain open.
+**2026-10-09 superseding handoff:** Billing cleared, Actions public client config installed, run 37864986666 attempt 3 native builds/artifact uploads pass. Obtain the simulator app and unsigned archive from the run. Next: actual simulator interaction, production native CORS deployment after review, Apple team/signing, and real-iPhone validation. No payment was submitted by the agent. Source implementation is 606abd1 in draft PR #9; UI/device/signing remain unverified.
+**Pushed iOS handoff:** Implementation `606abd1` is remote-verified in [draft PR #9](https://github.com/jaylinjjjunious/route-manager/pull/9). Its Mac run 37864986666 failed before starting: account locked for billing. No native artifact produced. Working tree clean after handoff documentation commit; resume from this branch, not older main notes.
+**Superseding handoff (2026-10-08):** Continue the user's iOS diversion on `codex/ios-wrap-readiness`. See [iOS wrap guide](docs/IOS_WRAP.md) for changes, validation and billing evidence. Resolve Actions billing or use a Mac with Xcode 26+, compile/test the simulator, deploy native CORS after review, then sign and verify on iPhone. Native icon and Apple account/signing setup are unverified. Earlier CE/race/isolation follow-ups remain open; no native readiness or TestFlight claim.
 **Superseding handoff (2026-10-05):** Application change d8d8ede is pushed, GitHub main verified, and public build-info/health confirm deployment. Console 96a3170 was fully discoverable and API/Sync/Auth/System/Copy verified signed-in; authenticated launch GET/POST returned 200 JSON. PendingSync acknowledgment bug reproduced and fixed; nine focused tests and lint/build pass after the fix (full 500-test suite passed for Diagnostics). Next: restore responsive production browser access, verify final pending=false/Saved to your account after a genuine launch/save/reload, then real-iPhone proof flow. Existing/fresh Edge app pages were blank on final post-deployment check; do not claim the final acknowledgment UI or iPhone verified. No further speculative 404 change. Continue afterward with races/account switches, ordinary-account isolation, recognition brainstorming, then iOS wrap.
 
 - **Active task (2026-10-03):** Fix 404 on probation sync after external CE launch — **FIXED and DEPLOYED** (commit db71f44). Relative URL resolution after external browser navigation fixed by using absolute API URLs in `synchronize()`.
@@ -270,3 +292,19 @@ Final 2026-10-05 release evidence: d8d8ede pushed and remote verified; public bu
 - Lint/build and 11 existing header tests pass. Commit f561889 pushed and exact public deployment verified; screenshot confirms the small green marker beside the 7. Existing probation/iPhone follow-ups remain separate.
 
 2026-10-08 — User requested a heavier 10/12 marker. Changed its weight from bold (700) to black (900); lint/build pass. Commit a31e4fc deployed to Render; public build SHA and signed-in header visually verified.
+
+## 2026-10-08 · H-014 — iOS wrap preparation
+
+User diverted to autonomous iOS wrap work. Draft branch `codex/ios-wrap-readiness` corrects scheme, frontend-only packaging, Browser SPM sync/Windows paths, permissions, native API/proof routing and exact-origin CORS, and prepares simulator/unsigned archive workflow. Lint, web/native builds, Capacitor sync and 25 focused tests pass. Local native OPTIONS 204 and unauthenticated GET 401 verified; unrelated origin gets no CORS access. Actions billing lock prevents Mac compilation, so native UI/device/signing and production release remain unverified. Full resume guide: `docs/IOS_WRAP.md`.
+
+## 2026-10-09 · H-015 — Live-site iOS shell
+
+User clarified and approved loading the whole live website in an iPhone shell. Fixed HTTPS remote loading and local retry page replace bundled frontend assets. Native compilation stays in CI; startup smoke is opt-in due to known hosted boot failure. Local lint/build/preparation pass. Native UI and distribution remain unverified; production website unchanged. Supersedes bundled-loading ADR.
+
+2026-10-09 verified live-site shell build: source 8031d9ef0917f3c1954b248878d78d67c0f74705, Apple iOS Wrap run 37954581365 passed typecheck, shell preparation/sync, simulator compilation, unsigned device archive and both artifact uploads. Startup smoke was intentionally skipped because of the known hosted runtime boot blocker. Actual native website/login/navigation/retry and signing remain unverified.
+
+## 2026-10-09 · H-016 — Native Liquid Glass navigation
+
+User requested actual native Liquid Glass integration. Added UIKit glass navigation (iOS 26+), older-iOS blur fallback, trusted main-frame state/click bridge and tests. Native visual readiness is not established by compilation.
+
+2026-10-09 native Liquid Glass validation: source 4b1c4c34cf77c5f382af96f098e47e346f0b0ee8 passed Mac run 37956316687 (bridge tests, simulator compile, unsigned device archive and uploads). Simulator artifact 11627853505; archive artifact 11627653818. Startup smoke was intentionally skipped. Native visual/tap/layout/accessibility/signing verification remains blocked on a working runtime/device.

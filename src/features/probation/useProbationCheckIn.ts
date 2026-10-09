@@ -5,6 +5,7 @@ import safeStorage from "../../utils/safeStorage";
 import { useExternalBrowser } from "../../hooks/useExternalBrowser";
 import { resizeProofImage } from "../showerGate/showerGateService";
 import { authFetchJson } from "../../services/apiClient";
+import { serverUrl } from '../../services/apiOrigin';
 import {
   getProbationCheckInPhase,
   getProbationMonthKey,
@@ -225,9 +226,8 @@ export function useProbationCheckIn(now: Date, ownerId?: string): ProbationCheck
     const active = () => ownerRef.current === ownerId && generation.current === run;
     setSyncStatus(prev => ({ ...prev, lastError: undefined, pendingSync: recordsRef.current.some(r => !r.serverSynced) }));
     try {
-      const apiBase = typeof window !== 'undefined' ? window.location.origin : '';
-      const getUrl = `${apiBase}/api/probation-check-ins`;
-      const postUrl = `${apiBase}/api/probation-check-ins`;
+      const getUrl = serverUrl(new URL('/api/probation-check-ins', window.location.href).href);
+      const postUrl = getUrl;
       
       
       const response = await authFetchJson<{ records: ServerRecord[] }>(getUrl);

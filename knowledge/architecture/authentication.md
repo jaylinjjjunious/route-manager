@@ -1,5 +1,7 @@
 # Authentication Architecture
 
+2026-10-09 wrapper clarification: the iOS shell loads the live HTTPS website and its existing Supabase auth/same-origin APIs. No client settings are bundled by build:ios. Native and ordinary browser sessions/storage are separate; same-account cloud records are shared. Prior local-origin routing notes describe retained draft helpers, not current loading. See ../../docs/IOS_WRAP.md.
+
 ## Purpose
 
 Describes how user authentication works across the frontend and backend.
@@ -26,6 +28,8 @@ The `isAdmin` flag is derived from the user's `app_metadata.role` or `user_metad
 - `/` → App (if authenticated) or LoginPage
 
 **Session recovery:**
+
+2026-10-08 native draft: password recovery redirects use the public HTTPS recovery page, rather than a local Capacitor URL. Automatic return through a native deep link is not implemented. Native release builds explicitly disable local/public workspace bypass flags and require public Supabase client configuration.
 - `supabase.auth.getSession()` on mount recovers existing session.
 - `onAuthStateChange` listener updates session state.
 - Supabase stores session in localStorage for page refresh recovery.

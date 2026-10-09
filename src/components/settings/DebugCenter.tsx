@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { apiFetch } from '../../services/apiOrigin';
 import {
   ChevronDown, ChevronRight, Copy, Download, Trash2, RefreshCw,
   Activity, Wifi, WifiOff, Globe, Shield, Smartphone, Camera,
@@ -98,7 +99,7 @@ export default function DebugCenter() {
   const runHealthCheck = useCallback(async () => {
     const start = Date.now();
     try {
-      const res = await fetch('/api/health');
+      const res = await apiFetch('/api/health');
       const data = await res.json();
       const ms = Date.now() - start;
       setHealth({
@@ -125,7 +126,7 @@ export default function DebugCenter() {
   const testApiConnection = useCallback(async () => {
     setAuthCheck('loading...');
     try {
-      const res = await fetch('/api/debug/auth-check', {
+      const res = await apiFetch('/api/debug/auth-check', {
         headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
       });
       const data = await res.json();

@@ -2,6 +2,9 @@
 
 ## Index
 
+- [2026-10-09 — Live website inside the iOS wrapper (draft)](adr-2026-10-09-live-site-ios-wrapper.md)
+- [2026-10-08 — Bundled iOS frontend and hosted backend (superseded)](adr-2026-10-08-bundled-ios-api.md)
+
 These decisions are documented in the legacy `docs/DECISIONS.md` file. New ADRs should be created in `knowledge/decisions/` using the template at `knowledge/decisions/adr-template.md`.
 
 | ID | Title | Status |

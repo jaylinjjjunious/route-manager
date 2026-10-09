@@ -1,8 +1,8 @@
 // Diagnostics never retain request bodies, headers, cookies, or URL queries.
 export function safeDiagnosticUrl(value: string): string {
   try {
-    const url = new URL(value, window.location.origin);
-    return `${url.origin}${url.pathname}`;
+    const url = new URL(value, window.location.href);
+    return `${url.protocol}//${url.host}${url.pathname}`;
   } catch { return '(invalid URL)'; }
 }
 

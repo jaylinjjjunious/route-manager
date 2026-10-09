@@ -91,10 +91,16 @@ Notes:
 
 ## Apple iOS Wrap Workflow
 
+2026-10-09 current: `npm run ios:prepare` packages local connection-error and native navigation bridge assets and syncs the shell configured to load the live HTTPS Render website. No Supabase build variables are needed. Normal CI builds simulator and unsigned archive artifacts; simulator startup capture requires manual dispatch with `simulator_smoke=true` because the previous hosted runtime could not boot. Markdown-only pushes skip native CI. This supersedes the bundled-build instructions below. Review remote-loading security/policy and test actual native interaction before distribution; see [iOS wrap guide](../../docs/IOS_WRAP.md).
+
+2026-10-09: Run 37864986666 attempt 3 completed successfully with both artifacts after billing was cleared and the existing public Supabase client settings were configured in Actions variables. Simulator/device interaction and Apple signing remain separate validation gates.
+
 1. Pushing to `main` branch or opening a pull request automatically triggers `.github/workflows/apple-wrap.yml`.
-2. The GitHub Actions job runs on `macos-latest`, compiles the frontend bundle via `npm run build`, and syncs assets to `ios/App/App/public` using `npx cap sync ios`.
+2. The GitHub Actions job runs on `macos-latest` with Xcode 26+, compiles the frontend-only bundle via `npm run build:ios`, and syncs assets to `ios/App/App/public` using `npm run cap:sync`. Required public Supabase settings must be supplied as repository variables or secrets.
 3. `xcodebuild` creates `build/App.xcarchive` which is zipped and uploaded to GitHub Actions Artifacts as `apple-ios-archive`.
-4. Download the `apple-ios-archive` zip from the GitHub Actions run summary page for Xcode distribution or simulator testing.
+4. `apple-ios-simulator` contains a simulator `.app`; `apple-ios-archive` contains an unsigned device archive. Apple signing and distribution export are separate steps. An unsigned archive is not installable on an iPhone or uploadable to TestFlight.
+
+2026-10-08: Updated workflow is draft work on `codex/ios-wrap-readiness`. Actions is locked for billing, so Mac compilation is unverified. Full resume steps: [iOS wrap guide](../../docs/IOS_WRAP.md).
 
 ---
 

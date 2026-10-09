@@ -3,14 +3,29 @@ name: Apple iOS Wrap
 on:
   push:
     branches: [ main ]
+    paths-ignore: ['**/*.md']
   pull_request:
     branches: [ main ]
+    paths-ignore: ['**/*.md']
   workflow_dispatch:
+    inputs:
+      simulator_smoke:
+        description: 'Try simulator startup capture (known hosted runtime boot blocker)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apple-wrap-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-ios:
     name: Build Apple iOS Package
     runs-on: macos-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
@@ -22,23 +37,32 @@ jobs:
           node-version: 22
           cache: 'npm'
 
+      - name: Install dependencies
+        run: npm ci
+
       - name: Diagnostics — versions
         run: |
           echo "Node: $(node --version)"
           echo "npm:  $(npm --version)"
           echo "Capacitor CLI: $(npx cap --version)"
           echo "Xcode: $(xcodebuild -version | head -n 1)"
+          xcode_major=$(xcodebuild -version | head -n 1 | awk '{print $2}' | cut -d. -f1)
+          if [ "$xcode_major" -lt 26 ]; then
+            echo "::error::Capacitor 8 requires Xcode 26 or newer. Select a compatible macOS runner."
+            exit 1
+          fi
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Type check
+        run: npm run lint
 
-      - name: Build Web Application
-        run: npm run build
-        env:
-          VITE_TRANSIT_PROVIDER: ${{ secrets.VITE_TRANSIT_PROVIDER || 'transit' }}
+      - name: Test native website navigation bridge
+        run: npx vitest run tests/nativeNavigation.test.ts
+
+      - name: Prepare live-site iOS shell
+        run: npm run build:ios
 
       - name: Sync Capacitor iOS platform
-        run: npx cap sync ios
+        run: npm run cap:sync
 
       - name: Diagnostics — Xcode project
         run: |
@@ -47,16 +71,45 @@ jobs:
       - name: Resolve Swift Package Dependencies
         run: |
           xcodebuild -project ios/App/App.xcodeproj \
+                     -scheme App \
                      -resolvePackageDependencies
+
+      - name: Build simulator application
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj \
+                     -scheme App \
+                     -configuration Debug \
+                     -sdk iphonesimulator \
+                     -destination 'generic/platform=iOS Simulator' \
+                     -derivedDataPath build/simulator \
+                     build CODE_SIGNING_ALLOWED=NO
+          ditto -c -k --sequesterRsrc --keepParent \
+            build/simulator/Build/Products/Debug-iphonesimulator/App.app \
+            build/App-simulator.zip
+
+      - name: Launch iPhone simulator and capture startup
+        if: github.event_name == 'workflow_dispatch' && inputs.simulator_smoke
+        run: node scripts/ios-simulator-smoke.mjs
+        timeout-minutes: 8
+
+      - name: Upload native startup evidence
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.simulator_smoke
+        uses: actions/upload-artifact@v4
+        with:
+          name: apple-ios-startup
+          path: build/ios-startup/
+          retention-days: 14
+          if-no-files-found: warn
 
       - name: Build Xcode Archive (.xcarchive)
         run: |
           xcodebuild -project ios/App/App.xcodeproj \
-                     -target App \
+                     -scheme App \
                      -configuration Release \
                      -sdk iphoneos \
                      -destination 'generic/platform=iOS' \
                      -archivePath build/App.xcarchive \
+                     CURRENT_PROJECT_VERSION=${{ github.run_number }} \
                      archive \
                      CODE_SIGN_IDENTITY="" \
                      CODE_SIGNING_REQUIRED=NO \
@@ -73,3 +126,12 @@ jobs:
           name: apple-ios-archive
           path: build/App.xcarchive.zip
           retention-days: 14
+          if-no-files-found: error
+
+      - name: Upload simulator application
+        uses: actions/upload-artifact@v4
+        with:
+          name: apple-ios-simulator
+          path: build/App-simulator.zip
+          retention-days: 14
+          if-no-files-found: error

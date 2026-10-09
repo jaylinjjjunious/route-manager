@@ -1,4 +1,5 @@
 import type { AssistantTool } from '../assistantTypes';
+import { apiFetch } from '../../services/apiOrigin';
 
 export function createDebugTools(
   getOnlineStatus: () => boolean,
@@ -39,7 +40,7 @@ export function createDebugTools(
       });
 
       try {
-        const response = await fetch('/api/health', { method: 'HEAD', signal: AbortSignal.timeout(5000) });
+        const response = await apiFetch('/api/health', { method: 'HEAD', signal: AbortSignal.timeout(5000) });
         checks.push({
           name: 'Server Reachability',
           status: response.ok ? 'ok' : 'warn',

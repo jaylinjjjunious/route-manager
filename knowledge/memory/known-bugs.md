@@ -1,5 +1,19 @@
 # Known Bugs
 
+2026-10-09 native navigation draft requires runtime validation. Hosted first-boot blocker prevents native visual/tap checks; Swift compilation is a separate gate. The website bridge depends on stable nav-tab IDs and modal markup; if controls are unavailable native navigation hides. Jobs count is shown in the native Jobs label, rather than the website red badge.
+
+2026-10-09 live-site shell: native startup and retry remain unverified; the hosted simulator boot blocker below persists. Capacitor labels server.url for development, so production security/policy review is a release gate. Older successful artifacts contain the bundled app, not the new live-site shell.
+
+## 2026-10-09 — Hosted simulator boot blocker
+
+Run 37951706894 job 113891862701: native simulator compilation passed, but xcrun simctl bootstatus timed out after 240 seconds during Apple first-boot data migration, last reported plugin CoreLocationMigrator. App was never installed/launched; no screenshot exists. This is not evidence of an app startup failure. Successful prior compiled artifacts remain in run 37864986666 attempt 3. Do not repeat unchanged runs without new runtime evidence.
+
+2026-10-09 supersedes the billing blocker below: Billing cleared, missing public Supabase client settings configured in Actions variables, and run 37864986666 attempt 3 simulator/archive builds and uploads pass. Native UI/device/signing validation remains pending.
+
+## 2026-10-08 — iOS wrap blockers
+
+Actions check 113604397557 reports a billing lock; Mac job did not start. Existing wrapper had invalid `iosScheme: https`, unsynced Browser plugin, API requests aimed at the local origin, and missing permission descriptions. Draft branch addresses these locally; native compile/device validation remains blocked. Native CORS is not deployed from this draft. See `docs/IOS_WRAP.md`.
+
 Verified 2026-10-02 in the signed-in production Jobs page: BlueAI records synced; BLUEAI-TEST-001 appears under Assigned from BlueAI and BLUEAI-TEST-002 under Available from BlueAI. Application commit b690196 passed lint, production build, and 28 focused tests. No Barrister writes were performed. This verifies the receiver-to-UI path with existing synthetic data; a new real Barrister extraction was not run.
 
 ## BlueAI visibility investigation (2026-10-01)

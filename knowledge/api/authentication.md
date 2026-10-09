@@ -1,5 +1,7 @@
 # API Authentication
 
+2026-10-09 current wrapper loading: the live HTTPS site uses its existing same-origin API/auth flow. Native local-origin resolver/CORS code remains as draft compatibility support, but is not needed to load the hosted site and has not been deployed. See ../../docs/IOS_WRAP.md.
+
 **Last Updated:** 2026-07-20 (c12bd44)
 **Related Source Files:** `src/services/apiClient.ts`, `server.ts`, `worker/index.ts`
 
@@ -33,17 +35,15 @@ If no session exists, the request proceeds without a token (the backend will rej
 
 When a request returns **401 Unauthorized**:
 
-1. `authFetchJson` detects the 401 status.
-2. It calls `supabase.auth.refreshSession()` to obtain a new `access_token`.
-3. The original request is **retried once** with the refreshed token.
-4. If the retry also returns 401, the error is propagated to the caller.
-5. The user is redirected to the login screen (or the auth state is cleared).
+The shared `authFetch` throws an authorization error when the backend rejects an attached token. It does not refresh/retry automatically; Supabase session auto-refresh and the separate shower proof upload retry are distinct mechanisms. The previous shared retry description was stale (corrected 2026-10-08).
 
-This retry-once pattern ensures seamless token renewal without interrupting the user experience during normal session expiration.
+### Bundled native requests (2026-10-08 draft)
+
+`apiOrigin.ts` resolves local native requests to the HTTPS Render origin while preserving web URLs. Auth headers and multipart bodies are retained. Express grants CORS only to `capacitor://localhost`; actual API requests still pass through existing authentication/ownership checks. Draft branch changes are not deployed until release verification. See [iOS wrap guide](../../docs/IOS_WRAP.md).
 
 ### Error Extraction
 
-`authFetchJson` automatically parses the JSON response body. If the response contains `{ error: string }`, that error message is extracted and thrown as an `Error`. Non-OK HTTP status codes (other than 401 retry) also throw with the server-provided error message.
+`authFetchJson` parses the JSON response body. If it contains `{ error: string }`, that error message is extracted and thrown as an `Error`. Non-OK statuses throw with the server-provided message or a status fallback.
 
 ---
 

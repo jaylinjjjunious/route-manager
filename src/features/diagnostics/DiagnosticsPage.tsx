@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { apiFetch, serverUrl } from '../../services/apiOrigin';
 import { ToolPageHeader } from '../../components/aio/ToolPageHeader';
 import { useAuth } from '../../auth/AuthProvider';
 import { useDebug } from '../../debug/useDebug';
@@ -23,7 +24,7 @@ export default function DiagnosticsPage({ onBack, probation }: { onBack: () => v
   useEffect(() => {
     if (!allowed) return;
     let active = true;
-    fetch('/api/build-info').then(async r => {
+    apiFetch('/api/build-info').then(async r => {
       if (!r.ok) throw new Error('Build information unavailable');
       const data = await r.json();
       if (active) setBuild({ commit: safeDiagnosticText(String(data.commitSha || 'Unknown')), version: safeDiagnosticText(String(data.version || 'Unknown')) });
@@ -71,7 +72,7 @@ export default function DiagnosticsPage({ onBack, probation }: { onBack: () => v
       </div>
       <div role="tabpanel" aria-label={tab} className="aio-card p-4 space-y-3">
         {tab === 'API' && <><p className="text-sm">Recent requests (up to 50). No headers or request bodies are retained.</p>{requestLog.length === 0 && <p>No requests recorded in this session.</p>}{requestLog.map(r => <article key={r.id} className="border-b border-[var(--color-aio-line)] pb-3 text-sm break-all"><p className="font-bold">{r.method} {r.path}</p><p>{r.status ?? 'Pending / network failure'} · {r.contentType || 'No response type'} · {r.responseKind || 'Unknown'} · Auth: {r.authRequired ? 'Yes' : 'No'} · {r.duration ?? '—'} ms</p><p>{new Date(r.startTime).toISOString()} · {r.success ? 'Success' : r.errorCategory || 'Pending'}</p></article>)}</>}
-        {tab === 'Sync' && <><dl>{Object.entries(sync).map(([k,v]) => row(k,v))}{row('API origin', window.location.origin)}{['GET', 'POST'].map(method => { const r = probationRequests.find(item => item.method === method); return row(`Last ${method}`, r ? `${r.path} · ${r.status ?? 'Pending / network failure'} · ${r.contentType || 'Unknown'} · Auth: ${r.authRequired ? 'Yes' : 'No'}` : 'No attempt recorded'); })}</dl><button disabled={retrying} onClick={() => void retry()} className="rounded-lg px-3 py-2 bg-[var(--color-aio-primary)] text-white">{retrying ? 'Retrying…' : 'Retry account sync'}</button></>}
+        {tab === 'Sync' && <><dl>{Object.entries(sync).map(([k,v]) => row(k,v))}{row('API origin', new URL(serverUrl('/api/health'), window.location.href).origin)}{['GET', 'POST'].map(method => { const r = probationRequests.find(item => item.method === method); return row(`Last ${method}`, r ? `${r.path} · ${r.status ?? 'Pending / network failure'} · ${r.contentType || 'Unknown'} · Auth: ${r.authRequired ? 'Yes' : 'No'}` : 'No attempt recorded'); })}</dl><button disabled={retrying} onClick={() => void retry()} className="rounded-lg px-3 py-2 bg-[var(--color-aio-primary)] text-white">{retrying ? 'Retrying…' : 'Retry account sync'}</button></>}
         {tab === 'Auth' && <dl>{Object.entries(auth).map(([k,v]) => row(k,v))}</dl>}
         {tab === 'Errors' && <>{errorLog.length === 0 && <p>No errors recorded.</p>}{errorLog.map(e => <article key={e.id} className="border-b border-[var(--color-aio-line)] py-2 text-sm break-all"><p>{e.timestamp} · {e.source} · {e.category} · {e.statusCode}</p><p>{e.message}</p></article>)}</>}
         {tab === 'System' && <dl>{Object.entries(system).map(([k,v]) => row(k,v))}</dl>}

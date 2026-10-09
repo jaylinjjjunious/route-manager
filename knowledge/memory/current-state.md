@@ -1,5 +1,15 @@
 # Current Implementation State
 
+2026-10-09 next native feature: real UIKit Liquid Glass navigation drafted for Today/Jobs/More, with older-iOS blur fallback and a restricted website UI-state bridge. Five focused website-bridge tests, lint, web build and shell sync pass; Mac simulator/device compilation and uploads pass in run 37956316687. Native UI/startup/signing still unverified.
+
+2026-10-09 current: user-approved live-site iOS shell supersedes bundled loading. Fixed HTTPS Render website plus local connection-error/retry page; lint, web build and shell sync pass. Native UI/signing remain unverified. Startup smoke is opt-in because of the known hosted boot blocker. See docs/IOS_WRAP.md. Older bundled notes below are historical.
+
+2026-10-09 follow-up: capture code 5b61396 pushed. Run 37951706894 compiled but timed out in simulator first-boot CoreLocationMigrator before app launch. No startup screenshots; only simulator metadata artifact 11625913965. Native startup and signed-in/camera/device flows remain unverified. User has no Apple membership/device; successful prior native build artifacts remain available.
+
+2026-10-09: Billing and public client configuration blockers cleared. Run 37864986666 attempt 3 on Xcode 26.6 passed simulator compilation and unsigned device archive/upload. Both native artifacts exist. Simulator UI/device/signing and native CORS production deployment remain unverified; no installable IPA exists.
+
+2026-10-08 iOS diversion: draft branch `codex/ios-wrap-readiness` prepares frontend-only bundling, valid local scheme, Browser SPM sync, permissions, native API/proof URL routing, exact-origin CORS, and simulator/unsigned archive workflow. Local validation passes; Mac compilation is blocked by a verified Actions billing lock. No native/device/signing/TestFlight readiness or deployed native CORS is claimed. See `docs/IOS_WRAP.md`.
+
 ## Phase
 
 **Phase 2 active.** Core features are built and deployed. Phase 3 (server sync, multi-user, team dashboard) has not started.
@@ -87,3 +97,7 @@ Acknowledgment fix d8d8ede pushed and deployed; exact public SHA and health veri
 AioHeader adds a fixed, small green 10/12 immediately after 17, per the user's requested branding. Lint/build and 11 header tests pass. Deployed f561889; signed-in public header and green placement visually verified.
 
 2026-10-08 header follow-up: green 10/12 marker uses black font weight (900) at the existing size/position. Lint/build pass; a31e4fc deployed to Render, with the public build SHA and signed-in header visually verified.
+
+2026-10-09 verified live-site shell build: source 8031d9ef0917f3c1954b248878d78d67c0f74705, Apple iOS Wrap run 37954581365 passed typecheck, shell preparation/sync, simulator compilation, unsigned device archive and both artifact uploads. Startup smoke was intentionally skipped because of the known hosted runtime boot blocker. Actual native website/login/navigation/retry and signing remain unverified.
+
+2026-10-09 native Liquid Glass validation: source 4b1c4c34cf77c5f382af96f098e47e346f0b0ee8 passed Mac run 37956316687 (bridge tests, simulator compile, unsigned device archive and uploads). Simulator artifact 11627853505; archive artifact 11627653818. Startup smoke was intentionally skipped. Native visual/tap/layout/accessibility/signing verification remains blocked on a working runtime/device.

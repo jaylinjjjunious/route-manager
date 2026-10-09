@@ -24,6 +24,12 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+    <key>NSCameraUsageDescription</key>
+    <string>Use the camera to scan barcodes and capture job and check-in proof.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Use the microphone when you choose to record a job preview video with sound.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Use your location while the app is open for nearby transit, route planning, and local weather.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

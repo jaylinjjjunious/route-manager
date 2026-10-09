@@ -1,5 +1,7 @@
 # Deployment Architecture
 
+2026-10-09 native glass integration: the shell packages native-navigation.js in addition to the local error page. SceneDelegate and Main.storyboard select RouteManagerViewController, registered in Xcode Sources. The controller presents UIGlassEffect on iOS 26+ and exchanges only UI state/fixed tab actions with the trusted website main frame. No backend or website deployment is needed for this injected integration. Native visual/interaction verification remains pending.
+
 ## Purpose
 
 Render is the current primary production host; Railway is a rollback host and Cloudflare is an alternate build path.
@@ -53,10 +55,15 @@ railway up
 
 ### Apple iOS Wrap (GitHub Actions)
 
+2026-10-09 current architecture: user clarified that the entire live website must load inside the wrapper. `server.url` is the fixed HTTPS Render root; only local connection-error/retry assets are packaged. Public Supabase configuration comes from the website and is no longer required by the shell build. Existing native routing/CORS draft code remains, but this hosted loading mode uses the website's same-origin APIs. See [live-site ADR](../decisions/adr-2026-10-09-live-site-ios-wrapper.md). Older bundled-build notes below are historical. This is a preview configuration; Capacitor does not recommend server.url for production. Native UI/signing/distribution remain unverified.
+
+2026-10-09 supersedes the billing blocker below: Mac simulator and unsigned device archive builds/upload pass in run 37864986666 attempt 3, using Xcode 26.6. Billing cleared and existing public client configuration installed as repository Actions variables. Actual native UI/device/signing and reviewed production deployment remain pending.
+
 The app is wrapped into a native Apple iOS workspace via **Capacitor** (`@capacitor/core`, `@capacitor/ios`).
-- **Configuration:** `capacitor.config.ts` (`appId: 'com.allinone667.routeoptimizer'`, `webDir: 'dist'`).
-- **iOS Workspace:** `ios/App/App.xcworkspace`.
+- **Configuration:** `capacitor.config.ts` (`appId: 'com.allinone667.routeoptimizer'`, `webDir: 'dist-native'`, iOS scheme `capacitor`).
+- **iOS Project:** `ios/App/App.xcodeproj`, with Swift Package Manager dependencies. The previously documented top-level `.xcworkspace` does not exist.
 - **CI/CD Pipeline:** `.github/workflows/apple-wrap.yml` runs on `macos-latest`, compiles the web application, syncs Capacitor iOS assets, builds an Xcode archive (`App.xcarchive`), and uploads the zipped `.xcarchive` artifact to GitHub Actions.
+- **2026-10-08 draft:** Separate frontend-only build, native API routing/CORS, Browser plugin sync, permission strings and simulator artifact prepared on `codex/ios-wrap-readiness`. GitHub Actions is blocked by account billing; no native archive has been verified. See [iOS wrap guide](../../docs/IOS_WRAP.md).
 
 ### Environment Variables
 
