@@ -2,6 +2,8 @@
 
 ## Index
 
+- [2026-10-08 — Bundled iOS frontend and hosted backend (draft)](adr-2026-10-08-bundled-ios-api.md)
+
 These decisions are documented in the legacy `docs/DECISIONS.md` file. New ADRs should be created in `knowledge/decisions/` using the template at `knowledge/decisions/adr-template.md`.
 
 | ID | Title | Status |

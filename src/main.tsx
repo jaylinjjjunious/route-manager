@@ -4,6 +4,7 @@ import {AuthProvider} from './auth/AuthProvider';
 import {DebugProvider} from './debug/DebugProvider';
 import ProtectedApp from './auth/ProtectedApp';
 import './index.css';
+import { Capacitor } from '@capacitor/core';
 
 function isRetiredRouteDestination(value: string): boolean {
   const normalized = value.toLowerCase().replace(/^[/#]+/, '').replace(/\/$/, '');
@@ -85,7 +86,7 @@ async function bootApp() {
 
 bootApp();
 
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
+if ('serviceWorker' in navigator && import.meta.env.PROD && !Capacitor.isNativePlatform()) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').then(registration => {
       registration.update().catch(() => {});

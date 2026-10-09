@@ -1,6 +1,11 @@
 node_modules/
 .wrangler/
 dist/
+dist-native/
+ios/App/App/public/
+ios/App/App/capacitor.config.json
+ios/App/build/
+build/
 coverage/
 test-results/
 .local-shower-proofs/

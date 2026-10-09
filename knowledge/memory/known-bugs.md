@@ -1,5 +1,9 @@
 # Known Bugs
 
+## 2026-10-08 — iOS wrap blockers
+
+Actions check 113604397557 reports a billing lock; Mac job did not start. Existing wrapper had invalid `iosScheme: https`, unsynced Browser plugin, API requests aimed at the local origin, and missing permission descriptions. Draft branch addresses these locally; native compile/device validation remains blocked. Native CORS is not deployed from this draft. See `docs/IOS_WRAP.md`.
+
 Verified 2026-10-02 in the signed-in production Jobs page: BlueAI records synced; BLUEAI-TEST-001 appears under Assigned from BlueAI and BLUEAI-TEST-002 under Available from BlueAI. Application commit b690196 passed lint, production build, and 28 focused tests. No Barrister writes were performed. This verifies the receiver-to-UI path with existing synthetic data; a new real Barrister extraction was not run.
 
 ## BlueAI visibility investigation (2026-10-01)

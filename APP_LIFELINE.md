@@ -48,6 +48,8 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
+**2026-10-08 iOS focus:** User explicitly diverted to iOS wrapping. Draft branch `codex/ios-wrap-readiness` prepares frontend-only bundling, correct Capacitor scheme, native API/proof routing and narrow CORS, Browser plugin sync, permissions, and simulator/unsigned archive workflow. Local builds/sync and focused tests pass; GitHub Mac builds are blocked by a verified billing lock. Native compile/device/signing and production deployment of this branch remain unverified. See [iOS wrap guide](docs/IOS_WRAP.md).
+
 **2026-10-08 header detail:** User requested a small green `10/12` immediately beside the 7 in AIØ17. Implemented as a fixed 11px marker in `AioHeader`; lint/build and 11 existing header tests pass. Deployed f561889 and personally verified the visible green marker in the signed-in public app.
 
 **2026-10-05 current:** Diagnostics deployed and signed-in More/API/Sync/Auth/System/Copy verified at 96a3170. Official launch sync GET/POST returned authenticated 200 JSON, without false completion. Separate stale pending acknowledgment fixed, regression/lint/build passed, pushed and deployed at d8d8edecc2ed77c072e28fe0ce4d9d618cd340e9; public build-info and health verified. Final post-fix UI/reload validation is blocked: existing and fresh Edge tabs expose blank app pages after deployment. Original 404 did not reproduce in Edge; iPhone/native behavior remains unverified. BlueAI paused; iOS wrap follows existing CE proof/race/isolation work.
@@ -141,6 +143,9 @@ Use this format for subsequent entries:
 
 ## Open Questions / Future Ideas
 
+- **Q-iOS-001 — blocked:** GitHub account billing prevents Actions Mac jobs from starting. Account owner action or an available Mac is required.
+- **Q-iOS-002 — unverified:** Apple developer team/signing and App Store Connect app. Verify when preparing a signed device build.
+
 No app-specific items have been verified yet. A future idea is not authorization to implement it.
 
 For each item, use a stable ID such as Q-001 and record: the question or idea, its reason, status (idea / needs decision / planned / blocked), and the next useful step. Add relevant evidence and dependencies only if known. When resolved, remove it from this active list and retain the outcome in history or Active Decisions.
@@ -196,6 +201,7 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 - **Follow-up:** Verify signed-in sync works end-to-end after returning from official CE Check-In site.
 
 ## Resume Point
+**Superseding handoff (2026-10-08):** Continue the user's iOS diversion on `codex/ios-wrap-readiness`. See [iOS wrap guide](docs/IOS_WRAP.md) for changes, validation and billing evidence. Resolve Actions billing or use a Mac with Xcode 26+, compile/test the simulator, deploy native CORS after review, then sign and verify on iPhone. Native icon and Apple account/signing setup are unverified. Earlier CE/race/isolation follow-ups remain open; no native readiness or TestFlight claim.
 **Superseding handoff (2026-10-05):** Application change d8d8ede is pushed, GitHub main verified, and public build-info/health confirm deployment. Console 96a3170 was fully discoverable and API/Sync/Auth/System/Copy verified signed-in; authenticated launch GET/POST returned 200 JSON. PendingSync acknowledgment bug reproduced and fixed; nine focused tests and lint/build pass after the fix (full 500-test suite passed for Diagnostics). Next: restore responsive production browser access, verify final pending=false/Saved to your account after a genuine launch/save/reload, then real-iPhone proof flow. Existing/fresh Edge app pages were blank on final post-deployment check; do not claim the final acknowledgment UI or iPhone verified. No further speculative 404 change. Continue afterward with races/account switches, ordinary-account isolation, recognition brainstorming, then iOS wrap.
 
 - **Active task (2026-10-03):** Fix 404 on probation sync after external CE launch — **FIXED and DEPLOYED** (commit db71f44). Relative URL resolution after external browser navigation fixed by using absolute API URLs in `synchronize()`.
@@ -270,3 +276,7 @@ Final 2026-10-05 release evidence: d8d8ede pushed and remote verified; public bu
 - Lint/build and 11 existing header tests pass. Commit f561889 pushed and exact public deployment verified; screenshot confirms the small green marker beside the 7. Existing probation/iPhone follow-ups remain separate.
 
 2026-10-08 — User requested a heavier 10/12 marker. Changed its weight from bold (700) to black (900); lint/build pass. Commit a31e4fc deployed to Render; public build SHA and signed-in header visually verified.
+
+## 2026-10-08 · H-014 — iOS wrap preparation
+
+User diverted to autonomous iOS wrap work. Draft branch `codex/ios-wrap-readiness` corrects scheme, frontend-only packaging, Browser SPM sync/Windows paths, permissions, native API/proof routing and exact-origin CORS, and prepares simulator/unsigned archive workflow. Lint, web/native builds, Capacitor sync and 25 focused tests pass. Local native OPTIONS 204 and unauthenticated GET 401 verified; unrelated origin gets no CORS access. Actions billing lock prevents Mac compilation, so native UI/device/signing and production release remain unverified. Full resume guide: `docs/IOS_WRAP.md`.

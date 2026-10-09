@@ -69,6 +69,7 @@ Use this map to select relevant documents before editing code. Read only what yo
 - `ui/responsive-behavior.md` — Mobile-first layout, bottom nav, camera
 
 ### Workflows
+- `../docs/IOS_WRAP.md` — Native iOS preparation, verified blockers, signing and device validation resume guide
 - `workflows/development.md` — How to make changes safely
 - `workflows/testing.md` — Testing approach and commands
 - `workflows/deployment.md` — Build, deploy, verify pipeline

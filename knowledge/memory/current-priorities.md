@@ -7,6 +7,8 @@ The production integration owner and two legacy-test synthetic rows have been co
 
 ## High
 
+- **Active (2026-10-08, user diversion):** Prepare iOS wrap on `codex/ios-wrap-readiness`; Mac compilation is blocked by Actions billing. Follow `docs/IOS_WRAP.md` for simulator, native backend deployment, real iPhone/signing and TestFlight gates. Earlier CE verification remains open; BlueAI remains paused.
+
 - **Active (2026-10-05):** Finish Diagnostics as the agreed side task, then identify the authenticated probation 404 from method/origin/status/content-type/auth/build evidence. Absolute URLs are deployed but do not establish the cause or resolution. Continue afterward with CE signed-in verification, real-device proof, sync races/account switches, ordinary-account isolation, automatic recognition brainstorming, then iOS Capacitor wrap. BlueAI remains paused.
 
 - Completed: production account saving/reload, second-browser loading, and approved Admin activation/screens. Required Render settings already existed; no secrets were changed.

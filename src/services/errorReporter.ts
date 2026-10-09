@@ -1,4 +1,5 @@
 import { supabase } from "../lib/supabase";
+import { apiFetch } from './apiOrigin';
 import { addDebugError } from "../debug/debugStore";
 
 /**
@@ -95,7 +96,7 @@ async function flush(): Promise<void> {
       queue.unshift(...batch);
       return;
     }
-    const response = await fetch("/api/errors", {
+    const response = await apiFetch("/api/errors", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

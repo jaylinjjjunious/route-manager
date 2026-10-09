@@ -12,6 +12,10 @@ The user explicitly requests careful, economical usage in every session.
 
 # Lessons Learned
 
+## 2026-10-08 — Native wrapping
+
+Capacitor cannot register HTTPS as an iOS custom scheme. Custom-scheme URL origin can be null; use location.href and protocol/host matching. Build only frontend assets for native packaging and exclude generated native bundles from TypeScript source checks. Normalize Windows-generated SPM paths through the sync script. Inspect Actions annotations before retrying: a billing lock prevents execution regardless of source correctness. An unsigned archive is not a distributable IPA.
+
 ## BlueAI visibility (2026-10-01)
 
 - Inspect lazy frontend chunks before concluding deployed code is missing from index*.js.

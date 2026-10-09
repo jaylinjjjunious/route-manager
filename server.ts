@@ -12,11 +12,14 @@ import { createTransitRouter } from "./server/transit/transitRoutes";
 import { createBlueAiRouter } from "./server/blueai/blueAiRoutes";
 import probationRouter from "./server/admin/probationRoutes";
 import adminRouter from "./server/admin/adminRoutes";
+import { nativeCors } from './server/nativeCors';
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
+app.use('/api', nativeCors);
+app.use('/shower-proof-assets', nativeCors);
 const PORT = Number(process.env.PORT || 3000);
 const REQUIRED_SHOWER_BARCODE = "075371003233";
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";

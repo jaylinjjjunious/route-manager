@@ -54,9 +54,10 @@ railway up
 ### Apple iOS Wrap (GitHub Actions)
 
 The app is wrapped into a native Apple iOS workspace via **Capacitor** (`@capacitor/core`, `@capacitor/ios`).
-- **Configuration:** `capacitor.config.ts` (`appId: 'com.allinone667.routeoptimizer'`, `webDir: 'dist'`).
-- **iOS Workspace:** `ios/App/App.xcworkspace`.
+- **Configuration:** `capacitor.config.ts` (`appId: 'com.allinone667.routeoptimizer'`, `webDir: 'dist-native'`, iOS scheme `capacitor`).
+- **iOS Project:** `ios/App/App.xcodeproj`, with Swift Package Manager dependencies. The previously documented top-level `.xcworkspace` does not exist.
 - **CI/CD Pipeline:** `.github/workflows/apple-wrap.yml` runs on `macos-latest`, compiles the web application, syncs Capacitor iOS assets, builds an Xcode archive (`App.xcarchive`), and uploads the zipped `.xcarchive` artifact to GitHub Actions.
+- **2026-10-08 draft:** Separate frontend-only build, native API routing/CORS, Browser plugin sync, permission strings and simulator artifact prepared on `codex/ios-wrap-readiness`. GitHub Actions is blocked by account billing; no native archive has been verified. See [iOS wrap guide](../../docs/IOS_WRAP.md).
 
 ### Environment Variables
 

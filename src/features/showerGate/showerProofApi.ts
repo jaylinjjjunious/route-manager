@@ -1,4 +1,5 @@
 import { supabase } from "../../lib/supabase";
+import { apiFetch } from '../../services/apiOrigin';
 import { authFetchJson } from "../../services/apiClient";
 
 export type ShowerProofUploadStatus = 'saved' | 'failed';
@@ -64,7 +65,7 @@ export const uploadShowerProof = async (input: UploadShowerProofInput): Promise<
   formData.append("barcode", input.barcode);
   formData.append("cycleId", input.cycleId);
 
-  let response = await fetch("/api/shower-proofs", {
+  let response = await apiFetch("/api/shower-proofs", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -82,7 +83,7 @@ export const uploadShowerProof = async (input: UploadShowerProofInput): Promise<
       throw new Error("Your session needs to be renewed. Sign in again to retry this upload.");
     }
 
-    response = await fetch("/api/shower-proofs", {
+    response = await apiFetch("/api/shower-proofs", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${refreshedSession.access_token}`,

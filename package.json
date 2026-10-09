@@ -17,7 +17,9 @@
     "checkpoint": "node scripts/checkpoint.cjs",
     "release": "node scripts/release.cjs",
     "cap:add:ios": "cap add ios",
-    "cap:sync": "cap sync ios",
+    "build:ios": "node scripts/build-ios.mjs",
+    "ios:prepare": "npm run build:ios && npm run cap:sync",
+    "cap:sync": "cap sync ios && node scripts/normalize-ios-spm.mjs",
     "cap:copy": "cap copy ios"
   },
   "dependencies": {

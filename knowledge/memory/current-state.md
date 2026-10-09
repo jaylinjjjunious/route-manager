@@ -1,5 +1,7 @@
 # Current Implementation State
 
+2026-10-08 iOS diversion: draft branch `codex/ios-wrap-readiness` prepares frontend-only bundling, valid local scheme, Browser SPM sync, permissions, native API/proof URL routing, exact-origin CORS, and simulator/unsigned archive workflow. Local validation passes; Mac compilation is blocked by a verified Actions billing lock. No native/device/signing/TestFlight readiness or deployed native CORS is claimed. See `docs/IOS_WRAP.md`.
+
 ## Phase
 
 **Phase 2 active.** Core features are built and deployed. Phase 3 (server sync, multi-user, team dashboard) has not started.
