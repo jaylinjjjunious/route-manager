@@ -7,7 +7,7 @@ The production integration owner and two legacy-test synthetic rows have been co
 
 ## High
 
-- **2026-10-09 simulator follow-up:** User has no Apple Developer membership or device available. Verify native startup/reopening on GitHub's iPhone simulator. Signing/TestFlight requires user enrollment; physical-device validation remains open.
+- **2026-10-09 simulator follow-up:** User has no Apple Developer membership/device. Cloud check 37951706894 timed out in Apple first-boot CoreLocationMigrator before app launch. Resume on a working Mac/runtime or with a documented runner fix; avoid unchanged retries. Signing/TestFlight requires user enrollment; physical-device validation remains open.
 
 - **2026-10-09 update:** Billing/config blockers cleared; Mac simulator and unsigned device builds plus uploads pass in run 37864986666 attempt 3. Next: simulator UI, reviewed native CORS production release, Apple signing and real-iPhone validation.
 

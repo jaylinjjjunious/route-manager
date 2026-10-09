@@ -1,5 +1,9 @@
 # Known Bugs
 
+## 2026-10-09 — Hosted simulator boot blocker
+
+Run 37951706894 job 113891862701: native simulator compilation passed, but xcrun simctl bootstatus timed out after 240 seconds during Apple first-boot data migration, last reported plugin CoreLocationMigrator. App was never installed/launched; no screenshot exists. This is not evidence of an app startup failure. Successful prior compiled artifacts remain in run 37864986666 attempt 3. Do not repeat unchanged runs without new runtime evidence.
+
 2026-10-09 supersedes the billing blocker below: Billing cleared, missing public Supabase client settings configured in Actions variables, and run 37864986666 attempt 3 simulator/archive builds and uploads pass. Native UI/device/signing validation remains pending.
 
 ## 2026-10-08 — iOS wrap blockers

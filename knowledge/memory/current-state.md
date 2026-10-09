@@ -1,6 +1,6 @@
 # Current Implementation State
 
-2026-10-09 follow-up: CI iPhone simulator startup/reopen screenshot capture added for user without Apple membership/device access. Real-auth native bundle remains unchanged. Capture execution and visual review pending; signed-in/camera/device flows remain open.
+2026-10-09 follow-up: capture code 5b61396 pushed. Run 37951706894 compiled but timed out in simulator first-boot CoreLocationMigrator before app launch. No startup screenshots; only simulator metadata artifact 11625913965. Native startup and signed-in/camera/device flows remain unverified. User has no Apple membership/device; successful prior native build artifacts remain available.
 
 2026-10-09: Billing and public client configuration blockers cleared. Run 37864986666 attempt 3 on Xcode 26.6 passed simulator compilation and unsigned device archive/upload. Both native artifacts exist. Simulator UI/device/signing and native CORS production deployment remain unverified; no installable IPA exists.
 

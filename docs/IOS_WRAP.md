@@ -8,7 +8,7 @@ Pushed implementation: `606abd1416d81994ab8e19e2f4bfd6ac5806a7dc`, [draft PR #9]
 
 ## Current state
 
-2026-10-09 follow-up: user has no Apple Developer Program membership and no device available. Added a cloud iPhone-simulator launch/reopen capture to the workflow. It installs the compiled native bundle with real authentication enabled and records signed-out startup screenshots for review; it does not authenticate or complete any real check-in. CI execution/visual review is pending. Paid Apple enrollment and physical-device testing remain external gates.
+2026-10-09 follow-up: user has no Apple Developer Program membership and no device available. Cloud launch/reopen capture is pushed at 5b61396. Run 37951706894 compiled the simulator app, but simctl bootstatus timed out after four minutes in Apple first-boot data migration (CoreLocationMigrator), before app install/launch. No startup screenshot was produced; artifact apple-ios-startup (11625913965) contains simulator metadata only. Startup/reopening remains unverified. No documented fix for this exact runner failure was found in the focused upstream check; do not repeat unchanged runs. Paid Apple enrollment and physical-device testing remain external gates. The successful simulator app/unsigned archive from run 37864986666 attempt 3 remain available.
 
 The Capacitor 8 project compiles as a bundled native app. App ID remains `com.allinone667.routeoptimizer`; display name remains All in One 667. Simulator and unsigned device compilation are verified; simulator UI and actual device behavior are **unverified**.
 
