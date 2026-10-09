@@ -7,6 +7,8 @@ The production integration owner and two legacy-test synthetic rows have been co
 
 ## High
 
+- **2026-10-09 simulator follow-up:** User has no Apple Developer membership or device available. Verify native startup/reopening on GitHub's iPhone simulator. Signing/TestFlight requires user enrollment; physical-device validation remains open.
+
 - **2026-10-09 update:** Billing/config blockers cleared; Mac simulator and unsigned device builds plus uploads pass in run 37864986666 attempt 3. Next: simulator UI, reviewed native CORS production release, Apple signing and real-iPhone validation.
 
 - **Active (2026-10-08, user diversion):** Prepare iOS wrap on `codex/ios-wrap-readiness`; Mac compilation is blocked by Actions billing. Follow `docs/IOS_WRAP.md` for simulator, native backend deployment, real iPhone/signing and TestFlight gates. Earlier CE verification remains open; BlueAI remains paused.

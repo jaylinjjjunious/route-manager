@@ -82,6 +82,19 @@ jobs:
             build/simulator/Build/Products/Debug-iphonesimulator/App.app \
             build/App-simulator.zip
 
+      - name: Launch iPhone simulator and capture startup
+        run: node scripts/ios-simulator-smoke.mjs
+        timeout-minutes: 8
+
+      - name: Upload native startup evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apple-ios-startup
+          path: build/ios-startup/
+          retention-days: 14
+          if-no-files-found: warn
+
       - name: Build Xcode Archive (.xcarchive)
         run: |
           xcodebuild -project ios/App/App.xcodeproj \

@@ -2,6 +2,8 @@
 
 ## Available Commands
 
+Native iOS CI runs `node scripts/ios-simulator-smoke.mjs` on a Mac after simulator compilation. It boots an available iPhone simulator, installs/launches the native app, captures first launch, terminates/reopens and captures again. `apple-ios-startup` artifacts require visual review. This does not establish signed-in account flows, physical camera behavior or real-device readiness.
+
 | Command | Purpose | Tool |
 |---------|---------|------|
 | `npm run lint` | Type-check the project | tsc --noEmit |

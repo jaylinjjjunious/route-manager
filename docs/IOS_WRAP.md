@@ -8,6 +8,8 @@ Pushed implementation: `606abd1416d81994ab8e19e2f4bfd6ac5806a7dc`, [draft PR #9]
 
 ## Current state
 
+2026-10-09 follow-up: user has no Apple Developer Program membership and no device available. Added a cloud iPhone-simulator launch/reopen capture to the workflow. It installs the compiled native bundle with real authentication enabled and records signed-out startup screenshots for review; it does not authenticate or complete any real check-in. CI execution/visual review is pending. Paid Apple enrollment and physical-device testing remain external gates.
+
 The Capacitor 8 project compiles as a bundled native app. App ID remains `com.allinone667.routeoptimizer`; display name remains All in One 667. Simulator and unsigned device compilation are verified; simulator UI and actual device behavior are **unverified**.
 
 Implemented on this branch:
