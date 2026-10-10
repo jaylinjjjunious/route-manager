@@ -135,3 +135,5 @@ React can defer functional state updaters: do not calculate an async save acknow
 ## 2026-10-10 — Security scan remediation
 
 13 findings verified against main; security branch in progress. See [remediation and remaining verification](../../docs/SECURITY_SCAN_2026_10_10.md). Preserve the separate iOS draft. Production quotas must use durable Supabase accounting because Render local files are ephemeral. Legacy unowned records are quarantined rather than silently assigned or deleted. Multi-replica atomic quotas, ownership-confirmed legacy import, retention/archival and remaining dependency advisories require explicit follow-up.
+
+Security admission limits must allow normal UI request pairs: Tools loads transit stops and alerts together. The live check caught a one-request account concurrency conflict; allow two, retain minute/month/global caps, and cover the pair in a regression test.

@@ -14,7 +14,7 @@ export function createRequestBudget(file = path.resolve('.local-security-budget/
   const active = new Map<string, number>();
   const policies: Record<string, Policy> = {
     ai: { minute: 10, month: 600, concurrent: 2 },
-    transit: { minute: 3, month: 500, concurrent: 1 },
+    transit: { minute: 3, month: 500, concurrent: 2 },
     proof: { minute: 3, month: 100, concurrent: 1 },
     probation: { minute: 10, month: 200, concurrent: 1 },
   };

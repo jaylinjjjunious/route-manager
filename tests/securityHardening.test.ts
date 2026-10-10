@@ -34,7 +34,7 @@ describe('security admission budgets', () => {
     vi.useFakeTimers();
     try {
       const budget = createRequestBudget('unused', { admit: async () => true });
-      const request = { path: '/transit/trip', userId: 'owner-a', destroyed: false } as unknown as Request;
+      const request = { path: '/probation-check-ins', method: 'POST', userId: 'owner-a', destroyed: false } as unknown as Request;
       const response = new EventEmitter() as EventEmitter & { destroyed: boolean; headersSent: boolean; setHeader: () => void; status: ReturnType<typeof vi.fn>; json: ReturnType<typeof vi.fn> };
       Object.assign(response, { destroyed: false, headersSent: false, setHeader: () => {}, status: vi.fn(() => response), json: vi.fn() });
       await new Promise<void>(resolve => budget(request, response as unknown as Response, () => resolve()));
@@ -48,6 +48,18 @@ describe('security admission budgets', () => {
       await new Promise<void>(resolve => budget(request, response as unknown as Response, () => resolve()));
       response.emit('finish');
     } finally { vi.useRealTimers(); }
+  });
+  it('admits the Tools screen pair of simultaneous transit requests', async () => {
+    const app = express();
+    app.use((req, _res, next) => { (req as typeof req & { userId: string }).userId = 'owner-a'; next(); });
+    app.use(createRequestBudget(await budgetFile()));
+    app.get(['/transit/nearby-stops', '/transit/alerts'], (_req, res) => setTimeout(() => res.json({ ok: true }), 50));
+    const server = app.listen(0);
+    await new Promise<void>(resolve => server.once('listening', resolve));
+    cleanups.push(() => new Promise<void>(resolve => server.close(() => resolve())));
+    const address = server.address() as { port: number };
+    const responses = await Promise.all(['/transit/nearby-stops', '/transit/alerts'].map(route => fetch(`http://127.0.0.1:${address.port}${route}`)));
+    expect(responses.map(response => response.status)).toEqual([200, 200]);
   });
   it('limits one owner without spending another owner allowance', async () => {
     const request = await budgetServer(await budgetFile());
