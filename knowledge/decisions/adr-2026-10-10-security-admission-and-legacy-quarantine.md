@@ -1,6 +1,6 @@
 # Durable security admission and legacy quarantine
 
-Status: implemented on the security remediation branch; release verification pending.
+Status: implemented and deployed to main/Render at d223cbe. Public release, authenticated sync and durable accounting verified; see the guide for remaining device/legacy-hosting checks.
 
 Render's free filesystem is ephemeral. Production request admission therefore records minimal service-role-only quota events in the existing Supabase activity table. This avoids a permissive fallback during storage outages and survives container replacement without adding a database permission or assigning old data to a new owner. Admission is serialized in the current single Express process; an atomic database counter RPC is required before horizontal scaling.
 

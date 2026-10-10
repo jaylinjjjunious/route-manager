@@ -48,7 +48,7 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
-**2026-10-10 security:** Latest Security Cloud scan: 13 findings on 02fb4436 (10 medium/3 low). Remediation in progress on codex/security-scan-hardening, separate from native iOS PR9. Contracts, preservation policy, quota limits and release evidence: docs/SECURITY_SCAN_2026_10_10.md. Do not describe findings as closed or code as deployed until verification is recorded.
+**2026-10-10 security:** Latest Security Cloud scan: 13 findings on 02fb4436 (10 medium/3 low). Remediation deployed from codex/security-scan-hardening to main/Render at d223cbe, separate from native iOS PR9. Contracts, preservation policy, quota limits and release evidence: docs/SECURITY_SCAN_2026_10_10.md. Public exact-SHA/health and anonymous image denial verified; authenticated account sync and durable quota event verified. No clean rescan/finding closure claimed. Remaining upstream build-tool alerts, legacy Sites deployment and real-photo/device verification are documented.
 
 
 **2026-10-08 header detail:** User requested a small green `10/12` immediately beside the 7 in AIØ17. Implemented as a fixed 11px marker in `AioHeader`; lint/build and 11 existing header tests pass. Deployed f561889 and personally verified the visible green marker in the signed-in public app.
@@ -200,7 +200,7 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 
 ## Resume Point
 
-**2026-10-10 security:** Latest Security Cloud scan: 13 findings on 02fb4436 (10 medium/3 low). Remediation in progress on codex/security-scan-hardening, separate from native iOS PR9. Contracts, preservation policy, quota limits and release evidence: docs/SECURITY_SCAN_2026_10_10.md. Do not describe findings as closed or code as deployed until verification is recorded.
+**2026-10-10 security:** Latest Security Cloud scan: 13 findings on 02fb4436 (10 medium/3 low). Remediation deployed from codex/security-scan-hardening to main/Render at d223cbe, separate from native iOS PR9. Contracts, preservation policy, quota limits and release evidence: docs/SECURITY_SCAN_2026_10_10.md. Public exact-SHA/health and anonymous image denial verified; authenticated account sync and durable quota event verified. No clean rescan/finding closure claimed. Remaining upstream build-tool alerts, legacy Sites deployment and real-photo/device verification are documented.
 
 **Superseding handoff (2026-10-05):** Application change d8d8ede is pushed, GitHub main verified, and public build-info/health confirm deployment. Console 96a3170 was fully discoverable and API/Sync/Auth/System/Copy verified signed-in; authenticated launch GET/POST returned 200 JSON. PendingSync acknowledgment bug reproduced and fixed; nine focused tests and lint/build pass after the fix (full 500-test suite passed for Diagnostics). Next: restore responsive production browser access, verify final pending=false/Saved to your account after a genuine launch/save/reload, then real-iPhone proof flow. Existing/fresh Edge app pages were blank on final post-deployment check; do not claim the final acknowledgment UI or iPhone verified. No further speculative 404 change. Continue afterward with races/account switches, ordinary-account isolation, recognition brainstorming, then iOS wrap.
 
@@ -279,4 +279,4 @@ Final 2026-10-05 release evidence: d8d8ede pushed and remote verified; public bu
 
 ### 2026-10-10 — Security Cloud review and hardening
 
-Verified all 13 findings against production main and started isolated remediation. Added pre-parser authentication, durable admission budgets, proof-byte/barcode validation and owner-only images, bounded proof/probation storage, isolated transit caches, production bypass removal, owner-scoped scans/conversations, retired legacy Worker APIs and locked Apple tooling. Validation and release remain in progress; see remediation guide. Native iOS draft is preserved on its original remote branch.
+Verified all 13 findings against production main and started isolated remediation. Added pre-parser authentication, durable admission budgets, proof-byte/barcode validation and owner-only images, bounded proof/probation storage, isolated transit caches, production bypass removal, owner-scoped scans/conversations, retired legacy Worker APIs and locked Apple tooling. Lint/build, 512 full-suite tests, 25 final focused tests and disposable production-server security checks pass. Public Render commit d223cbe/health and anonymous image 401 verified; signed-in account sync and durable quota events verified. Final paired-transit UI check passed (nearby stops and 12 live alerts together); see remediation guide. Native iOS draft is preserved on its original remote branch.
