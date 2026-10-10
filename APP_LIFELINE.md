@@ -48,6 +48,8 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
+**2026-10-10 non-iOS follow-through:** Reviewed unfinished Markdown work. Check-in account-lifetime gaps are fixed locally: generation-guarded proof/errors, sync cancellation and screen-track cleanup. Twenty-two focused tests, lint/build and disposable production-bundle ordinary-account checks pass; release verification pending. Scheduling weather/AQ and voice, durable inventory/proof storage and legacy ownership migration remain unfinished. Physical-device/provider/access-dependent checks stay open; BlueAI stays paused.
+
 **2026-10-10 security:** Latest Security Cloud scan: 13 findings on 02fb4436 (10 medium/3 low). Remediation deployed from codex/security-scan-hardening to main/Render at d223cbe, separate from native iOS PR9. Contracts, preservation policy, quota limits and release evidence: docs/SECURITY_SCAN_2026_10_10.md. Public exact-SHA/health and anonymous image denial verified; authenticated account sync and durable quota event verified. No clean rescan/finding closure claimed. Remaining upstream build-tool alerts, legacy Sites deployment and real-photo/device verification are documented.
 
 
@@ -144,7 +146,7 @@ Use this format for subsequent entries:
 
 ## Open Questions / Future Ideas
 
-No app-specific items have been verified yet. A future idea is not authorization to implement it.
+Current open work (2026-10-10): scheduling weather/AQ and voice phases; durable inventory/proof storage; explicit legacy ownership migration; atomic quotas before replicas and retention. Physical iPhone checks, separate ordinary-account production login, a supported CE recognition contract and legacy Sites access remain dependencies. Native iOS is excluded from the current task.
 
 For each item, use a stable ID such as Q-001 and record: the question or idea, its reason, status (idea / needs decision / planned / blocked), and the next useful step. Add relevant evidence and dependencies only if known. When resolved, remove it from this active list and retain the outcome in history or Active Decisions.
 
@@ -199,6 +201,8 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 - **Follow-up:** Verify signed-in sync works end-to-end after returning from official CE Check-In site.
 
 ## Resume Point
+
+**2026-10-10 non-iOS:** Account-lifetime fixes and automated ordinary-account coverage complete locally; release verification next. Tests/lint/build pass. Signed-in production is accessible and the prior pending=false/Saved acknowledgment is verified. Preserve the iOS draft and untracked dist-native. The next non-iOS work is listed at the top of knowledge/memory/current-priorities.md; earlier browser-access blockers below are historical.
 
 **2026-10-10 security:** Latest Security Cloud scan: 13 findings on 02fb4436 (10 medium/3 low). Remediation deployed from codex/security-scan-hardening to main/Render at d223cbe, separate from native iOS PR9. Contracts, preservation policy, quota limits and release evidence: docs/SECURITY_SCAN_2026_10_10.md. Public exact-SHA/health and anonymous image denial verified; authenticated account sync and durable quota event verified. No clean rescan/finding closure claimed. Remaining upstream build-tool alerts, legacy Sites deployment and real-photo/device verification are documented.
 

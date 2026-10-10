@@ -103,6 +103,8 @@ export function useProbationCheckIn(now: Date, ownerId?: string): ProbationCheck
   const [loadedOwner, setLoadedOwner] = useState<string | undefined>();
   const busy = useRef(false);
   const generation = useRef(0);
+  const syncController = useRef<AbortController | null>(null);
+  const captureStreams = useRef(new Set<MediaStream>());
   const [hasLegacyRecords, setHasLegacyRecords] = useState(() => loadRecords().length > 0);
   recordsRef.current = records;
   const record = (loadedOwner === ownerId ? records : []).find(item => item.monthKey === monthKey) || null;
@@ -122,7 +124,14 @@ export function useProbationCheckIn(now: Date, ownerId?: string): ProbationCheck
     recordsRef.current = cached;
     setRecords(cached);
     setLoadedOwner(ownerId);
+    setError("");
     setSyncStatus({ pendingSync: cached.some(r => !r.serverSynced) });
+    return () => {
+      generation.current++;
+      syncController.current?.abort();
+      captureStreams.current.forEach(stream => stream.getTracks().forEach(track => track.stop()));
+      captureStreams.current.clear();
+    };
   }, [ownerId, cacheKey]);
   useEffect(() => {
     if (ownerId && loadedOwner === ownerId) safeStorage.setItem(cacheKey, JSON.stringify(records.slice(-24)));
@@ -157,36 +166,54 @@ export function useProbationCheckIn(now: Date, ownerId?: string): ProbationCheck
   }, [device, updateCurrentRecord]);
 
   const attachProof = useCallback(async (file: File) => {
+    if (!ownerId || loadedOwner !== ownerId || ownerRef.current !== ownerId) return;
+    const run = generation.current;
+    const active = () => ownerRef.current === ownerId && generation.current === run;
     setError("");
     try {
       const dataUrl = await resizeProofImage(file);
+      if (!active()) return;
       saveProof(file.name || `ce-check-in-${monthKey}.jpg`, dataUrl);
     } catch (proofError) {
-      setError(proofError instanceof Error ? proofError.message : "Could not attach the screenshot.");
+      if (active()) setError(proofError instanceof Error ? proofError.message : "Could not attach the screenshot.");
     }
-  }, [monthKey, saveProof]);
+  }, [monthKey, saveProof, ownerId, loadedOwner]);
 
   const captureComputerProof = useCallback(async () => {
+    if (!ownerId || loadedOwner !== ownerId || ownerRef.current !== ownerId) return;
+    const run = generation.current;
+    const active = () => ownerRef.current === ownerId && generation.current === run;
+    let stream: MediaStream | undefined;
+    let video: HTMLVideoElement | undefined;
     setError("");
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-      const video = document.createElement("video");
+      stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+      captureStreams.current.add(stream);
+      if (!active()) return;
+      video = document.createElement("video");
       video.srcObject = stream;
       await video.play();
+      if (!active()) return;
       const canvas = document.createElement("canvas");
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       canvas.getContext("2d")?.drawImage(video, 0, 0);
-      stream.getTracks().forEach(track => track.stop());
       saveProof(`ce-check-in-${monthKey}.jpg`, canvas.toDataURL("image/jpeg", 0.72));
     } catch (captureError) {
+      if (!active()) return;
       if (captureError instanceof DOMException && captureError.name === "NotAllowedError") {
         setError("Screen capture was canceled. You can still attach a screenshot or self-confirm.");
       } else {
         setError("This browser could not capture the screen. Attach a screenshot instead.");
       }
+    } finally {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        captureStreams.current.delete(stream);
+      }
+      if (video) video.srcObject = null;
     }
-  }, [monthKey, saveProof]);
+  }, [monthKey, saveProof, ownerId, loadedOwner]);
 
   const openCeCheckIn = useCallback(() => {
     const at = new Date().toISOString();
@@ -221,6 +248,8 @@ export function useProbationCheckIn(now: Date, ownerId?: string): ProbationCheck
   const synchronize = useCallback(async () => {
     if (!ownerId || loadedOwner !== ownerId || busy.current) return;
     busy.current = true;
+    const controller = new AbortController();
+    syncController.current = controller;
     const run = generation.current;
     const active = () => ownerRef.current === ownerId && generation.current === run;
     setSyncStatus(prev => ({ ...prev, lastError: undefined, pendingSync: recordsRef.current.some(r => !r.serverSynced) }));
@@ -230,7 +259,7 @@ export function useProbationCheckIn(now: Date, ownerId?: string): ProbationCheck
       const postUrl = `${apiBase}/api/probation-check-ins`;
       
       
-      const response = await authFetchJson<{ records: ServerRecord[] }>(getUrl);
+      const response = await authFetchJson<{ records: ServerRecord[] }>(getUrl, { signal: controller.signal });
       if (!active()) return;
       if (!Array.isArray(response.records) || response.records.some(r => r.owner_id !== ownerId)) throw new Error('Account changed. Reload before saving.');
       let merged = new Map(recordsRef.current.map(r => [r.monthKey, r]));
@@ -241,6 +270,7 @@ export function useProbationCheckIn(now: Date, ownerId?: string): ProbationCheck
       for (const snapshot of next.filter(r => !r.serverSynced)) {
         if (!active()) return;
         const result = await authFetchJson<{ record: ServerRecord }>(postUrl, {
+          signal: controller.signal,
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...payload(snapshot), expectedOwnerId: ownerId }),
         });
@@ -256,7 +286,10 @@ export function useProbationCheckIn(now: Date, ownerId?: string): ProbationCheck
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Account sync failed. Please retry.';
       if (active()) setSyncStatus(prev => ({ ...prev, pendingSync: recordsRef.current.some(r => !r.serverSynced), lastError: errorMsg }));
-    } finally { if (active()) busy.current = false; }
+    } finally {
+      if (syncController.current === controller) syncController.current = null;
+      if (active()) busy.current = false;
+    }
   }, [ownerId, loadedOwner]);
   const syncToServer = synchronize;
   const loadFromServer = synchronize;

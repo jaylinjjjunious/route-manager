@@ -25,6 +25,9 @@ async function photo() {
 (async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'route-server-security-'));
   const rows = [];
+  const probationRows = Object.values(owners).map(owner_id => ({
+    owner_id, month_key: '2026-10', device: 'computer', events: [], updated_at: '2026-10-10T12:00:00Z',
+  }));
   let brokenAccounting = false;
   const database = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://mock');
@@ -46,6 +49,11 @@ async function photo() {
       }
       let body = ''; for await (const chunk of req) body += chunk;
       rows.push(JSON.parse(body)); res.writeHead(201); return res.end();
+    }
+    if (url.pathname === '/rest/v1/probation_check_ins') {
+      const matches = probationRows.filter(row => ['owner_id', 'month_key'].every(key => !url.searchParams.has(key) || url.searchParams.get(key) === `eq.${row[key]}`));
+      if (req.method === 'HEAD') { res.setHeader('Content-Range', `0-0/${matches.length}`); return res.end(); }
+      return res.end(JSON.stringify(req.headers.accept?.includes('pgrst.object') ? matches[0] || null : matches));
     }
     res.writeHead(404); res.end('{}');
   });
@@ -87,10 +95,23 @@ async function photo() {
     const history = await (await fetch(`${base}/api/shower-proofs`, { headers: auth('owner-b') })).json();
     assert.equal(history.proofs.length, 0, 'History must also be owner-scoped');
     assert.equal((await fetch(`${base}/api/transit/cache/clear`, { method: 'POST', headers: auth('owner-b') })).status, 403, 'Cache reset must require admin');
+    for (const owner of Object.keys(owners)) {
+      const response = await fetch(`${base}/api/probation-check-ins`, { headers: auth(owner) });
+      assert.equal(response.status, 200);
+      const account = await response.json();
+      assert.equal(account.records.length, 1);
+      assert.ok(account.records.every(row => row.owner_id === owners[owner]), 'Ordinary accounts must only load their own check-ins');
+      assert.equal((await fetch(`${base}/api/admin/probation`, { headers: auth(owner) })).status, 403, 'Ordinary accounts must not read the admin check-in feed');
+    }
+    const switchedSave = await fetch(`${base}/api/probation-check-ins`, {
+      method: 'POST', headers: { ...auth('owner-b'), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ expectedOwnerId: owners['owner-a'], monthKey: '2026-10', device: 'computer', events: [] }),
+    });
+    assert.equal(switchedSave.status, 409, 'An old account payload must not be saved using the next account token');
     brokenAccounting = true;
     assert.equal((await fetch(`${base}/api/dispatcher/tts`, { method: 'POST', headers: { ...auth('owner-a'), 'Content-Type': 'application/json' }, body: JSON.stringify({ text: 'Hello' }) })).status, 503, 'Accounting outages must fail closed before provider spend');
     assert.ok(rows.some(row => row.feature === 'security_budget' && row.owner_id === owners['owner-a']));
-    console.log('Production security checks passed: pre-parser auth, body caps, verified upload, private images, owner isolation, admin cache reset, durable accounting/fail-closed admission.');
+    console.log('Production security checks passed: pre-parser auth, body caps, verified upload, private images, owner isolation, ordinary-account check-in isolation, stale-account write denial, admin cache reset, durable accounting/fail-closed admission.');
   } finally {
     if (child) { child.kill(); await new Promise(resolve => child.once('exit', resolve)); }
     await close(database);

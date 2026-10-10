@@ -12,6 +12,8 @@ The user explicitly requests careful, economical usage in every session.
 
 # Lessons Learned
 
+Account identity alone does not distinguish an old operation from a new lifetime of the same account. Guard delayed proof work with owner plus generation, invalidate on unmount, cancel sync requests and release capture tracks in finally. Deferred-response tests reproduce races without changing genuine production check-ins.
+
 ## BlueAI visibility (2026-10-01)
 
 - Inspect lazy frontend chunks before concluding deployed code is missing from index*.js.

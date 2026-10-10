@@ -45,7 +45,9 @@ Monthly records use account-scoped browser caches under `aio_probation_check_ins
 - Owner-scoped caches and request/account guards prevent responses from acknowledging another account's edits. Dirty proof/events are merged; completion is retained.
 - Failed saves stay pending with a visible error. Records and their activity entries commit in one database transaction; normalized request hashes deduplicate retries.
 - Activity actions are check_in_saved, proof_attached, or check_in_completed, with owner/month linkage and minimal metadata. Authenticated clients cannot write directly around server audit.
-- Live import, save acknowledgment, reload, Supabase/activity rows, and same-account Edge loading are verified. Screenshot attachment/capture on real devices and in-flight sync race checks remain unverified.
+- Live import, save acknowledgment, reload, Supabase/activity rows, and same-account Edge loading are verified. Automated late GET/POST account switches, overlapping edits, delayed A→B→A proof processing, stale errors, abort-on-switch/unmount and screen-track cleanup pass (2026-10-10). Two ordinary identities are isolated in disposable production-bundle checks, including stale-account save rejection and admin denial. Actual second-account production login and physical-device capture remain unverified.
+
+Account changes and authenticated-app unmount invalidate the operation generation, abort active sync requests and stop active screen-sharing tracks. Delayed proof work checks owner plus generation before storing data or reporting errors. Video preparation failure always releases tracks. Failed legitimate saves remain pending. No provider completion is fabricated.
 ## Job Enforcement
 
 The probation lock composes with the existing shower gate through the shared `jobAccessReady` boundary in `App.tsx`. While locked, schedule information and job details remain viewable, but navigation, status/lifecycle actions, Ride Mode, adding, optimization, moving, review, and completion are blocked or disabled.

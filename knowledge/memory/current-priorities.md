@@ -1,5 +1,14 @@
 # Current Priorities
 
+## Current non-iOS work (reviewed 2026-10-10)
+
+- Check-in account-lifetime fixes implemented: 22 focused tests, disposable production-bundle account isolation checks, lint and build pass. Release verification is next. Earlier normal Saved/pending=false acknowledgment and browser access are now verified.
+- Next development: finish live Phase 1 scheduling interactions, then approved weather/air-quality and voice summary phases. Durable inventory custody sync and owner-confirmed legacy browser-data migration remain unimplemented.
+- Infrastructure: durable proof files, database-atomic quotas before replicas, retention/archival, the unpatched build-tool chain and inaccessible legacy Sites publication. Preserve existing data.
+- Access-dependent checks: physical iPhone camera/PWA/Preview Guide/procedure flows and separate ordinary-account production login. Automatic CE recognition requires a supported receipt/API contract. BlueAI stays paused. Native iOS work is excluded.
+
+This current list supersedes older pending release/access statements below; retain dated entries as history.
+
 ## BlueAI follow-through (2026-10-01)
 
 The production integration owner and two legacy-test synthetic rows have been corrected to the newer signed-in account. Completed 2026-10-02: personally verified both synthetic records and successful sync in production Jobs. No further debugging is needed for this visibility issue. Do not alter Barrister records. Supabase-backed export storage is already implemented, superseding the older priority below to provision a private data directory for this path. Render is the production target requested by the user.
