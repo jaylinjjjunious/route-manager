@@ -27,7 +27,7 @@ export interface UploadShowerProofInput {
   imageBlob: Blob;
 }
 
-async function getFreshAccessToken(): Promise<string> {
+export async function getFreshAccessToken(): Promise<string> {
   const {
     data: { session },
     error,

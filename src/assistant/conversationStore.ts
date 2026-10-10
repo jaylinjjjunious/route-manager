@@ -1,12 +1,14 @@
 import { useState, useCallback, useRef } from 'react';
 import type { AssistantMessage, ToolCall } from './assistantTypes';
 
+import { getStorageOwner, readOwnedStorage, writeOwnedStorage, removeOwnedStorage } from '../utils/ownerStorage';
+
 const STORAGE_KEY = 'assistant_conversation';
 const MAX_MESSAGES = 100;
 
 function loadMessages(): AssistantMessage[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = readOwnedStorage(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
   } catch {}
   return [];
@@ -14,15 +16,17 @@ function loadMessages(): AssistantMessage[] {
 
 function saveMessages(messages: AssistantMessage[]): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-MAX_MESSAGES)));
+    writeOwnedStorage(STORAGE_KEY, JSON.stringify(messages.slice(-MAX_MESSAGES)));
   } catch {}
 }
 
 export function useConversationStore() {
   const [messages, setMessages] = useState<AssistantMessage[]>(() => loadMessages());
   const idCounter = useRef(0);
+  const owner = useRef(getStorageOwner());
 
   const addMessage = useCallback((msg: Omit<AssistantMessage, 'id' | 'timestamp'>) => {
+    if (owner.current !== getStorageOwner()) return { ...msg, id: "discarded", timestamp: Date.now() } as AssistantMessage;
     idCounter.current += 1;
     const message: AssistantMessage = {
       ...msg,
@@ -38,6 +42,7 @@ export function useConversationStore() {
   }, []);
 
   const updateMessage = useCallback((id: string, updates: Partial<AssistantMessage>) => {
+    if (owner.current !== getStorageOwner()) return;
     setMessages(prev => {
       const next = prev.map(m => m.id === id ? { ...m, ...updates } : m);
       saveMessages(next);
@@ -46,8 +51,9 @@ export function useConversationStore() {
   }, []);
 
   const clearMessages = useCallback(() => {
+    if (owner.current !== getStorageOwner()) return;
     setMessages([]);
-    localStorage.removeItem(STORAGE_KEY);
+    removeOwnedStorage(STORAGE_KEY);
   }, []);
 
   const addUserMessage = useCallback((text: string) => {

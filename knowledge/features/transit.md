@@ -19,7 +19,7 @@ Native bus/short-haul transit assistance for the All in One 667 field app using 
 
 - `transitTypes.ts` — canonical normalized models plus raw upstream shapes (duplicated from `src/types.ts` by convention since the server bundle cannot import client code).
 - `transitApiClient.ts` — builds upstream URLs with `new URL(base + pathname)` (base carries the `/v4` path), sends the `apiKey` header, maps HTTP errors and upstream 200-with-error to `TransitApiError` codes, and retries once on network failure only.
-- `transitCache.ts` — in-memory TTL cache with capacity; `get()` retains expired entries so `getStale()` can serve them (stale-while-revalidate). `POST /api/transit/cache/clear` resets it.
+- `transitCache.ts` — in-memory TTL cache with capacity; `get()` retains expired entries so `getStale()` can serve them (stale-while-revalidate). `POST /api/transit/cache/clear` requires an authenticated admin and resets it.
 - `transitRateLimiter.ts` — sliding-window 5/min limiter with pending/in-flight accounting and `release()` on network-level failures.
 - `transitBudget.ts` — durable monthly budget guard (1,500 req/month in `America/Los_Angeles`): `canSpend`/`record` per upstream-reaching request, warning (70%) / reduce (85%) / reserve (95%) thresholds, low-priority categories (`alerts`, `networks`) throttled first, `plan`/`arrivals` reserved, persisted JSON, status snapshot for `/api/transit/status`.
 - `transitService.ts` — orchestration: fresh-cache-first, in-flight dedupe (same key = shared promise), bounded queue (max 8, 45s wait), stale-while-revalidate background refresh, network-id resolution, budget-gated stale fallback, normalizers (`normalizeArrivals`, `normalizeAlert`, `normalizeAlerts`, `normalizePlan` exported for tests), status aggregation. Trip normalization matches a departure to its route, uses plan stop offsets/schedule items for exact boarding and exit stops, and labels route-list fallbacks as inferred.
@@ -140,3 +140,7 @@ The JWT is validated server-side; the upstream `TRANSIT_API_KEY` never leaves th
 ## Last Updated
 
 2026-08-02 (trip-plan stop accuracy: exact/inferred/unavailable rider stops, route metadata, scheduled/realtime timing)
+
+## 2026-10-10 security hardening
+
+Superseding security contracts, limits, data-preservation decisions and release status are recorded in [Security Cloud remediation](../../docs/SECURITY_SCAN_2026_10_10.md). Public proof URLs, unrestricted production workspace bypass, global trip-coordinate cache reuse and unauthenticated legacy Worker APIs described in older sections are superseded by that document.

@@ -242,3 +242,7 @@ No automated tests exist for the Shower Gate feature. Manual testing covers:
 ## Last Updated
 
 2026-08-08 (battery extraction audit: corrected protected-tab overlay scope for current three-tab flow)
+
+## 2026-10-10 security hardening
+
+Superseding security contracts, limits, data-preservation decisions and release status are recorded in [Security Cloud remediation](../../docs/SECURITY_SCAN_2026_10_10.md). Public proof URLs, unrestricted production workspace bypass, global trip-coordinate cache reuse and unauthenticated legacy Worker APIs described in older sections are superseded by that document.

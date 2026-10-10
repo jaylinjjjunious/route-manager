@@ -17,6 +17,10 @@ export function normalizeProbationRecord(input: unknown) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Expected a check-in record.');
   const r = input as Record<string, unknown>;
   if (typeof r.monthKey !== 'string' || !/^\d{4}-(0[1-9]|1[0-2])$/.test(r.monthKey)) throw new Error('Invalid reporting month.');
+  const now = new Date();
+  const currentMonth = now.getUTCFullYear() * 12 + now.getUTCMonth();
+  const requestedMonth = Number(r.monthKey.slice(0, 4)) * 12 + Number(r.monthKey.slice(5)) - 1;
+  if (requestedMonth > currentMonth || requestedMonth < currentMonth - 23) throw new Error('Reporting month must be within the current 24-month reporting window.');
   if (typeof r.device !== 'string' || !devices.has(r.device)) throw new Error('Invalid device.');
   if (r.verificationLevel === 'provider_verified') throw new Error('Provider verification requires independent server evidence.');
   if (r.verificationLevel != null && !['self_confirmed', 'screenshot_documented'].includes(String(r.verificationLevel))) throw new Error('Invalid verification level.');

@@ -7,7 +7,7 @@ import type { Job } from '../src/types';
 let root: Root;
 let container: HTMLDivElement;
 const job: Job = { id: 'test', storeName: 'Vons', address: '5201 White Ln', pay: 25, estimatedMinutes: 30, jobType: 'retail_audit', dueTime: '17:00', notes: '', status: 'ready', routeId: 'A', coordinates: { lat: 35, lng: -119 } };
-let onClose: ReturnType<typeof vi.fn>;
+let onClose: ReturnType<typeof vi.fn<() => void>>;
 beforeEach(() => {
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
   vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => { cb(0); return 0; });

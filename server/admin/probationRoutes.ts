@@ -35,6 +35,16 @@ router.get("/current", async (req: Request, res: Response) => {
   } catch { res.status(503).json({ error: "Could not load account check-in. Please retry." }); }
 });
 async function save(ownerId: string, record: ReturnType<typeof normalizeProbationRecord>) {
+  // Bound permanent records and audit growth, including changes to cosmetic fields.
+  // No historical rows are deleted or assigned to a different owner.
+  const monthStart = new Date(); monthStart.setUTCDate(1); monthStart.setUTCHours(0, 0, 0, 0);
+  const [existing, records, activity] = await Promise.all([
+    database!.from('probation_check_ins').select('month_key').eq('owner_id', ownerId).eq('month_key', record.monthKey).maybeSingle(),
+    database!.from('probation_check_ins').select('month_key', { count: 'exact', head: true }).eq('owner_id', ownerId),
+    database!.from('activity_log').select('id', { count: 'exact', head: true }).eq('owner_id', ownerId).eq('feature', 'probation').gte('created_at', monthStart.toISOString()),
+  ]);
+  if (existing.error || records.error || activity.error) throw new Error('Storage accounting unavailable.');
+  if ((!existing.data && (records.count ?? 24) >= 24) || (activity.count ?? 200) >= 200) throw new Error('Account storage quota reached.');
   const { data, error } = await database!.rpc("save_probation_with_activity", {
     p_owner_id: ownerId, p_month_key: record.monthKey, p_record: record,
     p_idempotency_key: probationRequestKey(ownerId, record),

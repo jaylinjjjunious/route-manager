@@ -47,7 +47,7 @@ server.ts → bootstrap()
 | POST | `/api/import/ocr` | JWT | Screenshot OCR via Gemini 2 |
 | POST | `/api/errors` | JWT | Client error reports (sanitized batch → `.local-error-reports/`) |
 | GET | `/api/transit/status` | JWT | Transit service + rate-limit + cache status |
-| POST | `/api/transit/cache/clear` | JWT | Reset the in-memory transit cache |
+| POST | `/api/transit/cache/clear` | JWT + admin | Reset the in-memory transit cache |
 | GET | `/api/transit/nearby-stops` | JWT | Nearby stops (lat, lon, radiusMeters, limit) |
 | GET | `/api/transit/stops/:stopId/arrivals` | JWT | Live arrivals for a stop |
 | POST | `/api/transit/trip-plan` | JWT | Plan a transit trip |
@@ -82,7 +82,7 @@ Error codes: `TRANSIT_NOT_CONFIGURED` (503), `TRANSIT_RATE_LIMITED` (429), `TRAN
 
 #### Proof Storage (Express)
 
-Proof images are stored on the local filesystem under `local-shower-proofs/` directory. Served statically via Express at `/shower-proof-assets`.
+Proof images are stored under `.local-shower-proofs/`. The `/shower-proof-assets/:filename` endpoint requires authentication and exact proof-owner matching; it serves private JPEG responses with no-store caching. No public static proof directory is mounted.
 
 #### Gemini Client
 
@@ -141,3 +141,7 @@ Receives FormData with `barcode`, `image` (Blob), `cycleId`, `localDate`, `captu
 ## Last Updated
 
 2026-10-02 (add admin portal, activity log, probation durable storage)
+
+## 2026-10-10 security hardening
+
+Superseding security contracts, limits, data-preservation decisions and release status are recorded in [Security Cloud remediation](../../docs/SECURITY_SCAN_2026_10_10.md). Public proof URLs, unrestricted production workspace bypass, global trip-coordinate cache reuse and unauthenticated legacy Worker APIs described in older sections are superseded by that document.

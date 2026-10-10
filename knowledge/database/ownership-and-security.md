@@ -24,9 +24,9 @@ Authentication is handled by **Supabase Auth**:
 - The user signs in via Supabase (email/password, magic link, or social provider).
 - The session provides a JWT containing the user's `sub` (user ID).
 - The Express server validates this JWT via `requireAuth` middleware.
-- The Worker does **not** validate JWTs at the middleware level.
+- Legacy Worker data APIs are retired with HTTP 410 before handler/database access.
 
-**Implication:** The Express server can identify the user; the Worker cannot.
+**Implication:** Express enforces account ownership; unattributed Worker data cannot be reassigned without an owner-confirmed migration.
 
 ---
 
@@ -48,18 +48,15 @@ server-configured Supabase owner UUID; request bodies cannot override it.
 Authenticated feeds only return that user's records. Browser merging also
 checks the owner. This does not migrate other legacy data namespaces.
 
-### Express Backend (Railway)
+### Express Backend (Render)
 
-- All proof records are stored in a **single local JSON file** and `local-shower-proofs/` directory.
-- There is **no per-user data partitioning** — all proofs share one namespace.
-- Since the app is single-user, this is acceptable, but it means:
-  - If a second user authenticates, they see the same data.
-  - Data cannot be separated by user ID without schema changes.
+- Proof metadata shares a bounded local index, but reads and private image requests require matching authenticated owner IDs. New writes never evict another account.
+- Local disk remains deployment-dependent; durable object storage is still future work.
 
 ### Cloudflare Worker (D1)
 
 - The `shower_proof_records` table has **no `user_id` column**.
-- All users share the same table and can query all records.
+- Historical rows are unowned; legacy APIs are retired in source and these rows remain preserved. The old deployment is unverified.
 - The `habit_state` table is keyed by a string key, not a user ID.
 - The `shower_proofs` (legacy) table similarly has no user isolation.
 
@@ -71,11 +68,11 @@ checks the owner. This does not migrate other legacy data namespaces.
 
 | Concern | Status | Risk |
 |---------|--------|------|
-| Multi-user data isolation | Not implemented | Low (single-user app) |
-| Worker auth enforcement | No middleware auth | Medium — endpoints are publicly callable |
+| Multi-user data isolation | Server proof/Supabase and scan/conversation ownership enforced | Remaining legacy browser namespaces require migration |
+| Worker legacy APIs | Retired with HTTP 410 in source | Old Sites publication remains unverified |
 | Image storage in D1 | Base64 data URLs in TEXT columns | Low — D1 has size limits; large images could exceed them |
 | Local file storage (Express) | No encryption | Low — server is trusted |
-| JWT validation | Express-only | Worker endpoints trust the client |
+| JWT validation | Express server enforces authentication | Retired Worker data APIs do not process requests |
 | CORS | Not explicitly configured | Low — same-origin for Express; Worker may need CORS headers |
 
 ### Recommendations
@@ -96,7 +93,11 @@ User → Supabase Auth (JWT)
 Frontend (authFetchJson injects Bearer token)
   ↓
 Express (requireAuth validates JWT) → Local file storage
-Cloudflare Worker (no auth check) → D1 database
+Cloudflare Worker legacy data APIs → HTTP 410 (D1 preserved)
 ```
 
 The Worker acts as a separate data store. Currently both backends may hold overlapping proof data, but they are not synchronized.
+
+## 2026-10-10 security hardening
+
+Superseding security contracts, limits, data-preservation decisions and release status are recorded in [Security Cloud remediation](../../docs/SECURITY_SCAN_2026_10_10.md). Public proof URLs, unrestricted production workspace bypass, global trip-coordinate cache reuse and unauthenticated legacy Worker APIs described in older sections are superseded by that document.

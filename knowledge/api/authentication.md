@@ -77,7 +77,7 @@ The Express server (`server.ts`) uses a `requireAuth` middleware function on pro
 
 ## Worker Authentication
 
-The Cloudflare Worker (`worker/index.ts`) does **not** enforce JWT authentication at the middleware level. All routes are publicly accessible. Authentication is expected to be handled at the application level (e.g., the frontend only calls authenticated routes when a valid session exists).
+The legacy Worker habits, proof and safety-news APIs are retired with HTTP 410 before body parsing or database access. Existing unattributed D1 data remains preserved. The current Express API validates Supabase authentication on the server. Publication of the old Worker is unverified because its recorded Sites project is unavailable in the connected account.
 
 This means the Worker endpoints are technically callable without a token. The client-side `authFetchJson` wrapper still injects tokens, but the Worker does not verify them.
 
@@ -95,3 +95,7 @@ This means the Worker endpoints are technically callable without a token. The cl
 | **Error Handling** | Manual | Centralized in `apiClient.ts` |
 
 The legacy Worker endpoints (e.g., `GET /api/shower-proof?cycleKey=`) have no auth. They were replaced by the authenticated `/api/shower-proofs/*` routes on the Express server.
+
+## 2026-10-10 security hardening
+
+Superseding security contracts, limits, data-preservation decisions and release status are recorded in [Security Cloud remediation](../../docs/SECURITY_SCAN_2026_10_10.md). Public proof URLs, unrestricted production workspace bypass, global trip-coordinate cache reuse and unauthenticated legacy Worker APIs described in older sections are superseded by that document.

@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     hostname: window.location.hostname,
   });
   const workspaceBypassAvailable =
-    localAuthBypassAvailable || import.meta.env.VITE_PUBLIC_WORKSPACE_BYPASS === "true";
+    localAuthBypassAvailable;
 
   useEffect(() => {
     mountedRef.current = true;

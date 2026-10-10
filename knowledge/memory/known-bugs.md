@@ -102,3 +102,7 @@ P017 remains unverified on iPhone; Edge launch sync now returns GET/POST 200 JSO
 
 ## 2026-10-05 — Final release handoff
 Stale pending acknowledgment fixed and deployed at d8d8ede; regression/lint/build pass. Final UI/reload validation unavailable because production browser pages became blank after deployment. Prior authenticated launch requests returned 200 JSON, so original P017 cause remains unknown rather than proven resolved.
+
+## 2026-10-10 — Security scan remediation
+
+13 findings verified against main; security branch in progress. See [remediation and remaining verification](../../docs/SECURITY_SCAN_2026_10_10.md). Preserve the separate iOS draft. Production quotas must use durable Supabase accounting because Render local files are ephemeral. Legacy unowned records are quarantined rather than silently assigned or deleted. Multi-replica atomic quotas, ownership-confirmed legacy import, retention/archival and remaining dependency advisories require explicit follow-up.

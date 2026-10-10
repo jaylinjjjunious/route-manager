@@ -22,15 +22,15 @@ jobs:
           node-version: 22
           cache: 'npm'
 
+      - name: Install dependencies
+        run: npm ci
+
       - name: Diagnostics — versions
         run: |
           echo "Node: $(node --version)"
           echo "npm:  $(npm --version)"
-          echo "Capacitor CLI: $(npx cap --version)"
+          echo "Capacitor CLI: $(./node_modules/.bin/cap --version)"
           echo "Xcode: $(xcodebuild -version | head -n 1)"
-
-      - name: Install dependencies
-        run: npm ci
 
       - name: Build Web Application
         run: npm run build
@@ -38,7 +38,7 @@ jobs:
           VITE_TRANSIT_PROVIDER: ${{ secrets.VITE_TRANSIT_PROVIDER || 'transit' }}
 
       - name: Sync Capacitor iOS platform
-        run: npx cap sync ios
+        run: ./node_modules/.bin/cap sync ios
 
       - name: Diagnostics — Xcode project
         run: |

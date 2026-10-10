@@ -666,20 +666,11 @@ const worker = {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
-    if (url.pathname === "/api/habits") {
-      return handleHabitsApi(request, env);
-    }
-
-    if (url.pathname === "/api/shower-proof") {
-      return handleShowerProofApi(request, env);
-    }
-
-    if (url.pathname === "/api/shower-proofs" || url.pathname.startsWith("/api/shower-proofs/")) {
-      return handleShowerProofRecordsApi(request, env);
-    }
-
-    if (url.pathname === "/api/safety-news") {
-      return handleSafetyNewsApi(request);
+    // Singleton legacy records have no trustworthy owner. Preserve data and fail closed.
+    if (url.pathname === '/api/habits' || url.pathname === '/api/shower-proof'
+      || url.pathname === '/api/shower-proofs' || url.pathname.startsWith('/api/shower-proofs/')
+      || url.pathname === '/api/safety-news') {
+      return jsonResponse({ error: 'Legacy API retired. Use the authenticated Route Manager service.', code: 'LEGACY_API_RETIRED' }, { status: 410 });
     }
 
     if (url.pathname === "/_vinext/image") {

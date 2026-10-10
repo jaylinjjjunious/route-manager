@@ -131,3 +131,7 @@ Absolute URLs and local tests do not prove a 404 cause. Capture actual response 
 
 ## 2026-10-05 — Production evidence and acknowledgment
 React can defer functional state updaters: do not calculate an async save acknowledgment from a ref updated only inside setState. Update the ref from the current records synchronously, then schedule the render; retain fingerprint/account guards.
+
+## 2026-10-10 — Security scan remediation
+
+13 findings verified against main; security branch in progress. See [remediation and remaining verification](../../docs/SECURITY_SCAN_2026_10_10.md). Preserve the separate iOS draft. Production quotas must use durable Supabase accounting because Render local files are ephemeral. Legacy unowned records are quarantined rather than silently assigned or deleted. Multi-replica atomic quotas, ownership-confirmed legacy import, retention/archival and remaining dependency advisories require explicit follow-up.

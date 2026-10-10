@@ -13,7 +13,7 @@ function getGeminiClient(): GoogleGenAI {
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY environment variable is not set.");
   }
-  return new GoogleGenAI({ apiKey });
+  return new GoogleGenAI({ apiKey, httpOptions: { timeout: 60_000 } });
 }
 
 export function createAssistantRouter(requireAuth: any): Router {
@@ -23,7 +23,7 @@ export function createAssistantRouter(requireAuth: any): Router {
     try {
       const { message, context, history } = req.body as AssistantRequestBody;
 
-      if (!message) {
+      if (typeof message !== "string" || !message.trim() || message.length > 8000 || (history && (!Array.isArray(history) || history.length > 20 || history.some(h => typeof h?.text !== "string" || h.text.length > 8000)))) {
         return res.status(400).json({ error: "Missing message in request body." });
       }
 
@@ -54,6 +54,7 @@ ${historyStr || "No prior conversation."}`;
         model: "gemini-3.5-flash",
         contents: message,
         config: {
+          maxOutputTokens: 2048,
           systemInstruction: systemPrompt,
           responseMimeType: "application/json",
           responseSchema: {

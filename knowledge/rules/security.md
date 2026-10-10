@@ -31,9 +31,8 @@
 - BlueAI is owner-scoped on the server and imported browser records carry that
   owner. The legacy storage limitations below still apply to other app data.
 
-- There is **no per-user data isolation** — all users share the same storage namespace.
-- This is a known limitation (see `knowledge/memory/known-bugs.md`).
-- Proof images and job data are not partitioned by user.
+- Express proof records/images, Supabase records, scan sessions/photos and assistant conversations enforce account ownership.
+- Other legacy browser job/habit namespaces still require a separate owner-confirmed migration (see `knowledge/memory/known-bugs.md`). Unowned history is preserved, not assigned silently.
 
 ## Input Validation
 
@@ -61,3 +60,7 @@
 ---
 
 **Last Updated:** 2026-08-03 (local sign-in bypass safeguards)
+
+## 2026-10-10 security hardening
+
+Superseding security contracts, limits, data-preservation decisions and release status are recorded in [Security Cloud remediation](../../docs/SECURITY_SCAN_2026_10_10.md). Public proof URLs, unrestricted production workspace bypass, global trip-coordinate cache reuse and unauthenticated legacy Worker APIs described in older sections are superseded by that document.

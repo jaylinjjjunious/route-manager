@@ -15,6 +15,7 @@
  */
 
 import { Router } from "express";
+import { requireAdmin } from "../admin/auth";
 import { TransitService, DEFAULT_NEARBY_RADIUS_METERS } from "./transitService";
 import { isTransitError, TransitErrorCode } from "./transitTypes";
 
@@ -45,7 +46,7 @@ export function createTransitRouter(requireAuth: (req: unknown, res: unknown, ne
     res.json(service.getStatus());
   });
 
-  router.post("/cache/clear", requireAuth, (_req, res) => {
+  router.post("/cache/clear", requireAdmin, (_req, res) => {
     const cleared = service.clearCache();
     res.json({ ok: true, ...cleared });
   });
@@ -81,7 +82,7 @@ export function createTransitRouter(requireAuth: (req: unknown, res: unknown, ne
         departureTime?: string;
         arrivalTime?: string;
       };
-      const result = await service.planTrip(origin, destination, departureTime, arrivalTime);
+      const result = await service.planTrip(origin, destination, departureTime, arrivalTime, (req as typeof req & { userId?: string }).userId);
       res.json(result);
     } catch (err) {
       handleError(res, err);

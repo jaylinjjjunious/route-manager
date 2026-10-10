@@ -12,6 +12,9 @@ import { createTransitRouter } from "./server/transit/transitRoutes";
 import { createBlueAiRouter } from "./server/blueai/blueAiRoutes";
 import probationRouter from "./server/admin/probationRoutes";
 import adminRouter from "./server/admin/adminRoutes";
+import { createDurableBudget } from "./server/security/durableBudget";
+import { validateProofImage } from "./server/security/proofImage";
+import { createRequestBudget } from "./server/security/requestBudget";
 
 // Load environment variables
 dotenv.config();
@@ -64,7 +67,7 @@ interface LocalShowerProofRecord {
 
 const uploadProofImage = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 15 * 1024 * 1024 },
+  limits: { fileSize: 5 * 1024 * 1024, files: 1, fields: 5, fieldSize: 1024, parts: 6 },
   fileFilter: (_req, file, cb) => {
     if (file.mimetype === "image/jpeg" || file.mimetype === "image/png" || file.mimetype === "image/webp") {
       cb(null, true);
@@ -74,19 +77,23 @@ const uploadProofImage = multer({
   },
 }).single("proofImage");
 
-const readLocalShowerProofs = async (): Promise<LocalShowerProofRecord[]> => {
+const readLocalShowerProofs = async (strict = false): Promise<LocalShowerProofRecord[]> => {
   try {
     const text = await fs.readFile(showerProofMetadataPath, "utf8");
     const records = JSON.parse(text) as LocalShowerProofRecord[];
+    if (!Array.isArray(records) && strict) throw new Error("Invalid proof metadata.");
     return Array.isArray(records) ? records : [];
-  } catch {
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+    if (strict) throw error;
     return [];
   }
 };
 
 const writeLocalShowerProofs = async (records: LocalShowerProofRecord[]) => {
   await fs.mkdir(showerProofRoot, { recursive: true });
-  await fs.writeFile(showerProofMetadataPath, JSON.stringify(records, null, 2));
+  await fs.writeFile(`${showerProofMetadataPath}.tmp`, JSON.stringify(records, null, 2));
+  await fs.rename(`${showerProofMetadataPath}.tmp`, showerProofMetadataPath);
 };
 
 const normalizeLocalCycleId = (value: unknown) => {
@@ -122,10 +129,6 @@ const readErrorReports = async (): Promise<ErrorReportRecord[]> => {
   }
 };
 
-app.use("/shower-proof-assets", express.static(showerProofImageRoot, {
-  setHeaders: (res) => res.setHeader("Cache-Control", "private, no-store"),
-}));
-
 // Bridge has its own small parser and machine authentication, before screenshot parsing.
 app.use('/api/integrations/blueai', createBlueAiRouter(requireAuth, {
   token: process.env.BLUEAI_INGEST_TOKEN,
@@ -133,9 +136,22 @@ app.use('/api/integrations/blueai', createBlueAiRouter(requireAuth, {
   admin: serverSupabaseAdmin,
 }));
 
-// Body parser with 15MB limit for Base64 screenshot uploads
-app.use(express.json({ limit: '15mb' }));
-app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+// Authenticate before allocating application bodies. Machine ingest has its own guard.
+app.use('/api', (req, res, next) => {
+  const publicGet = req.method === 'GET' && ['/health', '/build-info', '/debug/auth-check', '/verification/inventory-session'].includes(req.path);
+  return publicGet ? next() : requireAuth(req, res, next);
+});
+app.use('/api', createRequestBudget(undefined, createDurableBudget(serverSupabaseAdmin)));
+const smallJson = express.json({ limit: '128kb' });
+const proofJson = express.json({ limit: '3mb' });
+const ocrJson = express.json({ limit: '6mb' });
+const batchJson = express.json({ limit: '15mb' });
+app.use('/api', (req, res, next) => {
+  const parser = ['/probation-check-ins/sync', '/import/preview-summary'].includes(req.path) ? batchJson
+    : req.path.startsWith('/probation-check-ins') ? proofJson : req.path === '/import/ocr' ? ocrJson : smallJson;
+  parser(req, res, next);
+});
+app.use(express.urlencoded({ extended: false, limit: '32kb', parameterLimit: 50 }));
 
 // --- Supabase Auth Middleware (uses getUser for token validation) ---
 
@@ -150,6 +166,7 @@ interface AuthenticatedRequest extends Request {
 }
 
 async function requireAuth(req: Request, res: Response, next: NextFunction) {
+  if ((req as AuthenticatedRequest).userId) return next();
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     console.log('[AUTH] No Bearer token for', req.method, req.path);
@@ -171,6 +188,18 @@ async function requireAuth(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
+app.get('/shower-proof-assets/:filename', requireAuth, async (req, res) => {
+  const filename = req.params.filename;
+  if (!/^shower-\d{4}-\d{2}-\d{2}-[a-f0-9-]+\.jpg$/.test(filename)) return res.sendStatus(404);
+  const proofs = await readLocalShowerProofs();
+  const owned = proofs.some(proof => proof.ownerId === (req as AuthenticatedRequest).userId && proof.imageUrl === '/shower-proof-assets/' + filename);
+  if (!owned) return res.sendStatus(404);
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.type('jpeg').sendFile(path.join(showerProofImageRoot, filename));
+});
+let proofSaveQueue = Promise.resolve();
+
 // Lazy initializer for Google GenAI to avoid crashing on startup if the API Key is not yet configured
 let aiInstance: GoogleGenAI | null = null;
 
@@ -183,6 +212,7 @@ function getGeminiClient(): GoogleGenAI {
     aiInstance = new GoogleGenAI({
       apiKey,
       httpOptions: {
+        timeout: 60_000,
         headers: {
           'User-Agent': 'aistudio-build',
         }
@@ -341,6 +371,9 @@ app.post(
         return res.status(400).json({ error: "Incorrect product barcode." });
       }
 
+      let sanitizedImage: Buffer;
+      try { sanitizedImage = await validateProofImage(file.buffer, REQUIRED_SHOWER_BARCODE); }
+      catch (error) { return res.status(400).json({ error: error instanceof Error ? error.message : 'Invalid proof image.', code: 'PROOF_IMAGE_INVALID' }); }
       const cycleId = normalizeLocalCycleId(req.body.cycleId);
       const localDate = normalizeLocalCycleId(req.body.localDate);
       const capturedDate = new Date((req.body.capturedAt || "").toString());
@@ -349,9 +382,6 @@ app.post(
       const filename = `${id}.jpg`;
       const storageKey = `daily-shower-gate/${cycleId}/${filename}`;
       const now = new Date().toISOString();
-
-      await fs.mkdir(showerProofImageRoot, { recursive: true });
-      await fs.writeFile(path.join(showerProofImageRoot, filename), file.buffer);
 
       const proof: LocalShowerProofRecord = {
         id,
@@ -369,8 +399,21 @@ app.post(
         ownerId: (req as AuthenticatedRequest).userId,
       };
 
-      const proofs = await readLocalShowerProofs();
-      await writeLocalShowerProofs([proof, ...proofs.filter(record => record.id !== proof.id)].slice(0, 200));
+      const save = proofSaveQueue.then(async () => {
+        const proofs = await readLocalShowerProofs(true);
+        if (proofs.length >= 200 || proofs.filter(record => record.ownerId === proof.ownerId).length >= 50) throw new Error('Proof storage limit reached. Existing history has been preserved.');
+        await fs.mkdir(showerProofImageRoot, { recursive: true });
+        const names = await fs.readdir(showerProofImageRoot);
+        let bytes = 0;
+        for (const name of names) bytes += (await fs.stat(path.join(showerProofImageRoot, name))).size;
+        if (bytes + sanitizedImage.length > 512 * 1024 * 1024) throw new Error('Proof storage is full. Existing history has been preserved.');
+        const imagePath = path.join(showerProofImageRoot, filename);
+        await fs.writeFile(imagePath, sanitizedImage);
+        try { await writeLocalShowerProofs([proof, ...proofs]); }
+        catch (error) { await fs.unlink(imagePath).catch(() => undefined); throw error; }
+      });
+      proofSaveQueue = save.catch(() => undefined);
+      await save;
       res.json({ proof });
     } catch (error) {
       res.status(500).json({ error: error instanceof Error ? error.message : "Proof record save failed." });
@@ -383,7 +426,7 @@ app.post("/api/dispatcher/chat", requireAuth, async (req: any, res: any) => {
   try {
     const { message, jobs, currentBattery } = req.body;
 
-    if (!message) {
+    if (typeof message !== "string" || !message.trim() || message.length > 8000) {
       return res.status(400).json({ error: "Missing message in request body." });
     }
 
@@ -434,6 +477,7 @@ Guidelines:
       model: "gemini-3.5-flash",
       contents: message,
       config: {
+        maxOutputTokens: 2048,
         systemInstruction: systemPrompt,
         responseMimeType: "application/json",
         responseSchema: {
@@ -533,7 +577,7 @@ app.post("/api/dispatcher/tts", requireAuth, async (req: any, res: any) => {
   try {
     const { text, engine, style } = req.body;
 
-    if (!text) {
+    if (typeof text !== "string" || !text.trim() || text.length > 4000) {
       return res.status(400).json({ error: "Missing text to speak." });
     }
 
@@ -611,6 +655,7 @@ app.post("/api/dispatcher/tts", requireAuth, async (req: any, res: any) => {
       }
 
       const openAIResponse = await fetch("https://api.openai.com/v1/audio/speech", {
+        signal: AbortSignal.timeout(60_000),
         method: "POST",
         headers: {
           "Authorization": `Bearer ${apiKey}`,
@@ -657,6 +702,7 @@ app.post("/api/dispatcher/tts", requireAuth, async (req: any, res: any) => {
       }
 
       const elevenResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+        signal: AbortSignal.timeout(60_000),
         method: "POST",
         headers: {
           "xi-api-key": apiKey,
@@ -842,6 +888,7 @@ IMPORTANT PRIVACY GUIDELINES:
         }
       ],
       config: {
+        maxOutputTokens: 2048,
         systemInstruction: systemPrompt,
         responseMimeType: "application/json",
         responseSchema: {

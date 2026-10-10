@@ -7,6 +7,8 @@ import ResetPasswordPage from "../components/ResetPasswordPage";
 import ErrorBoundary from "../debug/ErrorBoundary";
 import { authDebugProtectedAppRendered, authDebugLoginPageRendered } from "./authDebug";
 
+import { setStorageOwner } from "../utils/ownerStorage";
+
 const App = lazy(() => import("../App"));
 
 type AuthView = "login" | "forgot-password" | "reset-password" | "app";
@@ -38,7 +40,9 @@ export function triggerOpenDebugCenter() {
 
 export default function ProtectedApp() {
   redirectRetiredRoutePath();
-  const { session, loading, verificationMode } = useAuth();
+  const { session, user, loading, verificationMode } = useAuth();
+  const owner = user?.id ?? (verificationMode ? "local-verification" : null);
+  setStorageOwner(owner);
   const [view, setView] = useState<AuthView>(() => getInitialView(window.location.pathname));
   const [debugCenterOpen, setDebugCenterOpen] = useState(false);
 
@@ -97,7 +101,7 @@ export default function ProtectedApp() {
   return (
       <ErrorBoundary onOpenDebugCenter={openDebugCenter}>
       <Suspense fallback={<AuthLoadingScreen />}>
-        <App debugCenterOpen={debugCenterOpen} onCloseDebugCenter={() => setDebugCenterOpen(false)} onOpenDebugCenter={openDebugCenter} />
+        <App key={owner} debugCenterOpen={debugCenterOpen} onCloseDebugCenter={() => setDebugCenterOpen(false)} onOpenDebugCenter={openDebugCenter} />
       </Suspense>
     </ErrorBoundary>
   );

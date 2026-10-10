@@ -15,3 +15,5 @@ screenshots/
 all_in_one_667_*.zip
 all_in_one_667_callable_patch/
 route-optimizer/
+
+.local-security-budget/

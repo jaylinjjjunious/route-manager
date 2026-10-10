@@ -16,6 +16,8 @@ import type {
   LensCleanlinessStatus,
 } from '../../types';
 
+import { ownedStorageKey, readOwnedStorage, writeOwnedStorage } from '../../utils/ownerStorage';
+
 export type { LensCleanlinessResult, LensCleanlinessStatus } from '../../types';
 
 const STORAGE_KEY = 'smart_aisle_scan_sessions';
@@ -64,7 +66,7 @@ function uid(): string {
 
 function readSessions(): Record<string, AisleScanSession> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = readOwnedStorage(STORAGE_KEY);
     return raw ? JSON.parse(raw) : {};
   } catch {
     return {};
@@ -73,7 +75,7 @@ function readSessions(): Record<string, AisleScanSession> {
 
 function writeSessions(sessions: Record<string, AisleScanSession>): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+    writeOwnedStorage(STORAGE_KEY, JSON.stringify(sessions));
   } catch (e) {
     console.error('Failed to save scan sessions', e);
   }
@@ -81,7 +83,7 @@ function writeSessions(sessions: Record<string, AisleScanSession>): void {
 
 function readPhotos(): Record<string, AisleScanPhoto> {
   try {
-    const raw = localStorage.getItem(PHOTOS_KEY);
+    const raw = readOwnedStorage(PHOTOS_KEY);
     return raw ? JSON.parse(raw) : {};
   } catch {
     return {};
@@ -90,7 +92,7 @@ function readPhotos(): Record<string, AisleScanPhoto> {
 
 function writePhotos(photos: Record<string, AisleScanPhoto>): void {
   try {
-    localStorage.setItem(PHOTOS_KEY, JSON.stringify(photos));
+    writeOwnedStorage(PHOTOS_KEY, JSON.stringify(photos));
   } catch (e) {
     console.error('Failed to save scan photos', e);
   }
@@ -1151,9 +1153,9 @@ export function getTestLabStorageUsage(): { sessionBytes: number; photoBytes: nu
   let photoBytes = 0;
 
   for (const [key, value] of Object.entries(localStorage)) {
-    if (key === STORAGE_KEY) {
+    if (key === ownedStorageKey(STORAGE_KEY)) {
       sessionBytes = value.length * 2;
-    } else if (key === PHOTOS_KEY) {
+    } else if (key === ownedStorageKey(PHOTOS_KEY)) {
       const photos = readPhotos();
       for (const photo of Object.values(photos)) {
         const session = readSessions()[photo.sessionId];

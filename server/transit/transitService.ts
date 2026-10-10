@@ -497,7 +497,7 @@ export class TransitService {
     return { stop: result.data.stop, arrivals: result.data.arrivals, freshness: result.freshness };
   }
 
-  async planTrip(origin: unknown, destination: unknown, departureTime?: string, arrivalTime?: string): Promise<TripPlanResult> {
+  async planTrip(origin: unknown, destination: unknown, departureTime?: string, arrivalTime?: string, ownerId = "internal"): Promise<TripPlanResult> {
     const from = coordLatLng(origin);
     const to = coordLatLng(destination);
     assertValidCoordinate(from.lat, from.lng, "Origin");
@@ -525,7 +525,7 @@ export class TransitService {
     }
 
     const result = await this.runScheduled<TransitTrip[]>({
-      cacheKey: `plan:${round4(from.lat)}:${round4(from.lng)}:${round4(to.lat)}:${round4(to.lng)}:${timeKey}`,
+      cacheKey: `plan:${ownerId}:${from.lat}:${from.lng}:${to.lat}:${to.lng}:${timeKey}`,
       ttlMs: TTL_PLAN_MS,
       allowStale: true,
       fetchFresh: async () => {
@@ -548,7 +548,7 @@ export class TransitService {
 
   async getServiceAlerts(lat?: number, lng?: number): Promise<ServiceAlertsResult> {
     const result = await this.runScheduled<TransitAlert[]>({
-      cacheKey: "alerts",
+      cacheKey: `alerts:${lat ?? "configured"}:${lng ?? "configured"}`,
       ttlMs: TTL_ALERTS_MS,
       allowStale: true,
       fetchFresh: async () => {
@@ -596,7 +596,8 @@ export class TransitService {
 
   private async resolveNetworkIds(lat?: number, lng?: number): Promise<string[]> {
     const configured = getTransitConfig().networkIds;
-    const cached = this.cache.getStale<string[]>("networks");
+    const networkKey = `networks:${lat ?? "configured"}:${lng ?? "configured"}`;
+    const cached = this.cache.get<string[]>(networkKey);
     if (cached) return cached.value;
 
     const hasLocation = typeof lat === "number" && typeof lng === "number" && Number.isFinite(lat) && Number.isFinite(lng);
@@ -609,10 +610,10 @@ export class TransitService {
       });
       const discovered = Array.from(new Set((data.networks || []).map((n) => n.network_id).filter((v): v is string => !!v)));
       const ids = discovered.length > 0 ? discovered : configured;
-      this.cache.set("networks", ids, TTL_NETWORKS_MS);
+      this.cache.set(networkKey, ids, TTL_NETWORKS_MS);
       return ids;
     } catch {
-      this.cache.set("networks", configured, TTL_NETWORKS_MS);
+      this.cache.set(networkKey, configured, TTL_NETWORKS_MS);
       return configured;
     }
   }

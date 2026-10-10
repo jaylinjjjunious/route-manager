@@ -108,3 +108,7 @@ Live Edge verification: launch sync GET/POST both return 200 JSON. Found pending
 
 ## 2026-10-05 — Final release handoff
 Acknowledgment fix deployed at d8d8ede; nine focused regression tests and lint/build pass. Public SHA/health confirmed. Final post-fix user-visible save/reload acknowledgment remains unverified due blank Edge pages after deployment; original 404 did not reproduce in the earlier signed-in launch GET/POST checks.
+
+## 2026-10-10 security hardening
+
+Superseding security contracts, limits, data-preservation decisions and release status are recorded in [Security Cloud remediation](../../docs/SECURITY_SCAN_2026_10_10.md). Public proof URLs, unrestricted production workspace bypass, global trip-coordinate cache reuse and unauthenticated legacy Worker APIs described in older sections are superseded by that document.

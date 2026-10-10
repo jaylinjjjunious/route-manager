@@ -144,6 +144,27 @@ describe('TransitService', () => {
     expect(callParams).toMatchObject({ from_lat: 35.39, from_lon: -119.02, to_lat: 35.38, to_lon: -118.99 });
   });
 
+  it('separates account trip caches and coordinates that formerly rounded to the same key', async () => {
+    vi.mocked(transitRequest).mockResolvedValue({ results: [{ duration: 3000, start_time: 1000, end_time: 4000, legs: [{ leg_mode: 'walk', duration: 3000, distance: 100 }] }] });
+    const service = new TransitService();
+    const origin = { lat: 35.39001, lng: -119.02001 }, destination = { lat: 35.38, lng: -118.99 };
+    await service.planTrip(origin, destination, undefined, undefined, 'owner-a');
+    await service.planTrip(origin, destination, undefined, undefined, 'owner-a');
+    expect(transitRequest).toHaveBeenCalledTimes(1);
+    await service.planTrip(origin, destination, undefined, undefined, 'owner-b');
+    await service.planTrip({ ...origin, lat: 35.39002 }, destination, undefined, undefined, 'owner-a');
+    expect(transitRequest).toHaveBeenCalledTimes(3);
+  });
+
+  it('does not reuse network and alert responses for a different location', async () => {
+    vi.mocked(transitRequest).mockImplementation(async route => route.includes('available_networks') ? { networks: [{ network_id: 'network' }] } : { alerts: [] });
+    const service = new TransitService();
+    await service.getServiceAlerts(35.39, -119.02);
+    await service.getServiceAlerts(36.39, -120.02);
+    expect(vi.mocked(transitRequest).mock.calls.filter(([route]) => route.includes('available_networks'))).toHaveLength(2);
+    expect(vi.mocked(transitRequest).mock.calls.filter(([route]) => route.includes('alerts_for_networks'))).toHaveLength(2);
+  });
+
   it('throws TRANSIT_TRIP_NOT_FOUND when no trips are returned', async () => {
     vi.mocked(transitRequest).mockResolvedValue({ results: [] });
     const service = new TransitService();
