@@ -6,7 +6,7 @@ Job-scoped inventory tracking for receiving, installation, removal, and return o
 
 ## Current Implementation
 
-- `InventoryCustodyPanel` is rendered inside `JobDetailModal` for every job and on the dedicated Inventory page.
+- `InventoryCustodyPanel` is rendered on the dedicated Inventory page. Since 2026-10-10, the compact Job Detail Inventory shortcut opens that page with the selected job ID and matching domain; the panel is not embedded in the simplified popup.
 - Inventory uses two explicit domains: existing jobs default to `merchandising` (the merchandising / secret-shopping company); only jobs with `inventoryDomain: 'contract_parts'` use the contract-parts company. The dedicated page displays and selects one domain at a time.
 - Merchandising jobs use package custody: receive a package identifier and contents for the selected store job, capture delivery evidence before recording delivery, then record an exception or package return with receipt/tracking when applicable.
 - Contract-parts jobs retain serialized part-number, serial-number, photo, and contract catalog matching; package fields and package events are not used in that domain.

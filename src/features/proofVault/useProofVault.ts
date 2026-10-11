@@ -75,6 +75,7 @@ const loadProofVault = (): Record<string, ProofRecord> => {
 export function useProofVault({ completedJobs }: UseProofVaultOptions) {
   const [proofVault, setProofVault] = useState<Record<string, ProofRecord>>(loadProofVault);
   const [selectedProofJobId, setSelectedProofJobId] = useState<string | null>(null);
+  const [isProofHistoryOpen, setIsProofHistoryOpen] = useState(false);
 
   useEffect(() => {
     safeStorage.setItem(PROOF_VAULT_STORAGE_KEY, JSON.stringify(proofVault));
@@ -194,10 +195,14 @@ export function useProofVault({ completedJobs }: UseProofVaultOptions) {
   }, []);
 
   const openProofHistory = useCallback(() => {
-    if (proofRecords.length > 0) {
-      setSelectedProofJobId(proofRecords[0].jobId);
-    }
-  }, [proofRecords]);
+    setSelectedProofJobId(null);
+    setIsProofHistoryOpen(true);
+  }, []);
+
+  const closeProofHistory = useCallback(() => {
+    setSelectedProofJobId(null);
+    setIsProofHistoryOpen(false);
+  }, []);
 
   const closeProof = useCallback(() => {
     setSelectedProofJobId(null);
@@ -205,6 +210,8 @@ export function useProofVault({ completedJobs }: UseProofVaultOptions) {
 
   return {
     proofRecords,
+    isProofHistoryOpen,
+    closeProofHistory,
     selectedProofRecord,
     ensureProofForJob,
     addProofAssets,

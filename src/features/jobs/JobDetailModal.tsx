@@ -29,6 +29,8 @@ interface JobDetailModalProps {
   onToggleRoute: (id: string) => void;
   onUpdateStatus?: (id: string, updates: Partial<Job>) => void;
   onOpenScan?: (jobId: string) => void;
+  onOpenPreviewGuide?: (jobId: string) => void;
+  onOpenInventory?: (jobId: string) => void;
   transitOrigin?: { latitude: number; longitude: number };
   onMoveToDay?: (job: Job) => void;
   onCheckInJob?: (id: string) => any;
@@ -118,6 +120,8 @@ export default function JobDetailModal({
   onToggleRoute,
   onUpdateStatus,
   onOpenScan,
+  onOpenPreviewGuide,
+  onOpenInventory,
   transitOrigin,
   onMoveToDay,
   onCheckInJob,
@@ -277,6 +281,22 @@ export default function JobDetailModal({
                 </button>
               ))}
             </div>
+
+            {(onOpenPreviewGuide || onOpenScan || onOpenInventory) && (
+              <div className="grid grid-cols-3 gap-2 pt-2" aria-label="Job tools">
+                {[
+                  { label: 'Preview Guide', action: onOpenPreviewGuide },
+                  { label: 'Scan', action: onOpenScan },
+                  { label: 'Inventory', action: onOpenInventory },
+                ].filter(tool => tool.action).map(tool => (
+                  <button key={tool.label} type="button" disabled={jobAccessLocked}
+                    onClick={() => tool.action?.(job.id)}
+                    className="min-h-12 rounded-xl bg-white/10 px-2 text-xs font-bold text-white hover:bg-white/15 disabled:opacity-40">
+                    {tool.label}
+                  </button>
+                ))}
+              </div>
+            )}
 
           </div>
         </div>

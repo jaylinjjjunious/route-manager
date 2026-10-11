@@ -1,5 +1,9 @@
 # Known Bugs
 
+## 2026-10-10 — Disconnected feature entry points
+
+Reproduced live: More → Proof Vault did nothing with no folders. Source confirmed populated vault opened only newest folder; Preview Guide had no opener and Job Detail's Scan callback was unused. Implemented all-folder browser/empty state plus selected-job Preview Guide, Scan and Inventory shortcuts. Eight focused tests pass; deployment/UI verification pending. Inventory/proof remain local-first; procedure/closeout UI and inferred proof arrival/completion timestamps remain limitations, not fixed by navigation work.
+
 ## 2026-10-10 — Check-in account lifetime
 
 Reproduced and fixed delayed proof adoption after A→B→A, stale proof-error display and uncanceled old-account sync. Screen-share tracks stop on account changes/unmount and preparation failure. Twenty-two focused tests pass; disposable production-bundle checks verify owner-filtered reads, ordinary-account admin denial and HTTP 409 for stale-account saves. Deployed/live verified at c8747d1. Real-device and second live-account exercises remain open.

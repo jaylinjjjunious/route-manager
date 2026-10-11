@@ -1,8 +1,10 @@
 import { Camera, FileImage, ReceiptText, StickyNote, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ProofAssetKind, ProofRecord } from './types';
+import { useEffect, useRef } from 'react';
 
 interface ProofVaultModalProps {
+  onBack?: () => void;
   selectedProofRecord: ProofRecord;
   onClose: () => void;
   onAddAssets: (jobId: string, kind: ProofAssetKind, files: FileList | null) => void;
@@ -20,22 +22,37 @@ export default function ProofVaultModal({
   onClose,
   onAddAssets,
   onUpdateNotes,
+  onBack,
 }: ProofVaultModalProps) {
+  const closeRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    closeRef.current?.focus();
+    const handleKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handleKey);
+    return () => {
+      document.body.style.overflow = overflow;
+      window.removeEventListener('keydown', handleKey);
+    };
+  }, [onClose]);
   const evidenceCount =
     selectedProofRecord.photos.length +
     selectedProofRecord.screenshots.length +
     selectedProofRecord.receipts.length;
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={`Proof folder for ${selectedProofRecord.storeName}`}>
       <div className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-[8px] border-2 border-slate-300 bg-white p-5 shadow-2xl dark:border-white/20 dark:bg-[#17181b]">
         <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4 dark:border-white/10">
           <div>
+            {onBack && <button type="button" onClick={onBack} className="mb-3 min-h-10 text-sm font-bold text-blue-700 dark:text-blue-300">← All proof folders</button>}
             <p className="text-sm font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Proof Folder</p>
             <h3 className="text-4xl font-black text-slate-950 dark:text-white">{selectedProofRecord.storeName}</h3>
             <p className="text-lg font-black text-slate-600 dark:text-slate-300">{selectedProofRecord.address}</p>
           </div>
           <button
+            ref={closeRef}
             type="button"
             onClick={onClose}
             className="flex h-12 w-12 items-center justify-center rounded-[8px] bg-slate-950 text-white dark:bg-white dark:text-slate-950"

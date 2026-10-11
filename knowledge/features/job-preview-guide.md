@@ -7,6 +7,8 @@ Preview Guide turns one slow iPhone screen recording of an external job preview 
 ## User flow
 
 1. Open a job detail and choose **Preview Guide**.
+
+   Entry point restored 2026-10-10 after the simplified popup had left the implemented guide unreachable. The selected job ID is preserved, locked job access disables the shortcut, and closing the guide returns to that job's popup. Browser/device recording validation remains separate from entry-point verification.
 2. Import one screen recording (`video/*`, including browser-decodable MP4/QuickTime).
 3. Review locally extracted pages; add, remove, restore, reorder, tag reference pages, or choose a cover.
 4. Select important pages and create a proposed quick summary.

@@ -45,6 +45,7 @@ import { useRideTracker } from './features/rideTracker/useRideTracker';
 import BatteryTab from './features/battery/BatteryTab';
 import { useBattery } from './features/battery/useBattery';
 import ProofVaultModal from './features/proofVault/ProofVaultModal';
+import ProofHistoryModal from './features/proofVault/ProofHistoryModal';
 import { useProofVault } from './features/proofVault/useProofVault';
 import ScreenshotImportModal from './components/ScreenshotImportModal';
 import SmartAisleScan from './components/SmartAisleScan';
@@ -2158,12 +2159,17 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           />
         )}
 
+        {proofVault.isProofHistoryOpen && !selectedProofRecord && (
+          <ProofHistoryModal records={proofVault.proofRecords} onSelect={proofVault.openProof} onClose={proofVault.closeProofHistory} />
+        )}
+
         {selectedProofRecord && (
           <ProofVaultModal
             selectedProofRecord={selectedProofRecord}
             onClose={proofVault.closeProof}
             onAddAssets={proofVault.addProofAssets}
             onUpdateNotes={proofVault.updateProofNotes}
+            onBack={proofVault.isProofHistoryOpen ? proofVault.closeProof : undefined}
           />
         )}
 
@@ -2201,7 +2207,14 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                 saveJobsToStorage(next);
               }}
               onUpdateStatus={handleUpdateJobStatus}
-              onOpenScan={(jobId) => { setScanJobId(jobId); setIsScanOpen(true); }}
+              onOpenScan={(jobId) => { setRouteDetailJobId(null); setScanJobId(jobId); setIsScanOpen(true); }}
+              onOpenPreviewGuide={(jobId) => { setRouteDetailJobId(null); setPreviewGuideJobId(jobId); }}
+              onOpenInventory={(jobId) => {
+                setInventoryDomain(getInventoryDomain(routeDetailJob));
+                setInventoryJobId(jobId);
+                setRouteDetailJobId(null);
+                handleTabChange('inventory');
+              }}
               transitOrigin={{ latitude: origin.lat, longitude: origin.lng }}
               onMoveToDay={jobs.setMoveToDayJob}
               onCheckInJob={jobs.checkInJob}
@@ -2240,7 +2253,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
               job={previewGuideJob}
               navLink={navLink}
               transitOrigin={{ latitude: origin.lat, longitude: origin.lng }}
-              onClose={() => setPreviewGuideJobId(null)}
+              onClose={() => { setPreviewGuideJobId(null); setRouteDetailJobId(previewGuideJob.id); }}
             />
           );
         })()}

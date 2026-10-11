@@ -6,6 +6,8 @@ Per-job proof attachment system for completion verification and documentation.
 
 ## Current Implementation
 
+2026-10-10 navigation repair: More and the profile menu open `ProofHistoryModal`, including an explicit empty state. It lists all saved job folders newest first with address, evidence count and updated date. Selecting a folder opens its existing assets/notes; All proof folders or closing the folder returns to the list. Escape closes the active dialog. Storage and existing records are unchanged and remain device-local. `tests/proofHistoryNavigation.test.ts` covers empty entry, older-folder selection, return/close and evidence preservation. This supersedes the previous newest-folder-only behavior.
+
 ### Asset Kinds
 
 | Kind | Description |
@@ -67,7 +69,7 @@ interface ProofRecord {
 
 Proof assets can optionally carry procedure requirement identity metadata: `requirementId`, `procedureId`, `procedureVersion`, `procedureStepId`, `proofType`, and `visitId`. This metadata is optional so legacy proof records remain readable without migration. Procedure definitions describe what evidence is required; Proof Vault owns the actual evidence. Helpers in `src/features/proofVault/procedureProof.ts` flatten proof records by job, match proof to procedure proof requirements by exact identity, respect `minimumCount`, and enforce visit scope (`any_visit`, `current_visit`, `per_visit`, `final_visit`). Legacy proof without requirement metadata is not matched by fuzzy label/name rules.
 
-`JobDetailModal` now surfaces procedure proof prompts through the generic Procedure workspace. Capture buttons call `captureProofForRequirement(...)`, which creates or reuses the job proof record and stamps uploaded assets with the exact procedure ID, version, step ID, requirement ID, proof type, and active visit ID when available. The workspace displays satisfied/missing state from the same proof-backed closeout evaluation rather than duplicating proof matching in React.
+The retained generic Procedure workspace can call `captureProofForRequirement(...)`, which creates or reuses the job proof record and stamps assets with exact procedure/version/step/requirement/proof-type/visit identity. That workspace is not currently rendered in the simplified Job Detail popup; these are retained engine capabilities, not a live capture entry point.
 
 ## Architecture
 

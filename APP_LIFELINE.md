@@ -48,6 +48,8 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
+**2026-10-10 app connections:** User requested a broader audit of disconnected and unfinished features. Fixed the dead empty Proof Vault/newest-only entry with an all-folder browser, and restored compact selected-job Preview Guide, Scan and Inventory shortcuts. Job access gating and the simplified popup remain. Eight targeted tests pass; final release/UI verification pending. Preview Guide, proof and inventory documentation previously overstated popup controls; corrected current entry points. Durable local-data sync and retired procedure/closeout UI remain unfinished.
+
 **2026-10-10 non-iOS follow-through:** Reviewed unfinished Markdown work. Check-in account-lifetime gaps are fixed locally: generation-guarded proof/errors, sync cancellation and screen-track cleanup. Twenty-two focused tests, lint/build and disposable production-bundle ordinary-account checks pass; deployed and live verified at c8747d1. Scheduling weather/AQ and voice, durable inventory/proof storage and legacy ownership migration remain unfinished. Physical-device/provider/access-dependent checks stay open; BlueAI stays paused.
 
 **2026-10-10 security:** Latest Security Cloud scan: 13 findings on 02fb4436 (10 medium/3 low). Remediation deployed from codex/security-scan-hardening to main/Render at d223cbe, separate from native iOS PR9. Contracts, preservation policy, quota limits and release evidence: docs/SECURITY_SCAN_2026_10_10.md. Public exact-SHA/health and anonymous image denial verified; authenticated account sync and durable quota event verified. No clean rescan/finding closure claimed. Remaining upstream build-tool alerts, legacy Sites deployment and real-photo/device verification are documented.
@@ -201,6 +203,8 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 - **Follow-up:** Verify signed-in sync works end-to-end after returning from official CE Check-In site.
 
 ## Resume Point
+
+**2026-10-10 connections:** Finish lint/build, push to github/main and verify Render plus signed-in Proof Vault empty state and selected-job Preview Guide/Scan/Inventory paths. Preserve dist-native and iOS PR9. No production job/evidence data should be fabricated for verification.
 
 **2026-10-10 non-iOS:** Account-lifetime fixes and automated ordinary-account coverage complete locally; deployed and live verified at c8747d1. Tests/lint/build pass. Signed-in production is accessible and the prior pending=false/Saved acknowledgment is verified. Preserve the iOS draft and untracked dist-native. The next non-iOS work is listed at the top of knowledge/memory/current-priorities.md; earlier browser-access blockers below are historical.
 

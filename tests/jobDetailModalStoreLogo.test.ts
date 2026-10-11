@@ -52,3 +52,20 @@ it('shows a placeholder when no store logo is available', () => {
   expect(document.querySelector('img')).toBeNull();
   expect(document.querySelector('svg.lucide-image')).not.toBeNull();
 });
+
+it('opens each tool with the selected job ID and blocks tools when job access is locked', () => {
+  const onOpenScan = vi.fn(); const onOpenPreviewGuide = vi.fn(); const onOpenInventory = vi.fn();
+  const props = { job, routeIndex: 0, legDistance: 5, rideMinutes: 30, navLink: '', isOutlier: false,
+    jobAccessLocked: false, onToggleComplete: vi.fn(), onEdit: vi.fn(), onDelete: vi.fn(),
+    onDuplicate: vi.fn(), onToggleRoute: vi.fn(), onClose, onOpenScan, onOpenPreviewGuide, onOpenInventory };
+  act(() => root.render(React.createElement(JobDetailModal, props)));
+  for (const [label, callback] of [['Scan', onOpenScan], ['Preview Guide', onOpenPreviewGuide], ['Inventory', onOpenInventory]] as const) {
+    const button = Array.from(document.querySelectorAll('button')).find(button => button.textContent === label)!;
+    act(() => button.click());
+    expect(callback).toHaveBeenCalledExactlyOnceWith(job.id);
+  }
+  act(() => root.render(React.createElement(JobDetailModal, { ...props, jobAccessLocked: true })));
+  for (const label of ['Scan', 'Preview Guide', 'Inventory']) {
+    expect(Array.from(document.querySelectorAll('button')).find(button => button.textContent === label)?.disabled).toBe(true);
+  }
+});
