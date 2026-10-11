@@ -47,7 +47,7 @@ The retained generic Procedure workspace (not mounted in the simplified Job Deta
 - At most 200 events/100 items and 3 MB per ledger/request; 20 ledgers/10 MB per account and 100 MB global. Database storage accounting is serialized atomically. Existing durable request admission limits inventory writes to 10/minute, 200/month, one account write at a time.
 - New images are prepared as JPEG, up to 1600px and 1 MB data URL; PDF/text/CSV documents are capped at 1 MB. Oversized/unsupported existing evidence stays local with an error. Local storage exhaustion is reported. Device/browser codec and camera checks remain separate.
 - Empty account reads display “No inventory records yet — account checked”; only acknowledged records display Saved to your account.
-- Migration 0008 applied; replay, two-owner isolation, append/conflict, evidence preservation, access and ledger quota verified using rollback-only SQL fixtures. Targeted tests and actual production-bundle mocked-database integration cover owner reads/writes, stale account rejection, metadata discovery and evidence round-trip. Final deployment/signed-in checks pending.
+- Migration 0008 applied; replay, two-owner isolation, append/conflict, evidence preservation, access and ledger quota verified using rollback-only SQL fixtures. All 51 focused tests, lint/build and production-bundle mocked-database checks pass. GitHub main and public Render build-info confirm bc4cc64. Signed-in controls remain unverified because the browser connection closed; do not describe the full interaction as ready.
 - Main jobs and standalone Proof Vault are separate features; this slice syncs inventory only. No automatic branch merge or archival UI.
 
 ## Related Source Files
@@ -80,4 +80,4 @@ The retained generic Procedure workspace (not mounted in the simplified Job Deta
 
 ---
 
-**Last Updated:** 2026-10-10 (owner-bound inventory cloud sync and account-only job discovery; release verification pending)
+**Last Updated:** 2026-10-10 (inventory cloud sync deployed; signed-in verification blocked by browser connection)

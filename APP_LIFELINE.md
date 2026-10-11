@@ -48,7 +48,7 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
-**2026-10-10 inventory account sync:** User authorized inventory sync as the next feature. Owner-scoped local queues/ledgers, explicit legacy import, cloud ledger persistence/conflict protection, account-only job discovery and current-account header implemented. Migration 0008 applied and rollback-tested; 51 focused tests pass. Final build, push/deploy and signed-in UI checks pending. Standalone Proof Vault and main job sync remain separate; physical-photo checks and conflict/archival UI remain open.
+**2026-10-10 inventory account sync:** Owner-scoped local queues/ledgers, explicit legacy import, cloud ledger persistence/conflict protection, account-only job discovery and current-account header deployed at bc4cc6451865652ae07dae9bf8b4f020816cc976. GitHub main and public build-info confirm that commit. Migration 0008 applied and rollback-tested; 51 focused tests, lint, build and disposable production-bundle API checks pass. Signed-in UI verification is blocked by the browser tool connection closing. Standalone Proof Vault and main job sync remain separate; physical-photo checks and conflict/archival UI remain open.
 
 **2026-10-10 app connections:** User requested a broader audit of disconnected and unfinished features. Fixed the dead empty Proof Vault/newest-only entry with an all-folder browser, and restored compact selected-job Preview Guide, Scan and Inventory shortcuts. Job access gating and the simplified popup remain. Twenty-three relevant tests, lint and build pass. Deployed and signed-in verified at efad8a3: empty Proof Vault, selected-job Preview Guide and return, Scan, correct Inventory job/domain, and fixed-footer visibility without scrolling. Older-folder browsing/evidence preservation verified with disposable test records, not fabricated production evidence. Preview Guide, proof and inventory documentation previously overstated popup controls; corrected current entry points. Durable local-data sync and retired procedure/closeout UI remain unfinished.
 
@@ -150,7 +150,7 @@ Use this format for subsequent entries:
 
 ## Open Questions / Future Ideas
 
-Current open work (2026-10-10): scheduling weather/AQ and voice phases; durable inventory/proof storage; explicit legacy ownership migration; atomic quotas before replicas and retention. Physical iPhone checks, separate ordinary-account production login, a supported CE recognition contract and legacy Sites access remain dependencies. Native iOS is excluded from the current task.
+Current open work (2026-10-10): inventory signed-in UI verification after browser access recovers; scheduling weather/AQ and voice phases; durable standalone proof storage; legacy ownership migration outside inventory; broader atomic quotas and retention. Inventory persistence and its explicit legacy import are implemented with atomic storage caps. Physical iPhone checks, separate ordinary-account production login, a supported CE recognition contract and legacy Sites access remain dependencies. Native iOS is excluded from the current task.
 
 For each item, use a stable ID such as Q-001 and record: the question or idea, its reason, status (idea / needs decision / planned / blocked), and the next useful step. Add relevant evidence and dependencies only if known. When resolved, remove it from this active list and retain the outcome in history or Active Decisions.
 
@@ -206,7 +206,7 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 
 ## Resume Point
 
-**2026-10-10 inventory:** Finish production-bundle checks, review diff, push main, then verify Render SHA and signed-in Inventory account loading/retry/selector/header. Do not create fake production custody records for validation. Database migration is already applied and rollback checks passed; do not repeat them. Preserve iOS draft and dist-native.
+**2026-10-10 inventory:** Code bc4cc64 is pushed and public Render build-info verified. Resume signed-in Inventory account loading/retry/selector/header verification when the browser connection recovers; it currently returns Transport closed. No fake production custody records. Migration and rollback checks are complete; do not repeat them. Restore the existing Supabase Untitled SQL editor to its previous activity/probation table-existence and admin-account-count query; it currently contains the completed rollback test. Preserve iOS draft and dist-native. Usage meter also disconnected; last successful five-hour reading was 2% after its reset.
 
 **2026-10-10 connections:** Connections release complete: main/Render efad8a3 and signed-in entry points/visibility verified. Continue broader unfinished work from knowledge/memory/current-priorities.md; recording/camera/device and local-data durability remain separate. Preserve dist-native and iOS PR9. No production job/evidence data should be fabricated for verification.
 
@@ -298,3 +298,9 @@ Verified all 13 findings against production main and started isolated remediatio
 - Fixed reproduced delayed proof adoption after A→B→A, stale proof errors and uncanceled sync; stopped screen-sharing tracks on account changes/unmount/preparation failure.
 - Twenty-two focused tests, lint/build and disposable production-bundle ordinary-account isolation/stale-write/admin-denial checks pass.
 - c8747d1 pushed and live on Render; exact public SHA/health and signed-in Saved/Retry/GET 200/pending=false verified. Real-device and second ordinary-account production checks remain open.
+
+### 2026-10-10 — Inventory account sync
+- Added owner/domain/job-scoped local ledgers and queues, explicit non-destructive legacy import, full item/event/evidence persistence, conflict rejection and account-saved job discovery. Corrected the Inventory header to use the signed-in email.
+- Applied migration 0008 with service-role-only access and atomic history/storage enforcement; rollback fixtures verified isolation, replay, append, conflict, evidence preservation and quotas.
+- All 51 focused tests, lint/build and disposable production-bundle API checks pass. Application commit bc4cc64 pushed to GitHub main and confirmed by public Render build-info.
+- Signed-in interface verification remains blocked by browser Transport closed. Physical photo checks, standalone Proof Vault durability and inventory archival/conflict UI remain open; no production custody evidence was fabricated.
