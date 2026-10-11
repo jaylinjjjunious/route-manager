@@ -2,7 +2,7 @@
 
 ## Current non-iOS work (reviewed 2026-10-10)
 
-- Latest user focus: connect existing app features. Proof Vault empty/history entry and selected-job Preview Guide/Scan/Inventory shortcuts implemented; release verification pending. Procedure/closeout engines are retained but their old UI was deliberately retired. Future UI decisions should preserve the simple popup and establish a separate reachable workflow if requested.
+- Latest user focus: connect existing app features. Proof Vault empty/history entry and selected-job Preview Guide/Scan/Inventory shortcuts deployed and signed-in verified at efad8a3. Twenty-three relevant tests plus lint/build pass; shortcuts stay visible in the fixed footer. Procedure/closeout engines are retained but their old UI was deliberately retired. Future UI decisions should preserve the simple popup and establish a separate reachable workflow if requested.
 
 - Check-in account-lifetime fixes implemented: 22 focused tests, disposable production-bundle account isolation checks, lint and build pass. Deployed to main/Render at c8747d1; signed-in reload, Retry account sync, GET 200 JSON, Saved status, pending=false and zero pending records verified. Earlier normal Saved/pending=false acknowledgment and browser access are now verified.
 - Next development: finish live Phase 1 scheduling interactions, then approved weather/air-quality and voice summary phases. Durable inventory custody sync and owner-confirmed legacy browser-data migration remain unimplemented.

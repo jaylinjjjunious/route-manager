@@ -1,5 +1,9 @@
 # Release History
 
+## 2026-10-10 — App connections
+
+Application commits 26e59b6 and efad8a3 restore a usable Proof Vault history and compact selected-job Preview Guide, Scan and Inventory entry points. Twenty-three relevant tests plus lint/build pass. GitHub main and public Render build-info confirm efad8a3. Signed-in verification covered an empty vault, Dollar General Preview Guide and return, Smart Aisle Scan, matching Inventory job/domain, and visible fixed-footer tools on a short viewport. Older-folder/evidence preservation used disposable unit-test records. No recording upload, camera capture or completed production job was fabricated. Device capture, durable local-data sync and retired procedure workflows remain open.
+
 ## Recent Commits
 
 | SHA | Description |

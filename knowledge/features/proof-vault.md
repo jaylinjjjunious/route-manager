@@ -164,6 +164,9 @@ Job Completion → Jobs handler → ensureProofForJob(job)
 
 ## Related Source Files
 
+- `src/features/proofVault/ProofHistoryModal.tsx` — all-folder selection and explicit empty state.
+- `tests/proofHistoryNavigation.test.ts` — empty/history/back/close and preservation coverage.
+
 - `src/App.tsx` — cross-feature proof orchestration: Jobs completion triggers, Assistant/More navigation, and modal composition
 - `src/features/proofVault/types.ts` — Proof Vault asset and record types
 - `src/features/proofVault/procedureProof.ts` — proof requirement identity, matching, visit-scope evaluation, and procedure proof asset stamping helpers

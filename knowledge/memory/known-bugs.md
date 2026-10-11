@@ -2,7 +2,9 @@
 
 ## 2026-10-10 — Disconnected feature entry points
 
-Reproduced live: More → Proof Vault did nothing with no folders. Source confirmed populated vault opened only newest folder; Preview Guide had no opener and Job Detail's Scan callback was unused. Implemented all-folder browser/empty state plus selected-job Preview Guide, Scan and Inventory shortcuts. Eight focused tests pass; deployment/UI verification pending. Inventory/proof remain local-first; procedure/closeout UI and inferred proof arrival/completion timestamps remain limitations, not fixed by navigation work.
+Follow-up audit finding: the legacy Inventory header displays a fixed email from `src/components/Header.tsx:44`, rather than the current authenticated profile. This display inconsistency remains open.
+
+Reproduced live: More → Proof Vault did nothing with no folders. Source confirmed populated vault opened only newest folder; Preview Guide had no opener and Job Detail's Scan callback was unused. Implemented all-folder browser/empty state plus selected-job Preview Guide, Scan and Inventory shortcuts. Twenty-three relevant tests and lint/build pass. Main/Render efad8a3, signed-in empty vault, Preview Guide return, Scan, Inventory job/domain and small-screen visibility verified. Older-folder preservation tested with disposable records. Inventory/proof remain local-first; procedure/closeout UI and inferred proof arrival/completion timestamps remain limitations, not fixed by navigation work.
 
 ## 2026-10-10 — Check-in account lifetime
 

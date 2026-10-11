@@ -1,6 +1,6 @@
 ## 2026-10-10 — Verify feature discoverability
 
-A mounted modal and retained callback do not establish a usable feature. Simplifying Job Detail orphaned Preview Guide and Scan entry points while older docs still described them. Check actual openers, selected job/domain context, empty states and return paths when reviewing app connections.
+A mounted modal and retained callback do not establish a usable feature. Simplifying Job Detail orphaned Preview Guide and Scan entry points while older docs still described them. Check actual openers, selected job/domain context, empty states and return paths when reviewing app connections. The first browser screenshot also caught tool shortcuts hidden below the short-screen scroll area; place essential shortcuts in the fixed footer and verify a screenshot before handoff.
 
 ## User preference: conserve usage (2026-10-02)
 
