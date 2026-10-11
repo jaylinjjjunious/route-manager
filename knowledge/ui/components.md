@@ -5,6 +5,10 @@
 
 ---
 
+## Inventory account header — 2026-10-10
+
+Legacy Header receives accountEmail from the authenticated App user instead of a fixed email. Inventory shows sync status/retry and explicit ownership-confirmed legacy import. Its job selector includes account-saved inventory jobs absent from the local main schedule.
+
 ## AIØ Components
 
 ### AioHeader

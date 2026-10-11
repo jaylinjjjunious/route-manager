@@ -48,6 +48,8 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
+**2026-10-10 inventory account sync:** User authorized inventory sync as the next feature. Owner-scoped local queues/ledgers, explicit legacy import, cloud ledger persistence/conflict protection, account-only job discovery and current-account header implemented. Migration 0008 applied and rollback-tested; 51 focused tests pass. Final build, push/deploy and signed-in UI checks pending. Standalone Proof Vault and main job sync remain separate; physical-photo checks and conflict/archival UI remain open.
+
 **2026-10-10 app connections:** User requested a broader audit of disconnected and unfinished features. Fixed the dead empty Proof Vault/newest-only entry with an all-folder browser, and restored compact selected-job Preview Guide, Scan and Inventory shortcuts. Job access gating and the simplified popup remain. Twenty-three relevant tests, lint and build pass. Deployed and signed-in verified at efad8a3: empty Proof Vault, selected-job Preview Guide and return, Scan, correct Inventory job/domain, and fixed-footer visibility without scrolling. Older-folder browsing/evidence preservation verified with disposable test records, not fabricated production evidence. Preview Guide, proof and inventory documentation previously overstated popup controls; corrected current entry points. Durable local-data sync and retired procedure/closeout UI remain unfinished.
 
 **2026-10-10 non-iOS follow-through:** Reviewed unfinished Markdown work. Check-in account-lifetime gaps are fixed locally: generation-guarded proof/errors, sync cancellation and screen-track cleanup. Twenty-two focused tests, lint/build and disposable production-bundle ordinary-account checks pass; deployed and live verified at c8747d1. Scheduling weather/AQ and voice, durable inventory/proof storage and legacy ownership migration remain unfinished. Physical-device/provider/access-dependent checks stay open; BlueAI stays paused.
@@ -203,6 +205,8 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 - **Follow-up:** Verify signed-in sync works end-to-end after returning from official CE Check-In site.
 
 ## Resume Point
+
+**2026-10-10 inventory:** Finish production-bundle checks, review diff, push main, then verify Render SHA and signed-in Inventory account loading/retry/selector/header. Do not create fake production custody records for validation. Database migration is already applied and rollback checks passed; do not repeat them. Preserve iOS draft and dist-native.
 
 **2026-10-10 connections:** Connections release complete: main/Render efad8a3 and signed-in entry points/visibility verified. Continue broader unfinished work from knowledge/memory/current-priorities.md; recording/camera/device and local-data durability remain separate. Preserve dist-native and iOS PR9. No production job/evidence data should be fabricated for verification.
 

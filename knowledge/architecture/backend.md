@@ -4,6 +4,10 @@
 
 Describes the Express server backend and the Cloudflare Worker API layer.
 
+## Inventory account API — 2026-10-10
+
+Express mounts createInventoryRouter after authenticated, bounded parsing. GET /api/inventory/jobs lists at most 20 owner/domain-filtered job summaries; GET /api/inventory/custody-ledger loads one full snapshot; POST verifies SHA-256 history and writes through atomic Supabase save_inventory_custody. expectedOwnerId is required, responses are private/no-store, and inventory write admission uses durable account budgets. No Worker inventory API is added.
+
 ## Current Implementation
 
 BlueAI addition (2026-09-27): `server/blueai/` implements the Express-only

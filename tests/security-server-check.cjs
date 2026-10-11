@@ -7,6 +7,7 @@ const os = require('node:os');
 const http = require('node:http');
 const { spawn } = require('node:child_process');
 const sharp = require('sharp');
+const { createHash } = require('node:crypto');
 
 const owners = { 'owner-a': '11111111-1111-4111-8111-111111111111', 'owner-b': '22222222-2222-4222-8222-222222222222' };
 async function listen(server) { await new Promise(resolve => server.listen(0, '127.0.0.1', resolve)); return server.address().port; }
@@ -25,6 +26,7 @@ async function photo() {
 (async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'route-server-security-'));
   const rows = [];
+  const inventoryRows = new Map();
   const probationRows = Object.values(owners).map(owner_id => ({
     owner_id, month_key: '2026-10', device: 'computer', events: [], updated_at: '2026-10-10T12:00:00Z',
   }));
@@ -55,6 +57,16 @@ async function photo() {
       if (req.method === 'HEAD') { res.setHeader('Content-Range', `0-0/${matches.length}`); return res.end(); }
       return res.end(JSON.stringify(req.headers.accept?.includes('pgrst.object') ? matches[0] || null : matches));
     }
+    if (url.pathname === '/rest/v1/inventory_custody_ledgers') {
+      const matches = [...inventoryRows.values()].filter(row => ['owner_id','domain','job_id'].every(key => !url.searchParams.has(key) || url.searchParams.get(key) === `eq.${row[key]}`));
+      return res.end(JSON.stringify(req.headers.accept?.includes('pgrst.object') ? matches[0] || null : matches));
+    }
+    if (url.pathname === '/rest/v1/rpc/save_inventory_custody') {
+      let body = ''; for await (const chunk of req) body += chunk;
+      const params = JSON.parse(body);
+      inventoryRows.set(`${params.p_owner}:${params.p_domain}:${params.p_job}`, { owner_id: params.p_owner, domain: params.p_domain, job_id: params.p_job, ledger: params.p_ledger });
+      return res.end(JSON.stringify(params.p_ledger));
+    }
     res.writeHead(404); res.end('{}');
   });
   let child;
@@ -76,6 +88,33 @@ async function photo() {
     }
     assert.ok(ready, `Production bundle did not start: ${output.slice(-1500)}`);
     const auth = owner => ({ Authorization: `Bearer ${owner}` });
+    const inventoryEvent = {
+      id:'inventory-event-1',jobId:'inventory-fixture',itemId:'inventory-item-1',type:'receive_in',occurredAt:'2026-10-10T12:00:00Z',
+      partNumber:'',serialNumber:'',coordinates:null,evidenceIds:['inventory-proof-1'],receiptNumber:null,trackingNumber:null,notes:null,previousHash:'GENESIS',
+      domain:'merchandising',packageId:'test-package',packageContents:null,equipmentLabel:null,sourceContext:null,
+      requirementId:null,procedureId:null,procedureVersion:null,procedureStepId:null,visitId:null,requirementRole:null,
+    };
+    const ledger = { version:1,ownerId:owners['owner-a'],domain:'merchandising',jobId:'inventory-fixture',
+      events:[{ ...inventoryEvent, coordinates:undefined, hash:createHash('sha256').update(JSON.stringify(inventoryEvent)).digest('hex'), integrityVersion:4,syncStatus:'queued' }],
+      items:[{ id:'inventory-item-1',jobId:'inventory-fixture',domain:'merchandising',partNumber:'',serialNumber:'',status:'received',eventIds:['inventory-event-1'],updatedAt:inventoryEvent.occurredAt,
+        evidence:[{ id:'inventory-proof-1',kind:'photo',name:'Disposable fixture.png',mimeType:'image/png',capturedAt:inventoryEvent.occurredAt,dataUrl:`data:image/png;base64,${(await photo()).toString('base64')}` }] }] };
+    const inventoryPath = owner => `/api/inventory/custody-ledger?domain=merchandising&jobId=inventory-fixture&expectedOwnerId=${owners[owner]}`;
+    assert.equal((await fetch(base + inventoryPath('owner-a'))).status,401);
+    const inventorySave = await fetch(`${base}/api/inventory/custody-ledger`,{ method:'POST',headers:{...auth('owner-a'),'Content-Type':'application/json'},body:JSON.stringify({expectedOwnerId:owners['owner-a'],ledger}) });
+    assert.equal(inventorySave.status,200,JSON.stringify(await inventorySave.json()));
+    const accountInventory = await (await fetch(base+inventoryPath('owner-a'),{headers:auth('owner-a')})).json();
+    assert.deepEqual(accountInventory.ledger.items,ledger.items,'Inventory evidence must round-trip intact');
+    const otherInventory = await (await fetch(base+inventoryPath('owner-b'),{headers:auth('owner-b')})).json();
+    assert.equal(otherInventory.ledger,null,'Inventory reads must be owner-filtered');
+    const inventoryJobs = await (await fetch(`${base}/api/inventory/jobs?domain=merchandising&expectedOwnerId=${owners['owner-a']}`,{headers:auth('owner-a')})).json();
+    assert.equal(inventoryJobs.jobs[0].id,ledger.jobId,'A saved inventory job must be discoverable on another device');
+    assert.equal(JSON.stringify(inventoryJobs).includes('data:image'),false,'The job index must not include evidence blobs');
+    const otherInventoryJobs = await (await fetch(`${base}/api/inventory/jobs?domain=merchandising&expectedOwnerId=${owners['owner-b']}`,{headers:auth('owner-b')})).json();
+    assert.equal(otherInventoryJobs.jobs.length,0,'Account inventory job discovery must be owner-filtered');
+    assert.equal((await fetch(base+inventoryPath('owner-a'),{headers:auth('owner-b')})).status,409,'Stale account reads must be denied');
+    const changedInventory = {...ledger,events:[{...ledger.events[0],packageId:'altered'}]};
+    assert.equal((await fetch(`${base}/api/inventory/custody-ledger`,{method:'POST',headers:{...auth('owner-a'),'Content-Type':'application/json'},body:JSON.stringify({expectedOwnerId:owners['owner-a'],ledger:changedInventory})})).status,400,'Inventory hashes must be verified by the actual server');
+    assert.equal((await fetch(`${base}/api/inventory/custody-ledger`,{method:'POST',headers:{...auth('owner-b'),'Content-Type':'application/json'},body:JSON.stringify({expectedOwnerId:owners['owner-a'],ledger})})).status,409,'Stale account inventory writes must be denied');
     const deniedBody = JSON.stringify({ text: 'x'.repeat(256_000) });
     assert.equal((await fetch(`${base}/api/dispatcher/tts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: deniedBody })).status, 401, 'Authentication must precede oversized-body parsing');
     assert.equal((await fetch(`${base}/api/dispatcher/tts`, { method: 'POST', headers: { ...auth('owner-a'), 'Content-Type': 'application/json' }, body: deniedBody })).status, 413, 'Authenticated generic bodies remain bounded');
@@ -111,6 +150,7 @@ async function photo() {
     brokenAccounting = true;
     assert.equal((await fetch(`${base}/api/dispatcher/tts`, { method: 'POST', headers: { ...auth('owner-a'), 'Content-Type': 'application/json' }, body: JSON.stringify({ text: 'Hello' }) })).status, 503, 'Accounting outages must fail closed before provider spend');
     assert.ok(rows.some(row => row.feature === 'security_budget' && row.owner_id === owners['owner-a']));
+    assert.ok(rows.some(row => row.feature === 'security_budget' && row.action === 'inventory'), 'Inventory writes require durable request admission');
     console.log('Production security checks passed: pre-parser auth, body caps, verified upload, private images, owner isolation, ordinary-account check-in isolation, stale-account write denial, admin cache reset, durable accounting/fail-closed admission.');
   } finally {
     if (child) { child.kill(); await new Promise(resolve => child.once('exit', resolve)); }

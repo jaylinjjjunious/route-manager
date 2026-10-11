@@ -1,4 +1,7 @@
+import { canonicalEvent, digest, verifyCustodyLedger } from './integrity';
+export { verifyCustodyLedger } from './integrity';
 import type { InventoryDomain } from './domain';
+import { getStorageOwner, getStorageOwnerEpoch } from '../../utils/ownerStorage';
 
 export type CustodyEventType = 'receive_in' | 'install' | 'removal' | 'return';
 export type CustodyItemStatus = 'received' | 'installed' | 'removed' | 'returned';
@@ -73,6 +76,10 @@ export interface CustodyItem {
 }
 
 export interface CustodyLedger {
+  storeName?: string;
+  address?: string;
+  ownerId?: string;
+  ownerEpoch?: number;
   version: 1;
   jobId: string;
   domain: InventoryDomain;
@@ -83,11 +90,11 @@ export interface CustodyLedger {
 const LEDGER_PREFIX = 'inventory_custody_ledger_v2:';
 const LEGACY_LEDGER_PREFIX = 'inventory_custody_ledger_v1:';
 const QUEUE_PREFIX = 'inventory_custody_sync_queue_v2:';
-const LEGACY_QUEUE_KEY = 'inventory_custody_sync_queue_v1';
+
 const GENESIS_HASH = 'GENESIS';
 
 function getLedgerKey(jobId: string, domain: InventoryDomain): string {
-  return `${LEDGER_PREFIX}${domain}:${jobId}`;
+  return `${LEDGER_PREFIX}${domain}:${jobId}:${getStorageOwner() || 'signed-out'}`;
 }
 
 function randomId(prefix: string): string {
@@ -109,77 +116,25 @@ function writeJson(key: string, value: unknown): void {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
-    // The UI remains usable when browser storage is unavailable.
+    throw new Error('Device storage is full or unavailable. Inventory could not be saved; keep the evidence and retry.');
   }
-}
-
-function canonicalEvent(event: Omit<CustodyEvent, 'hash'>): string {
-  const legacyFields = {
-    id: event.id,
-    jobId: event.jobId,
-    itemId: event.itemId,
-    type: event.type,
-    occurredAt: event.occurredAt,
-    partNumber: event.partNumber,
-    serialNumber: event.serialNumber,
-    coordinates: event.coordinates || null,
-    evidenceIds: event.evidenceIds,
-    receiptNumber: event.receiptNumber || null,
-    trackingNumber: event.trackingNumber || null,
-    notes: event.notes || null,
-    previousHash: event.previousHash,
-  };
-  if (event.integrityVersion === 1) return JSON.stringify(legacyFields);
-  const domainFields = {
-    ...legacyFields,
-    domain: event.domain,
-    packageId: event.packageId || null,
-    packageContents: event.packageContents || null,
-  };
-  if (event.integrityVersion === 2) return JSON.stringify(domainFields);
-  const inventoryFields = { ...domainFields, equipmentLabel: event.equipmentLabel || null, sourceContext: event.sourceContext || null };
-  if (event.integrityVersion === 3) return JSON.stringify(inventoryFields);
-  return JSON.stringify({
-    ...inventoryFields,
-    requirementId: event.requirementId || null,
-    procedureId: event.procedureId || null,
-    procedureVersion: event.procedureVersion || null,
-    procedureStepId: event.procedureStepId || null,
-    visitId: event.visitId || null,
-    requirementRole: event.requirementRole || null,
-  });
-}
-
-async function digest(value: string): Promise<string> {
-  if (globalThis.crypto?.subtle) {
-    const bytes = new TextEncoder().encode(value);
-    const buffer = await globalThis.crypto.subtle.digest('SHA-256', bytes);
-    return Array.from(new Uint8Array(buffer)).map(byte => byte.toString(16).padStart(2, '0')).join('');
-  }
-
-  let hash = 2166136261;
-  for (let i = 0; i < value.length; i += 1) {
-    hash ^= value.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return `fallback-${(hash >>> 0).toString(16).padStart(8, '0')}`;
 }
 
 export function emptyCustodyLedger(jobId: string, domain: InventoryDomain = 'merchandising'): CustodyLedger {
-  return { version: 1, jobId, domain, items: [], events: [] };
+  return { version: 1, jobId, domain, ownerId: getStorageOwner() || undefined, ownerEpoch: getStorageOwnerEpoch(), items: [], events: [] };
 }
 
 export function loadCustodyLedger(jobId: string, domain: InventoryDomain = 'merchandising'): CustodyLedger {
   const currentLedger = readJson<CustodyLedger | null>(getLedgerKey(jobId, domain), null);
-  const legacyLedger = domain === 'merchandising' ? readJson<CustodyLedger | null>(`${LEGACY_LEDGER_PREFIX}${jobId}`, null) : null;
-  const ledger = currentLedger || legacyLedger;
+  const ledger = currentLedger;
   if (!ledger || ledger.version !== 1 || ledger.jobId !== jobId) return emptyCustodyLedger(jobId, domain);
   const items = Array.isArray(ledger.items) ? ledger.items.map(item => ({ ...item, domain })) : [];
   const events = Array.isArray(ledger.events) ? ledger.events.map(event => ({ ...event, domain, integrityVersion: event.integrityVersion || (currentLedger ? 2 : 1) })) : [];
-  const migrated = { version: 1 as const, jobId, domain, items, events };
-  saveCustodyLedger(migrated);
   return {
+    ...ledger,
     version: 1,
+    ownerId: getStorageOwner() || undefined,
+    ownerEpoch: getStorageOwnerEpoch(),
     jobId,
     domain,
     items,
@@ -188,23 +143,16 @@ export function loadCustodyLedger(jobId: string, domain: InventoryDomain = 'merc
 }
 
 export function saveCustodyLedger(ledger: CustodyLedger): void {
+  if (!getStorageOwner() || ledger.ownerId !== getStorageOwner() || ledger.ownerEpoch !== getStorageOwnerEpoch()) return;
   writeJson(getLedgerKey(ledger.jobId, ledger.domain), ledger);
 }
 
 function getQueueKey(domain: InventoryDomain): string {
-  return `${QUEUE_PREFIX}${domain}`;
+  return `${QUEUE_PREFIX}${domain}:${getStorageOwner() || 'signed-out'}`;
 }
 
 export function loadSyncQueue(domain: InventoryDomain = 'merchandising'): CustodyEvent[] {
   const current = readJson<CustodyEvent[]>(getQueueKey(domain), []).filter(Boolean).map(event => ({ ...event, domain }));
-  if (domain !== 'merchandising') return current;
-  const legacy = readJson<CustodyEvent[]>(LEGACY_QUEUE_KEY, []).filter(Boolean).map(event => ({ ...event, domain }));
-  if (legacy.length > 0) {
-    const migrated = [...legacy, ...current];
-    writeJson(getQueueKey(domain), migrated);
-    try { localStorage.removeItem(LEGACY_QUEUE_KEY); } catch { /* storage is best effort */ }
-    return migrated;
-  }
   return current;
 }
 
@@ -290,6 +238,7 @@ export async function createCustodyEvent(input: {
 }
 
 export function appendCustodyEvent(ledger: CustodyLedger, event: CustodyEvent, item: CustodyItem): CustodyLedger {
+  if (!getStorageOwner() || ledger.ownerId !== getStorageOwner() || ledger.ownerEpoch !== getStorageOwnerEpoch()) return ledger;
   const nextItem: CustodyItem = {
     ...item,
     domain: ledger.domain,
@@ -317,52 +266,141 @@ export function appendCustodyEvent(ledger: CustodyLedger, event: CustodyEvent, i
   return next;
 }
 
-export async function verifyCustodyLedger(ledger: CustodyLedger): Promise<{ valid: boolean; brokenEventId?: string }> {
-  let previousHash = GENESIS_HASH;
-  for (const event of ledger.events) {
-    if (event.previousHash !== previousHash) return { valid: false, brokenEventId: event.id };
-    const expectedHash = await digest(canonicalEvent(event));
-    if (expectedHash !== event.hash) return { valid: false, brokenEventId: event.id };
-    previousHash = event.hash;
-  }
-  return { valid: true };
+export function hasLegacyCustodyLedger(jobId: string, domain: InventoryDomain): boolean {
+  const legacy = readJson<CustodyLedger | null>(`${LEDGER_PREFIX}${domain}:${jobId}`, null)
+    || (domain === 'merchandising' ? readJson<CustodyLedger | null>(`${LEGACY_LEDGER_PREFIX}${jobId}`, null) : null);
+  return !!legacy?.events?.length;
 }
 
-export async function flushCustodySyncQueue(): Promise<{ synced: number; remaining: number }> {
-  const queue = [...loadSyncQueue('merchandising'), ...loadSyncQueue('contract_parts')];
-  if (typeof navigator !== 'undefined' && !navigator.onLine) return { synced: 0, remaining: queue.length };
-  if (queue.length === 0) return { synced: 0, remaining: 0 };
-  try {
-    const { authFetchJson } = await import('../apiClient');
-    await authFetchJson('/api/inventory/custody-events', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ events: queue }),
-    });
-    const syncedIds = new Set(queue.map(event => event.id));
-    for (const domain of ['merchandising', 'contract_parts'] as const) {
-      saveSyncQueue(loadSyncQueue(domain).filter(event => !syncedIds.has(event.id)), domain);
+export async function importLegacyCustodyLedger(jobId: string, domain: InventoryDomain): Promise<CustodyLedger> {
+  const owner = getStorageOwner();
+  const epoch = getStorageOwnerEpoch();
+  if (!owner) throw new Error('Sign in before importing inventory.');
+  if (loadCustodyLedger(jobId, domain).events.length) throw new Error('This account already has inventory history. Preserve the old records for separate review.');
+  const raw = readJson<CustodyLedger | null>(`${LEDGER_PREFIX}${domain}:${jobId}`, null)
+    || (domain === 'merchandising' ? readJson<CustodyLedger | null>(`${LEGACY_LEDGER_PREFIX}${jobId}`, null) : null);
+  if (!raw) throw new Error('No old inventory found.');
+  const ledger = { ...raw, domain, ownerId: owner, ownerEpoch: epoch,
+    items: raw.items.map(item => ({ ...item, domain })),
+    events: raw.events.map(event => ({ ...event, domain, integrityVersion: event.integrityVersion || (raw.domain ? 2 : 1), syncStatus: 'queued' as const })) };
+  if (!(await verifyCustodyLedger(ledger)).valid) throw new Error('Old inventory history needs review before import.');
+  if (getStorageOwner() !== owner || getStorageOwnerEpoch() !== epoch) throw new Error('Account changed. Retry after signing in.');
+  saveCustodyLedger(ledger);
+  saveSyncQueue([...loadSyncQueue(domain), ...ledger.events], domain);
+  return ledger;
+}
+
+export function custodyPrefix(shorter: CustodyLedger, longer: CustodyLedger): boolean {
+  return shorter.events.every((event, index) => longer.events[index]?.id === event.id && longer.events[index]?.hash === event.hash);
+}
+
+const inventorySyncs = new Map<string, Promise<CustodyLedger>>();
+let inventorySyncQueue: Promise<unknown> = Promise.resolve();
+export function syncCustodyLedger(jobId: string, domain: InventoryDomain, jobInfo?: { storeName: string; address: string }): Promise<CustodyLedger> {
+  const owner = getStorageOwner(), epoch = getStorageOwnerEpoch();
+  const key = `${getStorageOwnerEpoch()}:${getStorageOwner()}:${domain}:${jobId}`;
+  const current = inventorySyncs.get(key);
+  if (current) return current;
+  const task = inventorySyncQueue.then(() => {
+    if (getStorageOwner() !== owner || getStorageOwnerEpoch() !== epoch) throw new Error('Account changed. Retry after signing in.');
+    return syncCustodyLedgerOnce(jobId, domain, jobInfo);
+  }).finally(() => { inventorySyncs.delete(key); });
+  inventorySyncQueue = task.catch(() => undefined);
+  inventorySyncs.set(key, task);
+  return task;
+}
+
+async function syncCustodyLedgerOnce(jobId: string, domain: InventoryDomain, jobInfo?: { storeName: string; address: string }): Promise<CustodyLedger> {
+  const owner = getStorageOwner();
+  const epoch = getStorageOwnerEpoch();
+  if (!owner) throw new Error('Sign in to sync inventory.');
+  if (!navigator.onLine) throw new Error('Offline. Inventory remains saved on this device.');
+  const { authFetchJson } = await import('../apiClient');
+  const signal = AbortSignal.timeout(20_000);
+  const query = new URLSearchParams({ jobId, domain, expectedOwnerId: owner });
+  const remote = await authFetchJson<{ ledger: CustodyLedger | null }>(`/api/inventory/custody-ledger?${query}`, { signal });
+  if (getStorageOwner() !== owner || getStorageOwnerEpoch() !== epoch) throw new Error('Account changed. Retry after signing in.');
+  let local = loadCustodyLedger(jobId, domain);
+  if (remote.ledger) {
+    if (remote.ledger.jobId !== jobId || remote.ledger.domain !== domain || remote.ledger.ownerId !== owner
+      || !(await verifyCustodyLedger(remote.ledger)).valid) throw new Error('Account inventory history needs review.');
+    if (getStorageOwner() !== owner || getStorageOwnerEpoch() !== epoch) throw new Error('Account changed. Retry after signing in.');
+    local = loadCustodyLedger(jobId, domain);
+    if (!custodyPrefix(remote.ledger, local)) {
+      if (!custodyPrefix(local, remote.ledger)) throw new Error('Inventory conflict: both copies were changed. Both histories are preserved; review before syncing.');
+      local = { ...remote.ledger, ownerEpoch: epoch };
+      saveCustodyLedger(local);
     }
-    return { synced: queue.length, remaining: loadSyncQueue('merchandising').length + loadSyncQueue('contract_parts').length };
-  } catch {
-    return { synced: 0, remaining: queue.length };
   }
+  if (jobInfo) { local = { ...local, ...jobInfo }; saveCustodyLedger(local); }
+  const snapshot = local;
+  if (snapshot.events.length && (!remote.ledger || JSON.stringify(snapshot.items) !== JSON.stringify(remote.ledger.items) || snapshot.events.length !== remote.ledger.events.length || snapshot.storeName !== remote.ledger.storeName || snapshot.address !== remote.ledger.address)) {
+    const body = JSON.stringify({ expectedOwnerId: owner, ledger: snapshot });
+    if (new TextEncoder().encode(body).length > 3 * 1024 * 1024) throw new Error('This job exceeds the 3 MB inventory sync limit. Device records are preserved.');
+    const saved = await authFetchJson<{ ledger: CustodyLedger }>('/api/inventory/custody-ledger', {
+      method: 'POST', signal, headers: { 'Content-Type': 'application/json' }, body,
+    });
+    if (saved.ledger.ownerId !== owner || saved.ledger.jobId !== jobId || saved.ledger.domain !== domain || !custodyPrefix(snapshot, saved.ledger) || saved.ledger.events.length !== snapshot.events.length || JSON.stringify(saved.ledger.items) !== JSON.stringify(snapshot.items)) throw new Error('Inventory save was not acknowledged. Retry sync.');
+  }
+  if (getStorageOwner() !== owner || getStorageOwnerEpoch() !== epoch) throw new Error('Account changed. Retry after signing in.');
+  const acknowledged = new Map(snapshot.events.map(event => [event.id, event.hash]));
+  saveSyncQueue(loadSyncQueue(domain).filter(event => acknowledged.get(event.id) !== event.hash), domain);
+  const latest = loadCustodyLedger(jobId, domain);
+  const result = { ...latest, events: latest.events.map(event => acknowledged.get(event.id) === event.hash ? { ...event, syncStatus: 'synced' as const } : event) };
+  saveCustodyLedger(result);
+  return result;
 }
 
-export function fileToCustodyEvidence(file: File, kind: CustodyEvidenceKind): Promise<CustodyEvidence> {
-  return new Promise((resolve, reject) => {
+export async function flushCustodySyncQueue(skip?: { jobId: string; domain: InventoryDomain }): Promise<{ synced: number; remaining: number }> {
+  const epoch = getStorageOwnerEpoch();
+  const before = [...loadSyncQueue('merchandising'), ...loadSyncQueue('contract_parts')];
+  const groups = new Map(before.map(event => [event.domain + ':' + event.jobId, event]));
+  for (const event of groups.values()) {
+    if (getStorageOwnerEpoch() !== epoch) break;
+    if (event.jobId === skip?.jobId && event.domain === skip.domain) continue;
+    try { await syncCustodyLedger(event.jobId, event.domain); } catch { /* Keep pending records. */ }
+  }
+  const remaining = loadSyncQueue('merchandising').length + loadSyncQueue('contract_parts').length;
+  return { synced: Math.max(0, before.length - remaining), remaining };
+}
+
+export async function fileToCustodyEvidence(file: File, kind: CustodyEvidenceKind): Promise<CustodyEvidence> {
+  if (file.size > 25 * 1024 * 1024) throw new Error('Choose an inventory image smaller than 25 MB.');
+  if (!file.type.startsWith('image/') && !['application/pdf','text/plain','text/csv'].includes(file.type)) throw new Error('Choose an image, PDF, text or CSV document for inventory evidence.');
+  if (!file.type.startsWith('image/') && file.size > 1024 * 1024) throw new Error('Choose an inventory document smaller than 1 MB.');
+  const dataUrl = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve({
-      id: randomId('custody-evidence'),
-      kind,
-      name: file.name || `${kind}-${Date.now()}`,
-      mimeType: file.type || 'application/octet-stream',
-      dataUrl: typeof reader.result === 'string' ? reader.result : undefined,
-      capturedAt: new Date().toISOString(),
-    });
+    reader.onload = () => resolve(String(reader.result));
     reader.onerror = () => reject(reader.error || new Error('Could not read evidence file'));
     reader.readAsDataURL(file);
   });
+  let imageData = dataUrl;
+  if (file.type.startsWith('image/')) {
+    imageData = await new Promise<string>((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => {
+        const scale = Math.min(1, 1600 / Math.max(image.width, image.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.width * scale)); canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext('2d');
+        if (!context) return reject(new Error('Could not prepare inventory photo.'));
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        const prepared = canvas.toDataURL('image/jpeg', 0.72);
+        if (prepared.length > 1024 * 1024) return reject(new Error('Inventory photo is too large. Choose a smaller photo.'));
+        resolve(prepared);
+      };
+      image.onerror = () => reject(new Error('This photo format cannot be opened. Choose JPEG or PNG.'));
+      image.src = dataUrl;
+    });
+  }
+  return {
+      id: randomId('custody-evidence'),
+      kind,
+      name: file.name || `${kind}-${Date.now()}`,
+      mimeType: file.type.startsWith('image/') ? 'image/jpeg' : file.type,
+      dataUrl: imageData,
+      capturedAt: new Date().toISOString(),
+  };
 }
 
 export interface ProcedureInventoryRequirementContext {

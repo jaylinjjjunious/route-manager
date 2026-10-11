@@ -1,3 +1,4 @@
+import { setStorageOwner } from '../src/utils/ownerStorage';
 import { describe, expect, it, beforeEach } from 'vitest';
 import {
   appendCustodyEvent,
@@ -25,7 +26,7 @@ function makeItem(): CustodyItem {
 }
 
 describe('chain of custody ledger', () => {
-  beforeEach(() => localStorage.clear());
+  beforeEach(() => { localStorage.clear(); setStorageOwner('test-owner'); });
 
   it('creates a linked receive/install/remove/return history and persists it offline', async () => {
     let ledger = emptyCustodyLedger('job-1');

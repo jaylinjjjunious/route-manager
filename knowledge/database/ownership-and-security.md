@@ -5,6 +5,10 @@
 
 ---
 
+## Inventory Account Ownership — 2026-10-10
+
+Inventory now uses verified Supabase owner identity in Express and owner/domain/job keys locally and in PostgreSQL. expectedOwnerId and browser lifetime generations reject stale-account work. Unowned v1/v2 browser records are preserved and require an explicit per-job import before upload. The older single-user/browser ownership statements below describe legacy behavior and do not imply old inventory was already attributed.
+
 ## Single-User Architecture
 
 The All in One 667 remains a single-user application, but inventory custody now has two explicit company domains inside that account. This is domain isolation, not multi-user authentication.

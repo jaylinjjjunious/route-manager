@@ -1,7 +1,9 @@
 // Only authenticated shell code selects an owner. Unattributed legacy keys are
 // preserved for an explicit ownership-confirmed import, never adopted silently.
 let activeOwner: string | null = null;
-export function setStorageOwner(owner: string | null) { activeOwner = owner; }
+let ownerEpoch = 0;
+export function setStorageOwner(owner: string | null) { if (activeOwner !== owner) ownerEpoch += 1; activeOwner = owner; }
+export function getStorageOwnerEpoch() { return ownerEpoch; }
 export function getStorageOwner() { return activeOwner; }
 export function ownedStorageKey(key: string) { return activeOwner ? `${key}:${activeOwner}` : null; }
 export function readOwnedStorage(key: string) {

@@ -17,13 +17,15 @@ export function createRequestBudget(file = path.resolve('.local-security-budget/
     transit: { minute: 3, month: 500, concurrent: 2 },
     proof: { minute: 3, month: 100, concurrent: 1 },
     probation: { minute: 10, month: 200, concurrent: 1 },
+    inventory: { minute: 10, month: 200, concurrent: 1 },
   };
   return ((req, res, next) => {
     const route = req.path;
     const group = /^\/(assistant|dispatcher|import)(\/|$)/.test(route) ? 'ai'
       : route.startsWith('/transit/') && route !== '/transit/status' ? 'transit'
       : req.method === 'POST' && route === '/shower-proofs' ? 'proof'
-      : req.method === 'POST' && route.startsWith('/probation-check-ins') ? 'probation' : null;
+      : req.method === 'POST' && route.startsWith('/probation-check-ins') ? 'probation'
+      : req.method === 'POST' && route.startsWith('/inventory/') ? 'inventory' : null;
     if (!group) return next();
     const owner = (req as typeof req & { userId?: string }).userId;
     if (!owner) { res.status(401).json({ error: 'Authentication required.' }); return; }

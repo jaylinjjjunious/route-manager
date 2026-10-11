@@ -1,5 +1,7 @@
 ## 2026-10-10 — Verify feature discoverability
 
+Inventory cloud persistence must include item/evidence payloads and account-saved job discovery, not just event IDs. Otherwise another device cannot find the ledger or restore its photos. Preserve unattributed local data for explicit ownership-confirmed import, and compare owner lifetime generations rather than owner IDs alone.
+
 A mounted modal and retained callback do not establish a usable feature. Simplifying Job Detail orphaned Preview Guide and Scan entry points while older docs still described them. Check actual openers, selected job/domain context, empty states and return paths when reviewing app connections. The first browser screenshot also caught tool shortcuts hidden below the short-screen scroll area; place essential shortcuts in the fixed footer and verify a screenshot before handoff.
 
 ## User preference: conserve usage (2026-10-02)

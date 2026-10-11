@@ -12,6 +12,7 @@ import { createTransitRouter } from "./server/transit/transitRoutes";
 import { createBlueAiRouter } from "./server/blueai/blueAiRoutes";
 import probationRouter from "./server/admin/probationRoutes";
 import adminRouter from "./server/admin/adminRoutes";
+import { createInventoryRouter } from './server/inventory/inventoryRoutes';
 import { createDurableBudget } from "./server/security/durableBudget";
 import { validateProofImage } from "./server/security/proofImage";
 import { createRequestBudget } from "./server/security/requestBudget";
@@ -148,7 +149,7 @@ const ocrJson = express.json({ limit: '6mb' });
 const batchJson = express.json({ limit: '15mb' });
 app.use('/api', (req, res, next) => {
   const parser = ['/probation-check-ins/sync', '/import/preview-summary'].includes(req.path) ? batchJson
-    : req.path.startsWith('/probation-check-ins') ? proofJson : req.path === '/import/ocr' ? ocrJson : smallJson;
+    : req.path.startsWith('/probation-check-ins') || req.path.startsWith('/inventory/') ? proofJson : req.path === '/import/ocr' ? ocrJson : smallJson;
   parser(req, res, next);
 });
 app.use(express.urlencoded({ extended: false, limit: '32kb', parameterLimit: 50 }));
@@ -234,6 +235,7 @@ app.use("/api/transit", createTransitRouter(requireAuth));
 
 // Probation check-in durable server API (authenticated user)
 app.use("/api/probation-check-ins", probationRouter);
+app.use('/api/inventory', createInventoryRouter(serverSupabaseAdmin));
 
 // Admin portal API (admin only)
 app.use("/api/admin", adminRouter);

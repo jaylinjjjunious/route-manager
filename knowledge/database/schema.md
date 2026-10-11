@@ -5,6 +5,10 @@
 
 ---
 
+## Inventory Account Storage — 2026-10-10
+
+Supabase public.inventory_custody_ledgers uses primary key (owner_id, domain, job_id), ledger JSONB and updated_at. Migration 0008 adds RLS and revokes direct anon/authenticated access. The service-role-only save_inventory_custody RPC atomically enforces prior event/evidence preservation and storage caps (3 MB/job, 20 ledgers/10 MB/account, 100 MB global). Applied and rollback-fixture verified. Main jobs/Proof Vault are not migrated by this slice.
+
 ## Overview
 
 The All in One 667 uses two storage backends:

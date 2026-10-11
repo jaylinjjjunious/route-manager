@@ -17,7 +17,7 @@ Job-scoped inventory tracking for receiving, installation, removal, and return o
 - Return requires both a receipt number and tracking number and retains the original item identity.
 - Events and evidence metadata are persisted per job in localStorage. Photo/document data is kept as data URLs for offline use.
 - Events are also copied to a local sync queue. The page retries when online and registers the `inventory-custody-sync` Background Sync tag; the service worker wakes controlled clients to retry the queue.
-- The queue currently has no durable authenticated server endpoint. Until that backend slice exists, queued events remain local and are not reported as server-synced.
+- Authenticated Express GET/POST /api/inventory/custody-ledger now persists complete event/item/evidence snapshots in Supabase. GET /api/inventory/jobs exposes account/domain-filtered job metadata so cloud-only inventory jobs are selectable without changing the main schedule. Queues clear only matching acknowledgments; later local changes remain pending. The panel shows sync status and Retry inventory sync.
 - Custody items and events can optionally carry procedure requirement identity: `requirementId`, `procedureId`, `procedureVersion`, `procedureStepId`, `visitId`, and `requirementRole` (`assigned_item`, `installed_item`, `removed_item`, `return_item`, `serial_capture`). These fields are optional for legacy compatibility and allow procedure-derived equipment requirements to be evaluated against real inventory evidence.
 
 ## Workflow
@@ -30,9 +30,9 @@ Job-scoped inventory tracking for receiving, installation, removal, and return o
 
 ## Data And Integrity
 
-The local ledger key is `inventory_custody_ledger_v2:<domain>:<jobId>`. Sync queues are also domain-specific. Legacy v1 merchandising ledgers and queues migrate into the merchandising namespace without deleting records; legacy hashes retain their original canonical format, while new domain-aware events use the v2 format. Each event includes `previousHash` and `hash`; the UI verifies the local chain and shows a review state if event contents or ordering are changed.
+Current local keys are inventory_custody_ledger_v2:<domain>:<jobId>:<ownerId> and owner/domain-scoped queues. Unowned v1/v2 records and queues remain untouched. The selected-job panel offers an explicit ownership-confirmed import into an empty account ledger; originals are preserved. Legacy canonical integrity formats remain supported when SHA-256 verified. Owner lifetime generations guard delayed A→B→A responses and stale writes.
 
-This is tamper-evident local history, not tamper-proof storage. A user who controls browser storage can alter both records and hashes. Durable server verification, user identity, conflict handling, and append-only server persistence are the next required vertical slice.
+This is tamper-evident local history, not tamper-proof storage. A user who controls browser storage can alter both records and hashes. The server verifies SHA-256 chains, exact item/event/evidence identity and derived custody states. An atomic service-role-only RPC accepts replays/extensions, rejecting changed or shortened history, lost evidence and divergent forks. Compatible remote history restores locally; conflicts preserve both copies. RLS is enabled; direct anon/authenticated table/RPC access is revoked. Verified session ownership and expectedOwnerId are required.
 
 ### Procedure Equipment Evidence
 
@@ -40,9 +40,23 @@ Procedure definitions describe required equipment/serial/return obligations, whi
 
 Serial semantics are generic: `none` requires no serial; `single` requires one serial value; `old` requires a removed/original serial; `new` requires an assigned/installed replacement serial; `old_and_new` requires both old and new serials and they must be distinguishable. Removed-equipment tracking requires an actual removal/removed custody state. `returnRequired` is satisfied only by a return custody event/state with receipt and tracking data, not by removal alone. Legacy inventory without procedure identity remains readable but does not satisfy new procedure requirements through fuzzy model/name matching.
 
-The generic Job Detail Procedure workspace now displays equipment prompts from assigned procedures and writes requirement-scoped custody events through `recordInventoryForRequirement(...)`. The UI records the exact procedure ID, version, step ID, requirement ID, active visit ID when present, and a generic custody role (`serial_capture`, `installed_item`, `removed_item`, or `return_item`) so the existing closeout evaluator can determine satisfaction from custody evidence.
+The retained generic Procedure workspace (not mounted in the simplified Job Detail popup) can write requirement-scoped custody events through `recordInventoryForRequirement(...)`. The UI records the exact procedure ID, version, step ID, requirement ID, active visit ID when present, and a generic custody role (`serial_capture`, `installed_item`, `removed_item`, or `return_item`) so the existing closeout evaluator can determine satisfaction from custody evidence.
+
+## Account Sync Limits And Validation (2026-10-10)
+
+- At most 200 events/100 items and 3 MB per ledger/request; 20 ledgers/10 MB per account and 100 MB global. Database storage accounting is serialized atomically. Existing durable request admission limits inventory writes to 10/minute, 200/month, one account write at a time.
+- New images are prepared as JPEG, up to 1600px and 1 MB data URL; PDF/text/CSV documents are capped at 1 MB. Oversized/unsupported existing evidence stays local with an error. Local storage exhaustion is reported. Device/browser codec and camera checks remain separate.
+- Empty account reads display “No inventory records yet — account checked”; only acknowledged records display Saved to your account.
+- Migration 0008 applied; replay, two-owner isolation, append/conflict, evidence preservation, access and ledger quota verified using rollback-only SQL fixtures. Targeted tests and actual production-bundle mocked-database integration cover owner reads/writes, stale account rejection, metadata discovery and evidence round-trip. Final deployment/signed-in checks pending.
+- Main jobs and standalone Proof Vault are separate features; this slice syncs inventory only. No automatic branch merge or archival UI.
 
 ## Related Source Files
+
+- server/inventory/inventoryRoutes.ts — bounded owner-scoped API.
+- drizzle/0008_inventory_account_sync.sql — atomic history extension and storage accounting.
+- src/services/inventory/integrity.ts — shared pure canonical hashing/verification.
+- src/services/inventory/useInventoryAccountJobs.ts — cloud-only inventory job discovery.
+- tests/inventoryAccountSync.test.ts and tests/inventoryDatabaseRollback.sql — preservation, lifetime and persistence checks.
 
 - `src/components/InventoryCustodyPanel.tsx` — job detail UI and technician workflow
 - `src/services/inventory/chainOfCustody.ts` — ledger, hash chain, evidence, queue, and GPS helpers
@@ -55,15 +69,15 @@ The generic Job Detail Procedure workspace now displays equipment prompts from a
 
 ## Known Limitations
 
-- No server route or durable database table exists for inventory custody events yet.
+- Cloud sync is bounded and does not automatically merge divergent custody histories. Conflict review/archival remains future work.
 - Background Sync can notify an open controlled client, but cannot complete authenticated upload while no client has access to the Supabase session.
 - Barcode detection is supported when the browser exposes BarcodeDetector; low-confidence, unsupported, and unmatched scans fall back to manual part-number correction. Full text OCR remains a follow-up enhancement.
 - The initial offline reference catalog is sourced from the Drive contract PDF `1099 CE TJX AGREEMENT - Jaylin Junious - Sole Proprietor - Review.pdf` and contains only `24173-02-R`, `CBL445-040-02-A`, `MSC445-032-01-A`, and `M379-122-21-WWA-5-DN-0001027`. Receiving checks supported barcodes against this catalog and keeps manual correction when there is no match.
 - End-to-end UI verification can use the loopback-only development verification handshake when both explicit development flags are enabled; it uses local seeded jobs and local custody storage, not production records or Supabase credentials.
 - Large photo/document data URLs can approach browser storage limits.
 - Contract-parts jobs must still be explicitly marked in imported or edited job metadata; no current seeded job is assigned to that domain.
-- Evidence calendar data is derived only from the active domain ledger; the current server sync endpoint remains unavailable, so the calendar is local/offline-first.
+- Evidence calendar data is derived from the active domain ledger, including evidence restored from the account. It remains usable offline after local restoration.
 
 ---
 
-**Last Updated:** 2026-08-15 (Procedure equipment prompts added to Job Detail workspace using exact Inventory Custody requirement identity)
+**Last Updated:** 2026-10-10 (owner-bound inventory cloud sync and account-only job discovery; release verification pending)

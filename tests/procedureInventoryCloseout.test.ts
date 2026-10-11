@@ -1,3 +1,4 @@
+import { setStorageOwner } from '../src/utils/ownerStorage';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Job } from '../src/types';
 import { evaluateJobCloseout } from '../src/features/jobs/jobCloseout';
@@ -165,7 +166,7 @@ function evaluateWithInventory(
 }
 
 describe('procedure inventory closeout integration', () => {
-  beforeEach(() => localStorage.clear());
+  beforeEach(() => { localStorage.clear(); setStorageOwner('test-owner'); });
 
   it('blocks closeout when required equipment is missing', () => {
     const result = evaluateWithInventory(makeProcedure());

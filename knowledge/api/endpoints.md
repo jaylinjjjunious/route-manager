@@ -1,5 +1,9 @@
 # API Endpoints Reference
 
+## Inventory account API — 2026-10-10
+
+GET /api/inventory/jobs requires domain and expectedOwnerId; returns jobs metadata only. GET /api/inventory/custody-ledger additionally requires jobId; returns ledger or null. POST /api/inventory/custody-ledger accepts {expectedOwnerId, ledger}; returns the complete acknowledged ledger. All require a verified Bearer session, derive owner server-side and use private/no-store. Errors: 400 invalid history/selection, 401 unauthenticated, 409 account mismatch/history conflict/storage quota, 413 body limit, 429 admission budget, 503 unavailable storage. Device data/queues remain pending on errors.
+
 **Last Updated:** 2026-10-02 (add admin portal, activity log, probation durable storage)
 **Related Source Files:** `server.ts`, `worker/index.ts`, `server/transit/transitRoutes.ts`, `src/features/showerGate/showerProofApi.ts`, `src/services/apiClient.ts`, `src/services/transit/transitApiClient.ts`, `server/admin/probationRoutes.ts`, `server/admin/adminRoutes.ts`, `server/admin/auth.ts`, `server/admin/activityLog.ts`
 

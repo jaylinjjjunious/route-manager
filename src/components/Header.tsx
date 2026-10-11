@@ -9,9 +9,10 @@ import { Moon, Sun, Mail } from 'lucide-react';
 interface HeaderProps {
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
+  accountEmail?: string;
 }
 
-export default function Header({ theme, onToggleTheme }: HeaderProps) {
+export default function Header({ theme, onToggleTheme, accountEmail }: HeaderProps) {
   return (
     <header id="app-header" className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/58 backdrop-blur-2xl dark:border-white/[0.07] dark:bg-[#0F1218]/92 dark:backdrop-blur-none">
       <div className="mx-auto flex min-h-[76px] max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
@@ -41,7 +42,7 @@ export default function Header({ theme, onToggleTheme }: HeaderProps) {
           <div className="hidden sm:flex items-center gap-2 rounded-full bg-white/62 border border-white/70 px-3.5 py-1.5 shadow-sm backdrop-blur-xl dark:bg-[#0F1218] dark:border-white/[0.07] dark:backdrop-blur-none">
             <Mail size={12} className="text-slate-400 dark:text-slate-500" />
             <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">
-              jaylinjjjunious@gmail.com
+              {accountEmail || 'Signed-in account'}
             </span>
           </div>
 

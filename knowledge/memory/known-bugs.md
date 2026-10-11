@@ -1,8 +1,12 @@
 # Known Bugs
 
+## 2026-10-10 — Inventory account sync
+
+Previously, the local queue posted events to a nonexistent endpoint, without item/evidence payloads or account ownership. Implemented owner-bound ledgers/queues, full durable snapshots, explicit legacy import, hash/reference validation, atomic extension/conflict/evidence preservation, bounded storage and account-only job discovery. Migration applied; 51 focused tests and rollback SQL pass; release verification pending. Fixed the legacy header's hard-coded email by passing the authenticated account. Large/unsupported old evidence and divergent histories remain local pending review; standalone Proof Vault/job cloud sync and real-device photo verification remain separate.
+
 ## 2026-10-10 — Disconnected feature entry points
 
-Follow-up audit finding: the legacy Inventory header displays a fixed email from `src/components/Header.tsx:44`, rather than the current authenticated profile. This display inconsistency remains open.
+Follow-up audit finding resolved in the inventory sync slice: the legacy header now receives the authenticated account email rather than a fixed address; final live verification pending.
 
 Reproduced live: More → Proof Vault did nothing with no folders. Source confirmed populated vault opened only newest folder; Preview Guide had no opener and Job Detail's Scan callback was unused. Implemented all-folder browser/empty state plus selected-job Preview Guide, Scan and Inventory shortcuts. Twenty-three relevant tests and lint/build pass. Main/Render efad8a3, signed-in empty vault, Preview Guide return, Scan, Inventory job/domain and small-screen visibility verified. Older-folder preservation tested with disposable records. Inventory/proof remain local-first; procedure/closeout UI and inferred proof arrival/completion timestamps remain limitations, not fixed by navigation work.
 

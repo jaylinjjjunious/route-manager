@@ -2,10 +2,12 @@
 
 ## Current non-iOS work (reviewed 2026-10-10)
 
+- Inventory account-sync slice implemented; migration 0008 applied, rollback SQL and 51 focused tests pass. Release and signed-in validation pending. Jobs and standalone Proof Vault remain separate; next durability work is Proof Vault media, plus inventory archival/conflict review and physical-device photo checks.
+
 - Latest user focus: connect existing app features. Proof Vault empty/history entry and selected-job Preview Guide/Scan/Inventory shortcuts deployed and signed-in verified at efad8a3. Twenty-three relevant tests plus lint/build pass; shortcuts stay visible in the fixed footer. Procedure/closeout engines are retained but their old UI was deliberately retired. Future UI decisions should preserve the simple popup and establish a separate reachable workflow if requested.
 
 - Check-in account-lifetime fixes implemented: 22 focused tests, disposable production-bundle account isolation checks, lint and build pass. Deployed to main/Render at c8747d1; signed-in reload, Retry account sync, GET 200 JSON, Saved status, pending=false and zero pending records verified. Earlier normal Saved/pending=false acknowledgment and browser access are now verified.
-- Next development: finish live Phase 1 scheduling interactions, then approved weather/air-quality and voice summary phases. Durable inventory custody sync and owner-confirmed legacy browser-data migration remain unimplemented.
+- Next development: finish live Phase 1 scheduling interactions, then approved weather/air-quality and voice summary phases. Inventory custody sync and its explicit per-job legacy import are implemented in the current slice; migration of other legacy browser features remains unimplemented.
 - Infrastructure: durable proof files, database-atomic quotas before replicas, retention/archival, the unpatched build-tool chain and inaccessible legacy Sites publication. Preserve existing data.
 - Access-dependent checks: physical iPhone camera/PWA/Preview Guide/procedure flows and separate ordinary-account production login. Automatic CE recognition requires a supported receipt/API contract. BlueAI stays paused. Native iOS work is excluded.
 

@@ -51,6 +51,7 @@ import ScreenshotImportModal from './components/ScreenshotImportModal';
 import SmartAisleScan from './components/SmartAisleScan';
 import InventoryCustodyPanel from './components/InventoryCustodyPanel';
 import { getInventoryDomain, inventoryDomainLabel } from './services/inventory/domain';
+import { useInventoryAccountJobs, mergeInventoryJobs } from './services/inventory/useInventoryAccountJobs';
 import {
   loadCustodyLedger,
   recordInventoryForRequirement,
@@ -955,7 +956,8 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const selectedProofRecord = proofVault.selectedProofRecord;
   const routeDetailJob = routeDetailJobId ? jobs.jobs.find(job => job.id === routeDetailJobId) || null : null;
   const previewGuideJob = previewGuideJobId ? jobs.jobs.find(job => job.id === previewGuideJobId) || null : null;
-  const inventoryJobs = jobs.jobs.filter(job => getInventoryDomain(job) === inventoryDomain);
+  const accountInventory = useInventoryAccountJobs(inventoryDomain, currentTab === 'inventory');
+  const inventoryJobs = mergeInventoryJobs(jobs.jobs.filter(job => getInventoryDomain(job) === inventoryDomain), accountInventory.jobs);
   const inventoryJob = inventoryJobs.find(job => job.id === inventoryJobId) || inventoryJobs.find(job => job.routeId === 'A') || inventoryJobs[0] || null;
   const getRouteStopNavLink = routeListNavLink;
   const dispatcherBrief = dispatcherMessage.length > 118 ? `${dispatcherMessage.slice(0, 115).trim()}...` : dispatcherMessage;
@@ -1028,7 +1030,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
         {/* Header */}
         {currentTab === 'dashboard' || currentTab === 'jobs' || currentTab === 'more'
           ? <AioHeader userName={userName} onOpenProfile={() => handleTabChange('more')} />
-          : <Header theme={theme} onToggleTheme={handleToggleTheme} />}
+          : <Header theme={theme} onToggleTheme={handleToggleTheme} accountEmail={user?.email} />}
 
         {/* Main Content Body */}
         <main className="app-main mx-auto max-w-7xl px-3 py-4 pb-40 sm:px-6 sm:py-6 lg:px-8 space-y-6">
@@ -1676,6 +1678,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                   </div>
                 </div>
                 <label className='mt-5 block text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400'>Company inventory domain</label>
+                {accountInventory.error && <p role="status" className="mt-2 text-sm text-amber-600 dark:text-amber-300">{accountInventory.error}</p>}
                 <select value={inventoryDomain} onChange={event => { setInventoryDomain(event.target.value as 'merchandising' | 'contract_parts'); setInventoryJobId(null); }} className='mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-900 outline-none focus:border-cyan-500 dark:border-white/10 dark:bg-white/5 dark:text-white'>
                   <option value='merchandising'>{inventoryDomainLabel('merchandising')}</option>
                   <option value='contract_parts'>{inventoryDomainLabel('contract_parts')}</option>

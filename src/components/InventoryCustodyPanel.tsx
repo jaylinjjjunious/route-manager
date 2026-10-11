@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import type { Job } from '../types';
 import { getInventoryDomain, inventoryDomainLabel } from '../services/inventory/domain';
+import type { InventoryJobSummary } from '../services/inventory/useInventoryAccountJobs';
 import {
   findInventoryCatalogMatch,
   type InventoryCatalogEntry,
@@ -26,7 +27,10 @@ import {
   createCustodyEvent,
   emptyCustodyLedger,
   fileToCustodyEvidence,
+  syncCustodyLedger,
   flushCustodySyncQueue,
+  hasLegacyCustodyLedger,
+  importLegacyCustodyLedger,
   getCurrentCoordinates,
   loadCustodyLedger,
   type CustodyEventType,
@@ -38,7 +42,7 @@ import {
 } from '../services/inventory/chainOfCustody';
 
 interface InventoryCustodyPanelProps {
-  job: Job;
+  job: InventoryJobSummary;
 }
 
 type ActionType = Exclude<CustodyEventType, 'receive_in'>;
@@ -103,7 +107,28 @@ function moveCalendarAnchor(anchor: Date, mode: EvidenceCalendarMode, direction:
 export default function InventoryCustodyPanel({ job }: InventoryCustodyPanelProps) {
   const domain = getInventoryDomain(job);
   const isPackageDomain = domain === 'merchandising';
-  const [ledger, setLedger] = useState<CustodyLedger>(() => loadCustodyLedger(job.id, domain));
+  const [ledger, setLedger] = useState<CustodyLedger>(() => ({ ...loadCustodyLedger(job.id, domain), storeName: job.storeName, address: job.address }));
+  const [syncMessage, setSyncMessage] = useState('Inventory sync pending');
+  const [syncBusy, setSyncBusy] = useState(false);
+  const activeRef = useRef(true);
+  const jobKeyRef = useRef('');
+  jobKeyRef.current = `${domain}:${job.id}`;
+  useEffect(() => { activeRef.current = true; return () => { activeRef.current = false; }; }, []);
+  const captureJobLifetime = () => { const key = jobKeyRef.current; return () => activeRef.current && jobKeyRef.current === key; };
+  const syncInventory = async () => {
+    const key = `${domain}:${job.id}`;
+    setSyncBusy(true);
+    try {
+      const updated = await syncCustodyLedger(job.id, domain, { storeName: job.storeName, address: job.address });
+      if (activeRef.current && jobKeyRef.current === key) {
+        setLedger(current => JSON.stringify(current) === JSON.stringify(updated) ? current : updated);
+        setSyncMessage(!updated.events.length ? 'No inventory records yet — account checked' : updated.events.some(event => event.syncStatus !== 'synced') ? 'New inventory changes pending sync' : 'Inventory saved to your account');
+        void flushCustodySyncQueue({ jobId: job.id, domain });
+      }
+    } catch (error) {
+      if (activeRef.current && jobKeyRef.current === key) setSyncMessage(error instanceof Error ? error.message : 'Inventory sync failed. Device records are preserved.');
+    } finally { if (activeRef.current && jobKeyRef.current === key) setSyncBusy(false); }
+  };
   const [partNumber, setPartNumber] = useState('');
   const [serialNumber, setSerialNumber] = useState('');
   const [packageId, setPackageId] = useState('');
@@ -155,7 +180,7 @@ export default function InventoryCustodyPanel({ job }: InventoryCustodyPanelProp
   }, {}), [evidencePhotos]);
 
   useEffect(() => {
-    setLedger(loadCustodyLedger(job.id, domain));
+    setLedger({ ...loadCustodyLedger(job.id, domain), storeName: job.storeName, address: job.address });
     setActiveItemId(null);
     setIsSaving(false);
     setEvidenceOpen(false);
@@ -173,9 +198,7 @@ export default function InventoryCustodyPanel({ job }: InventoryCustodyPanelProp
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      void flushCustodySyncQueue().then(result => {
-        if (result.synced > 0) setMessage(`${result.synced} custody event${result.synced === 1 ? '' : 's'} queued for sync.`);
-      });
+      void syncInventory();
     };
     const handleOffline = () => setIsOnline(false);
     const handleServiceWorkerMessage = (event: MessageEvent) => {
@@ -184,18 +207,21 @@ export default function InventoryCustodyPanel({ job }: InventoryCustodyPanelProp
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     navigator.serviceWorker?.addEventListener('message', handleServiceWorkerMessage);
-    void flushCustodySyncQueue();
+    void syncInventory();
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       navigator.serviceWorker?.removeEventListener('message', handleServiceWorkerMessage);
     };
-  }, []);
+  }, [job.id, domain, ledger.events.length, ledger.events.filter(event => event.syncStatus !== 'synced').length]);
 
   const handleReceivePhoto = async (file?: File) => {
     if (!file) return;
+    const active = captureJobLifetime();
     try {
-      setReceivePhoto(await fileToCustodyEvidence(file, 'photo'));
+      const evidence = await fileToCustodyEvidence(file, 'photo');
+      if (!active()) return;
+      setReceivePhoto(evidence);
       setMessage('Item photo ready. Confirm the part and serial to receive it.');
       const BarcodeDetector = inventoryBarcodeHost.BarcodeDetector;
       if (BarcodeDetector && globalThis.createImageBitmap) {
@@ -204,6 +230,7 @@ export default function InventoryCustodyPanel({ job }: InventoryCustodyPanelProp
           const detector = new BarcodeDetector({ formats: ['code_128', 'code_39', 'data_matrix', 'qr_code', 'ean_13', 'upc_a'] });
           const detectedValues = (await detector.detect(image)).map(result => result.rawValue?.trim()).filter((value): value is string => Boolean(value));
           image.close();
+          if (!active()) return;
           const match = detectedValues.map(findInventoryCatalogMatch).find(Boolean) || null;
           const detectedValue = detectedValues[0] || '';
           const serialCandidate = detectedValues.find(value => !findInventoryCatalogMatch(value));
@@ -223,21 +250,24 @@ export default function InventoryCustodyPanel({ job }: InventoryCustodyPanelProp
             setCatalogMessage('No supported part barcode detected. Enter the part number manually.');
           }
         } catch {
+          if (!active()) return;
           setReceiveDraft(true);
           setCatalogMessage('Barcode scan was unavailable for this image. Enter the part number manually.');
         }
       }
-    } catch {
-      setMessage('The item photo could not be read. Try the camera again.');
+    } catch (error) {
+      if (active()) setMessage(error instanceof Error ? error.message : 'The item photo could not be read.');
     }
   };
 
   const handleReceiveDocuments = async (files: FileList | null) => {
     if (!files?.length) return;
+    const active = captureJobLifetime();
     try {
-      setReceiveDocuments(await Promise.all(Array.from(files).map(file => fileToCustodyEvidence(file, 'document'))));
-    } catch {
-      setMessage('One or more documents could not be read.');
+      const documents = await Promise.all(Array.from(files).map(file => fileToCustodyEvidence(file, 'document')));
+      if (active()) setReceiveDocuments(documents);
+    } catch (error) {
+      if (active()) setMessage(error instanceof Error ? error.message : 'One or more documents could not be read.');
     }
   };
 
@@ -246,7 +276,9 @@ export default function InventoryCustodyPanel({ job }: InventoryCustodyPanelProp
       setMessage('Capture delivery evidence before recording package delivery.');
       return;
     }
+    const active = captureJobLifetime();
     setIsSaving(true);
+    try {
     const coordinates = await getCurrentCoordinates();
     const evidence = [...(actionEvidence ? [actionEvidence] : []), ...actionDocuments];
     const previousHash = ledger.events[ledger.events.length - 1]?.hash || GENESIS_HASH;
@@ -266,6 +298,7 @@ export default function InventoryCustodyPanel({ job }: InventoryCustodyPanelProp
       packageContents: item.packageContents,
       previousHash,
     });
+    if (!active()) return;
     const next = appendCustodyEvent(ledger, event, { ...item, evidence: [...item.evidence, ...evidence] });
     setLedger(next);
     setActionEvidence(null);
@@ -274,7 +307,8 @@ export default function InventoryCustodyPanel({ job }: InventoryCustodyPanelProp
     setReturnTracking('');
     setExceptionNote('');
     setMessage(`${eventLabel(type, isPackageDomain)} saved ${coordinates ? 'with GPS' : 'without GPS'}.`);
-    setIsSaving(false);
+    } catch (error) { if (active()) setMessage(error instanceof Error ? error.message : 'Could not save inventory. Keep your evidence and retry.'); }
+    finally { if (active()) setIsSaving(false); }
   };
 
   const handleReceive = async () => {
@@ -287,7 +321,9 @@ export default function InventoryCustodyPanel({ job }: InventoryCustodyPanelProp
       setMessage('Draft receive: correct the part number to a catalog match before finalizing.');
       return;
     }
+    const active = captureJobLifetime();
     setIsSaving(true);
+    try {
     const itemId = makeLocalId('inventory-item');
     const evidence = [...(receivePhoto ? [receivePhoto] : []), ...receiveDocuments];
     const coordinates = await getCurrentCoordinates();
@@ -322,6 +358,7 @@ export default function InventoryCustodyPanel({ job }: InventoryCustodyPanelProp
       eventIds: [],
       updatedAt: event.occurredAt,
     };
+    if (!active()) return;
     const next = appendCustodyEvent(ledger, event, item);
     setLedger(next);
     setActiveItemId(itemId);
@@ -335,16 +372,28 @@ export default function InventoryCustodyPanel({ job }: InventoryCustodyPanelProp
     setCatalogMatch(null);
     setReceiveDraft(false);
     setMessage(`Item received ${coordinates ? 'with GPS' : 'without GPS'} and queued for sync.`);
-    setIsSaving(false);
+    } catch (error) { if (active()) setMessage(error instanceof Error ? error.message : 'Could not save inventory. Keep your evidence and retry.'); }
+    finally { if (active()) setIsSaving(false); }
   };
 
   const handleActionEvidence = async (file?: File) => {
     if (!file) return;
+    const active = captureJobLifetime();
     try {
-      setActionEvidence(await fileToCustodyEvidence(file, 'photo'));
-    } catch {
-      setMessage('The event photo could not be read.');
+      const evidence = await fileToCustodyEvidence(file, 'photo');
+      if (active()) setActionEvidence(evidence);
+    } catch (error) {
+      if (active()) setMessage(error instanceof Error ? error.message : 'The event photo could not be read.');
     }
+  };
+
+  const handleActionDocuments = async (files: FileList | null) => {
+    if (!files?.length) return;
+    const active = captureJobLifetime();
+    try {
+      const documents = await Promise.all(Array.from(files).map(file => fileToCustodyEvidence(file, 'document')));
+      if (active()) setActionDocuments(documents);
+    } catch (error) { if (active()) setMessage(error instanceof Error ? error.message : 'Could not read inventory documents.'); }
   };
 
   return (
@@ -363,6 +412,18 @@ export default function InventoryCustodyPanel({ job }: InventoryCustodyPanelProp
           </div>
           <p className="mt-1 text-[10px] leading-relaxed text-slate-400">{isPackageDomain ? 'Receive packages, prove store delivery, and record return or exception.' : 'Receive, install, remove, and return the same item without losing its evidence trail.'}</p>
           <p className="mt-1 text-[10px] font-black uppercase tracking-wider text-cyan-300">{inventoryDomainLabel(domain)}</p>
+          <p role="status" className="mt-2 text-xs text-slate-300">{syncMessage}</p>
+          <button type="button" disabled={syncBusy} onClick={() => void syncInventory()} className="mt-2 min-h-10 rounded-lg bg-cyan-500/15 px-3 text-xs font-bold text-cyan-100 disabled:opacity-50">{syncBusy ? 'Syncing inventory…' : 'Retry inventory sync'}</button>
+          {hasLegacyCustodyLedger(job.id, domain) && ledger.events.length === 0 && (
+            <div className="mt-3 rounded-lg border border-amber-400/30 p-3 text-xs text-amber-100">
+              <p>Older inventory exists on this device without an account owner. Import only if these records belong to you; the originals will be kept.</p>
+              <button type="button" disabled={syncBusy} className="mt-2 min-h-10 font-bold" onClick={async () => {
+                const key = `${domain}:${job.id}`;
+                try { const imported = await importLegacyCustodyLedger(job.id, domain); if (activeRef.current && jobKeyRef.current === key) setLedger(imported); }
+                catch (error) { if (activeRef.current && jobKeyRef.current === key) setSyncMessage(error instanceof Error ? error.message : 'Import failed.'); }
+              }}>These are my records — import to my account</button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -452,7 +513,7 @@ export default function InventoryCustodyPanel({ job }: InventoryCustodyPanelProp
                   {actionEvidence && <p className="text-[10px] text-emerald-300">Event photo ready.</p>}
                   <label className="flex min-h-9 cursor-pointer items-center justify-center gap-1 rounded-lg border border-dashed border-white/15 text-[10px] font-bold text-slate-400 hover:text-cyan-200">
                     <FileText size={12} /> Add event document
-                    <input className="hidden" type="file" multiple accept="image/*,.pdf,.txt,.csv" onChange={async event => { if (event.target.files?.length) setActionDocuments(await Promise.all(Array.from(event.target.files).map(file => fileToCustodyEvidence(file, 'document')))); event.currentTarget.value = ''; }} />
+                    <input className="hidden" type="file" multiple accept="image/*,.pdf,.txt,.csv" onChange={event => { void handleActionDocuments(event.target.files); event.currentTarget.value = ''; }} />
                   </label>
                   {actionDocuments.length > 0 && <p className="text-[10px] text-emerald-300">{actionDocuments.length} event document{actionDocuments.length === 1 ? '' : 's'} ready.</p>}
                   {isPackageDomain && <input value={exceptionNote} onChange={event => setExceptionNote(event.target.value)} placeholder="Exception note (optional)" className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-2 text-[10px] text-white outline-none placeholder:text-slate-500 focus:border-cyan-400" />}
