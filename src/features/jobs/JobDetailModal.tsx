@@ -281,7 +281,11 @@ export default function JobDetailModal({
                 </button>
               ))}
             </div>
+          </div>
+        </div>
 
+        {/* Keep job tools and navigation visible on short screens. */}
+        <div className="shrink-0 space-y-3 border-t border-white/10 px-4 py-3 pb-4">
             {(onOpenPreviewGuide || onOpenScan || onOpenInventory) && (
               <div className="grid grid-cols-3 gap-2 pt-2" aria-label="Job tools">
                 {[
@@ -297,12 +301,6 @@ export default function JobDetailModal({
                 ))}
               </div>
             )}
-
-          </div>
-        </div>
-
-        {/* Fixed sticky footer - Navigate button */}
-        <div className="flex shrink-0 items-center gap-2 border-t border-white/10 px-4 py-4 pb-6">
           <a
             href={jobAccessLocked ? undefined : mapsUrl}
             aria-disabled={jobAccessLocked}
