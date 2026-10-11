@@ -64,3 +64,7 @@ Plus approximately 45 earlier commits covering the full feature progression: hab
 ## 2026-09-26 — CLI changes prepared for production
 
 Includes the dedicated Monthly Check-In page, native/web CE browser launcher, local-only development identity, and user-approved simplified job popup. Fixed duplicate launches, navigation lock enforcement, and session-dependent account controls. Render now reports its deployment commit. Local UI verified entry, More → Monthly Check-In, and Jobs → locked navigation popup. Native iOS and protected authenticated cloud flows remain unverified; no checkpoint is created for those flows.
+
+## 2026-10-10 — Check-in account lifetime
+
+Released c8747d1d03dd2ed3b130d1508f5badec11a78688: generation-guarded asynchronous proof/error handling, cancel-on-owner-change/unmount and screen-sharing cleanup. Twenty-two focused tests, lint/build and disposable production-server account isolation checks pass. GitHub main/Render exact SHA and health verified; signed-in Monthly Check-In Saved status, Retry account sync and pending=false/0 pending verified. Physical capture and second live-account switching remain unverified. Native iOS draft remains separate.

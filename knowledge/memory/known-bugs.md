@@ -2,7 +2,7 @@
 
 ## 2026-10-10 — Check-in account lifetime
 
-Reproduced and fixed delayed proof adoption after A→B→A, stale proof-error display and uncanceled old-account sync. Screen-share tracks stop on account changes/unmount and preparation failure. Twenty-two focused tests pass; disposable production-bundle checks verify owner-filtered reads, ordinary-account admin denial and HTTP 409 for stale-account saves. Release pending. Real-device and second live-account exercises remain open.
+Reproduced and fixed delayed proof adoption after A→B→A, stale proof-error display and uncanceled old-account sync. Screen-share tracks stop on account changes/unmount and preparation failure. Twenty-two focused tests pass; disposable production-bundle checks verify owner-filtered reads, ordinary-account admin denial and HTTP 409 for stale-account saves. Deployed/live verified at c8747d1. Real-device and second live-account exercises remain open.
 
 Verified 2026-10-02 in the signed-in production Jobs page: BlueAI records synced; BLUEAI-TEST-001 appears under Assigned from BlueAI and BLUEAI-TEST-002 under Available from BlueAI. Application commit b690196 passed lint, production build, and 28 focused tests. No Barrister writes were performed. This verifies the receiver-to-UI path with existing synthetic data; a new real Barrister extraction was not run.
 

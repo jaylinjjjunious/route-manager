@@ -48,7 +48,7 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
-**2026-10-10 non-iOS follow-through:** Reviewed unfinished Markdown work. Check-in account-lifetime gaps are fixed locally: generation-guarded proof/errors, sync cancellation and screen-track cleanup. Twenty-two focused tests, lint/build and disposable production-bundle ordinary-account checks pass; release verification pending. Scheduling weather/AQ and voice, durable inventory/proof storage and legacy ownership migration remain unfinished. Physical-device/provider/access-dependent checks stay open; BlueAI stays paused.
+**2026-10-10 non-iOS follow-through:** Reviewed unfinished Markdown work. Check-in account-lifetime gaps are fixed locally: generation-guarded proof/errors, sync cancellation and screen-track cleanup. Twenty-two focused tests, lint/build and disposable production-bundle ordinary-account checks pass; deployed and live verified at c8747d1. Scheduling weather/AQ and voice, durable inventory/proof storage and legacy ownership migration remain unfinished. Physical-device/provider/access-dependent checks stay open; BlueAI stays paused.
 
 **2026-10-10 security:** Latest Security Cloud scan: 13 findings on 02fb4436 (10 medium/3 low). Remediation deployed from codex/security-scan-hardening to main/Render at d223cbe, separate from native iOS PR9. Contracts, preservation policy, quota limits and release evidence: docs/SECURITY_SCAN_2026_10_10.md. Public exact-SHA/health and anonymous image denial verified; authenticated account sync and durable quota event verified. No clean rescan/finding closure claimed. Remaining upstream build-tool alerts, legacy Sites deployment and real-photo/device verification are documented.
 
@@ -202,7 +202,7 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 
 ## Resume Point
 
-**2026-10-10 non-iOS:** Account-lifetime fixes and automated ordinary-account coverage complete locally; release verification next. Tests/lint/build pass. Signed-in production is accessible and the prior pending=false/Saved acknowledgment is verified. Preserve the iOS draft and untracked dist-native. The next non-iOS work is listed at the top of knowledge/memory/current-priorities.md; earlier browser-access blockers below are historical.
+**2026-10-10 non-iOS:** Account-lifetime fixes and automated ordinary-account coverage complete locally; deployed and live verified at c8747d1. Tests/lint/build pass. Signed-in production is accessible and the prior pending=false/Saved acknowledgment is verified. Preserve the iOS draft and untracked dist-native. The next non-iOS work is listed at the top of knowledge/memory/current-priorities.md; earlier browser-access blockers below are historical.
 
 **2026-10-10 security:** Latest Security Cloud scan: 13 findings on 02fb4436 (10 medium/3 low). Remediation deployed from codex/security-scan-hardening to main/Render at d223cbe, separate from native iOS PR9. Contracts, preservation policy, quota limits and release evidence: docs/SECURITY_SCAN_2026_10_10.md. Public exact-SHA/health and anonymous image denial verified; authenticated account sync and durable quota event verified. No clean rescan/finding closure claimed. Remaining upstream build-tool alerts, legacy Sites deployment and real-photo/device verification are documented.
 
@@ -284,3 +284,9 @@ Final 2026-10-05 release evidence: d8d8ede pushed and remote verified; public bu
 ### 2026-10-10 — Security Cloud review and hardening
 
 Verified all 13 findings against production main and started isolated remediation. Added pre-parser authentication, durable admission budgets, proof-byte/barcode validation and owner-only images, bounded proof/probation storage, isolated transit caches, production bypass removal, owner-scoped scans/conversations, retired legacy Worker APIs and locked Apple tooling. Lint/build, 512 full-suite tests, 25 final focused tests and disposable production-server security checks pass. Public Render commit d223cbe/health and anonymous image 401 verified; signed-in account sync and durable quota events verified. Final paired-transit UI check passed (nearby stops and 12 live alerts together); see remediation guide. Native iOS draft is preserved on its original remote branch.
+
+### 2026-10-10 — Non-iOS unfinished work follow-through
+- Reviewed the Markdown backlog, corrected current release/access status and listed remaining development versus device/provider/infrastructure dependencies. BlueAI remains paused; iOS is excluded.
+- Fixed reproduced delayed proof adoption after A→B→A, stale proof errors and uncanceled sync; stopped screen-sharing tracks on account changes/unmount/preparation failure.
+- Twenty-two focused tests, lint/build and disposable production-bundle ordinary-account isolation/stale-write/admin-denial checks pass.
+- c8747d1 pushed and live on Render; exact public SHA/health and signed-in Saved/Retry/GET 200/pending=false verified. Real-device and second ordinary-account production checks remain open.

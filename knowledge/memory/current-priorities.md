@@ -2,7 +2,7 @@
 
 ## Current non-iOS work (reviewed 2026-10-10)
 
-- Check-in account-lifetime fixes implemented: 22 focused tests, disposable production-bundle account isolation checks, lint and build pass. Release verification is next. Earlier normal Saved/pending=false acknowledgment and browser access are now verified.
+- Check-in account-lifetime fixes implemented: 22 focused tests, disposable production-bundle account isolation checks, lint and build pass. Deployed to main/Render at c8747d1; signed-in reload, Retry account sync, GET 200 JSON, Saved status, pending=false and zero pending records verified. Earlier normal Saved/pending=false acknowledgment and browser access are now verified.
 - Next development: finish live Phase 1 scheduling interactions, then approved weather/air-quality and voice summary phases. Durable inventory custody sync and owner-confirmed legacy browser-data migration remain unimplemented.
 - Infrastructure: durable proof files, database-atomic quotas before replicas, retention/archival, the unpatched build-tool chain and inaccessible legacy Sites publication. Preserve existing data.
 - Access-dependent checks: physical iPhone camera/PWA/Preview Guide/procedure flows and separate ordinary-account production login. Automatic CE recognition requires a supported receipt/API contract. BlueAI stays paused. Native iOS work is excluded.
