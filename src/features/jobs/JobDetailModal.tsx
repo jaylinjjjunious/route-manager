@@ -188,7 +188,7 @@ export default function JobDetailModal({
 
   const modalContent = (
     <div
-      className={`fixed inset-0 z-[60] flex items-center justify-center bg-black/35 p-3 backdrop-blur-[6px] [-webkit-backdrop-filter:blur(6px)] transition-opacity duration-200 ease-out ${isOpen ? 'opacity-100' : 'opacity-0'}`}
+      className={`fixed inset-0 z-[60] flex items-center justify-center bg-[#080512]/25 p-3 backdrop-blur-[3px] [-webkit-backdrop-filter:blur(3px)] transition-opacity duration-200 ease-out ${isOpen ? 'opacity-100' : 'opacity-0'}`}
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
@@ -196,7 +196,7 @@ export default function JobDetailModal({
     >
       <div
         onClick={handlePanelClick}
-        className={`flex w-full max-w-[430px] flex-col overflow-hidden rounded-2xl border border-white/[0.12] bg-[#111214]/[0.80] shadow-2xl backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)] transition-all duration-200 ease-out ${isOpen ? 'scale-100 opacity-100' : 'scale-[0.97] opacity-0'}`}
+        className={`job-detail-glass flex w-full max-w-[430px] flex-col overflow-hidden rounded-[24px] border border-white/20 text-white transition-all duration-200 ease-out ${isOpen ? 'scale-100 opacity-100' : 'scale-[0.97] opacity-0'}`}
         style={{ maxHeight: 'min(90dvh, 720px)' }}
       >
         {/* Compact sticky header */}
@@ -211,7 +211,7 @@ export default function JobDetailModal({
             ref={closeButtonRef}
             type="button"
             onClick={onClose}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10 text-slate-400 transition hover:bg-white/15 hover:text-white"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] text-white/70 transition hover:bg-white/15 hover:text-white"
             aria-label="Close job details"
           >
             <X size={18} />
@@ -239,10 +239,10 @@ export default function JobDetailModal({
                 <span className="text-lg font-black text-emerald-300">
                   {formatTravelTime(travelTime)}
                 </span>
-                <span className="text-sm font-semibold text-slate-500">
+                <span className="text-sm font-semibold text-white/60">
                   {travelMode === 'driving' ? 'drive' : travelMode === 'bicycling' ? 'bike' : 'walk'}
                 </span>
-                <span className="text-sm font-semibold text-slate-500">
+                <span className="text-sm font-semibold text-white/60">
                   · {legDistance.toFixed(1)} mi
                 </span>
               </div>
@@ -257,7 +257,7 @@ export default function JobDetailModal({
 
             {/* Job Title - smaller, below logo */}
             <div className="text-center">
-              <h2 className="text-lg font-medium text-slate-400 leading-tight break-words uppercase tracking-wide">
+              <h2 className="text-lg font-medium text-white/70 leading-tight break-words uppercase tracking-wide">
                 {job.storeName}
               </h2>
             </div>
@@ -271,8 +271,8 @@ export default function JobDetailModal({
                   onClick={() => setTravelMode(mode.value)}
                   className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-black uppercase transition ${
                     travelMode === mode.value
-                      ? 'bg-white/15 text-white'
-                      : 'text-slate-500 hover:bg-white/[0.06] hover:text-slate-300'
+                      ? 'bg-violet-400/25 text-white ring-1 ring-violet-300/30'
+                      : 'text-white/60 hover:bg-white/[0.06] hover:text-white/90'
                   }`}
                   aria-pressed={travelMode === mode.value}
                 >
@@ -295,7 +295,7 @@ export default function JobDetailModal({
                 ].filter(tool => tool.action).map(tool => (
                   <button key={tool.label} type="button" disabled={jobAccessLocked}
                     onClick={() => tool.action?.(job.id)}
-                    className="min-h-12 rounded-xl bg-white/10 px-2 text-xs font-bold text-white hover:bg-white/15 disabled:opacity-40">
+                    className="min-h-12 rounded-xl border border-violet-200/15 bg-violet-300/10 px-2 text-xs font-bold text-white transition hover:bg-violet-300/20 disabled:opacity-40">
                     {tool.label}
                   </button>
                 ))}

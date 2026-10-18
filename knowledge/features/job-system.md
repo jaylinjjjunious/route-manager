@@ -41,6 +41,8 @@ Dashboard Today's Route cards open a `DashboardJobDetailSheet` bottom-sheet moda
 
 ### Job Detail Overview
 
+2026-10-17 appearance update: the popup uses a translucent purple gradient, blurred backdrop, highlighted glass border and purple-tinted tool/travel controls to match the main app. Its layout, job actions, access gating and green Navigate action remain unchanged.
+
 As requested on 2026-09-26, `JobDetailModal` is a simplified address-first popup. It shows the store logo/name, leg distance, estimated travel time, Drive/Bike/Walk selectors, and a Google Maps navigation link. Estimates use fixed speeds (25/10/3 mph) and are not live traffic predictions. Navigation has no destination link while job access is locked. Escape, backdrop, and the close button dismiss the dialog.
 
 2026-10-10 connection repair: compact Preview Guide, Scan and Inventory buttons in the fixed footer now open the selected job's existing tools. The popup closes before the tool opens; Preview Guide close returns to that job's popup. Inventory explicitly selects both the job ID and its inventory domain. All three shortcuts are disabled while job access is locked. This restores tool entry points without restoring the retired workflow tabs. `tests/jobDetailModalStoreLogo.test.ts` covers job IDs and access gating.

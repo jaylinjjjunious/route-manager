@@ -48,6 +48,8 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
+**2026-10-17 job popup:** User requested the existing job popup match the app's glass background and purple color theme. Appearance-only update implemented; release checks underway. Read-only live Inventory review also confirmed the signed-in email and successful empty account read. Full inventory write/device validation remains open.
+
 **2026-10-10 inventory account sync:** Owner-scoped local queues/ledgers, explicit legacy import, cloud ledger persistence/conflict protection, account-only job discovery and current-account header deployed at bc4cc6451865652ae07dae9bf8b4f020816cc976. GitHub main and public build-info confirm that commit. Migration 0008 applied and rollback-tested; 51 focused tests, lint, build and disposable production-bundle API checks pass. Signed-in UI verification is blocked by the browser tool connection closing. Standalone Proof Vault and main job sync remain separate; physical-photo checks and conflict/archival UI remain open.
 
 **2026-10-10 app connections:** User requested a broader audit of disconnected and unfinished features. Fixed the dead empty Proof Vault/newest-only entry with an all-folder browser, and restored compact selected-job Preview Guide, Scan and Inventory shortcuts. Job access gating and the simplified popup remain. Twenty-three relevant tests, lint and build pass. Deployed and signed-in verified at efad8a3: empty Proof Vault, selected-job Preview Guide and return, Scan, correct Inventory job/domain, and fixed-footer visibility without scrolling. Older-folder browsing/evidence preservation verified with disposable test records, not fabricated production evidence. Preview Guide, proof and inventory documentation previously overstated popup controls; corrected current entry points. Durable local-data sync and retired procedure/closeout UI remain unfinished.
@@ -205,6 +207,8 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 - **Follow-up:** Verify signed-in sync works end-to-end after returning from official CE Check-In site.
 
 ## Resume Point
+
+**2026-10-17 job popup:** Finish build, push and verify the purple glass popup in production. Preserve the existing layout/actions and untracked dist-native. User explicitly reiterated concise context/usage. Prior general app review was stopped at the user's request; current scope is only popup appearance.
 
 **2026-10-10 inventory:** Code bc4cc64 is pushed and public Render build-info verified. Resume signed-in Inventory account loading/retry/selector/header verification when the browser connection recovers; it currently returns Transport closed. No fake production custody records. Migration and rollback checks are complete; do not repeat them. Restore the existing Supabase Untitled SQL editor to its previous activity/probation table-existence and admin-account-count query; it currently contains the completed rollback test. Preserve iOS draft and dist-native. Usage meter also disconnected; last successful five-hour reading was 2% after its reset.
 
