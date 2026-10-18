@@ -48,7 +48,7 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
-**2026-10-17 job popup:** User requested the existing job popup match the app's glass background and purple color theme. Appearance-only update implemented; release checks underway. Read-only live Inventory review also confirmed the signed-in email and successful empty account read. Full inventory write/device validation remains open.
+**2026-10-17 job popup:** Purple translucent glass surface, bright border and tinted controls deployed at f71a446; public build SHA and signed-in popup appearance, visible footer and Bike selector/navigation URL verified. Lint/build and six popup tests pass. Read-only Inventory review confirmed the signed-in email and successful empty account read. Full inventory write/device validation remains open.
 
 **2026-10-10 inventory account sync:** Owner-scoped local queues/ledgers, explicit legacy import, cloud ledger persistence/conflict protection, account-only job discovery and current-account header deployed at bc4cc6451865652ae07dae9bf8b4f020816cc976. GitHub main and public build-info confirm that commit. Migration 0008 applied and rollback-tested; 51 focused tests, lint, build and disposable production-bundle API checks pass. Signed-in UI verification is blocked by the browser tool connection closing. Standalone Proof Vault and main job sync remain separate; physical-photo checks and conflict/archival UI remain open.
 
@@ -208,7 +208,7 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 
 ## Resume Point
 
-**2026-10-17 job popup:** Finish build, push and verify the purple glass popup in production. Preserve the existing layout/actions and untracked dist-native. User explicitly reiterated concise context/usage. Prior general app review was stopped at the user's request; current scope is only popup appearance.
+**2026-10-17 job popup:** Completed and live verified at f71a446. No further popup work pending. User reiterated concise context/usage and stopped the broader app review; do not restart it automatically. Preserve untracked dist-native. Inventory signed-in email/empty read now verified, while full write/device checks remain open.
 
 **2026-10-10 inventory:** Code bc4cc64 is pushed and public Render build-info verified. Resume signed-in Inventory account loading/retry/selector/header verification when the browser connection recovers; it currently returns Transport closed. No fake production custody records. Migration and rollback checks are complete; do not repeat them. Restore the existing Supabase Untitled SQL editor to its previous activity/probation table-existence and admin-account-count query; it currently contains the completed rollback test. Preserve iOS draft and dist-native. Usage meter also disconnected; last successful five-hour reading was 2% after its reset.
 

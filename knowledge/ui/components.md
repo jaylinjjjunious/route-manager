@@ -11,7 +11,7 @@ Legacy Header receives accountEmail from the authenticated App user instead of a
 
 ## AIØ Components
 
-JobDetailModal uses the shared app's purple palette with a dedicated translucent `.job-detail-glass` surface, backdrop blur, bright edge and tinted tool/travel buttons (2026-10-17). Its fixed footer and existing interactions are preserved.
+JobDetailModal uses the shared app's purple palette with a dedicated translucent `.job-detail-glass` surface, backdrop blur, bright edge and tinted tool/travel buttons (2026-10-17). Its fixed footer and existing interactions are preserved. Deployed at f71a446; signed-in appearance, visible actions and Bike selection/navigation target verified. Lint/build and six popup tests pass.
 
 ### AioHeader
 
