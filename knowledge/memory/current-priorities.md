@@ -2,7 +2,7 @@
 
 ## Current non-iOS work (reviewed 2026-10-10)
 
-- 2026-10-17 navigation follow-through: preserve popup route endpoints across all three modes and label rough estimates; implemented, checks/release verification underway. Scan setup verified; physical capture/stitching remains untested and Test Lab stays development-only.
+- 2026-10-17 navigation follow-through complete at 514e516: shared address-preferred job links, planned starting point and rough-estimate label. Twenty-seven tests/lint/build pass; live Maps Bike/Walk/Drive correct destination/mode/start and second-leg origin verified. Saved-pin accuracy for approximate planning remains separate. Scan setup verified; physical capture/stitching remains untested and Test Lab stays development-only.
 
 - Inventory account-sync slice deployed: GitHub main and public Render build-info confirm bc4cc64. Migration 0008, rollback SQL, 51 focused tests, lint/build and disposable server checks pass. Signed-in validation is blocked by browser Transport closed; resume account loading/retry/selector/header checks when access recovers. Jobs and standalone Proof Vault remain separate; next durability work is Proof Vault media, plus inventory archival/conflict review and physical-device photo checks.
 
