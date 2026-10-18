@@ -2,7 +2,7 @@
 
 ## 2026-10-17 — Job popup route consistency
 
-Live walkthrough reproduced address-only navigation discarding the app's route origin/destination; Maps chose a different origin and geocoded a different destination. Fixed locally: popup retains the supplied route endpoints across Bike/Walk/Drive, falls back to transitOrigin/job coordinates, and explicitly labels straight-line estimates. Maps still computes actual road routes/times; equality is not promised. Release verification pending. Scan setup opens for the selected job, but its Test Lab is development-only; live camera/stitching remains unverified. No production evidence was created.
+Live walkthrough reproduced the popup discarding the planned origin. The first repair exposed a second problem: the saved first-job destination pin resolved to a different street than its listed address. Shared job navigation now retains the planned start and prefers listed addresses for job destinations and previous stops across Dashboard, popup and Preview Guide; coordinates are the blank-address fallback. The popup labels straight-line estimates. Maps computes actual road routes/times; equality is not promised. Coordinate-based distance/battery planning remains approximate and saved pin accuracy needs separate cleanup. Final release verification pending. Scan setup opens for the selected job, but Test Lab stays development-only; camera/stitching remains unverified. No production evidence was created.
 
 ## 2026-10-10 — Inventory account sync
 

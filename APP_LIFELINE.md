@@ -48,7 +48,7 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
-**2026-10-17 navigation repair:** User authorized fixing the walkthrough's route mismatch. Popup now preserves the app's planned origin/destination across travel modes and labels straight-line estimates. Checks and live verification underway; Scan capture remains a separate unverified device-dependent flow.
+**2026-10-17 navigation repair:** User authorized fixing the route mismatch. Initial origin repair deployed at 9510a45; live Maps verification then exposed a saved job pin pointing to another street. Follow-up shares address-preferred job navigation across Dashboard, popup and Preview Guide, retains the app start, and labels straight-line estimates. Final checks/release underway. Saved coordinates still inform approximate distance/battery planning; Scan capture remains unverified.
 
 **2026-10-17 job popup:** Purple translucent glass surface, bright border and tinted controls deployed at f71a446; public build SHA and signed-in popup appearance, visible footer and Bike selector/navigation URL verified. Lint/build and six popup tests pass. Read-only Inventory review confirmed the signed-in email and successful empty account read. Full inventory write/device validation remains open.
 
@@ -210,7 +210,7 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 
 ## Resume Point
 
-**2026-10-17 navigation repair:** Finish focused tests/lint/build, push and verify all three opened Maps routes retain the app's endpoints and mode; verify estimate label in popup. Preserve glass styling, job access gating, dist-native and iOS draft. No fake production scan evidence.
+**2026-10-17 navigation repair:** Finish follow-up lint/build, push, then verify all three Maps routes use the app start and listed job address, including previous-stop address origins and popup estimate label. Initial coordinate-only repair is deployed but revealed a stale destination pin; do not call it fully verified. Preserve glass styling, job access gating, dist-native and iOS draft. No fake production scan evidence.
 
 **2026-10-17 first-job walkthrough:** Opened Jobs > first Today job (Family Dollar, Norris Rd), selected Bike/Walk/Drive and clicked Navigate each time. Google Maps opened with Cycling/Walking/Driving respectively and the matching address. Popup estimates differed from Maps; modal builds address-only links without origin and ignores supplied navLink/transitOrigin, so Maps chooses its own starting point. Scan opened the correct job setup; closed without creating evidence. Test Lab is development-only and unavailable on production. Physical camera/stitching not tested. No application code changed for this walkthrough.
 

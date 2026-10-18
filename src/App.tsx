@@ -12,6 +12,7 @@ import {
 } from './features/routePlanning/routeUtils';
 import { useRoutePlanning } from './features/routePlanning/useRoutePlanning';
 import { getDistanceInMiles } from './utils/geoUtils';
+import { buildJobMapsUrl } from './utils/jobNavigation';
 import { BAKERSFIELD_COORDINATES, resolveCoordinates } from './utils/bakersfieldCoordinates';
 import {
   isJobCompleted,
@@ -1220,7 +1221,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                       const prevCoordForNextStop = nextStopIdx <= 0 ? startCoord : jobs.routeAJobs[nextStopIdx - 1].coordinates;
                       const nextStopDist = getDistanceInMiles(prevCoordForNextStop, nextStop.coordinates);
                       const nextStopRideMin = (nextStopDist / ebikeConfig.avgSpeedMph) * 60;
-                      const nextStopNavLink = `https://www.google.com/maps/dir/?api=1&origin=${prevCoordForNextStop.lat},${prevCoordForNextStop.lng}&destination=${nextStop.coordinates.lat},${nextStop.coordinates.lng}&travelmode=${travelMode}`;
+                      const nextStopNavLink = buildJobMapsUrl(nextStop, nextStopIdx <= 0 ? startCoord : jobs.routeAJobs[nextStopIdx - 1], travelMode);
 
                       return (
                         <div className="space-y-4">
@@ -1406,7 +1407,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                         const origin = idx === 0
                           ? startCoord
                           : prevJob?.coordinates || startCoord;
-                        const navLink = `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${job.coordinates.lat},${job.coordinates.lng}&travelmode=${travelMode}`;
+                        const navLink = buildJobMapsUrl(job, prevJob || origin, travelMode);
 
                         return (
                           <div
@@ -2184,7 +2185,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           const legDistance = getDistanceInMiles(origin, routeDetailJob.coordinates);
           const rideMinutes = Math.max(1, Math.round((legDistance / ebikeConfig.avgSpeedMph) * 60));
           const routeIdx = routeIndex >= 0 ? routeIndex : null;
-          const navLink = `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${routeDetailJob.coordinates.lat},${routeDetailJob.coordinates.lng}&travelmode=${travelMode}`;
+          const navLink = buildJobMapsUrl(routeDetailJob, previousStop || origin, travelMode);
 
           return (
             <JobDetailModal
@@ -2249,7 +2250,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           const routeIndex = jobs.routeAJobs.findIndex(job => job.id === previewGuideJob.id);
           const previousStop = routeIndex <= 0 ? null : jobs.routeAJobs[routeIndex - 1];
           const origin = previousStop?.coordinates || startCoord;
-          const navLink = `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${previewGuideJob.coordinates.lat},${previewGuideJob.coordinates.lng}&travelmode=${travelMode}`;
+          const navLink = buildJobMapsUrl(previewGuideJob, previousStop || origin, travelMode);
 
           return (
             <PreviewGuideModal

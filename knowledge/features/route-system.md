@@ -8,6 +8,8 @@ Greedy nearest-neighbor route optimization with battery-aware planning, Dashboar
 
 ### Dashboard Route Interface
 
+2026-10-17 navigation consistency: Dashboard/route-list, JobDetailModal and Preview Guide use the shared `src/utils/jobNavigation.ts` builder. First-leg origin uses the app starting coordinates; later origins and job destinations prefer their listed address over stored pins, falling back to coordinates for blank addresses. Live verification exposed a saved first-job pin resolving to a different street. Approximate distance/time/battery planning still uses saved coordinates; popup explicitly labels straight-line estimates and defers actual road routing to Maps. No GPS permission or automatic coordinate rewrite is introduced.
+
 Dashboard is the authoritative route interface. The standalone Route tab/page was retired; Dashboard owns the user-facing route workflow for next stop, Today's Route, per-job detail panels, navigation links, review/complete actions, move controls, revision alerts, route order, route updates, and route calculations.
 
 ### Scheduling (Phase 1) integration

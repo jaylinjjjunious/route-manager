@@ -13,6 +13,7 @@ import { createPortal } from 'react-dom';
 import { X, MapPin, Image, Car, Bike, Footprints } from 'lucide-react';
 import type { Job } from '../../types';
 import { resolveStoreLogo } from '../../services/storeLogos';
+import { buildJobMapsUrl } from '../../utils/jobNavigation';
 
 interface JobDetailModalProps {
   job: Job;
@@ -78,26 +79,15 @@ function JobLogo({ job }: { job: Job }) {
 }
 
 function buildGoogleMapsUrl(job: Job, mode: TravelMode, navLink: string, origin?: { latitude: number; longitude: number }): string {
-  const url = new URL('https://www.google.com/maps/dir/');
-  url.searchParams.set('api', '1');
-  // Keep the same route endpoints used by the dashboard and distance estimate.
+  let plannedOrigin: string | undefined;
+  // Retain the planned start, but prefer the listed job address over an outdated pin.
   try {
     const planned = new URL(navLink);
     if (planned.protocol === 'https:' && planned.hostname === 'www.google.com' && planned.pathname === '/maps/dir/') {
-      for (const key of ['origin', 'destination']) {
-        const value = planned.searchParams.get(key);
-        if (value) url.searchParams.set(key, value);
-      }
+      plannedOrigin = planned.searchParams.get('origin') || undefined;
     }
   } catch { /* Older callers can omit the planned link. */ }
-  if (!url.searchParams.has('origin') && origin) {
-    url.searchParams.set('origin', `${origin.latitude},${origin.longitude}`);
-  }
-  if (!url.searchParams.has('destination')) {
-    url.searchParams.set('destination', `${job.coordinates.lat},${job.coordinates.lng}`);
-  }
-  url.searchParams.set('travelmode', mode);
-  return url.toString();
+  return buildJobMapsUrl(job, plannedOrigin || (origin ? { lat: origin.latitude, lng: origin.longitude } : undefined), mode);
 }
 
 type TravelMode = 'driving' | 'bicycling' | 'walking';

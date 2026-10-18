@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Coordinates, EbikeConfig, Job, RouteMetrics, TravelMode } from '../../types';
 import { isJobCompleted, isRevisionJob } from '../jobs/jobState';
 import { getDistanceInMiles } from '../../utils/geoUtils';
+import { buildJobMapsUrl } from '../../utils/jobNavigation';
 import { calculateRouteMetrics, detectOutliers } from './routeUtils';
 import type { RouteOptimizationLog } from './types';
 
@@ -76,7 +77,7 @@ export function useRoutePlanning({
   const nextStopDistance = nextRouteAJob ? getDistanceInMiles(nextStopOrigin, nextRouteAJob.coordinates) : 0;
   const nextStopRideMinutes = nextRouteAJob ? Math.max(1, Math.round((nextStopDistance / ebikeConfig.avgSpeedMph) * 60)) : 0;
   const nextStopNavLink = nextRouteAJob
-    ? `https://www.google.com/maps/dir/?api=1&origin=${nextStopOrigin.lat},${nextStopOrigin.lng}&destination=${nextRouteAJob.coordinates.lat},${nextRouteAJob.coordinates.lng}&travelmode=${travelMode}`
+    ? buildJobMapsUrl(nextRouteAJob, nextStopIndex <= 0 ? startCoord : routeAJobs[nextStopIndex - 1], travelMode)
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(startAddress)}`;
   const routeProgressPct = routeAJobs.length > 0 ? Math.round((completedRouteAJobs.length / routeAJobs.length) * 100) : 100;
   const routeMilesRemaining = Math.max(0, activeMetrics.totalDistance - rideDistance);
@@ -86,7 +87,7 @@ export function useRoutePlanning({
       ? startCoord
       : routeListStops[idx - 1]?.coordinates || startCoord;
 
-    return `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${job.coordinates.lat},${job.coordinates.lng}&travelmode=${travelMode}`;
+    return buildJobMapsUrl(job, idx === 0 ? origin : routeListStops[idx - 1] || origin, travelMode);
   };
 
   useEffect(() => {
