@@ -77,9 +77,27 @@ function JobLogo({ job }: { job: Job }) {
   );
 }
 
-function buildGoogleMapsUrl(address: string, mode: TravelMode): string {
-  const encoded = encodeURIComponent(address);
-  return `https://www.google.com/maps/dir/?api=1&destination=${encoded}&travelmode=${mode}`;
+function buildGoogleMapsUrl(job: Job, mode: TravelMode, navLink: string, origin?: { latitude: number; longitude: number }): string {
+  const url = new URL('https://www.google.com/maps/dir/');
+  url.searchParams.set('api', '1');
+  // Keep the same route endpoints used by the dashboard and distance estimate.
+  try {
+    const planned = new URL(navLink);
+    if (planned.protocol === 'https:' && planned.hostname === 'www.google.com' && planned.pathname === '/maps/dir/') {
+      for (const key of ['origin', 'destination']) {
+        const value = planned.searchParams.get(key);
+        if (value) url.searchParams.set(key, value);
+      }
+    }
+  } catch { /* Older callers can omit the planned link. */ }
+  if (!url.searchParams.has('origin') && origin) {
+    url.searchParams.set('origin', `${origin.latitude},${origin.longitude}`);
+  }
+  if (!url.searchParams.has('destination')) {
+    url.searchParams.set('destination', `${job.coordinates.lat},${job.coordinates.lng}`);
+  }
+  url.searchParams.set('travelmode', mode);
+  return url.toString();
 }
 
 type TravelMode = 'driving' | 'bicycling' | 'walking';
@@ -183,7 +201,7 @@ export default function JobDetailModal({
     event.stopPropagation();
   };
 
-  const mapsUrl = buildGoogleMapsUrl(job.address, travelMode);
+  const mapsUrl = buildGoogleMapsUrl(job, travelMode, navLink, transitOrigin);
   const travelTime = estimateTravelTime(legDistance, travelMode);
 
   const modalContent = (
@@ -235,9 +253,10 @@ export default function JobDetailModal({
 
             {/* Travel time/distance - right under address */}
             {legDistance > 0 && (
+              <div className="space-y-1 text-center">
               <div className="flex items-center justify-center gap-2 text-emerald-400 px-4">
                 <span className="text-lg font-black text-emerald-300">
-                  {formatTravelTime(travelTime)}
+                  ~{formatTravelTime(travelTime)}
                 </span>
                 <span className="text-sm font-semibold text-white/60">
                   {travelMode === 'driving' ? 'drive' : travelMode === 'bicycling' ? 'bike' : 'walk'}
@@ -245,6 +264,8 @@ export default function JobDetailModal({
                 <span className="text-sm font-semibold text-white/60">
                   · {legDistance.toFixed(1)} mi
                 </span>
+              </div>
+              <p className="text-xs leading-relaxed text-white/60">Straight-line estimate. Maps calculates the actual route.</p>
               </div>
             )}
 

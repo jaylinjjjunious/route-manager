@@ -30,8 +30,33 @@ it('changes the maps destination travel mode and estimate', () => {
   act(() => bike.click());
   const link = document.querySelector('a')!;
   expect(new URL(link.href).searchParams.get('travelmode')).toBe('bicycling');
-  expect(new URL(link.href).searchParams.get('destination')).toBe(job.address);
+  expect(new URL(link.href).searchParams.get('destination')).toBe('35,-119');
   expect(document.body.textContent).toContain('30 min');
+  expect(document.body.textContent).toContain('Straight-line estimate');
+});
+it('preserves planned route endpoints across all travel modes', () => {
+  const navLink = 'https://www.google.com/maps/dir/?api=1&origin=35.39,-119.02&destination=35.41,-119.01&travelmode=bicycling';
+  const props = { job, routeIndex: 0, legDistance: 5, rideMinutes: 30, navLink, isOutlier: false,
+    jobAccessLocked: false, onToggleComplete: vi.fn(), onEdit: vi.fn(), onDelete: vi.fn(),
+    onDuplicate: vi.fn(), onToggleRoute: vi.fn(), onClose };
+  act(() => root.render(React.createElement(JobDetailModal, props)));
+  for (const [label, mode] of [['Bike', 'bicycling'], ['Walk', 'walking'], ['Drive', 'driving']]) {
+    act(() => Array.from(document.querySelectorAll('button')).find(b => b.textContent === label)!.click());
+    const url = new URL(document.querySelector('a')!.href);
+    expect(url.searchParams.get('origin')).toBe('35.39,-119.02');
+    expect(url.searchParams.get('destination')).toBe('35.41,-119.01');
+    expect(url.searchParams.get('travelmode')).toBe(mode);
+  }
+});
+it('uses provided origin and job coordinates when a planned link is missing', () => {
+  const props = { job, routeIndex: 0, legDistance: 5, rideMinutes: 30, navLink: '',
+    transitOrigin: { latitude: 35.4, longitude: -119.1 }, isOutlier: false,
+    jobAccessLocked: false, onToggleComplete: vi.fn(), onEdit: vi.fn(), onDelete: vi.fn(),
+    onDuplicate: vi.fn(), onToggleRoute: vi.fn(), onClose };
+  act(() => root.render(React.createElement(JobDetailModal, props)));
+  const url = new URL(document.querySelector('a')!.href);
+  expect(url.searchParams.get('origin')).toBe('35.4,-119.1');
+  expect(url.searchParams.get('destination')).toBe('35,-119');
 });
 it('prevents navigation while monthly job access is locked', () => {
   render(true);

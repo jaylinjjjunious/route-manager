@@ -2,7 +2,7 @@
 
 ## 2026-10-17 — Job popup route consistency
 
-Live first-job walkthrough verified Bike/Walk/Drive each opens Google Maps with the requested mode and job address. However, JobDetailModal constructs address-only links and does not use the supplied navLink/transitOrigin; Maps selects its own origin, while the popup estimates from legDistance at fixed speeds. Observed route distances/times differed substantially. Destination address resolution also differs from stored dashboard destination coordinates; reconcile intended origin/destination before fixing. Scan setup opens for the selected job, but its Test Lab is development-only; live camera/stitching remains unverified. No production evidence was created.
+Live walkthrough reproduced address-only navigation discarding the app's route origin/destination; Maps chose a different origin and geocoded a different destination. Fixed locally: popup retains the supplied route endpoints across Bike/Walk/Drive, falls back to transitOrigin/job coordinates, and explicitly labels straight-line estimates. Maps still computes actual road routes/times; equality is not promised. Release verification pending. Scan setup opens for the selected job, but its Test Lab is development-only; live camera/stitching remains unverified. No production evidence was created.
 
 ## 2026-10-10 — Inventory account sync
 

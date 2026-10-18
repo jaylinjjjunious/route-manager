@@ -48,6 +48,8 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
+**2026-10-17 navigation repair:** User authorized fixing the walkthrough's route mismatch. Popup now preserves the app's planned origin/destination across travel modes and labels straight-line estimates. Checks and live verification underway; Scan capture remains a separate unverified device-dependent flow.
+
 **2026-10-17 job popup:** Purple translucent glass surface, bright border and tinted controls deployed at f71a446; public build SHA and signed-in popup appearance, visible footer and Bike selector/navigation URL verified. Lint/build and six popup tests pass. Read-only Inventory review confirmed the signed-in email and successful empty account read. Full inventory write/device validation remains open.
 
 **2026-10-10 inventory account sync:** Owner-scoped local queues/ledgers, explicit legacy import, cloud ledger persistence/conflict protection, account-only job discovery and current-account header deployed at bc4cc6451865652ae07dae9bf8b4f020816cc976. GitHub main and public build-info confirm that commit. Migration 0008 applied and rollback-tested; 51 focused tests, lint, build and disposable production-bundle API checks pass. Signed-in UI verification is blocked by the browser tool connection closing. Standalone Proof Vault and main job sync remain separate; physical-photo checks and conflict/archival UI remain open.
@@ -207,6 +209,8 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 - **Follow-up:** Verify signed-in sync works end-to-end after returning from official CE Check-In site.
 
 ## Resume Point
+
+**2026-10-17 navigation repair:** Finish focused tests/lint/build, push and verify all three opened Maps routes retain the app's endpoints and mode; verify estimate label in popup. Preserve glass styling, job access gating, dist-native and iOS draft. No fake production scan evidence.
 
 **2026-10-17 first-job walkthrough:** Opened Jobs > first Today job (Family Dollar, Norris Rd), selected Bike/Walk/Drive and clicked Navigate each time. Google Maps opened with Cycling/Walking/Driving respectively and the matching address. Popup estimates differed from Maps; modal builds address-only links without origin and ignores supplied navLink/transitOrigin, so Maps chooses its own starting point. Scan opened the correct job setup; closed without creating evidence. Test Lab is development-only and unavailable on production. Physical camera/stitching not tested. No application code changed for this walkthrough.
 

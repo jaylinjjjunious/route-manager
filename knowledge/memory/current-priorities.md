@@ -2,6 +2,8 @@
 
 ## Current non-iOS work (reviewed 2026-10-10)
 
+- 2026-10-17 navigation follow-through: preserve popup route endpoints across all three modes and label rough estimates; implemented, checks/release verification underway. Scan setup verified; physical capture/stitching remains untested and Test Lab stays development-only.
+
 - Inventory account-sync slice deployed: GitHub main and public Render build-info confirm bc4cc64. Migration 0008, rollback SQL, 51 focused tests, lint/build and disposable server checks pass. Signed-in validation is blocked by browser Transport closed; resume account loading/retry/selector/header checks when access recovers. Jobs and standalone Proof Vault remain separate; next durability work is Proof Vault media, plus inventory archival/conflict review and physical-device photo checks.
 
 - Latest user focus: connect existing app features. Proof Vault empty/history entry and selected-job Preview Guide/Scan/Inventory shortcuts deployed and signed-in verified at efad8a3. Twenty-three relevant tests plus lint/build pass; shortcuts stay visible in the fixed footer. Procedure/closeout engines are retained but their old UI was deliberately retired. Future UI decisions should preserve the simple popup and establish a separate reachable workflow if requested.

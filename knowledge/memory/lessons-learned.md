@@ -1,5 +1,7 @@
 ## 2026-10-10 — Verify feature discoverability
 
+2026-10-17 navigation walkthrough: verifying only a travelmode parameter misses endpoint drift. Check the opened Maps origin and destination against the app's planned route, and distinguish straight-line estimates from calculated road routes. A free-text address may geocode differently from the job's stored coordinates.
+
 Inventory cloud persistence must include item/evidence payloads and account-saved job discovery, not just event IDs. Otherwise another device cannot find the ledger or restore its photos. Preserve unattributed local data for explicit ownership-confirmed import, and compare owner lifetime generations rather than owner IDs alone.
 
 A mounted modal and retained callback do not establish a usable feature. Simplifying Job Detail orphaned Preview Guide and Scan entry points while older docs still described them. Check actual openers, selected job/domain context, empty states and return paths when reviewing app connections. The first browser screenshot also caught tool shortcuts hidden below the short-screen scroll area; place essential shortcuts in the fixed footer and verify a screenshot before handoff.
