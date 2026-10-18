@@ -1,5 +1,9 @@
 # Known Bugs
 
+## 2026-10-17 — Job popup route consistency
+
+Live first-job walkthrough verified Bike/Walk/Drive each opens Google Maps with the requested mode and job address. However, JobDetailModal constructs address-only links and does not use the supplied navLink/transitOrigin; Maps selects its own origin, while the popup estimates from legDistance at fixed speeds. Observed route distances/times differed substantially. Destination address resolution also differs from stored dashboard destination coordinates; reconcile intended origin/destination before fixing. Scan setup opens for the selected job, but its Test Lab is development-only; live camera/stitching remains unverified. No production evidence was created.
+
 ## 2026-10-10 — Inventory account sync
 
 Previously, the local queue posted events to a nonexistent endpoint, without item/evidence payloads or account ownership. Implemented owner-bound ledgers/queues, full durable snapshots, explicit legacy import, hash/reference validation, atomic extension/conflict/evidence preservation, bounded storage and account-only job discovery. Migration applied; 51 focused tests and rollback SQL pass; release verification pending. Fixed the legacy header's hard-coded email by passing the authenticated account. Large/unsupported old evidence and divergent histories remain local pending review; standalone Proof Vault/job cloud sync and real-device photo verification remain separate.

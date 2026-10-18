@@ -208,6 +208,8 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 
 ## Resume Point
 
+**2026-10-17 first-job walkthrough:** Opened Jobs > first Today job (Family Dollar, Norris Rd), selected Bike/Walk/Drive and clicked Navigate each time. Google Maps opened with Cycling/Walking/Driving respectively and the matching address. Popup estimates differed from Maps; modal builds address-only links without origin and ignores supplied navLink/transitOrigin, so Maps chooses its own starting point. Scan opened the correct job setup; closed without creating evidence. Test Lab is development-only and unavailable on production. Physical camera/stitching not tested. No application code changed for this walkthrough.
+
 **2026-10-17 job popup:** Completed and live verified at f71a446. No further popup work pending. User reiterated concise context/usage and stopped the broader app review; do not restart it automatically. Preserve untracked dist-native. Inventory signed-in email/empty read now verified, while full write/device checks remain open.
 
 **2026-10-10 inventory:** Code bc4cc64 is pushed and public Render build-info verified. Resume signed-in Inventory account loading/retry/selector/header verification when the browser connection recovers; it currently returns Transport closed. No fake production custody records. Migration and rollback checks are complete; do not repeat them. Restore the existing Supabase Untitled SQL editor to its previous activity/probation table-existence and admin-account-count query; it currently contains the completed rollback test. Preserve iOS draft and dist-native. Usage meter also disconnected; last successful five-hour reading was 2% after its reset.
