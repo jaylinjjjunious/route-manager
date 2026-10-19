@@ -4,12 +4,7 @@ import {AuthProvider} from './auth/AuthProvider';
 import {DebugProvider} from './debug/DebugProvider';
 import ProtectedApp from './auth/ProtectedApp';
 import './index.css';
-import { roomBase, roomPathname } from './utils/roomLocation';
-
-function isRetiredRouteDestination(value: string): boolean {
-  const normalized = value.toLowerCase().replace(/^[/#]+/, '').replace(/\/$/, '');
-  return normalized === 'route' || normalized === 'routes' || normalized === 'jobs';
-}
+import { isRetiredRouteDestination, roomBase, roomPathname } from './utils/roomLocation';
 
 function redirectRetiredRouteDestination() {
   if (isRetiredRouteDestination(roomPathname(window.location.pathname)) || isRetiredRouteDestination(window.location.hash)) {

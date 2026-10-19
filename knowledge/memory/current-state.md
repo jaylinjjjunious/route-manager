@@ -2,7 +2,7 @@
 
 ## 2026-10-19 workspace migration
 
-The root repository now owns the All in One parent, independent hallway and Route Manager workspaces, and URL composition gateway. See root README/knowledge path map. The previous embedded SoftwareShell is removed; Route Manager retains its auth, data and features under apps/route-manager. Both builds/lint, full room regressions, targeted auth-prefix checks, hallway/gateway tests and disposable production-bundle security checks pass. Production-mode local hallway → room login/recovery → parent and anonymous API denial are verified. Public release verification is pending in APP_LIFELINE.md. This entry supersedes older repository-structure statements below.
+The root repository owns the All in One parent, independent hallway and Route Manager workspaces, and URL composition gateway. See root README/knowledge path map. SoftwareShell is removed; Route Manager retains auth/data/features under apps/route-manager. Implementation d5e140e is on main/public Render and signed-in parent → room → Jobs → More → Inventory read → parent is verified, preserving account/session and existing jobs. Both builds/lint, full room regressions, targeted auth-prefix, hallway/gateway and disposable security checks pass. Production-mode local login/recovery/parent return and public anonymous API denial are verified. Shared cross-app identity/additional rooms and real native/device validation remain separate. This supersedes older repository-structure statements below.
 
 ## Phase
 

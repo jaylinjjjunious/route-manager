@@ -2,6 +2,8 @@
 
 ## Independent hallway and room (2026-10-19)
 
+Compatibility follow-up: legacy hash changes are handled even when hallway is already open. Room startup and App share the retired-route policy: `#jobs` stays a first-class Jobs destination; only `#route` and `#routes` retire to Today. Legacy `/jobs` pathname routing remains compatible. Local production-mode bookmark navigation and focused auth/location tests verify the distinction.
+
 Parent `/` and `/#home` open the independent `apps/hallway` app. It is a public software directory with no account data or room-code imports. Its Route Manager link performs document navigation to `/route-manager/#dashboard`, served by the room's separate process/build. SoftwareShell was removed from Route Manager. The room retains Today / Jobs / More and its login/sign-out controls. Its Main menu link performs document navigation back to the parent; it is hidden during immersive Ride Mode. Existing root feature hashes redirect to the room, and both prefixed and legacy auth paths work. Same-origin browser storage/session keys are preserved. `.app-shell` uses horizontal `clip` rather than `hidden`, allowing the return/header group to remain sticky against the viewport. Future software is not implemented; add a URL entry rather than a room-code import.
 
 **Last Updated:** 2026-08-02 (aio-three-tab-redesign)

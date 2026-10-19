@@ -9,3 +9,8 @@ export function roomPathname(pathname: string): string {
 export function hallwayUrl(): string {
   return import.meta.env.VITE_HALLWAY_URL || '/#home';
 }
+
+export function isRetiredRouteDestination(value: string): boolean {
+  const normalized = value.toLowerCase().replace(/^[/#]+/, '').replace(/\/$/, '');
+  return normalized === 'route' || normalized === 'routes';
+}

@@ -1,8 +1,10 @@
 # Known Bugs
 
-## 2026-10-19 — Embedded hallway architecture (being replaced)
+## 2026-10-19 — Embedded hallway architecture (replaced)
 
-The earlier SoftwareShell lived inside the Route Manager app and did not satisfy the user's parent/room ownership requirement. Migration uses independent apps/hallway and apps/route-manager workspaces plus parent gateway URL composition. The initial moved test configuration lost root environment lookup; corrected with explicit envDir and the complete 546-test room run passes. Public verification remains pending in APP_LIFELINE.md. No data migration or production evidence writes are involved.
+Final bookmark verification found that startup still classified `#jobs` as retired although App supported it as first-class. Startup now shares App's retired-route predicate (route/routes only), and hallway handles legacy hash changes as well as initial loads. Five focused auth/location tests, hallway tests and local production-mode `/#jobs` → `/route-manager/#jobs` checks pass. This is a navigation compatibility follow-up to the verified workspace migration.
+
+The earlier SoftwareShell lived inside Route Manager and did not satisfy parent/room ownership. Replaced at d5e140e with independent app workspaces and parent gateway URL composition. GitHub/public exact SHA and signed-in parent/room/Jobs/More/Inventory/return verified, with existing session/data intact. Moved test environment lookup was corrected; the complete 546-test room run and targeted new auth checks pass. Root/source path mapping is in README and knowledge/README. No data migration or production evidence writes were involved. Physical native/device checks remain separate.
 
 ## 2026-10-17 — Job popup route consistency
 

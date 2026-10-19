@@ -66,7 +66,7 @@ import { useTransitTrip } from './hooks/useTransitTrip';
 import { TransitDashboardCard } from './components/transit/TransitDashboardCard';
 import { MoveToDaySheet } from './features/jobs/MoveToDaySheet';
 import AioHeader from './components/aio/AioHeader';
-import { hallwayUrl, roomBase, roomPathname } from './utils/roomLocation';
+import { hallwayUrl, isRetiredRouteDestination, roomBase, roomPathname } from './utils/roomLocation';
 import TodayScreen from './components/aio/TodayScreen';
 import JobsScreen from './features/jobs/JobsScreen';
 import MoreScreen from './components/aio/MoreScreen';
@@ -117,13 +117,6 @@ type AppTab = 'dashboard' | 'jobs' | 'more' | 'inventory' | 'battery' | 'tracker
 
 const APP_TABS: AppTab[] = ['dashboard', 'jobs', 'more', 'inventory', 'battery', 'tracker', 'habits', 'tools', 'settings', 'checkin', 'changepassword', 'admin', 'diagnostics'];
 const SHOWER_PROTECTED_TABS: AppTab[] = ['battery', 'tracker'];
-
-const RETIRED_ROUTE_DESTINATIONS = new Set(['route', 'routes']);
-
-const isRetiredRouteDestination = (value: string): boolean => {
-  const normalized = value.toLowerCase().replace(/^[/#]+/, '').replace(/\/$/, '');
-  return RETIRED_ROUTE_DESTINATIONS.has(normalized);
-};
 
 const redirectRetiredRouteDestination = (): boolean => {
   if (typeof window === 'undefined') return false;
