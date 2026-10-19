@@ -23,7 +23,7 @@ The `isAdmin` flag is derived from the user's `app_metadata.role` or `user_metad
 - `/login` → LoginPage
 - `/forgot-password` → ForgotPasswordPage
 - `/reset-password` → ResetPasswordPage
-- `/` → App (if authenticated) or LoginPage
+- `/` → SoftwareShell main menu (if authenticated) or LoginPage; known feature hashes open the Route Manager room. The shell remains keyed by account owner, and software rooms use the existing authenticated session.
 
 **Session recovery:**
 - `supabase.auth.getSession()` on mount recovers existing session.

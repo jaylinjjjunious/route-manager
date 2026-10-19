@@ -1,5 +1,7 @@
 # Current Priorities
 
+- 2026-10-18 user focus: independent software hallway, with Route Manager as the first room. Implemented on `codex/software-hallway`; shell tests/lint/build pass. Local interaction and production deployment verification are in progress. More rooms are future work, not split-out versions of existing Route Manager tools.
+
 ## Current non-iOS work (reviewed 2026-10-10)
 
 - 2026-10-17 navigation follow-through complete at 514e516: shared address-preferred job links, planned starting point and rough-estimate label. Twenty-seven tests/lint/build pass; live Maps Bike/Walk/Drive correct destination/mode/start and second-leg origin verified. Saved-pin accuracy for approximate planning remains separate. Scan setup verified; physical capture/stitching remains untested and Test Lab stays development-only.

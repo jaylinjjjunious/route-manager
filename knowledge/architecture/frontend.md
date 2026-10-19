@@ -6,6 +6,8 @@ Describes the React application structure, component hierarchy, state management
 
 ## Current Implementation
 
+As of 2026-10-18, `ProtectedApp` mounts the owner-keyed `SoftwareShell` after authentication. The shell owns the main menu and software-room selection; Route Manager (`App.tsx`, the tree below) is its first lazy-loaded room. Returning to the hallway unmounts Route Manager and its effects instead of rendering the hallway as one of its tabs. Auth and owner storage remain shared at the existing protected boundary. Existing Route Manager hashes remain supported, and bare `/` or `/#home` opens the menu. This is a frontend workspace boundary within one deployed application; no separate backend/service or storage migration is introduced.
+
 ### Component Tree
 
 ```

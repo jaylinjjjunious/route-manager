@@ -160,7 +160,7 @@ declare global {
   }
 }
 
-export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCenter }: { debugCenterOpen?: boolean; onCloseDebugCenter?: () => void; onOpenDebugCenter?: () => void } = {}) {
+export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCenter, onExitToHallway }: { debugCenterOpen?: boolean; onCloseDebugCenter?: () => void; onOpenDebugCenter?: () => void; onExitToHallway?: () => void } = {}) {
   const { signOut, user, session, isAdmin } = useAuth();
   const [startAddress, setStartAddress] = useState('1951 Golden State Ave');
   const [startCoord, setStartCoord] = useState<Coordinates>({ lat: 35.3904, lng: -119.0255 });
@@ -1028,10 +1028,20 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
       <div className="ios-app app-shell min-h-screen bg-transparent text-slate-950 transition-colors duration-300 dark:text-slate-100 font-sans">
         <AmbientLiquidBackground />
         
+        <div className="sticky top-0 z-40">
+        {onExitToHallway && !tracker.rideModeActive && (
+          <nav aria-label="Software navigation" className="border-b border-white/10 bg-[#101019] px-4 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] text-slate-100">
+            <div className="mx-auto flex max-w-7xl items-center gap-3">
+              <button type="button" onClick={onExitToHallway} className="min-h-11 rounded-xl border border-white/20 px-3 text-sm font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-violet-300">← Main menu</button>
+              <span className="text-sm text-slate-400">Route Manager</span>
+            </div>
+          </nav>
+        )}
         {/* Header */}
         {currentTab === 'dashboard' || currentTab === 'jobs' || currentTab === 'more'
           ? <AioHeader userName={userName} onOpenProfile={() => handleTabChange('more')} />
           : <Header theme={theme} onToggleTheme={handleToggleTheme} accountEmail={user?.email} />}
+        </div>
 
         {/* Main Content Body */}
         <main className="app-main mx-auto max-w-7xl px-3 py-4 pb-40 sm:px-6 sm:py-6 lg:px-8 space-y-6">

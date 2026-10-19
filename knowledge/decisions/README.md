@@ -2,6 +2,8 @@
 
 ## Index
 
+- [Independent software hallway](2026-10-18-software-hallway.md) — accepted 2026-10-18; Route Manager is the first software room inside a separate authenticated main menu.
+
 These decisions are documented in the legacy `docs/DECISIONS.md` file. New ADRs should be created in `knowledge/decisions/` using the template at `knowledge/decisions/adr-template.md`.
 
 | ID | Title | Status |

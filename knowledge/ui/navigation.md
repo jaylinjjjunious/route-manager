@@ -1,5 +1,9 @@
 # Navigation System
 
+## Software hallway (2026-10-18)
+
+Authenticated `/` and `/#home` open the independent All in One main menu (`src/shell/SoftwareShell.tsx`). Its first software room is Route Manager; future software entries are not implemented. Entering Route Manager opens `/#dashboard`. The room retains its Today / Jobs / More navigation and existing tools. A sticky **Main menu** button above its header returns to `/#home`; it is hidden during immersive Ride Mode. The hallway has its own account identity/sign-out control and no Route Manager navigation, assistant, dialogs, or background hooks. Route Manager is lazy-loaded on entry and unmounted on exit; persisted records remain, while unsaved transient UI state closes. Browser Back/Forward and existing feature hashes open the corresponding surface.
+
 **Last Updated:** 2026-08-02 (aio-three-tab-redesign)
 **Related Source Files:** `src/App.tsx`, `src/components/aio/primitives.tsx`
 

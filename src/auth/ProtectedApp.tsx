@@ -9,7 +9,7 @@ import { authDebugProtectedAppRendered, authDebugLoginPageRendered } from "./aut
 
 import { setStorageOwner } from "../utils/ownerStorage";
 
-const App = lazy(() => import("../App"));
+const App = lazy(() => import("../shell/SoftwareShell"));
 
 type AuthView = "login" | "forgot-password" | "reset-password" | "app";
 

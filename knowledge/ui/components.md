@@ -1,5 +1,9 @@
 # UI Components
 
+## SoftwareShell — 2026-10-18
+
+`src/shell/SoftwareShell.tsx` renders the independent authenticated All in One main menu with one Route Manager entry, account identity and sign-out. Route Manager loads on entry and unmounts on return; its header includes Main menu outside Ride Mode. The future-software panel is informational, not a working room. Shared auth remains in ProtectedApp.
+
 **Last Updated:** 2026-09-16 (Jobs page glass panels)
 **Related Source Files:** `src/components/*.tsx`, `src/components/aio/*.tsx`, `src/features/*/*.tsx`, `src/assistant/*.tsx`
 

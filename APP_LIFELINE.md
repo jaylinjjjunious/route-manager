@@ -48,6 +48,8 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
+**2026-10-18 software hallway:** User chose Route Manager as one software room, with more rooms later. Independent authenticated SoftwareShell main menu at `/` / `/#home`, lazy room entry, sticky Main menu return and preserved feature bookmarks implemented on `codex/software-hallway`. Three focused tests, lint and build pass. Local visual menu, real room entry/return, focus and browser Back verified using the existing development-only screenshot harness; public release/verification pending. Existing `dist-native/` is preserved. Current hosting docs/public URL use Render, superseding old Railway-only assumptions.
+
 **2026-10-17 navigation repair:** Deployed and live verified at 514e516. Shared address-preferred navigation covers Dashboard, popup and Preview Guide, retains the app start and labels straight-line estimates. First-job Bike/Walk/Drive each opened Maps with the same configured origin and correct Norris Rd store destination; second-job link uses the first store address as origin. All 27 focused tests, lint/build pass. Initial origin repair exposed a stale pin resolving to another street; listed addresses now take precedence. Saved pins still inform approximate distance/battery planning; Scan capture remains unverified.
 
 **2026-10-17 job popup:** Purple translucent glass surface, bright border and tinted controls deployed at f71a446; public build SHA and signed-in popup appearance, visible footer and Bike selector/navigation URL verified. Lint/build and six popup tests pass. Read-only Inventory review confirmed the signed-in email and successful empty account read. Full inventory write/device validation remains open.
@@ -116,6 +118,11 @@ Required installation step for reliable startup discovery: add this reference to
 - **Supersedes / superseded by:** Supersedes browser-only storage (H-004).
 
 ## Chronological History
+
+### 2026-10-18 — Independent software hallway
+
+- User selected Route Manager as the first software room, with other rooms later. Added a separate authenticated main menu outside App.tsx, lazy room entry, Main menu return, browser navigation handling and legacy hash support. Existing room features/data stay inside Route Manager; no backend split or migration.
+- Three focused shell tests, lint and build pass. Local visible menu, room entry, return with focus and browser Back verified. Production release is pending; see Resume Point.
 
 Keep entries in ascending date order. Assign stable IDs such as H-001 so summaries and decisions can reference them. For imported history with an unknown date, say “date unknown; imported YYYY-MM-DD” instead of guessing.
 
@@ -209,6 +216,8 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 - **Follow-up:** Verify signed-in sync works end-to-end after returning from official CE Check-In site.
 
 ## Resume Point
+
+**2026-10-18 software hallway:** Implementation, three shell tests/lint/build, and local visual entry/return/Back checks complete. Review diff, commit/push to github/main, verify remote SHA and Render public build plus signed-in interaction before calling ready. Files: src/shell/SoftwareShell.tsx, src/auth/ProtectedApp.tsx, src/App.tsx, tests/softwareShell.test.ts and affected knowledge/ADR. Preserve dist-native/iOS. No new software beyond Route Manager requested.
 
 **2026-10-17 navigation repair:** Finished: GitHub main and public Render commit 514e516 verified, all three real Maps mode/start/destination screens checked, second-leg origin and estimate label verified. No further release checks needed for this fix. Separate remaining work: saved-coordinate accuracy for approximate planning and physical scan capture/stitching. Preserve dist-native/iOS draft; do not enable Test Lab in production or fabricate job evidence.
 

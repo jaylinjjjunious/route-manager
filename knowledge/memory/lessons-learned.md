@@ -1,3 +1,7 @@
+## 2026-10-18 — Software boundaries
+
+A software launcher belongs outside the room it opens. Keep the existing authentication/owner boundary, lazy-load room code, and verify that returning actually removes room UI and effects. Keep old feature bookmarks functional and distinguish frontend separation from independent backend deployments.
+
 ## 2026-10-10 — Verify feature discoverability
 
 2026-10-17 navigation walkthrough: verifying only a travelmode parameter misses endpoint drift. Check the opened Maps origin and destination against the app's planned route, and distinguish straight-line estimates from calculated road routes. A free-text address may geocode differently from the job's stored coordinates.
