@@ -1,6 +1,6 @@
 # Current Priorities
 
-- 2026-10-18 user focus: independent software hallway, with Route Manager as the first room. Implemented on `codex/software-hallway`; shell tests/lint/build pass. Local interaction and production deployment verification are in progress. More rooms are future work, not split-out versions of existing Route Manager tools.
+- 2026-10-18 software hallway complete at 2bce1ca: GitHub main/public Render SHA and signed-in menu → Route Manager → Jobs → menu verified, including visible controls, account identity, return focus and removal of room navigation/assistant. Three shell tests/lint/build and local browser Back/Forward pass. Route Manager is the first room; more rooms are future work. Shared authentication/backend remains; this is frontend/lifecycle separation.
 
 ## Current non-iOS work (reviewed 2026-10-10)
 
