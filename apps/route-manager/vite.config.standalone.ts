@@ -11,6 +11,7 @@ if (!frontendCommit) {
 
 export default defineConfig({
   root: ".",
+  envDir: '../..',
   publicDir: "public",
   define: { 'import.meta.env.VITE_FRONTEND_COMMIT': JSON.stringify(frontendCommit) },
   build: {

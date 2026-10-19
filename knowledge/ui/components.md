@@ -1,8 +1,8 @@
 # UI Components
 
-## SoftwareShell — 2026-10-18
+## Hallway — 2026-10-19
 
-`src/shell/SoftwareShell.tsx` renders the independent authenticated All in One main menu with one Route Manager entry, account identity and sign-out. Route Manager loads on entry and unmounts on return; its header includes Main menu outside Ride Mode. The future-software panel is informational, not a working room. Shared auth remains in ProtectedApp.
+`apps/hallway/src/Hallway.tsx` is a separate frontend with its own CSS, package/build/tests and URL-only software registry. Route Manager lives in `apps/route-manager` and imports no hallway UI. The former SoftwareShell is removed. Route Manager's Main menu link performs document navigation to the parent (hidden during Ride Mode); login/account controls remain inside the room. The future-software panel is informational. Source paths in the sections below are relative to `apps/route-manager/`.
 
 **Last Updated:** 2026-09-16 (Jobs page glass panels)
 **Related Source Files:** `src/components/*.tsx`, `src/components/aio/*.tsx`, `src/features/*/*.tsx`, `src/assistant/*.tsx`

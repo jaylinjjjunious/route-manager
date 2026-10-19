@@ -18,7 +18,7 @@ function sourceFiles(): string[] {
 }
 
 function configuredApiKey(): string | null {
-  const envPath = join(ROOT, '.env');
+  const envPath = join(ROOT, '../../.env');
   if (!existsSync(envPath)) return null;
   for (const line of readFileSync(envPath, 'utf8').split(/\r?\n/)) {
     const match = /^TRANSIT_API_KEY=(.+)$/.exec(line.trim());

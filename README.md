@@ -1,97 +1,52 @@
-# Route Manager
+# All in One
 
-Route Manager is a mobile-first field-work application for route planning, delivery jobs, proof capture, battery-aware routing, habit tracking, and operational assistance. The app is in Phase 2: core features are deployed; server sync, multi-user support, and team dashboards are not started.
+One repository containing independent software apps. Start here when working on the project.
 
-## Current State
+| Workspace | Owns | Entry |
+| --- | --- | --- |
+| `apps/hallway/` | Main menu, room directory, its own UI/styles/tests/build | `/` |
+| `apps/route-manager/` | Route Manager frontend, authentication, Express APIs, data integrations, tests and native wrapper | `/route-manager/` |
+| `gateway/` | Parent hosting and URL routing; starts the room as a separate process | `npm start` |
+| `knowledge/` | System documentation, decisions and feature knowledge | `knowledge/README.md` |
+| `APP_LIFELINE.md` | Current progress, release evidence and resume notes | Read at session startup |
 
-- Production branch: `main`
-- GitHub remote: `github` -> `https://github.com/jaylinjjjunious/route-manager.git`
-- Primary production host: Render (`route-manager`, Oregon, free instance)
-- Production URL: `https://route-manager-phtj.onrender.com`
-- Render service ID: `srv-da7qimgu01pc73bmpo40`
-- Last committed release: `6a8bba7` (`Document Smart Aisle production verification`)
-- Last verified Railway deployment: `3d47e332-e3c1-4770-8850-cd4e578f9d05` (SUCCESS)
-- Production build endpoint: `https://route-optimizer-app-production.up.railway.app/api/build-info`
-- Real-device verification route: `/real-device-verification?access=fuckyouleavemelone`
-- The working tree currently contains uncommitted Smart Aisle and inventory-custody changes. They are not in production yet.
+The hallway never imports Route Manager. It opens the app through a URL. Each app has its own `package.json`, source, tests and build output. Add shared packages only when actual shared code is needed.
 
-The current local work adds immediate photo removal with undo and Recently Removed recovery, sequence restoration and restitching, rolling lens-cleanliness analysis, setup and in-capture lens checks, high-confidence capture blocking, privacy-safe verification events, a job-detail inventory custody panel, offline receive/install/removal/return ledgering, event evidence links, GPS/time capture, and unit tests. The related knowledge files are already updated in the working tree.
+## Commands
 
-Open verification items are real iPhone Safari/Home Screen PWA evidence for Smart Aisle, an authenticated production pass confirming Test Lab data isolation, and the durable authenticated inventory sync slice. Lens thresholds also need controlled smudge-sample calibration on a real device.
-
-## Architecture
-
-- Frontend: React 19, TypeScript, Vite, Tailwind CSS, Lucide icons
-- Backend: Express, bundled with esbuild from `server.ts`
-- Authentication: Supabase magic link and email/password
-- Storage: Cloudflare D1 for proofs and Supabase for authentication
-- Primary hosting: Render; Railway remains available as a temporary rollback host, and the alternate Cloudflare Worker/Vinext path is retained
-- Main app entry: `src/App.tsx` and `src/main.tsx`
-- Smart Aisle implementation: `src/components/SmartAisleScan.tsx`
-- Smart Aisle verification panel: `src/components/RealDeviceVerification.tsx`
-- Scan services: `src/services/scan/`
-- Browser harness: `tests/smart-aisle-test-lab-ui-check.cjs`
-- Inventory custody: `src/components/InventoryCustodyPanel.tsx` and `src/services/inventory/chainOfCustody.ts`
-
-## Local Development
-
-Prerequisites: Node.js 22 or compatible current Node, npm, and the repository environment variables. Copy `.env.example` to a local environment file and provide the required values; never commit `.env` files or tokens.
+Use Node 22.16 or newer and run these from the repository root:
 
 ```sh
-npm install
-npm run dev
+npm ci
+npm run dev                 # Parent + both apps at http://localhost:3000
+npm run lint                # Both app type checks and gateway syntax
+npm test                    # App suites and gateway integration tests
+npm run build               # apps/hallway/dist and apps/route-manager/dist
+npm start                   # Production parent server + separate room process
 ```
 
-Useful commands:
+For independent app work:
 
 ```sh
-npm run lint                 # TypeScript check
-npm run build                # Vite frontend plus Express server bundle
-npm test                     # Vitest unit tests; do not pass Jest --runInBand
-npm run test:habits          # Habit UI check
-npm run test:smart-aisle-lab # Smart Aisle local browser harness
-npm run verify               # Project verification script
+npm run dev:hallway          # Hallway only, http://localhost:5173/hallway/
+npm run dev:route-manager    # Room only, http://localhost:3001
+npm run build:hallway
+npm run build:route-manager
+npm run start:hallway        # Preview the independent hallway build, port 4173
+npm run start:route-manager  # Room production server only, port 3001
+npm run test --workspace @all-in-one/route-manager -- tests/roomLocation.test.ts
 ```
 
-Camera testing requires HTTPS and a real mobile browser for meaningful results. Use the protected real-device route for iPhone Safari and installed PWA evidence. The Test Lab is a local development feature controlled by `VITE_ENABLE_SMART_AISLE_TEST_LAB`; production builds must not expose its UI.
+The independent hallway uses `VITE_ROUTE_MANAGER_URL` for a room hosted elsewhere (for local standalone work, `http://localhost:3001/#dashboard`). Route Manager uses `VITE_HALLWAY_URL` for a hallway hosted elsewhere (for local standalone work, `http://localhost:5173/hallway/`). Set these when building the relevant app. A separate static hallway deployment can set `HALLWAY_BASE=/` at build time. The combined parent needs none of these overrides.
 
-## Production Workflow
+## Environment, storage and deployment
 
-Before coding, read `knowledge/README.md`, load the relevant knowledge documents, inspect the related source, and report documentation/code conflicts before editing. Preserve unrelated working-tree changes.
+Keep local environment values in the root `.env` (never commit it). The Route Manager example is `apps/route-manager/.env.example`. Route Manager's Vite config reads the root environment; the independent hallway has no authentication or room-data imports and reads only its own URL configuration. Route Manager continues to own login and sign-out. Common cross-app login is future work.
 
-For a completed application change:
+Production remains the existing Render service and domain. `render.yaml` still runs `npm ci && npm run build`, then `npm start`; the root start command now owns hosting. The gateway serves the hallway build and forwards `/route-manager/`, `/api/*` and legacy public asset/auth URLs to the room's separate loopback process. Both apps use the existing browser origin, so Route Manager's browser data and Supabase session keys stay intact. No database migration or data copying is part of this move.
 
-1. Run `npm run lint` and `npm run build`; run focused tests as applicable.
-2. Review `git diff` and `git status`.
-3. Update affected knowledge and memory documents.
-4. Commit with a descriptive message on `main` unless the change is risky; use a feature branch for risky work.
-5. Push with `git push github main`.
-6. Confirm the remote SHA with `git ls-remote --heads github main`.
-7. Confirm the Render deploy is Live and verify `/api/health` plus the relevant public route.
-8. Only call the change live after the public domain reports the new commit.
+The parent launches its child from the repository root, preserving existing server-local file paths. Direct workspace commands use their workspace as the working directory; prefer the root `dev:route-manager` / `start:route-manager` commands when using existing local runtime data. The legacy root service worker retires without clearing records; Route Manager's new worker is scoped to `/route-manager/`.
 
-Render deploys `main` automatically from `render.yaml`. Keep Railway unchanged as a rollback host until the Render deployment has passed signed-in production verification. Never force-push or commit secrets, private proof images, local databases, upload folders, or generated evidence.
+The existing iOS project/config live inside `apps/route-manager/`. Root `cap:*` commands delegate there and the Apple workflow builds that app only. Native functionality is unchanged; real-device checks remain separate. Untracked `dist-native/` is intentionally preserved at the root.
 
-## Resume Instructions
-
-The next developer or AI should begin with:
-
-```sh
-git status --short --branch
-git diff --stat
-git diff -- knowledge src tests package.json
-```
-
-Treat the existing uncommitted Smart Aisle changes as intentional user work. Read the changed source and the corresponding knowledge files before modifying them. Then run `npm test`, `npm run lint`, `npm run build`, and `npm run test:smart-aisle-lab` as appropriate. Fix or review failures, complete the real-device and authenticated isolation checks, update the knowledge memory, and only then commit, push, deploy, and verify production. Do not reset, checkout, or discard the current changes without explicit authorization.
-
-## Project Memory
-
-The authoritative project context is in `knowledge/`. Start with:
-
-- `knowledge/memory/current-state.md`
-- `knowledge/memory/current-priorities.md`
-- `knowledge/memory/known-bugs.md`
-- `knowledge/memory/lessons-learned.md`
-- `knowledge/workflows/testing.md`
-- `knowledge/workflows/deployment.md`
-- `AGENTS.md`
+Rollback baseline: `checkpoint-2026-10-19-before-monorepo` at `50b1f2887a9ea6feb408526aecc1eda714a899c5`. Use a recovery branch or a normal revert; never force-push.

@@ -1,4 +1,5 @@
 [build]
+# Root commands compose the independent app workspaces on this rollback host.
 builder = "nixpacks"
 buildCommand = "npm run build"
 

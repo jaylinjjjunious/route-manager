@@ -8,23 +8,29 @@ import ErrorBoundary from "../debug/ErrorBoundary";
 import { authDebugProtectedAppRendered, authDebugLoginPageRendered } from "./authDebug";
 
 import { setStorageOwner } from "../utils/ownerStorage";
+import { hallwayUrl, roomBase, roomPathname } from '../utils/roomLocation';
 
-const App = lazy(() => import("../shell/SoftwareShell"));
+const App = lazy(() => import("../App"));
 
 type AuthView = "login" | "forgot-password" | "reset-password" | "app";
 
+function AuthRoom({ children }: { children: React.ReactNode }) {
+  return <><a href={hallwayUrl()} className="fixed left-4 top-[max(1rem,env(safe-area-inset-top))] z-50 rounded-xl border border-white/20 bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-violet-300">← Main menu</a>{children}</>;
+}
+
 function isRetiredRoutePath(pathname: string): boolean {
-  const normalized = pathname.toLowerCase().replace(/^\/+/, "").replace(/\/+$/, "");
+  const normalized = roomPathname(pathname).toLowerCase().replace(/^\/+/, "").replace(/\/+$/, "");
   return normalized === "route" || normalized === "routes" || normalized === "jobs";
 }
 
 function redirectRetiredRoutePath() {
   if (isRetiredRoutePath(window.location.pathname)) {
-    window.history.replaceState(null, "", "/#dashboard");
+    window.history.replaceState(null, "", `${roomBase()}#dashboard`);
   }
 }
 
 function getInitialView(pathname: string): AuthView {
+  pathname = roomPathname(pathname);
   if (isRetiredRoutePath(pathname)) return "app";
   if (pathname === "/reset-password") return "reset-password";
   if (pathname === "/login") return "login";
@@ -66,7 +72,7 @@ export default function ProtectedApp() {
   }, [view]);
 
   const navigate = (next: AuthView) => {
-    const path = next === "app" ? "/" : `/${next}`;
+    const path = next === "app" ? roomBase() : `${roomBase()}${next}`;
     if (window.location.pathname !== path) {
       window.history.pushState(null, "", path);
     }
@@ -82,19 +88,19 @@ export default function ProtectedApp() {
   if (!session && !verificationMode) {
     authDebugLoginPageRendered();
     if (view === "forgot-password") {
-      return <ForgotPasswordPage onBack={() => navigate("login")} />;
+      return <AuthRoom><ForgotPasswordPage onBack={() => navigate("login")} /></AuthRoom>;
     }
     if (view === "reset-password") {
-      return <ResetPasswordPage onDone={() => navigate("login")} />;
+      return <AuthRoom><ResetPasswordPage onDone={() => navigate("login")} /></AuthRoom>;
     }
-    return <LoginPage onForgotPassword={() => navigate("forgot-password")} />;
+    return <AuthRoom><LoginPage onForgotPassword={() => navigate("forgot-password")} /></AuthRoom>;
   }
 
   authDebugProtectedAppRendered();
 
   // Authenticated or explicitly server-approved local verification mode.
   if (view === "reset-password") {
-    return <ResetPasswordPage onDone={() => navigate("app")} />;
+    return <AuthRoom><ResetPasswordPage onDone={() => navigate("app")} /></AuthRoom>;
   }
 
   // Authenticated and viewing app

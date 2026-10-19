@@ -1,8 +1,8 @@
 # Navigation System
 
-## Software hallway (2026-10-18)
+## Independent hallway and room (2026-10-19)
 
-Authenticated `/` and `/#home` open the independent All in One main menu (`src/shell/SoftwareShell.tsx`). Its first software room is Route Manager; future software entries are not implemented. Entering Route Manager opens `/#dashboard`. The room retains its Today / Jobs / More navigation and existing tools. A sticky **Main menu** button above its header returns to `/#home`; it is hidden during immersive Ride Mode. The hallway has its own account identity/sign-out control and no Route Manager navigation, assistant, dialogs, or background hooks. Route Manager is lazy-loaded on entry and unmounted on exit; persisted records remain, while unsaved transient UI state closes. Browser Back/Forward and existing feature hashes open the corresponding surface.
+Parent `/` and `/#home` open the independent `apps/hallway` app. It is a public software directory with no account data or room-code imports. Its Route Manager link performs document navigation to `/route-manager/#dashboard`, served by the room's separate process/build. SoftwareShell was removed from Route Manager. The room retains Today / Jobs / More and its login/sign-out controls. Its Main menu link performs document navigation back to the parent; it is hidden during immersive Ride Mode. Existing root feature hashes redirect to the room, and both prefixed and legacy auth paths work. Same-origin browser storage/session keys are preserved. `.app-shell` uses horizontal `clip` rather than `hidden`, allowing the return/header group to remain sticky against the viewport. Future software is not implemented; add a URL entry rather than a room-code import.
 
 **Last Updated:** 2026-08-02 (aio-three-tab-redesign)
 **Related Source Files:** `src/App.tsx`, `src/components/aio/primitives.tsx`

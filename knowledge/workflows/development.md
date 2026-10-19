@@ -1,5 +1,9 @@
 # Development Workflow
 
+## Workspace commands (2026-10-19)
+
+Root `README.md` is the project map. Run `npm ci` once at the root. `npm run dev` starts the parent gateway plus both independent apps; `dev:hallway` and `dev:route-manager` run only the chosen software. Root lint/build/test coordinate both app workspaces and gateway checks. Feature code and older relative source references now live in `apps/route-manager/`. Keep hallway changes within `apps/hallway/`, and connect apps by URLs. Root environment/runtime files stay at the root; never move or commit private local files as part of workspace edits.
+
 ## AI Session Protocol
 
 Every coding session must follow this sequence:

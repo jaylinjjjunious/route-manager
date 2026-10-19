@@ -4,6 +4,7 @@ import {AuthProvider} from './auth/AuthProvider';
 import {DebugProvider} from './debug/DebugProvider';
 import ProtectedApp from './auth/ProtectedApp';
 import './index.css';
+import { roomBase, roomPathname } from './utils/roomLocation';
 
 function isRetiredRouteDestination(value: string): boolean {
   const normalized = value.toLowerCase().replace(/^[/#]+/, '').replace(/\/$/, '');
@@ -11,8 +12,8 @@ function isRetiredRouteDestination(value: string): boolean {
 }
 
 function redirectRetiredRouteDestination() {
-  if (isRetiredRouteDestination(window.location.pathname) || isRetiredRouteDestination(window.location.hash)) {
-    window.history.replaceState(null, '', '/#dashboard');
+  if (isRetiredRouteDestination(roomPathname(window.location.pathname)) || isRetiredRouteDestination(window.location.hash)) {
+    window.history.replaceState(null, '', `${roomBase()}#dashboard`);
   }
 }
 
@@ -54,7 +55,7 @@ async function bootApp() {
   const root = createRoot(rootElement);
   root.render(<StartupScreen />);
 
-  if (window.location.pathname === '/real-device-verification') {
+  if (roomPathname(window.location.pathname) === '/real-device-verification') {
     const { default: RealDeviceVerification } = await import('./components/RealDeviceVerification.tsx');
     root.render(
       <StrictMode>
@@ -87,7 +88,7 @@ bootApp();
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(registration => {
+    navigator.serviceWorker.register(`${roomBase()}sw.js`, { scope: roomBase() }).then(registration => {
       registration.update().catch(() => {});
     }).catch(() => {});
   });

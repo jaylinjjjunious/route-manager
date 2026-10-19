@@ -22,6 +22,7 @@ dotenv.config();
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
+const appRoot = process.env.ROUTE_MANAGER_APP_ROOT || process.cwd();
 const REQUIRED_SHOWER_BARCODE = "075371003233";
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
@@ -951,19 +952,21 @@ async function bootstrap() {
   if (!isProduction) {
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
+      root: appRoot,
+      configFile: path.join(appRoot, 'vite.config.standalone.ts'),
       server: { middlewareMode: true, host: "0.0.0.0" },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
+    const distPath = path.join(appRoot, 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  app.listen(PORT, process.env.HOST || "0.0.0.0", () => {
     const mode = isProduction ? "production" : "development";
     const lanIp = getLanIp();
 
@@ -973,12 +976,13 @@ async function bootstrap() {
     console.log("========================================");
     console.log(`  Port:    ${PORT}`);
     console.log(`  Local:   http://localhost:${PORT}`);
-    if (lanIp) {
+    if (lanIp && process.env.HOST !== '127.0.0.1') {
       console.log(`  Network: http://${lanIp}:${PORT}`);
     }
-    console.log(`  LAN binding: active (0.0.0.0)`);
+    console.log(`  Binding: ${process.env.HOST || '0.0.0.0'}`);
     console.log("========================================");
     console.log("");
+    if (process.env.HOST === '127.0.0.1') return;
     console.log("  MOBILE ACCESS:");
     console.log("  1. Phone and computer must be on the same Wi-Fi.");
     console.log("  2. Open the Network URL above on your phone.");

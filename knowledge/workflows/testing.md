@@ -1,5 +1,9 @@
 # Testing Workflow
 
+## Independent workspace validation (2026-10-19)
+
+Root `npm run lint` and `npm run build` cover both apps. Root `npm test` runs hallway, Route Manager and `gateway/router.test.mjs`. Route Manager's 63 suites (546 tests) run from its own workspace with root environment lookup and at most two workers. Targeted example: `npm run test --workspace @all-in-one/route-manager -- tests/roomLocation.test.ts`. Hallway tests verify URL entry and bookmark migration; gateway tests cover separate hallway assets, room prefix stripping, authenticated body/header/cookie preservation, legacy auth endpoints, root-worker retirement and path traversal/write denial. Real browser verification must cover parent → room → existing room navigation → parent on the public origin.
+
 ## Available Commands
 
 | Command | Purpose | Tool |

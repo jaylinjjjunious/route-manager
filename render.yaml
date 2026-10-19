@@ -1,3 +1,5 @@
+# Parent service builds both independent app workspaces. No service rootDir:
+# npm needs the root workspace lockfile; gateway owns hosting and room startup.
 services:
   - type: web
     name: route-manager

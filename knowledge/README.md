@@ -1,5 +1,9 @@
 # All in One 667 Knowledge System
 
+## Workspace path map (2026-10-19)
+
+The repository is the All in One parent project. See root `README.md` for commands and ownership. `apps/hallway/` is the independent software directory; `apps/route-manager/` owns the former root app, server, tests, public files, configs, docs, schemas and native wrapper. `gateway/` owns same-origin composition. Historical source paths in feature documents (`src/`, `server/`, `tests/`, `docs/`, `ios/`, `server.ts`, etc.) now resolve relative to `apps/route-manager/`. Knowledge/memory, APP_LIFELINE.md and repository-level deployment/workflow files remain at the root. Read only the app being changed; never import room implementation into the hallway.
+
 ## Purpose
 
 This directory is the persistent, Markdown-based project memory for the All in One 667 application. It captures architectural intent, business rules, feature behavior, development workflows, and current state so that any AI coding session can recover context quickly and work accurately.

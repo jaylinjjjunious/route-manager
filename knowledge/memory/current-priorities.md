@@ -1,5 +1,7 @@
 # Current Priorities
 
+- 2026-10-19 active: migrate the parent hallway and Route Manager into independent app workspaces in one repository. User clarified that the earlier SoftwareShell inside Route Manager was insufficient. Root README is the ownership/command map. Full room regression suite and hallway/gateway tests pass; final checks and public release remain in APP_LIFELINE.md. Shared cross-app identity is deferred; room login/data stays intact on the existing browser origin. More rooms remain future work.
+
 - 2026-10-18 software hallway complete at 2bce1ca: GitHub main/public Render SHA and signed-in menu → Route Manager → Jobs → menu verified, including visible controls, account identity, return focus and removal of room navigation/assistant. Three shell tests/lint/build and local browser Back/Forward pass. Route Manager is the first room; more rooms are future work. Shared authentication/backend remains; this is frontend/lifecycle separation.
 
 ## Current non-iOS work (reviewed 2026-10-10)

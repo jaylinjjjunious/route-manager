@@ -6,7 +6,7 @@ Describes the complete system architecture of All in One 667, a field-work missi
 
 ## Current Implementation
 
-All in One 667 is a single-page React application served by an Express backend with Supabase authentication. The app is deployed on Railway using nixpacks and also has a Cloudflare Workers variant for the API layer.
+All in One is now a parent repository containing independent hallway and Route Manager apps. Each has its own package, source, tests and build. The hallway links to the room through a URL; it does not import room code. A root Node gateway serves the hallway and proxies the separately running Route Manager Express process on the existing Render domain. Route Manager retains Supabase authentication and its existing business/storage contracts. See root README and the independent-app-workspaces ADR.
 
 ### Tech Stack
 
@@ -17,7 +17,7 @@ All in One 667 is a single-page React application served by an Express backend w
 | Auth | Supabase (email/password, JWT session) |
 | Database | Cloudflare D1 (SQLite) via worker, local JSON files |
 | AI | Google Gemini 2 (chat, OCR, TTS) |
-| Deployment | Railway (main), Cloudflare Sites (worker) |
+| Deployment | Render parent composition; Railway rollback; legacy Cloudflare variant |
 | Languages | TypeScript throughout |
 | Icons | lucide-react |
 | Barcode | Native BarcodeDetector API + @zxing/browser fallback |
@@ -26,7 +26,7 @@ All in One 667 is a single-page React application served by an Express backend w
 ### Repository Structure
 
 ```
-route-optimizer-app/
+apps/route-manager/
   src/
     App.tsx              — Main application (5837 lines)
     main.tsx             — Entry point, auth boot
@@ -79,9 +79,9 @@ route-optimizer-app/
   worker/index.ts        — Cloudflare Worker API (700 lines)
   db/schema.ts           — SQL schema definition
   drizzle/               — SQL migrations
-  scripts/               — verify, checkpoint, release helpers
+  scripts/               — Room screenshot utility (root scripts own verification/releases)
   docs/                  — Legacy documentation
-  knowledge/             — Current knowledge system
+  # Knowledge and project workflow documents remain at the repository root.
 ```
 
 ### Data Flow

@@ -2,7 +2,9 @@
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  envDir: '../..',
   test: {
+    maxWorkers: 2,
     globals: true,
     environment: 'jsdom',
     include: ['tests/**/*.test.ts', 'tests/**/*.test.mts'],

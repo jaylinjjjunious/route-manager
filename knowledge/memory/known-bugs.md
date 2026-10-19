@@ -1,5 +1,9 @@
 # Known Bugs
 
+## 2026-10-19 — Embedded hallway architecture (being replaced)
+
+The earlier SoftwareShell lived inside the Route Manager app and did not satisfy the user's parent/room ownership requirement. Migration uses independent apps/hallway and apps/route-manager workspaces plus parent gateway URL composition. The initial moved test configuration lost root environment lookup; corrected with explicit envDir and the complete 546-test room run passes. Public verification remains pending in APP_LIFELINE.md. No data migration or production evidence writes are involved.
+
 ## 2026-10-17 — Job popup route consistency
 
 Live walkthrough reproduced the popup discarding the planned origin. The first repair exposed a second problem: the saved first-job destination pin resolved to a different street than its listed address. Shared job navigation now retains the planned start and prefers listed addresses for job destinations and previous stops across Dashboard, popup and Preview Guide; coordinates are the blank-address fallback. The popup labels straight-line estimates. Maps computes actual road routes/times; equality is not promised. Coordinate-based distance/battery planning remains approximate and saved pin accuracy needs separate cleanup. Deployed at 514e516: all 27 focused tests, lint/build pass; live Maps Bike/Walk/Drive correct mode/start/address and second-leg link origin verified. Scan setup opens for the selected job, but Test Lab stays development-only; camera/stitching remains unverified. No production evidence was created.

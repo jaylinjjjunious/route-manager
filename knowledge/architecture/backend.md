@@ -10,6 +10,8 @@ Express mounts createInventoryRouter after authenticated, bounded parsing. GET /
 
 ## Current Implementation
 
+2026-10-19 workspace migration: Express and all room API modules are now in `apps/route-manager/`. Root `gateway/server.mjs` starts the Express build as a separate loopback process and forwards `/api/*`, `/route-manager/*` (prefix removed), legacy authentication paths and public assets. Parent hallway HTML/assets bypass Express. Parent-launched Express retains the repository-root working directory for existing local runtime files; `ROUTE_MANAGER_APP_ROOT` separately selects the room build/config. Root start/dev commands manage both processes. Business authorization/limits/storage contracts are unchanged.
+
 BlueAI addition (2026-09-27): `server/blueai/` implements the Express-only
 `/api/integrations/blueai/jobs` receiver/feed. It is mounted before the global
 large-body parsers with its own 16 KiB JSON limit. POST uses a dedicated

@@ -2,6 +2,8 @@
 
 ## Current Hosting
 
+- 2026-10-19 workspace layout: existing service/domain remain. Root build runs the hallway and Route Manager builds into their own `dist/` folders. Root `npm start` launches `gateway/server.mjs`, which owns hallway hosting and starts the room's Express build on loopback with the original repository-root runtime directory. `/route-manager/` opens the independent room; root `/api` and legacy asset/auth endpoints remain compatible. The parent imports no room implementation. No new cloud service, secrets, auth allow-list or database migration is required. See root README for independent app hosting/URL overrides.
+
 - Render is the primary Node/Express production host. Its Blueprint configuration is
   stored in `/render.yaml` and deploys the `main` branch automatically.
 - Production URL: `https://route-manager-phtj.onrender.com`.

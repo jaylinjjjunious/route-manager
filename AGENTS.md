@@ -131,3 +131,6 @@ railway up
 
 Do not use railway redeploy for new source-code changes.
 railway redeploy only redeploys the last uploaded code.
+## Workspace ownership (2026-10-19)
+
+This repository is the All in One parent project. Start with root README.md and knowledge/README.md. Hallway source/package/build/tests live in apps/hallway; Route Manager frontend/server/tests/configs/docs/native wrapper live in apps/route-manager. Gateway infrastructure lives at gateway/. Historical feature-document source paths resolve relative to apps/route-manager unless explicitly prefixed otherwise. Connect independent apps by URLs; never import Route Manager implementation into hallway. Root npm commands coordinate both workspaces. Keep root .env, runtime data and dist-native in place and uncommitted. Production remains the existing Render service/domain with root npm build/start commands; Railway is rollback.

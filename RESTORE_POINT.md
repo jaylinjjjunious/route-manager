@@ -1,26 +1,15 @@
-# Restore Point
+# Workspace Migration Rollback Point
 
-This is the current/latest All in One 667 app folder:
+- Annotated tag: `checkpoint-2026-10-19-before-monorepo`
+- Commit: `50b1f2887a9ea6feb408526aecc1eda714a899c5`
+- State: working Route Manager with the first embedded hallway implementation, before independent workspace migration.
+- Validation: lint/build and shell tests passed; implementation `2bce1ca` was signed-in/public verified, followed only by release notes at `50b1f28` (also publicly confirmed before migration).
+- Limitations: this baseline shares the hallway within Route Manager; existing physical-device/native and unrelated feature checks remain open.
 
-```text
-C:\Users\teren\OneDrive\Documents\Route Manager\route-optimizer-app
-```
-
-Current checkpoint tag:
-
-```sh
-latest-safe-app-baseline
-```
-
-To return this app to the saved version later:
+The tag is pushed to the GitHub remote. Inspect it on a new branch after preserving any local work:
 
 ```sh
-git restore .
-git checkout latest-safe-app-baseline
+git switch -c recovery/pre-monorepo checkpoint-2026-10-19-before-monorepo
 ```
 
-To keep editing after restoring, create a recovery branch:
-
-```sh
-git switch -c recovery-from-latest-safe-app-baseline latest-safe-app-baseline
-```
+For a production rollback, use a normal reviewed revert of the migration and push the resulting commit. Never force-push or move the checkpoint tag. Keep `.env`, private runtime files and untracked `dist-native/` in place.

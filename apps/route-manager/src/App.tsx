@@ -66,6 +66,7 @@ import { useTransitTrip } from './hooks/useTransitTrip';
 import { TransitDashboardCard } from './components/transit/TransitDashboardCard';
 import { MoveToDaySheet } from './features/jobs/MoveToDaySheet';
 import AioHeader from './components/aio/AioHeader';
+import { hallwayUrl, roomBase, roomPathname } from './utils/roomLocation';
 import TodayScreen from './components/aio/TodayScreen';
 import JobsScreen from './features/jobs/JobsScreen';
 import MoreScreen from './components/aio/MoreScreen';
@@ -127,8 +128,8 @@ const isRetiredRouteDestination = (value: string): boolean => {
 const redirectRetiredRouteDestination = (): boolean => {
   if (typeof window === 'undefined') return false;
 
-  if (isRetiredRouteDestination(window.location.pathname) || isRetiredRouteDestination(window.location.hash)) {
-    window.history.replaceState(null, '', '/#dashboard');
+  if (isRetiredRouteDestination(roomPathname(window.location.pathname)) || isRetiredRouteDestination(window.location.hash)) {
+    window.history.replaceState(null, '', `${roomBase()}#dashboard`);
     return true;
   }
 
@@ -160,7 +161,7 @@ declare global {
   }
 }
 
-export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCenter, onExitToHallway }: { debugCenterOpen?: boolean; onCloseDebugCenter?: () => void; onOpenDebugCenter?: () => void; onExitToHallway?: () => void } = {}) {
+export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCenter }: { debugCenterOpen?: boolean; onCloseDebugCenter?: () => void; onOpenDebugCenter?: () => void } = {}) {
   const { signOut, user, session, isAdmin } = useAuth();
   const [startAddress, setStartAddress] = useState('1951 Golden State Ave');
   const [startCoord, setStartCoord] = useState<Coordinates>({ lat: 35.3904, lng: -119.0255 });
@@ -1029,10 +1030,10 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
         <AmbientLiquidBackground />
         
         <div className="sticky top-0 z-40">
-        {onExitToHallway && !tracker.rideModeActive && (
+        {!tracker.rideModeActive && (
           <nav aria-label="Software navigation" className="border-b border-white/10 bg-[#101019] px-4 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] text-slate-100">
             <div className="mx-auto flex max-w-7xl items-center gap-3">
-              <button type="button" onClick={onExitToHallway} className="min-h-11 rounded-xl border border-white/20 px-3 text-sm font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-violet-300">← Main menu</button>
+              <a href={hallwayUrl()} className="inline-flex min-h-11 items-center rounded-xl border border-white/20 px-3 text-sm font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-violet-300">← Main menu</a>
               <span className="text-sm text-slate-400">Route Manager</span>
             </div>
           </nav>

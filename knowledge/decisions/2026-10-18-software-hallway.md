@@ -1,6 +1,6 @@
 # Independent software hallway
 
-Date: 2026-10-18. Status: accepted.
+Date: 2026-10-18. Status: superseded by [independent app workspaces](2026-10-19-independent-app-workspaces.md). The user clarified that UI/lifecycle separation inside the Route Manager project did not fulfill the parent-app requirement.
 
 The user requested a hallway separate from the software rooms it opens, and selected Route Manager as one room with more software to be added later.
 

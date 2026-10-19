@@ -23,7 +23,7 @@ The `isAdmin` flag is derived from the user's `app_metadata.role` or `user_metad
 - `/login` → LoginPage
 - `/forgot-password` → ForgotPasswordPage
 - `/reset-password` → ResetPasswordPage
-- `/` → SoftwareShell main menu (if authenticated) or LoginPage; known feature hashes open the Route Manager room. The shell remains keyed by account owner, and software rooms use the existing authenticated session.
+- Parent `/` → independent public hallway (no account records); `/route-manager/` → owner-keyed App if authenticated, otherwise existing LoginPage. Prefixed and legacy root login/reset/forgot-password URLs remain supported. SoftwareShell is removed; login/sign-out stays within Route Manager. Same-origin hosting preserves Supabase/browser storage keys, and no session token is passed through links. A shared cross-app identity layer is future work.
 
 **Session recovery:**
 - `supabase.auth.getSession()` on mount recovers existing session.

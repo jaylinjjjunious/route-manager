@@ -48,6 +48,8 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
+**2026-10-19 independent app workspaces — release pending:** User approved a parent-owned hallway and independent Route Manager in one monorepo. Branch codex/independent-app-workspaces; rollback checkpoint checkpoint-2026-10-19-before-monorepo at 50b1f2887a9ea6feb408526aecc1eda714a899c5. App/server/tests/config/docs/native sources moved to apps/route-manager; apps/hallway has independent source/package/build/tests. Root gateway composes separate room process on the existing origin/runtime directory. Full room 63-suite/546-test run, 4 focused auth/location tests, hallway 2/gateway 6 tests, lint/build and disposable production-bundle security checks pass. Production-mode local hallway → room login/recovery → parent and 401 API checks verified. Commit/push/public signed-in verification pending. Preserve root .env, private runtime files and dist-native. Root README is the project map; older feature source paths resolve relative to apps/route-manager.
+
 **2026-10-18 software hallway:** Released and signed-in verified at 2bce1caf06733b9b2a8422f620af861611b4eabd. User chose Route Manager as the first room, with others later. Independent authenticated menu at `/` / `/#home`, lazy room entry and Main menu return; existing feature hashes remain. Three focused tests/lint/build pass. Local entry/return/Back/Forward and public hallway → Route Manager → Jobs → Main menu verified, including visible entry/return controls, account identity, removal of room navigation/assistant and return focus. Existing dist-native preserved. Current production is Render; Railway CLI is unavailable locally.
 
 **2026-10-17 navigation repair:** Deployed and live verified at 514e516. Shared address-preferred navigation covers Dashboard, popup and Preview Guide, retains the app start and labels straight-line estimates. First-job Bike/Walk/Drive each opened Maps with the same configured origin and correct Norris Rd store destination; second-job link uses the first store address as origin. All 27 focused tests, lint/build pass. Initial origin repair exposed a stale pin resolving to another street; listed addresses now take precedence. Saved pins still inform approximate distance/battery planning; Scan capture remains unverified.
@@ -99,6 +101,10 @@ Required installation step for reliable startup discovery: add this reference to
 
 ## Active Decisions
 
+### D-003 — Independent software workspaces
+
+- **2026-10-19 accepted:** One root repository with independent apps/hallway and apps/route-manager packages, source, builds and tests; URLs connect them. Root gateway owns hosting and launches room as a separate loopback process, preserving original browser origin and runtime-data directory. Room owns login; public hallway reads no account data. Supersedes embedded SoftwareShell. Details: knowledge/decisions/2026-10-19-independent-app-workspaces.md.
+
 ### D-001 — Admin Portal Architecture
 
 - **Date / status:** 2026-10-02 — accepted, implemented locally.
@@ -118,6 +124,10 @@ Required installation step for reliable startup discovery: add this reference to
 - **Supersedes / superseded by:** Supersedes browser-only storage (H-004).
 
 ## Chronological History
+
+### 2026-10-19 — Parent and room workspace migration
+
+- User rejected the earlier hallway being inside Route Manager; approved independently runnable apps in one manageable repository. Recorded/pushed pre-migration annotated checkpoint and created isolated branch. Independent package/source/test/build boundaries, parent gateway, root commands and project map implemented; existing Route Manager auth/storage/API contracts preserved. Full room tests, hallway and gateway tests pass; local URL entry/return verified. Remaining release checks are in Resume Point.
 
 ### 2026-10-18 — Independent software hallway
 
@@ -216,6 +226,8 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 - **Follow-up:** Verify signed-in sync works end-to-end after returning from official CE Check-In site.
 
 ## Resume Point
+
+**2026-10-19 workspace migration:** Local checks complete (full room regressions, focused auth/prefix, hallway/gateway, lint/build, production-mode parent/login/recovery/return and disposable security API checks). Final horizontal-clip adjustment keeps the room header/return in the viewport; finish its lint/build and public visual check. Staged migration excludes .env/runtime data/dist-native. Commit/push github main, verify remote SHA and exact public Render SHA plus real signed-in hallway → room → Jobs → return. Preserve checkpoint-2026-10-19-before-monorepo/50b1f28 and the iOS draft. No cloud service/secrets/database changes required.
 
 **2026-10-18 software hallway:** Finished: implementation 2bce1ca is on github/main and public Render, signed-in menu/room/Jobs/return plus removal of room UI and return focus verified. Three focused tests/lint/build and local browser Back/Forward pass. This follow-up records release evidence only; no further feature work requested. Future software can be added through src/shell/SoftwareShell.tsx. Frontend/lifecycle separation shares existing auth/backend; unsaved room UI closes on exit. Preserve dist-native/iOS and unrelated open work.
 

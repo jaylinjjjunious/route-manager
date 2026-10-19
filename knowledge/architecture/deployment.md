@@ -16,11 +16,11 @@ Render is the current primary production host; Railway is a rollback host and Cl
 ```
 npm ci
 npm run build
-  → vite build (standalone, outputs to dist/)
-  → esbuild bundle server.ts → dist/server.cjs
+  → hallway Vite build → apps/hallway/dist/
+  → room Vite + Express bundle → apps/route-manager/dist/
 ```
 
-**Start command:** `node dist/server.cjs` (starts Express server on port 3000)
+**Start command:** root `npm start` starts the independent parent gateway on `PORT` (default 3000) and the Route Manager Express build on loopback `ROUTE_MANAGER_PORT` (default 3001). The gateway serves the hallway and proxies room/API requests. Both app packages also have standalone run/build commands. Startup requires both build outputs and waits for room health. The parent launches the room from the original repository-root runtime directory, preserving server-local file paths.
 
 **Health check:** GET `/api/health` (300s timeout)
 **Restart policy:** On failure (max 3 restarts)

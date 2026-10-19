@@ -1,5 +1,9 @@
 # Current Implementation State
 
+## 2026-10-19 workspace migration
+
+The root repository now owns the All in One parent, independent hallway and Route Manager workspaces, and URL composition gateway. See root README/knowledge path map. The previous embedded SoftwareShell is removed; Route Manager retains its auth, data and features under apps/route-manager. Both builds/lint, full room regressions, targeted auth-prefix checks, hallway/gateway tests and disposable production-bundle security checks pass. Production-mode local hallway → room login/recovery → parent and anonymous API denial are verified. Public release verification is pending in APP_LIFELINE.md. This entry supersedes older repository-structure statements below.
+
 ## Phase
 
 **Phase 2 active.** Core features are built and deployed. Phase 3 (server sync, multi-user, team dashboard) has not started.
