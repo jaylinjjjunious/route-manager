@@ -2,7 +2,7 @@
 
 ## Room-first task entry
 
-Cleaning TaskCreator renders room → activity → TaskForm mini pages in a native dialog. App commits a drafted room and task together. Existing TaskForm editing, routines, data schema and other workspaces are unchanged.
+Cleaning TaskCreator renders room → activity mini pages in a native dialog. Activity selection, custom input, batch Add and success feedback stay on the room page. App commits all selected tasks and a draft room atomically via addTasks. TaskForm is used separately for editing; creation does not open it. No data schema or routine change.
 
 ## Room routines (2026-10-20)
 

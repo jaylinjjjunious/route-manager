@@ -1,5 +1,7 @@
 ## 2026-10-18 — Software boundaries
 
+The user prefers task creation to stop at the room activity page. Do not reintroduce a mandatory task name/time/date/repeat form after an activity click. Use explicit in-place selection and Add, with visible defaults.
+
 Room/task pickers should keep suggested rooms as drafts until task save, so Back/Cancel cannot create empty records. Save the new room and task in the same validated write.
 
 ## Repeatable routines (2026-10-20)

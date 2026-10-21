@@ -48,6 +48,9 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
+**Activity page simplification:** User rejected the final task-details form. Add task now stops at room → activity selection. Activity buttons toggle selection in place; Add selected tasks atomically saves them with any draft room and keeps the same room mini page open with a visible success message. Custom task text is entered inline. Back/Close save nothing. New tasks are one-time, due today, with a disclosed 10-minute estimate; existing task schedules and room routines are unchanged. Task editing remains available separately. Eighteen tests pass; release pending.
+
+
 **Room-first Add task:** Add task now opens a room chooser, then room-specific activities, then task details. User confirmed Dishes belongs inside Kitchen. Kitchen offers Dishes/Counters/Sink/Stove/Floor; Bathroom offers Toilet/Sink/Shower or tub/Mirror/Floor; Bedroom and Living area have their own suggestions. Existing active rooms and custom rooms/tasks are supported. Suggested rooms are drafts: room and task save atomically only on Save task; cancel/back creates no records. Existing active rooms are reused case-insensitively. Archived rooms are not silently restored. Add task works even with no spaces. Edit task retains its direct form. No schema/storage-key or routine change. Eighteen tests, root lint/build and local browser save/reload pass; Released at bdcba1cbf2c19f576c7bf179e7453d0e6e9faf9d; GitHub main and public Render exact SHA verified. Public browser verified Bathroom choices, Kitchen → Dishes → details, Back/Cancel, custom-room entry, save/reload and active Kitchen reuse. Verification task was archived without completing it; no cleaning history added. Eighteen Cleaning tests plus root lint/build pass. Kitchen choices are left open. No required work remains.
 
 
@@ -109,6 +112,9 @@ Required installation step for reliable startup discovery: add this reference to
 > In every Route Manager session, read the startup sections of `APP_LIFELINE.md` before substantive work. Reference its relevant sections periodically during ongoing work, at milestones, before important decisions, and after interruptions or context compaction. Keep its snapshot, decisions, history, and resume notes current as meaningful project changes occur; reuse unchanged context instead of rereading the entire history.
 
 ## Active Decisions
+
+- User wants Add task to stop at the room activity page. Select/add there without the final settings form; this supersedes the prior three-step picker.
+
 
 - User confirmed room-first task creation: Dishes is inside Kitchen. Keep choices customizable and save draft rooms only with their task.
 
@@ -245,6 +251,9 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 
 ## Resume Point
 
+**Activity picker:** Implemented on codex/simplify-task-picker. Eighteen tests pass; root lint/build and local/public UI release checks remain to confirm. Preserve dist-native and existing records.
+
+
 **Task picker:** Implemented on codex/room-first-task-picker; 18 Cleaning tests pass. Released at bdcba1cbf2c19f576c7bf179e7453d0e6e9faf9d; GitHub main and public Render exact SHA verified. Public browser verified Bathroom choices, Kitchen → Dishes → details, Back/Cancel, custom-room entry, save/reload and active Kitchen reuse. Verification task was archived without completing it; no cleaning history added. Eighteen Cleaning tests plus root lint/build pass. Kitchen choices are left open. No required work remains. Preserve dist-native and existing routine data.
 
 
@@ -380,3 +389,8 @@ Verified all 13 findings against production main and started isolated remediatio
 - User confirmed Dishes belongs inside Kitchen. Added room → activity → details mini pages, custom choices and empty-plan entry.
 - Draft room/task save atomically; cancel/back leave data unchanged. Existing task editing and routines preserved.
 - Eighteen Cleaning tests pass; Released at bdcba1cbf2c19f576c7bf179e7453d0e6e9faf9d; GitHub main and public Render exact SHA verified. Public browser verified Bathroom choices, Kitchen → Dishes → details, Back/Cancel, custom-room entry, save/reload and active Kitchen reuse. Verification task was archived without completing it; no cleaning history added. Eighteen Cleaning tests plus root lint/build pass. Kitchen choices are left open. No required work remains.
+
+### 2026-10-20 — Keep task creation on the activity page
+
+- User rejected the third details page. Replaced navigation with toggle selection, inline custom input and atomic Add selected tasks.
+- Saves one-time tasks for today and stays on the same mini page; editing remains separate. Eighteen tests pass; public release pending.

@@ -26,7 +26,7 @@ afterEach(() => { act(() => root.unmount()); container.remove(); localStorage.cl
 it('creates personal work, completes it, undoes it and recovers the saved schedule after remount', () => {
   act(() => root.render(React.createElement(App)));
   click('Add a space'); fill('name', 'Test kitchen'); submit(); go('spaces');
-  click('Add task'); click('Test kitchen'); click('Write my own task'); fill('title', 'Wipe test counter'); fill('interval', '1'); submit();
+  click('Add task'); click('Test kitchen'); fill('title', 'Wipe test counter'); submit(); click('Add selected tasks'); click('Close');
   const complete = container.querySelector<HTMLButtonElement>('[aria-label="Complete Wipe test counter"]')!;
   act(() => complete.click());
   expect(parsePlan(localStorage.getItem(STORAGE_KEY)!).history).toHaveLength(1);
@@ -74,22 +74,28 @@ it('chooses a room before its activities and saves a suggested room and task tog
   click('Bathroom'); expect(container.querySelector('dialog')?.textContent).toContain('Toilet');
   expect(container.querySelector('dialog')?.textContent).not.toContain('Dishes');
   click('← Choose another room'); click('Kitchen'); click('Dishes');
-  expect(container.querySelector<HTMLInputElement>('[name="title"]')?.value).toBe('Wash dishes');
+  expect(container.querySelector('dialog h2')?.textContent).toBe('Kitchen');
+  expect(container.querySelector('[name="minutes"]')).toBeNull();
+  click('Counters');
   expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
-  click('← Back to Kitchen'); click('Dishes'); submit();
+  click('Add selected tasks');
+  expect(container.querySelector('dialog h2')?.textContent).toBe('Kitchen');
+  expect(container.querySelector('[role="status"]')?.textContent).toContain('added');
+  click('Close');
   const plan = parsePlan(localStorage.getItem(STORAGE_KEY)!);
   expect(plan.spaces).toHaveLength(1); expect(plan.spaces[0].name).toBe('Kitchen');
-  expect(plan.tasks[0]).toMatchObject({ title: 'Wash dishes', spaceId: plan.spaces[0].id });
-  click('Add task'); click('Kitchen'); click('Sink'); submit();
+  expect(plan.tasks).toHaveLength(2);
+  expect(plan.tasks[0]).toMatchObject({ title: 'Wash dishes', spaceId: plan.spaces[0].id, intervalDays: 0, due: dayKey() });
+  click('Add task'); click('Kitchen'); click('Sink'); click('Add selected tasks');
   expect(parsePlan(localStorage.getItem(STORAGE_KEY)!).spaces).toHaveLength(1);
 });
 it('cancels without creating rooms and keeps failed room/task saves atomic', () => {
   act(() => root.render(React.createElement(App)));
-  click('Add task'); click('Kitchen'); click('Dishes'); click('Cancel');
+  click('Add task'); click('Kitchen'); click('Dishes'); click('Close');
   expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
   click('Add task'); click('Bathroom'); click('Toilet');
   vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('quota'); });
-  submit(); expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+  click('Add selected tasks'); expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
   expect(container.querySelector('dialog [role="alert"]')?.textContent).toContain('not applied');
   expect(container.querySelector('dialog')?.open).toBe(true);
 });

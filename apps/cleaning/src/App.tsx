@@ -61,6 +61,13 @@ export default function App() {
     const next = { ...plan, spaces: newRoom && !plan.spaces.some(space => space.id === newRoom.id) ? [...plan.spaces, newRoom] : plan.spaces, tasks: previous ? plan.tasks.map(item => item.id === task.id ? task : item) : [...plan.tasks, task] };
     if (commit(next, 'Task saved on this device.')) { setEditor(null); if (newRoom) setSpaceId(newRoom.id); }
   }
+  function addTasks(inputs: TaskInput[], room: Space): boolean {
+    const tasks: Task[] = inputs.map(input => ({ id: crypto.randomUUID(), spaceId: room.id, title: input.title, minutes: input.minutes, intervalDays: input.intervalDays, due: input.due, done: false, archived: false, lastDay: null, lastEvent: null }));
+    const spaces = plan.spaces.some(space => space.id === room.id) ? plan.spaces : [...plan.spaces, room];
+    const saved = commit({ ...plan, spaces, tasks: [...plan.tasks, ...tasks] }, 'Selected tasks added to today.');
+    if (saved) setSpaceId(room.id);
+    return saved;
+  }
   function downloadBackup() {
     try {
       const content = readError && raw.current !== null ? raw.current : JSON.stringify(plan, null, 2);
@@ -131,7 +138,7 @@ export default function App() {
       <footer className="workspace-footer"><span><Leaf size={14} />Personal cleaning, built around you.</span><button className="text-link" onClick={() => setBackupOpen(true)}>Stored in this browser · Backup options</button></footer>
     </main>
     {editor?.kind === 'space' && <SpaceForm space={plan.spaces.find(space => space.id === editor.id)} onClose={() => setEditor(null)} onSave={saveSpace} saveError={error || readError} />}
-    {editor?.kind === 'task' && !editor.id && <TaskCreator spaces={spaces} today={today} onSave={saveTask} onClose={() => setEditor(null)} saveError={error || readError} />}
+    {editor?.kind === 'task' && !editor.id && <TaskCreator spaces={spaces} today={today} onSave={addTasks} onClose={() => setEditor(null)} saveError={error || readError} />}
     {editor?.kind === 'task' && !!editor.id && spaces.length > 0 && <TaskForm task={plan.tasks.find(task => task.id === editor.id)} spaces={spaces} spaceId={selectedSpace?.id || spaces[0].id} today={today} onClose={() => setEditor(null)} onSave={saveTask} saveError={error || readError} />}
   </div>;
 }

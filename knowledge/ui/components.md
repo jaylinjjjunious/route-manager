@@ -1,6 +1,6 @@
 # UI Components
 
-TaskCreator.tsx owns Cleaning Add task: room chooser, nested activity choices and prefilled TaskForm. App persists a new room and its first task atomically; existing TaskForm edits stay direct.
+TaskCreator.tsx owns Cleaning Add task: room chooser followed by an activity page with toggle buttons, inline custom input and Add selected tasks. Success stays on that page. App.addTasks atomically saves draft room and tasks; existing TaskForm edits stay direct.
 
 ## Cleaning room routines
 
