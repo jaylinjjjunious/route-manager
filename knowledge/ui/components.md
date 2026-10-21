@@ -1,5 +1,9 @@
 # UI Components
 
+## Route Manager profile dropdown (2026-10-21)
+
+AioHeader avatar now opens a native auto popover with the existing larger photo, user name and Open More action. Avatar clicks do not navigate. Outside click and Escape dismiss through browser behavior; Open More closes the popup and invokes the existing More callback. Header/nav/data otherwise unchanged.
+
 Hallway Route Manager card uses the existing black AIØ app artwork, copied from apps/route-manager/public/apple-touch-icon.png into apps/hallway/src/assets/route-manager-icon.png and bundled by Vite. The hallway remains independent of the room runtime.
 
 BathroomDashboard.tsx shows Bathroom Today/Upcoming, start-date setup and optional-extra review. bathroom.ts calculates due dates and applies linked session outcomes. Home groups older planning under Other spaces & tasks. Existing session preparation and work panel remain the main cleaning flow.

@@ -75,9 +75,9 @@ describe("AIØ top header profile button", () => {
   it("shows the profile image in the header", () => {
     renderHeader("driver@ai0.app");
 
-    expect(images()).toEqual([
+    expect(images()[0]).toEqual(
       { src: AVATAR_PATH, alt: "Your profile picture", className: expect.stringContaining("object-cover") as string },
-    ]);
+    );
   });
 
   it("keeps the AIØ logo and greeting in the header", () => {
@@ -114,7 +114,7 @@ describe("AIØ top header profile button", () => {
     expect(container.querySelector("img")?.className).toContain("object-cover");
   });
 
-  it("opens the More/profile destination when the profile picture is tapped", () => {
+  it("opens More only through the dropdown action, not the avatar", () => {
     const onOpenProfile = vi.fn();
     renderHeader("driver@ai0.app", onOpenProfile);
 
@@ -122,6 +122,11 @@ describe("AIØ top header profile button", () => {
     expect(button).not.toBeNull();
     act(() => button?.click());
 
+    expect(onOpenProfile).not.toHaveBeenCalled();
+    const dropdown = container.querySelector('[aria-label="Profile menu"]');
+    expect(dropdown?.querySelector("img")?.getAttribute("src")).toBe(AVATAR_PATH);
+    const more = dropdown?.querySelector<HTMLButtonElement>("button");
+    act(() => more?.click());
     expect(onOpenProfile).toHaveBeenCalledTimes(1);
   });
 });

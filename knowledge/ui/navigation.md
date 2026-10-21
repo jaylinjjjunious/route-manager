@@ -1,5 +1,9 @@
 # Navigation System
 
+## Route Manager profile dropdown (2026-10-21)
+
+AioHeader avatar now opens a native auto popover with the existing larger photo, user name and Open More action. Avatar clicks do not navigate. Outside click and Escape dismiss through browser behavior; Open More closes the popup and invokes the existing More callback. Header/nav/data otherwise unchanged.
+
 Bathroom is now the primary Cleaning Today dashboard. Start cleaning → due/extra review → Get ready → Clock in → Clock out. Preparation Back returns to the selected Bathroom review. Other spaces/tasks are expandable on Today; Spaces/History and parent menu still work.
 
 ## Cleaning room (2026-10-20)

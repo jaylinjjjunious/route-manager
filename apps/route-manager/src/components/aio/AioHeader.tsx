@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useId, useRef, useState } from "react";
 
 const AVATAR_PATH = "/profile/avatar.webp";
 
@@ -23,6 +23,10 @@ export default function AioHeader({
   userName?: string;
   onOpenProfile: () => void;
 }) {
+  const menuId = useId();
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState({ top: 120, right: 16 });
   const hour = new Date().getHours();
   const greetingName = userName ? `, ${userName.trim().split(/\s+/)[0]}` : "";
   const profileClass = "flex aspect-square h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-[var(--color-aio-line)] bg-[var(--color-aio-surface)] transition-transform hover:scale-[1.03] active:scale-95 touch-manipulation";
@@ -60,7 +64,11 @@ export default function AioHeader({
         <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
-            onClick={onOpenProfile}
+            popoverTarget={menuId}
+            aria-controls={menuId}
+            aria-expanded={open}
+            aria-haspopup="dialog"
+            onClick={event => { const rect = event.currentTarget.getBoundingClientRect(); setPosition({ top: rect.bottom + 12, right: Math.max(16, window.innerWidth - rect.right) }); }}
             className={profileClass}
             aria-label="Open profile and More menu"
             title="Profile"
@@ -71,6 +79,15 @@ export default function AioHeader({
               className="h-full w-full rounded-full object-cover"
             />
           </button>
+          <div id={menuId} ref={menuRef} popover="auto" role="dialog" aria-label="Profile menu"
+            onToggle={event => setOpen((event.nativeEvent as ToggleEvent).newState === "open")}
+            className="rounded-2xl border border-[var(--color-aio-line)] bg-[var(--color-aio-surface)] p-5 text-[var(--color-aio-text)] shadow-2xl"
+            style={{ position: "fixed", inset: "auto", margin: 0, top: position.top, right: position.right, width: "min(288px, calc(100vw - 32px))", maxHeight: `calc(100dvh - ${position.top + 16}px)`, overflowY: "auto" }}>
+            <img src={AVATAR_PATH} alt="Profile photo" className="mx-auto h-28 w-28 rounded-full object-cover" />
+            <p className="mt-4 break-words text-center text-base font-semibold">{userName || "Your profile"}</p>
+            <button type="button" className="mt-5 w-full rounded-xl border border-[var(--color-aio-line)] px-4 py-3 text-sm font-semibold hover:bg-[var(--color-aio-bg)] focus-visible:outline focus-visible:outline-2"
+              onClick={() => { menuRef.current?.hidePopover?.(); onOpenProfile(); }}>Open More</button>
+          </div>
         </div>
       </div>
     </header>
