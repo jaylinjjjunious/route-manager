@@ -2,7 +2,7 @@
 
 ## Bathroom dashboard validation (2026-10-21)
 
-Cleaning has 29 tests covering the schedule, month-end/leap/DST dates, backup compatibility and explicit clock-out linkage. Root lint/build pass. Local browser setup → Today/Upcoming → due preselection → tools/clock-in → partial clock-out → remaining-due reload verified. Public release check pending.
+Cleaning has 29 tests covering the schedule, month-end/leap/DST dates, backup compatibility and explicit clock-out linkage. Root lint/build pass. Local browser setup → Today/Upcoming → due preselection → tools/clock-in → partial clock-out → remaining-due reload verified. Released at 8492b23438cbcecfb8ca2a11c1dae5cc8a43fa67; GitHub main and public Render exact SHA verified. Twenty-nine tests and root lint/build pass. Public browser verified future/today start-date setup, correct daily/14-day/monthly Upcoming dates, due preselection, tools/clock-in/reload/clock-out and v4 JSON backup roundtrip. Public test clock-out marked zero activities complete and is explicitly annotated as verification; no cleaning was invented. Local partial completion/reload confirmed only finished work advances. User tab 7 is left on the start-date form; Today is open in tab 4. Provisional start date used in verification is today and remains editable. No required work remains; browser-only storage persists.
 
 ## Cleaning sessions (2026-10-21)
 
