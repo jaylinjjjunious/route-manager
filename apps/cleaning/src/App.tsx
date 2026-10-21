@@ -1,3 +1,4 @@
+import { TaskCreator } from './TaskCreator';
 import { RoomRoutine } from './RoomRoutine';
 import { activeRun } from './routines';
 import React, { useEffect, useRef, useState } from 'react';
@@ -54,11 +55,11 @@ export default function App() {
     const next = editor?.id ? { ...plan, spaces: plan.spaces.map(space => space.id === id ? { ...space, name } : space) } : { ...plan, spaces: [...plan.spaces, { id, name, archived: false }] };
     if (commit(next, 'Space saved on this device.')) { setEditor(null); setSpaceId(id); window.location.hash = 'spaces'; }
   }
-  function saveTask(input: TaskInput) {
+  function saveTask(input: TaskInput, newRoom?: Space) {
     const previous = plan.tasks.find(task => task.id === editor?.id);
     const task: Task = { id: previous?.id || crypto.randomUUID(), spaceId: input.spaceId, title: input.title, minutes: input.minutes, intervalDays: input.intervalDays, due: input.due, done: input.reactivate || input.intervalDays > 0 ? false : previous?.done || false, archived: false, lastDay: input.reactivate ? null : previous?.lastDay || null, lastEvent: input.reactivate ? null : previous?.lastEvent || null };
-    const next = { ...plan, tasks: previous ? plan.tasks.map(item => item.id === task.id ? task : item) : [...plan.tasks, task] };
-    if (commit(next, 'Task saved on this device.')) setEditor(null);
+    const next = { ...plan, spaces: newRoom && !plan.spaces.some(space => space.id === newRoom.id) ? [...plan.spaces, newRoom] : plan.spaces, tasks: previous ? plan.tasks.map(item => item.id === task.id ? task : item) : [...plan.tasks, task] };
+    if (commit(next, 'Task saved on this device.')) { setEditor(null); if (newRoom) setSpaceId(newRoom.id); }
   }
   function downloadBackup() {
     try {
@@ -106,7 +107,7 @@ export default function App() {
       {notice && <p role="status" className="notice"><CheckCheck size={16} />{notice}</p>}
 
       {page === 'today' && <>
-        <section className="page-heading"><div><p className="eyebrow">{new Date(`${today}T12:00:00`).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</p><h1>A little cleaner.<br /><span>A little lighter.</span></h1><p>Your home, one manageable task at a time.</p></div><button className="primary" disabled={!spaces.length || !!readError} onClick={() => setEditor({ kind: 'task' })}><Plus size={18} />Add task</button></section>
+        <section className="page-heading"><div><p className="eyebrow">{new Date(`${today}T12:00:00`).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</p><h1>A little cleaner.<br /><span>A little lighter.</span></h1><p>Your home, one manageable task at a time.</p></div><button className="primary" disabled={!!readError} onClick={() => setEditor({ kind: 'task' })}><Plus size={18} />Add task</button></section>
         <section className="room-shortcuts" aria-label="Room routines"><div className="section-heading"><div><p className="eyebrow">Choose a room, follow your routine</p><h2>Your room routines</h2></div><a className="text-link" href="#spaces">Manage spaces <ChevronRight size={15} /></a></div>{spaces.length ? <div className="routine-room-grid">{spaces.map(space => <button className="room-shortcut" key={space.id} onClick={() => { setSpaceId(space.id); window.location.hash = 'spaces'; }}><House size={22} /><strong>{space.name}</strong><span>{activeRun(space) ? 'Routine in progress · Continue' : space.routine?.length ? `${space.routine.length} steps · Open routine` : 'Build this room’s routine'}</span><ChevronRight size={18} /></button>)}</div> : <p className="routine-hint">Add your first space below, then build the steps you follow every visit.</p>}</section><div className="stats-grid"><div className="stat"><span>Ready for today</span><strong>{due.length}<small>tasks</small></strong></div><div className="stat"><span>Time to set aside</span><strong>{due.reduce((sum, task) => sum + task.minutes, 0)}<small>min estimated</small></strong></div><div className="stat"><span>Completed today</span><strong>{completedToday}<small>tasks</small></strong></div></div>
         <div className="today-layout"><section className="panel task-panel"><div className="section-heading"><div><p className="eyebrow">Your next small steps</p><h2>Today's list</h2></div>{spaces.length > 0 && <label className="filter-label"><span className="sr-only">Filter today's tasks by space</span><select value={filterSpaceId} onChange={event => setSpaceId(event.target.value)}><option value="all">All spaces</option>{spaces.map(space => <option value={space.id} key={space.id}>{space.name}</option>)}</select></label>}</div>
           {!spaces.length ? <div className="empty-state"><span className="empty-icon"><House size={35} /></span><h3>Start with your own space.</h3><p>Add a room, then choose the tasks that make a difference to you.</p><div className="button-row"><button className="primary" disabled={!!readError} onClick={() => setEditor({ kind: 'space' })}><Plus size={17} />Add a space</button><button className="secondary" disabled={!!readError} onClick={() => { action(current => mergeBackup(current, starterPlan(today)), 'Starter plan added. These are suggested tasks; edit them to fit your home.'); setSpaceId('all'); }}>Use a starter plan</button></div><small>Starter plan: 3 spaces, 6 editable tasks. Nothing marked complete.</small></div>
@@ -130,6 +131,7 @@ export default function App() {
       <footer className="workspace-footer"><span><Leaf size={14} />Personal cleaning, built around you.</span><button className="text-link" onClick={() => setBackupOpen(true)}>Stored in this browser · Backup options</button></footer>
     </main>
     {editor?.kind === 'space' && <SpaceForm space={plan.spaces.find(space => space.id === editor.id)} onClose={() => setEditor(null)} onSave={saveSpace} saveError={error || readError} />}
-    {editor?.kind === 'task' && spaces.length > 0 && <TaskForm task={plan.tasks.find(task => task.id === editor.id)} spaces={spaces} spaceId={selectedSpace?.id || spaces[0].id} today={today} onClose={() => setEditor(null)} onSave={saveTask} saveError={error || readError} />}
+    {editor?.kind === 'task' && !editor.id && <TaskCreator spaces={spaces} today={today} onSave={saveTask} onClose={() => setEditor(null)} saveError={error || readError} />}
+    {editor?.kind === 'task' && !!editor.id && spaces.length > 0 && <TaskForm task={plan.tasks.find(task => task.id === editor.id)} spaces={spaces} spaceId={selectedSpace?.id || spaces[0].id} today={today} onClose={() => setEditor(null)} onSave={saveTask} saveError={error || readError} />}
   </div>;
 }

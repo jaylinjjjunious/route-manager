@@ -1,5 +1,7 @@
 # UI Components
 
+TaskCreator.tsx owns Cleaning Add task: room chooser, nested activity choices and prefilled TaskForm. App persists a new room and its first task atomically; existing TaskForm edits stay direct.
+
 ## Cleaning room routines
 
 RoomRoutine.tsx edits ordered room steps and guides a saved visit. routines.ts validates and updates the reusable template and visit snapshots; model.ts validates both through existing save/import paths.

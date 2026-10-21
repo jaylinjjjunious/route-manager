@@ -48,6 +48,9 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
+**Room-first Add task:** Add task now opens a room chooser, then room-specific activities, then task details. User confirmed Dishes belongs inside Kitchen. Kitchen offers Dishes/Counters/Sink/Stove/Floor; Bathroom offers Toilet/Sink/Shower or tub/Mirror/Floor; Bedroom and Living area have their own suggestions. Existing active rooms and custom rooms/tasks are supported. Suggested rooms are drafts: room and task save atomically only on Save task; cancel/back creates no records. Existing active rooms are reused case-insensitively. Archived rooms are not silently restored. Add task works even with no spaces. Edit task retains its direct form. No schema/storage-key or routine change. Eighteen tests, root lint/build and local browser save/reload pass; public release pending.
+
+
 **Room routines, 2026-10-20:** Each physical cleaning space now has an optional reusable ordered routine, separate from scheduled tasks. Today shows room entry cards; Spaces offers Build/Edit routine (one step per line) and Start/Continue. A visit snapshots the room name and steps, saves each sequential completion, supports Undo last step and pause/reload, and requires all steps before Finish. Finish records the visit in History; starting again resets the entire checklist, including on the same day. Edits affect future visits, preserving in-progress/history snapshots. Archives retain routines and visits. Browser-only persistence and existing task schedules remain unchanged. Sixteen Cleaning tests, lint/build and local production browser pass; public release verified at b8b2030. Baseline checkpoint-2026-10-20-personal-cleaning at 2d80a9c.
 
 
@@ -106,6 +109,9 @@ Required installation step for reliable startup discovery: add this reference to
 > In every Route Manager session, read the startup sections of `APP_LIFELINE.md` before substantive work. Reference its relevant sections periodically during ongoing work, at milestones, before important decisions, and after interruptions or context compaction. Keep its snapshot, decisions, history, and resume notes current as meaningful project changes occur; reuse unchanged context instead of rereading the entire history.
 
 ## Active Decisions
+
+- User confirmed room-first task creation: Dishes is inside Kitchen. Keep choices customizable and save draft rooms only with their task.
+
 
 - User wants a repeatable regimen for each physical room. Implement full ordered checklists per visit (working assumption from “every time”), separate from scheduled tasks. Persist partial progress and keep immutable visit snapshots. Version-2 routine plans reject older app clients to prevent field loss; old plans still import.
 
@@ -239,6 +245,9 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 
 ## Resume Point
 
+**Task picker:** Implemented on codex/room-first-task-picker; 18 Cleaning tests pass. Root lint/build and local room → activity → details → save/reload verified; public release remains. Preserve dist-native and existing routine data.
+
+
 **Room routines:** Implemented on codex/cleaning-room-routines; local browser creation/steps/reload/history and 16 tests/lint/build pass. Released at b8b20303fd2d256ac6c0efcc2f32795cebab8100: GitHub main and public Render exact build SHA verified. Public browser verified editor/start, sequential completion, reload/resume, finish/history snapshots, fresh same-day restart, archive retention, backup download/import and hallway return. Labeled test space is archived; one clearly labeled test visit remains in History. Sixteen Cleaning tests and root lint/build pass. No required work remains; browser-only storage is still disclosed. Preserve dist-native.
 
 
@@ -365,3 +374,9 @@ Verified all 13 findings against production main and started isolated remediatio
 - Added per-space reusable steps and sequential saved visits; repeat starts fresh every time.
 - Today room shortcuts, Spaces editor/runner and visit snapshots in History; existing tasks/data retained.
 - Sixteen tests, lint/build and local browser workflow pass. Released at b8b20303fd2d256ac6c0efcc2f32795cebab8100: GitHub main and public Render exact build SHA verified. Public browser verified editor/start, sequential completion, reload/resume, finish/history snapshots, fresh same-day restart, archive retention, backup download/import and hallway return. Labeled test space is archived; one clearly labeled test visit remains in History. Sixteen Cleaning tests and root lint/build pass. No required work remains; browser-only storage is still disclosed.
+
+### 2026-10-20 — Room-first Add task
+
+- User confirmed Dishes belongs inside Kitchen. Added room → activity → details mini pages, custom choices and empty-plan entry.
+- Draft room/task save atomically; cancel/back leave data unchanged. Existing task editing and routines preserved.
+- Eighteen Cleaning tests pass; public verification pending.

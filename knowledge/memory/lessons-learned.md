@@ -1,5 +1,7 @@
 ## 2026-10-18 — Software boundaries
 
+Room/task pickers should keep suggested rooms as drafts until task save, so Back/Cancel cannot create empty records. Save the new room and task in the same validated write.
+
 ## Repeatable routines (2026-10-20)
 
 A reusable every-visit room checklist is distinct from due-date tasks. Snapshot each visit so editing the next routine cannot change active or historical work. Save progress before advancing UI; refuse Finish until all steps are checked.

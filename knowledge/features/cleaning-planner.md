@@ -16,6 +16,12 @@ Version-1 plans still import; plans containing routine fields upgrade to version
 
 Related source: `apps/cleaning/src/RoomRoutine.tsx`, `routines.ts`, `model.ts`, `App.tsx`. Sixteen Cleaning tests pass, including order, fresh same-day runs, snapshot editing, old backups, reload/resume and failed-finish persistence. Local production UI verified creation, step progression, pause/reload and history. Released at b8b20303fd2d256ac6c0efcc2f32795cebab8100: GitHub main and public Render exact build SHA verified. Public browser verified editor/start, sequential completion, reload/resume, finish/history snapshots, fresh same-day restart, archive retention, backup download/import and hallway return. Labeled test space is archived; one clearly labeled test visit remains in History. Sixteen Cleaning tests and root lint/build pass. No required work remains; browser-only storage is still disclosed.
 
+## Room-first task creation (2026-10-20)
+
+Add task now opens a room chooser, then room-specific activities, then task details. User confirmed Dishes belongs inside Kitchen. Kitchen offers Dishes/Counters/Sink/Stove/Floor; Bathroom offers Toilet/Sink/Shower or tub/Mirror/Floor; Bedroom and Living area have their own suggestions. Existing active rooms and custom rooms/tasks are supported. Suggested rooms are drafts: room and task save atomically only on Save task; cancel/back creates no records. Existing active rooms are reused case-insensitively. Archived rooms are not silently restored. Add task works even with no spaces. Edit task retains its direct form. No schema/storage-key or routine change.
+
+TaskCreator.tsx owns the room/activity/detail steps; TaskForm supports a prefilled name and Back. App saves a missing room with its first task through the existing validated commit. Eighteen Cleaning tests cover nested choices, cancellation, Back, active-room reuse and atomic save failure alongside existing routines/tasks. Public release pending.
+
 ## Behavior
 
 Create named spaces and tasks with estimated minutes, due date and one-time or repeating intervals. Today lists due/overdue active tasks and estimates; a completion schedules a repeating task from the actual local completion day, or finishes a one-time task. Duplicate same-day completions are guarded. History snapshots the title/space/time. Undo restores the prior schedule only when the task still has that completion's state, preserving later text edits. Archive/restore hides work without removing history. Starter suggestions require an explicit click and merge with existing work.

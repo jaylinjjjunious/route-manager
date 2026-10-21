@@ -25,14 +25,15 @@ export function SpaceForm({ space, onSave, onClose, saveError }: { space?: Space
 }
 
 export type TaskInput = { title: string; spaceId: string; minutes: number; intervalDays: number; due: string; reactivate: boolean };
-export function TaskForm({ task, spaces, spaceId, today, onSave, onClose, saveError }: { task?: Task; spaces: Space[]; spaceId: string; today: string; onSave: (input: TaskInput) => void; onClose: () => void; saveError?: string }) {
+export function TaskForm({ task, spaces, spaceId, today, onSave, onClose, saveError, initialTitle, onBack }: { task?: Task; spaces: Space[]; spaceId: string; today: string; onSave: (input: TaskInput) => void; onClose: () => void; saveError?: string; initialTitle?: string; onBack?: () => void }) {
   const [error, setError] = React.useState('');
   return <Modal title={task ? 'Edit task' : 'Add a cleaning task'} onClose={onClose}><form onSubmit={event => {
     event.preventDefault(); const data = new FormData(event.currentTarget);
     const input = { title: String(data.get('title') || '').trim(), spaceId: String(data.get('space')), minutes: Number(data.get('minutes')), intervalDays: Number(data.get('interval')), due: String(data.get('due')), reactivate: data.get('reactivate') === 'on' };
     if (!input.title) { setError('Give this task a name.'); return; } onSave(input);
   }}>
-    <label>Task name<input autoFocus name="title" required maxLength={120} defaultValue={task?.title} placeholder="e.g. Wipe the counters" /></label>
+    {onBack && <button className="text-link" type="button" onClick={onBack}>← Back to {spaces.find(space => space.id === spaceId)?.name}</button>}
+    <label>Task name<input autoFocus name="title" required maxLength={120} defaultValue={task?.title || initialTitle} placeholder="e.g. Wipe the counters" /></label>
     <label>Space<select name="space" defaultValue={task?.spaceId || spaceId}>{spaces.map(space => <option key={space.id} value={space.id}>{space.name}</option>)}</select></label>
     <div className="form-grid"><label>Time estimate (minutes)<input name="minutes" type="number" required min={1} max={480} defaultValue={task?.minutes || 10} /></label><label>Next due<input name="due" type="date" required defaultValue={task?.due || today} /></label></div>
     <label>Repeat<select name="interval" defaultValue={task?.intervalDays ?? 7}><option value={0}>One time</option><option value={1}>Every day</option><option value={7}>Every week</option><option value={14}>Every 2 weeks</option><option value={30}>Every 30 days</option>{task && ![0, 1, 7, 14, 30].includes(task.intervalDays) && <option value={task.intervalDays}>Every {task.intervalDays} days</option>}</select></label>

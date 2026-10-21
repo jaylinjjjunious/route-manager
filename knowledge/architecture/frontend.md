@@ -1,5 +1,9 @@
 # Frontend Architecture
 
+## Room-first task entry
+
+Cleaning TaskCreator renders room → activity → TaskForm mini pages in a native dialog. App commits a drafted room and task together. Existing TaskForm editing, routines, data schema and other workspaces are unchanged.
+
 ## Room routines (2026-10-20)
 
 Cleaning RoomRoutine owns the routine editor and sequential visit dialog. Pure routines.ts owns snapshots and progress changes; model validation preserves optional space routine/run fields for backward-compatible backup imports; routine plans save as version 2 so older app tabs cannot drop their fields. App provides Today room cards and visit History.
