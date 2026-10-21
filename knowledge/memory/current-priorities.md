@@ -1,3 +1,7 @@
+# Due-only cleaning start
+
+Complete/deployed at 6b3ecef. Start/Get ready show only due work, not future extras. Thirty-three tests/root lint/build pass; public daily-only review/preparation verified. Existing schedule unchanged; no session started.
+
 # Cleaning direct finish
 
 Complete/deployed at 89c763e. Today offers Mark finished without clock-in; selected work clears and next dates advance. Immediate guarded Undo, finished-today summary, existing active-session Clock out and failure protection verified. Thirty-two tests/root lint/build pass; live test undone and original state reload-confirmed. No required work remains.

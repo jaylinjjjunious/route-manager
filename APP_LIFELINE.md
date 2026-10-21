@@ -48,7 +48,7 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
-**Due-only cleaning start:** User wants Start cleaning to show only due daily work, adding fortnightly/monthly activities when their dates arrive. Review now excludes future work and empty cadence groups; Start disabled when nothing due. Existing configured dates/lastDone remain unchanged. Thirty-three Cleaning tests/root lint/build pass; local browser Start shows only the remaining due daily work. Public deployment verification pending on codex/cleaning-due-only.
+**Due-only cleaning start:** User wants Start cleaning to show only due daily work, adding fortnightly/monthly activities when their dates arrive. Review now excludes future work and empty cadence groups; Start disabled when nothing due. Existing configured dates/lastDone remain unchanged. Thirty-three Cleaning tests/root lint/build pass; local browser Start shows only the remaining due daily work. Released at 6b3eceffb8a02788eaf363b2079b0bbd04831318; GitHub main/public exact SHA verified. Live Start and Get ready both show only toilet/sink daily work; future groups hidden. No data changed or timer started; review left open. No required work remains.
 
 **Cleaning direct finish:** Bathroom Today now has Mark finished → select actually finished due activities → Save. Clears only selected work, retains unfinished due work, schedules next dates, shows finished-today summary and an immediate guarded Undo. Uses existing lastDone; no fake timer/session/history entry. Active sessions finish through Clock out. Thirty-two Cleaning tests/root build/lint pass; local browser partial finish/reload verified. Released at 89c763e4cf05670a0f2e55e2ea803df09eb4940b; GitHub main/public exact SHA verified. Public partial finish removed only toilet, retained sink, set next toilet date tomorrow; Undo/reload restored the exact original schedule with no cleaning left marked finished. Completion modal is open in user tab 4 with nothing selected. No required work remains.
 
@@ -281,7 +281,7 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 
 ## Resume Point
 
-**Due-only cleaning start:** User wants Start cleaning to show only due daily work, adding fortnightly/monthly activities when their dates arrive. Review now excludes future work and empty cadence groups; Start disabled when nothing due. Existing configured dates/lastDone remain unchanged. Thirty-three Cleaning tests/root lint/build pass; local browser Start shows only the remaining due daily work. Public deployment verification pending on codex/cleaning-due-only.
+**Due-only cleaning start:** User wants Start cleaning to show only due daily work, adding fortnightly/monthly activities when their dates arrive. Review now excludes future work and empty cadence groups; Start disabled when nothing due. Existing configured dates/lastDone remain unchanged. Thirty-three Cleaning tests/root lint/build pass; local browser Start shows only the remaining due daily work. Released at 6b3eceffb8a02788eaf363b2079b0bbd04831318; GitHub main/public exact SHA verified. Live Start and Get ready both show only toilet/sink daily work; future groups hidden. No data changed or timer started; review left open. No required work remains.
 
 **Cleaning direct finish:** Bathroom Today now has Mark finished → select actually finished due activities → Save. Clears only selected work, retains unfinished due work, schedules next dates, shows finished-today summary and an immediate guarded Undo. Uses existing lastDone; no fake timer/session/history entry. Active sessions finish through Clock out. Thirty-two Cleaning tests/root build/lint pass; local browser partial finish/reload verified. Released at 89c763e4cf05670a0f2e55e2ea803df09eb4940b; GitHub main/public exact SHA verified. Public partial finish removed only toilet, retained sink, set next toilet date tomorrow; Undo/reload restored the exact original schedule with no cleaning left marked finished. Completion modal is open in user tab 4 with nothing selected. No required work remains.
 
@@ -499,3 +499,8 @@ Verified all 13 findings against production main and started isolated remediatio
 - Mark finished opens an unchecked due-only checklist. Save advances selected lastDone dates, clears those items from Today and shows finished-today/Upcoming; no session or working time invented.
 - Active timers use Clock out; immediate guarded Undo is available until reload/other-tab update. Existing v4 schema/backups remain.
 - Thirty-two Cleaning tests/root lint/build pass, including failed persistence, partial finish/reload, undo and active-session protection. Local/public full interaction verified at 89c763e. Public test was immediately undone and reload-confirmed; no real cleaning was fabricated.
+
+### 2026-10-21 — Start shows due work only
+
+- Bathroom Start excludes future activities and empty cadence groups. Daily work appears now; walls/cabinets/floor join at their 14-day due date, shower at its calendar-month due date. No extra-cleaning shortcut when nothing is due. Existing dates and completions preserved.
+- Thirty-three Cleaning tests/root lint/build pass; stage tests cover daily, 14-day and monthly selection/preparation. Public daily Start/Get ready verified at 6b3ecef.
