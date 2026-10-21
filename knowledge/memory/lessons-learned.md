@@ -1,5 +1,7 @@
 ## 2026-10-18 — Software boundaries
 
+Bathroom frequencies belong to persistent activity IDs, not inferred title matches. Advance only explicit completed linked activities at clock-out, atomically with session results. Show initial larger jobs as Upcoming, preserve unfinished due work, and use calendar-month rather than 30-day arithmetic for monthly cleaning.
+
 For hands-off cleaning, save clock timestamps and breaks, not timer ticks. Recover the active session after reload and require explicit outcome only at clock-out. Persist room and session atomically, reject overlapping sessions and never infer completed work from elapsed time.
 
 The user prefers task creation to stop at the room activity page. Do not reintroduce a mandatory task name/time/date/repeat form after an activity click. Use explicit in-place selection and Add, with visible defaults.

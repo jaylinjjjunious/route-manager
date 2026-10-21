@@ -1,5 +1,9 @@
 # Frontend Architecture
 
+## Bathroom schedule dashboard (2026-10-21)
+
+BathroomDashboard owns start-date setup, Today/Upcoming and due-activity review. bathroom.ts owns the fixed user-approved frequencies and next-date/finished-outcome rules. sessions.ts applies explicit linked outcomes atomically with clock-out. App makes this the primary Today screen; generic planning remains in Other spaces & tasks. Space schedule/session link fields upgrade the plan to v4; old imports remain compatible.
+
 ## Cleaning work sessions (2026-10-21)
 
 CleaningSession.tsx owns preparation, current-work panel and session history. sessions.ts owns timestamp accounting and validation; model.ts preserves session data with plan-v3 upgrade and backward-compatible imports. App coordinates draft preparation, one active session, and validated saves. No new backend, auth, service or shared room imports.

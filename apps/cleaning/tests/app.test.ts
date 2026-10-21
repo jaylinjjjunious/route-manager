@@ -12,7 +12,7 @@ const click = (text: string) => {
   expect(button, text).toBeDefined(); act(() => button!.click());
 };
 const fill = (name: string, value: string) => { const input = container.querySelector<HTMLInputElement | HTMLSelectElement>(`[name="${name}"]`)!; expect(input).not.toBeNull(); input.value = value; };
-const submit = () => act(() => { container.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
+const submit = () => act(() => { (container.querySelector('dialog form') || container.querySelector('form'))!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
 const go = (page: string) => act(() => { window.history.replaceState(null, '', `/#${page}`); window.dispatchEvent(new HashChangeEvent('hashchange')); });
 beforeEach(() => {
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
@@ -123,4 +123,21 @@ it('prepares tools, clocks in, reloads, pauses and clocks out without checking e
   expect(saved.sessions![0]).toMatchObject({ id, completed: ['Wash dishes'], pausedAt: null });
   expect(saved.sessions![0].endedAt).not.toBeNull();
   go('history'); expect(container.textContent).toContain('1 clocked out');
+});
+
+it('sets up the Bathroom schedule and advances only finished activities when clocking out', () => {
+  act(() => root.render(React.createElement(App)));
+  expect(container.textContent).toContain('Bathroom start date');
+  click('Set up Bathroom');
+  let plan = parsePlan(localStorage.getItem(STORAGE_KEY)!);
+  expect(plan.version).toBe(4); expect(plan.spaces).toHaveLength(1); expect(plan.spaces[0].bathroom?.lastDone).toEqual({});
+  click('Start cleaning');
+  expect(container.querySelectorAll('dialog [aria-pressed="true"]')).toHaveLength(2);
+  click('Get ready'); click('Back to activities');
+  expect(container.querySelector('dialog h2')?.textContent).toContain('today');
+  click('Get ready'); click('Clock in'); click('Clock out'); click('All finished'); submit();
+  plan = parsePlan(localStorage.getItem(STORAGE_KEY)!);
+  expect(plan.spaces[0].bathroom?.lastDone).toEqual({ toilet: dayKey(), sink: dayKey() });
+  expect(plan.history).toHaveLength(0); expect(plan.tasks).toHaveLength(0);
+  expect(container.textContent).toContain('Nothing due right now');
 });

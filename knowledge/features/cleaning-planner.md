@@ -8,6 +8,16 @@ The user wants a new independent software room for their own cleaning, eventuall
 - Public URL `/cleaning/`; internal hashes Today, Spaces, History. Main menu returns to `/#home`.
 - Gateway serves static files independently of Route Manager. No room code, authentication or API imports. Standalone hosting can override base/entry URLs.
 
+## Bathroom schedule dashboard (2026-10-21)
+
+Today now centers a large Bathroom card with Today's cleaning, Start cleaning and Upcoming. User-approved schedule: daily toilet/sink wipe-downs; bathroom walls/cabinets/floor every 14 days; shower once per calendar month. Explicit start-date setup reuses the active Bathroom or creates it atomically, with no fake completions. Daily work starts on that date, two-week work starts 14 days later, shower starts one calendar month later. Start date can change before any completed scheduled activity, with no active session. Other spaces/tasks are retained in a collapsed section.
+
+Start cleaning selects due activities; a room review allows extras before Get ready → Clock in → Clock out. Linked session metadata identifies exact Bathroom activity IDs. Clock-out updates lastDone only for those explicitly marked finished; unfinished entries remain due. Next due is calculated from actual completion: +1 day, +14 days, or next calendar month with short-month clamping. No session length or generic matching task title implies completion. No duplicate task records are created. Older generic sessions/routines remain separate.
+
+Optional Space.bathroom stores start and lastDone by stable activity ID. Optional session.bathroomItems links outcomes. Plan version 4 protects fields from older clients, with v1–v3 backup imports preserved. Validation retains schedule/link fields and rejects invalid dates/IDs or activities absent from their session. Existing storage limits, recovery, stale-write detection and additive backups apply.
+
+Sources: bathroom.ts, BathroomDashboard.tsx, model.ts, sessions.ts, App.tsx. Twenty-nine tests, root lint/build and local production browser pass. Tests cover first due dates, future starts, partial clock-out, month-end/leap/DST arithmetic, unrelated sessions, v4 backup/link validation and retained existing room work. Public release pending.
+
 ## Cleaning work sessions (2026-10-21)
 
 Cleaning now supports room/activity selection → Get ready (plan plus optional tools checklist) → Clock in → hands-off work → Clock out. The current session panel is visible on all Cleaning pages with Pause/Resume, See routine & tools and Clock out. Work uses saved timestamps rather than timer ticks; reload/closing does not end a session. Pause time is excluded. Clock-out requires an explicit All finished or Some work remains choice, supports an optional note, and saves completed/remaining activities plus working/break time in History. No per-step interactions are required while cleaning. Existing tasks/routines are preserved; session outcomes do not silently complete scheduled tasks.

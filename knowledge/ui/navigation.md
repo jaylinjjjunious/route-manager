@@ -1,5 +1,7 @@
 # Navigation System
 
+Bathroom is now the primary Cleaning Today dashboard. Start cleaning → due/extra review → Get ready → Clock in → Clock out. Preparation Back returns to the selected Bathroom review. Other spaces/tasks are expandable on Today; Spaces/History and parent menu still work.
+
 ## Cleaning room (2026-10-20)
 
 Hallway now opens Route Manager or Cleaning through separate document URLs. Cleaning owns /cleaning/ with #today, #spaces, #history and a visible Main menu link to /#home. Backup controls are in its header/footer. No Route Manager account data or navigation appears in this room.

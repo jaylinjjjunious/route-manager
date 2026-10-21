@@ -1,9 +1,10 @@
+import { parseBathroom, type BathroomSchedule } from './bathroom';
 import { parseSessions, type CleaningSession } from './sessions';
 import { parseRoutineFields, type RoutineRun } from './routines';
-export type Space = { id: string; name: string; archived: boolean; routine?: string[]; runs?: RoutineRun[] };
+export type Space = { id: string; name: string; archived: boolean; routine?: string[]; runs?: RoutineRun[]; bathroom?: BathroomSchedule };
 export type Task = { id: string; spaceId: string; title: string; minutes: number; intervalDays: number; due: string; done: boolean; archived: boolean; lastDay: string | null; lastEvent: string | null };
 export type Completion = { id: string; taskId: string; title: string; spaceName: string; at: string; day: string; intervalDays: number; priorDue: string; nextDue: string; priorDone: boolean; priorDay: string | null; priorEvent: string | null };
-export type Plan = { version: 1 | 2 | 3; spaces: Space[]; tasks: Task[]; history: Completion[]; sessions?: CleaningSession[] };
+export type Plan = { version: 1 | 2 | 3 | 4; spaces: Space[]; tasks: Task[]; history: Completion[]; sessions?: CleaningSession[] };
 export const emptyPlan = (): Plan => ({ version: 1, spaces: [], tasks: [], history: [] });
 export const dayKey = (date = new Date()): string => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 export const isDay = (value: unknown): value is string => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && Number(value.slice(0, 4)) >= 1900 && !Number.isNaN(Date.parse(`${value}T12:00:00`)) && dayKey(new Date(`${value}T12:00:00`)) === value;
@@ -40,7 +41,7 @@ export function parsePlan(raw: string): Plan {
   let data: any;
   try { data = JSON.parse(raw); } catch { throw new Error('This file is not a valid cleaning backup.'); }
   const invalid = () => { throw new Error('This backup contains invalid or unsupported cleaning data.'); };
-  if (!data || ![1, 2, 3].includes(data.version) || !Array.isArray(data.spaces) || !Array.isArray(data.tasks) || !Array.isArray(data.history) || data.spaces.length > 500 || data.tasks.length > 5000 || data.history.length > 10000) invalid();
+  if (!data || ![1, 2, 3, 4].includes(data.version) || !Array.isArray(data.spaces) || !Array.isArray(data.tasks) || !Array.isArray(data.history) || data.spaces.length > 500 || data.tasks.length > 5000 || data.history.length > 10000) invalid();
   const unique = (items: any[]) => items.every(item => item && text(item.id, 100)) && new Set(items.map(item => item.id)).size === items.length;
   if (![data.spaces, data.tasks, data.history].every(unique)) invalid();
   for (const space of data.spaces) if (!text(space.name, 80) || typeof space.archived !== 'boolean') invalid();
@@ -52,7 +53,7 @@ export function parsePlan(raw: string): Plan {
   }
   for (const task of data.tasks) if (task.lastEvent !== null && !data.history.some((event: Completion) => event.id === task.lastEvent && event.taskId === task.id && event.day === task.lastDay)) invalid();
   const sessions = data.sessions === undefined ? undefined : parseSessions(data.sessions, data.spaces);
-  return { ...(sessions === undefined ? {} : { sessions }), version: data.version === 3 || sessions !== undefined ? 3 : data.version === 2 || data.spaces.some((space: Space) => space.routine !== undefined || space.runs !== undefined) ? 2 : 1, spaces: data.spaces.map((s: Space) => ({ id: s.id, name: s.name, archived: s.archived, ...parseRoutineFields(s) })), tasks: data.tasks.map((t: Task) => ({ id: t.id, spaceId: t.spaceId, title: t.title, minutes: t.minutes, intervalDays: t.intervalDays, due: t.due, done: t.done, archived: t.archived, lastDay: t.lastDay, lastEvent: t.lastEvent })), history: data.history.map((e: Completion) => ({ id: e.id, taskId: e.taskId, title: e.title, spaceName: e.spaceName, at: e.at, day: e.day, intervalDays: e.intervalDays, priorDue: e.priorDue, nextDue: e.nextDue, priorDone: e.priorDone, priorDay: e.priorDay, priorEvent: e.priorEvent })) };
+  return { ...(sessions === undefined ? {} : { sessions }), version: data.version === 4 || data.spaces.some((space: Space) => space.bathroom !== undefined) || sessions?.some(session => session.bathroomItems !== undefined) ? 4 : data.version === 3 || sessions !== undefined ? 3 : data.version === 2 || data.spaces.some((space: Space) => space.routine !== undefined || space.runs !== undefined) ? 2 : 1, spaces: data.spaces.map((s: Space) => ({ id: s.id, name: s.name, archived: s.archived, ...parseRoutineFields(s), ...(s.bathroom === undefined ? {} : { bathroom: parseBathroom(s.bathroom) }) })), tasks: data.tasks.map((t: Task) => ({ id: t.id, spaceId: t.spaceId, title: t.title, minutes: t.minutes, intervalDays: t.intervalDays, due: t.due, done: t.done, archived: t.archived, lastDay: t.lastDay, lastEvent: t.lastEvent })), history: data.history.map((e: Completion) => ({ id: e.id, taskId: e.taskId, title: e.title, spaceName: e.spaceName, at: e.at, day: e.day, intervalDays: e.intervalDays, priorDue: e.priorDue, nextDue: e.nextDue, priorDone: e.priorDone, priorDay: e.priorDay, priorEvent: e.priorEvent })) };
 }
 export function mergeBackup(current: Plan, imported: Plan): Plan {
   const merge = <T extends { id: string }>(existing: T[], incoming: T[]) => [...existing, ...incoming.filter(item => !existing.some(original => original.id === item.id))];

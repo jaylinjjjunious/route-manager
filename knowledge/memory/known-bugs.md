@@ -1,5 +1,9 @@
 # Known Bugs
 
+## Bathroom scheduling limits (2026-10-21)
+
+No confirmed workflow defect after focused/local checks. Dashboard manages the first active scheduled Bathroom; additional scheduled rooms are future scope. Start date is editable only before any recorded scheduled completion and while clocked out. Generic activity sessions do not advance the Bathroom schedule unless explicitly linked. Browser-only storage and device-clock limits persist.
+
 ## Cleaning sessions (2026-10-21)
 
 No confirmed defect in focused/local session checks. Limits: browser-only plan, device-clock-based elapsed time, 2000 session records / 2 MB plan limit. Older clients cannot read v3; reload before editing. Conflicting active sessions in an import are rejected, and History retains unfinished work without automatically scheduling it. No payroll/audit service is implemented.

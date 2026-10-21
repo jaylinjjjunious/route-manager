@@ -48,6 +48,9 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
+**2026-10-21 Bathroom dashboard:** Today now centers a large Bathroom card with Today's cleaning, Start cleaning and Upcoming. User-approved schedule: daily toilet/sink wipe-downs; bathroom walls/cabinets/floor every 14 days; shower once per calendar month. Explicit start-date setup reuses the active Bathroom or creates it atomically, with no fake completions. Daily work starts on that date, two-week work starts 14 days later, shower starts one calendar month later. Start date can change before any completed scheduled activity, with no active session. Other spaces/tasks are retained in a collapsed section. Start cleaning selects due activities; a room review allows extras before Get ready → Clock in → Clock out. Linked session metadata identifies exact Bathroom activity IDs. Clock-out updates lastDone only for those explicitly marked finished; unfinished entries remain due. Next due is calculated from actual completion: +1 day, +14 days, or next calendar month with short-month clamping. No session length or generic matching task title implies completion. No duplicate task records are created. Older generic sessions/routines remain separate. V4 plan/link validation preserves old imports. Twenty-nine tests/lint/build/local browser pass; public release pending.
+
+
 **2026-10-21 work sessions:** Cleaning now supports room/activity selection → Get ready (plan plus optional tools checklist) → Clock in → hands-off work → Clock out. The current session panel is visible on all Cleaning pages with Pause/Resume, See routine & tools and Clock out. Work uses saved timestamps rather than timer ticks; reload/closing does not end a session. Pause time is excluded. Clock-out requires an explicit All finished or Some work remains choice, supports an optional note, and saves completed/remaining activities plus working/break time in History. No per-step interactions are required while cleaning. Existing tasks/routines are preserved; session outcomes do not silently complete scheduled tasks. Plan v3 saves session snapshots and protects against older clients; old plans still import. Twenty-three tests, root lint/build and local browser pass. Released at f29cc1f59f103a22d5106a7d579e6a4657f016ca: GitHub main and public Render exact SHA verified. Public UI verified preparation/tool toggles, clock-in, running and paused reload recovery, resume, partial clock-out, working/break time and note/unfinished list in History, and actual v3 JSON backup roundtrip. Labeled test room is archived; its session explicitly says no cleaning performed and records zero finished activities. No real session remains running. Bathroom Get ready is left open without clocking in. Twenty-three Cleaning tests and root lint/build pass; no required work remains. Browser-only storage and device-clock limits remain.
 
 
@@ -115,6 +118,9 @@ Required installation step for reliable startup discovery: add this reference to
 > In every Route Manager session, read the startup sections of `APP_LIFELINE.md` before substantive work. Reference its relevant sections periodically during ongoing work, at milestones, before important decisions, and after interruptions or context compaction. Keep its snapshot, decisions, history, and resume notes current as meaningful project changes occur; reuse unchanged context instead of rereading the entire history.
 
 ## Active Decisions
+
+- User chose a Bathroom-focused Today dashboard. Daily toilet/sink wipe-downs, 14-day walls/cabinets/floor, calendar-month shower. Select a start date; clock-out advances only explicit finished linked work. Larger jobs start after the first interval; no manufactured cleaning history.
+
 
 - User approved prepare-tools → clock in → work with phone down → clock out. Prefer session-level outcome over mandatory per-step checks. Persist timestamp/break accounting and show unfinished work in History. No cloud or customer/workforce workflow in this slice.
 
@@ -256,6 +262,9 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 - **Follow-up:** Verify signed-in sync works end-to-end after returning from official CE Check-In site.
 
 ## Resume Point
+
+**Bathroom dashboard:** Implemented on codex/bathroom-schedule-dashboard. Twenty-nine tests/root lint/build/local browser full partial-finish flow pass. Commit/push/public SHA, interaction and backup checks remain. Baseline checkpoint-2026-10-21-cleaning-sessions at f29cc1f. Preserve dist-native.
+
 
 **2026-10-21 work sessions:** Implemented on codex/cleaning-work-sessions. Twenty-three tests, root lint/build and local browser prepare/start/reload/pause/resume/partial-finish/history pass. Released at f29cc1f59f103a22d5106a7d579e6a4657f016ca: GitHub main and public Render exact SHA verified. Public UI verified preparation/tool toggles, clock-in, running and paused reload recovery, resume, partial clock-out, working/break time and note/unfinished list in History, and actual v3 JSON backup roundtrip. Labeled test room is archived; its session explicitly says no cleaning performed and records zero finished activities. No real session remains running. Bathroom Get ready is left open without clocking in. Twenty-three Cleaning tests and root lint/build pass; no required work remains. Browser-only storage and device-clock limits remain. Baseline checkpoint-2026-10-20-room-routines / b8b2030. Preserve dist-native.
 
@@ -409,3 +418,9 @@ Verified all 13 findings against production main and started isolated remediatio
 - User approved tools preparation, clock-in, hands-off work and clock-out. Added optional tool checklist, persistent timer/breaks, explicit finish outcome and notes/history.
 - Plan v3 session snapshots, one active session, backward-compatible imports and guarded storage; existing tasks/routines retained.
 - Twenty-three tests/lint/build and local production browser pass. Released at f29cc1f59f103a22d5106a7d579e6a4657f016ca: GitHub main and public Render exact SHA verified. Public UI verified preparation/tool toggles, clock-in, running and paused reload recovery, resume, partial clock-out, working/break time and note/unfinished list in History, and actual v3 JSON backup roundtrip. Labeled test room is archived; its session explicitly says no cleaning performed and records zero finished activities. No real session remains running. Bathroom Get ready is left open without clocking in. Twenty-three Cleaning tests and root lint/build pass; no required work remains. Browser-only storage and device-clock limits remain.
+
+### 2026-10-21 — Bathroom schedule dashboard
+
+- User approved the exact daily/two-week/monthly Bathroom schedule and a simple Today/Upcoming room UI. Added explicit start date and grouped older planning under Other spaces & tasks.
+- Due work is preselected; explicit linked clock-out outcomes advance dates, with unfinished work retained. V4 protects schedule fields and imports older plans.
+- Twenty-nine tests, root lint/build and local partial-finish/reload browser checks pass. Public release pending.

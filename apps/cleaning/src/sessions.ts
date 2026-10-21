@@ -1,6 +1,7 @@
+import { bathroomActivities, finishBathroom, type BathroomId } from './bathroom';
 import type { Plan, Space } from './model';
 
-export type CleaningSession = { id: string; spaceId: string; spaceName: string; activities: string[]; tools: string[]; startedAt: string; pausedAt: string | null; pausedMs: number; endedAt: string | null; completed: string[]; note: string };
+export type CleaningSession = { id: string; spaceId: string; spaceName: string; activities: string[]; tools: string[]; startedAt: string; pausedAt: string | null; pausedMs: number; endedAt: string | null; completed: string[]; note: string; bathroomItems?: BathroomId[] };
 export const currentSession = (plan: Plan) => plan.sessions?.find(session => session.endedAt === null);
 export function workingMs(session: CleaningSession, now = Date.now()): number {
   return Math.max(0, Date.parse(session.endedAt || session.pausedAt || new Date(now).toISOString()) - Date.parse(session.startedAt) - session.pausedMs);
@@ -20,18 +21,19 @@ export function parseSessions(value: unknown, spaces: Space[]): CleaningSession[
   const sessions = value as CleaningSession[];
   for (const s of sessions) {
     if (!s || typeof s.id !== 'string' || !s.id || s.id.length > 100 || !spaces.some(space => space.id === s.spaceId) || typeof s.spaceName !== 'string' || !s.spaceName.trim() || s.spaceName.length > 80 || !strings(s.activities, 120) || !s.activities.length || !strings(s.tools, 120) || !stamp(s.startedAt) || !(s.pausedAt === null || stamp(s.pausedAt)) || !(s.endedAt === null || stamp(s.endedAt)) || !Number.isSafeInteger(s.pausedMs) || s.pausedMs < 0 || !strings(s.completed, 120) || s.completed.some(item => !s.activities.includes(item)) || typeof s.note !== 'string' || s.note.length > 1000) invalid();
+    if (s.bathroomItems !== undefined && (!Array.isArray(s.bathroomItems) || new Set(s.bathroomItems).size !== s.bathroomItems.length || s.bathroomItems.length > 6 || s.bathroomItems.some(id => !bathroomActivities.some(item => item.id === id && s.activities.includes(item.title))))) invalid();
     const start = Date.parse(s.startedAt);
     if ((s.pausedAt && Date.parse(s.pausedAt) < start + s.pausedMs) || (s.endedAt && (s.pausedAt !== null || Date.parse(s.endedAt) < start + s.pausedMs)) || (!s.endedAt && (s.completed.length || s.note))) invalid();
   }
   if (new Set(sessions.map(s => s.id)).size !== sessions.length || sessions.filter(s => !s.endedAt).length > 1) invalid();
-  return sessions.map(s => ({ id: s.id, spaceId: s.spaceId, spaceName: s.spaceName, activities: [...s.activities], tools: [...s.tools], startedAt: s.startedAt, pausedAt: s.pausedAt, pausedMs: s.pausedMs, endedAt: s.endedAt, completed: [...s.completed], note: s.note }));
+  return sessions.map(s => ({ id: s.id, spaceId: s.spaceId, spaceName: s.spaceName, activities: [...s.activities], tools: [...s.tools], startedAt: s.startedAt, pausedAt: s.pausedAt, pausedMs: s.pausedMs, endedAt: s.endedAt, completed: [...s.completed], note: s.note, ...(s.bathroomItems === undefined ? {} : { bathroomItems: [...s.bathroomItems] }) }));
 }
-export function clockIn(plan: Plan, room: Space, activities: string[], tools: string[], now = new Date()): Plan {
+export function clockIn(plan: Plan, room: Space, activities: string[], tools: string[], now = new Date(), bathroomItems?: BathroomId[]): Plan {
   if (currentSession(plan)) throw new Error('Clock out of your current session before starting another.');
   const existing = plan.spaces.find(space => space.id === room.id);
   if (existing?.archived) throw new Error('Restore this room before clocking in.');
-  const session: CleaningSession = { id: crypto.randomUUID(), spaceId: room.id, spaceName: existing?.name || room.name, activities: [...activities], tools: [...tools], startedAt: now.toISOString(), pausedAt: null, pausedMs: 0, endedAt: null, completed: [], note: '' };
-  return { ...plan, version: 3, spaces: existing ? plan.spaces : [...plan.spaces, room], sessions: [session, ...plan.sessions || []] };
+  const session: CleaningSession = { id: crypto.randomUUID(), spaceId: room.id, spaceName: existing?.name || room.name, activities: [...activities], tools: [...tools], startedAt: now.toISOString(), pausedAt: null, pausedMs: 0, endedAt: null, completed: [], note: '', ...(bathroomItems === undefined ? {} : { bathroomItems: [...bathroomItems] }) };
+  return { ...plan, version: bathroomItems !== undefined || plan.version === 4 ? 4 : 3, spaces: existing ? plan.spaces : [...plan.spaces, room], sessions: [session, ...plan.sessions || []] };
 }
 export function changeSession(plan: Plan, id: string, change: 'pause' | 'resume' | 'finish', result?: { completed: string[]; note: string }, now = new Date()): Plan {
   const s = currentSession(plan);
@@ -44,5 +46,6 @@ export function changeSession(plan: Plan, id: string, change: 'pause' | 'resume'
     if (!result) throw new Error('Choose what you finished before clocking out.');
     updated = { ...s, endedAt: now.toISOString(), pausedAt: null, pausedMs, completed: result.completed, note: result.note.trim() };
   } else updated = change === 'pause' ? { ...s, pausedAt: now.toISOString() } : { ...s, pausedAt: null, pausedMs };
-  return { ...plan, sessions: plan.sessions!.map(item => item.id === id ? updated : item) };
+  const next = { ...plan, sessions: plan.sessions!.map(item => item.id === id ? updated : item) };
+  return change === 'finish' ? finishBathroom(next, updated) : next;
 }

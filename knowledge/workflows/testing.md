@@ -1,5 +1,9 @@
 # Testing Workflow
 
+## Bathroom dashboard validation (2026-10-21)
+
+Cleaning has 29 tests covering the schedule, month-end/leap/DST dates, backup compatibility and explicit clock-out linkage. Root lint/build pass. Local browser setup → Today/Upcoming → due preselection → tools/clock-in → partial clock-out → remaining-due reload verified. Public release check pending.
+
 ## Cleaning sessions (2026-10-21)
 
 Cleaning now has 23 tests. Session coverage checks timestamp/break calculations, paused reload, overlap/stale updates, partial completion, v1/v2 imports and v3 backup preservation, conflicting active imports, and storage failures on both clock-in/out. Local browser confirms complete prepare/start/reload/pause/resume/partial-finish/history interaction. Root lint/build pass; Released at f29cc1f59f103a22d5106a7d579e6a4657f016ca: GitHub main and public Render exact SHA verified. Public UI verified preparation/tool toggles, clock-in, running and paused reload recovery, resume, partial clock-out, working/break time and note/unfinished list in History, and actual v3 JSON backup roundtrip. Labeled test room is archived; its session explicitly says no cleaning performed and records zero finished activities. No real session remains running. Bathroom Get ready is left open without clocking in. Twenty-three Cleaning tests and root lint/build pass; no required work remains. Browser-only storage and device-clock limits remain.

@@ -1,5 +1,7 @@
 # UI Components
 
+BathroomDashboard.tsx shows Bathroom Today/Upcoming, start-date setup and optional-extra review. bathroom.ts calculates due dates and applies linked session outcomes. Home groups older planning under Other spaces & tasks. Existing session preparation and work panel remain the main cleaning flow.
+
 CleaningSession.tsx exports GetReady, WorkSession and SessionHistory. TaskCreator hands selected room/activities to GetReady. App keeps an active session visible across Today/Spaces/History; tools and plan can be reviewed once before clock-in.
 
 TaskCreator.tsx owns Cleaning Add task: room chooser followed by an activity page with toggle buttons, inline custom input and Add selected tasks. Success stays on that page. App.addTasks atomically saves draft room and tasks; existing TaskForm edits stay direct.
