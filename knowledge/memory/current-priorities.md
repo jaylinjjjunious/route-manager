@@ -2,7 +2,7 @@
 
 ## Cleaning room (2026-10-20)
 
-Current authorized work: personal Cleaning first, eventually the user's own business. First slice is routines and completion history with backups. Finish public release verification. Clients/properties, quotes, invoices and cloud identity are future decisions.
+Current authorized work: personal Cleaning first, eventually the user's own business. First slice is routines and completion history with backups. Released and personally verified on public Render at 2d80a9c. No required follow-up in this slice. Clients/properties, quotes, invoices and cloud identity are future decisions.
 
 - 2026-10-19 workspace migration complete: implementation d5e140e on main/public Render, signed-in parent → room → Jobs → More → Inventory account check → parent verified. Existing session and seven jobs remain; return/header visible while scrolled. Root README is the ownership/command map. Separate package/source/build/tests and root gateway/commands are implemented. Full room suite, focused auth/location, hallway/gateway, lint/build and production security checks pass. Follow-up preserves legacy hash changes on an already open hallway. Shared cross-app identity and additional rooms remain future work; native-device validation remains separate.
 

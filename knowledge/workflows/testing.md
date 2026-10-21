@@ -2,7 +2,7 @@
 
 ## Cleaning room (2026-10-20)
 
-Root lint/build cover all three apps. Cleaning workspace: 11 tests; hallway: 2; gateway: 7. Local production UI verified hallway entry/return, space/task creation, completion/history/undo, reload, archive/restore and actual backup export/import. Public verification is required before release. See features/cleaning-planner.md for test scope.
+Root lint/build cover all three apps. Cleaning workspace: 11 tests; hallway: 2; gateway: 7. Local production UI verified hallway entry/return, space/task creation, completion/history/undo, reload, archive/restore and actual backup export/import. Public workflow and backup roundtrip also verified on Render at 2d80a9c. See features/cleaning-planner.md for test scope.
 
 ## Independent workspace validation (2026-10-19)
 
