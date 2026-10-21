@@ -1,10 +1,10 @@
 import React from "react";
-import { ChevronRight, Ellipsis, CalendarDays, ListChecks } from "lucide-react";
+import { ChevronRight, CalendarDays, ListChecks } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Job } from "../../types";
 import { getStreetName, getJobTypeLabel, getJobIconMeta, getRouteBadgeClasses, getRouteBadgeLabel } from "./jobMeta";
 
-export type AioNavTab = "today" | "jobs" | "more";
+export type AioNavTab = "today" | "jobs";
 
 /* ---------- Card surface ---------- */
 
@@ -343,7 +343,6 @@ export function WeekDayIndicator({
 const NAV_TABS: { id: AioNavTab; label: string; icon: LucideIcon }[] = [
   { id: "today", label: "Today", icon: CalendarDays },
   { id: "jobs", label: "Jobs", icon: ListChecks },
-  { id: "more", label: "More", icon: Ellipsis },
 ];
 
 export function BottomTabBar({
@@ -351,7 +350,7 @@ export function BottomTabBar({
   onChange,
   jobsCount,
 }: {
-  current: AioNavTab;
+  current?: AioNavTab;
   onChange: (tab: AioNavTab) => void;
   jobsCount?: number;
 }) {

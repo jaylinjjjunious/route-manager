@@ -13,7 +13,7 @@ import {
 import { useRoutePlanning } from './features/routePlanning/useRoutePlanning';
 import { getDistanceInMiles } from './utils/geoUtils';
 import { buildJobMapsUrl } from './utils/jobNavigation';
-import { BAKERSFIELD_COORDINATES, resolveCoordinates } from './utils/bakersfieldCoordinates';
+import { resolveCoordinates } from './utils/bakersfieldCoordinates';
 import {
   isJobCompleted,
   isJobFinished,
@@ -28,10 +28,9 @@ import {
   formatScheduledDate,
   SCHEDULE_MAX_DAYS_AHEAD
 } from './features/jobs/jobSchedule';
-import { useJobs, SEED_JOBS } from './features/jobs/useJobs';
+import { useJobs } from './features/jobs/useJobs';
 import { JOB_LIFECYCLE_HARNESS_JOB_ID, isJobLifecycleHarnessEnabled } from './features/jobs/jobLifecycleHarness';
 import { isSonicProcedureHarnessEnabled } from './features/jobs/sonicProcedureHarness';
-import Header from './components/Header';
 import JobCard from './features/jobs/JobCard';
 import JobModal from './features/jobs/JobModal';
 import AssistantProvider from './assistant/AssistantProvider';
@@ -69,7 +68,7 @@ import AioHeader from './components/aio/AioHeader';
 import { hallwayUrl, isRetiredRouteDestination, roomBase, roomPathname } from './utils/roomLocation';
 import TodayScreen from './components/aio/TodayScreen';
 import JobsScreen from './features/jobs/JobsScreen';
-import MoreScreen from './components/aio/MoreScreen';
+import ProfileMenu from './components/aio/ProfileMenu';
 import { BottomTabBar } from './components/aio/primitives';
 import { ToolPageHeader } from './components/aio/ToolPageHeader';
 import { getPreviewGuide } from './features/previewGuide/storage';
@@ -113,9 +112,9 @@ const SHOWER_HABIT_NAME = 'Mandatory Shower';
 // Temporary operational bypass. Set true to restore the scan/access gate without removing its implementation.
 const SHOWER_GATE_REQUIRED = false;
 
-type AppTab = 'dashboard' | 'jobs' | 'more' | 'inventory' | 'battery' | 'tracker' | 'habits' | 'tools' | 'settings' | 'checkin' | 'changepassword' | 'admin' | 'diagnostics';
+type AppTab = 'dashboard' | 'jobs' | 'inventory' | 'battery' | 'tracker' | 'habits' | 'tools' | 'checkin' | 'changepassword' | 'admin' | 'diagnostics' | 'support';
 
-const APP_TABS: AppTab[] = ['dashboard', 'jobs', 'more', 'inventory', 'battery', 'tracker', 'habits', 'tools', 'settings', 'checkin', 'changepassword', 'admin', 'diagnostics'];
+const APP_TABS: AppTab[] = ['dashboard', 'jobs', 'inventory', 'battery', 'tracker', 'habits', 'tools', 'checkin', 'changepassword', 'admin', 'diagnostics', 'support'];
 const SHOWER_PROTECTED_TABS: AppTab[] = ['battery', 'tracker'];
 
 const redirectRetiredRouteDestination = (): boolean => {
@@ -132,6 +131,10 @@ const redirectRetiredRouteDestination = (): boolean => {
 const getTabFromHash = (): AppTab | null => {
   if (typeof window === 'undefined') return null;
   if (redirectRetiredRouteDestination()) return 'dashboard';
+  if (['#more', '#settings'].includes(window.location.hash.toLowerCase())) {
+    window.history.replaceState(null, '', '#dashboard');
+    return 'dashboard';
+  }
   const tab = window.location.hash.replace('#', '') as AppTab;
   return APP_TABS.includes(tab) ? tab : null;
 };
@@ -281,6 +284,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   }, [addMenuOpen]);
 
   const handleTabChange = (tab: AppTab) => {
+    if (!APP_TABS.includes(tab)) tab = 'dashboard';
     setCurrentTab(tab);
     if (typeof window === 'undefined') return;
 
@@ -567,13 +571,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     const futurePool = routeAWork.filter(j => effectiveDay(j, today) !== today);
     const optimized = optimizeRouteWithSmartMerge(startCoord, todayPool, ebikeConfig);
     saveJobsToStorage([...optimized, ...futurePool, ...restJobs]);
-  };
-
-  const handleResetSeeds = () => {
-    saveJobsToStorage(SEED_JOBS);
-    setStartAddress('1951 Golden State Ave');
-    setStartCoord(BAKERSFIELD_COORDINATES['1951 Golden State Ave']);
-    safeStorage.removeItem('route_optimizer_start');
   };
 
   const handleResetLifecycleHarnessJob = () => {
@@ -1031,10 +1028,18 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
             </div>
           </nav>
         )}
-        {/* Header */}
-        {currentTab === 'dashboard' || currentTab === 'jobs' || currentTab === 'more'
-          ? <AioHeader userName={userName} userEmail={user?.email} onOpenProfile={() => handleTabChange('more')} />
-          : <Header theme={theme} onToggleTheme={handleToggleTheme} accountEmail={user?.email} />}
+        {/* Profile controls stay available from every feature page. */}
+        <AioHeader userName={userName} renderProfileMenu={close => <ProfileMenu
+          theme={theme} onToggleTheme={handleToggleTheme}
+          startAddress={startAddress} onUpdateStart={address => { handleUpdateStart(address); close(); }}
+          onNavigate={tab => { close(); handleTabChange(tab); }}
+          onOpenProof={() => { close(); proofVault.openProofHistory(); }}
+          onSignOut={async () => { close(); if (window.confirm("Sign out of AIØ?")) await signOut(); }}
+          isAdmin={isAdmin}
+          onOpenTestLab={isSmartAisleTestLabEnabled ? () => { close(); setIsTestLabOpen(true); } : undefined}
+          onResetLifecycle={isLifecycleHarnessEnabled ? () => { close(); handleResetLifecycleHarnessJob(); } : undefined}
+          onResetSonic={sonicHarnessEnabled ? () => { close(); handleResetSonicProcedureHarness(); } : undefined}
+        />} />
         </div>
 
         {/* Main Content Body */}
@@ -1087,7 +1092,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                 theme={theme}
                 userName={userName}
                 onToggleTheme={handleToggleTheme}
-                onOpenMore={() => handleTabChange('more')}
                 jobsTodayCount={jobs.todayRouteJobs.length}
                 currentJob={currentJob}
                 hasCurrentJob={hasCurrentJob}
@@ -1143,35 +1147,10 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                 onBlockJobAccess={() => blockJobAccess('job changes')}
                 onOpenJob={(job) => setRouteDetailJobId(job.id)}
                 onAddJob={() => { if (!blockJobAccess('adding jobs')) handleOpenAddModal(); }}
+                onImportScreenshots={() => { if (!blockJobAccess('adding jobs')) setIsScreenshotImportOpen(true); }}
+                onAddProcessServe={handleOpenProcessServeModal}
                 onOptimizeRoute={() => { if (!blockJobAccess('route optimization')) handleOptimizeRouteSequence(); }}
                 onMoveToDay={jobs.setMoveToDayJob}
-              />
-            </div>
-          )}
-
-          {/* More Screen */}
-          {currentTab === 'more' && (
-            <div className="animate-fade-in">
-              <MoreScreen
-                theme={theme}
-                onToggleTheme={handleToggleTheme}
-                userEmail={user?.email}
-                onNavigate={(tab) => handleTabChange(tab)}
-                onOpenProofHistory={proofVault.openProofHistory}
-                onOpenDebugCenter={() => onOpenDebugCenter?.()}
-                onAddProcessServe={handleOpenProcessServeModal}
-                onImportScreenshots={() => setIsScreenshotImportOpen(true)}
-                lifecycleHarnessEnabled={isLifecycleHarnessEnabled}
-                onResetLifecycleHarness={handleResetLifecycleHarnessJob}
-                sonicProcedureHarnessEnabled={sonicHarnessEnabled}
-                onResetSonicProcedureHarness={handleResetSonicProcedureHarness}
-                onSignOut={async () => {
-                  if (window.confirm("Sign out of AIØ?")) await signOut();
-                }}
-                onNavigateChangePassword={() => handleTabChange('changepassword')}
-                isAdmin={isAdmin}
-                onNavigateAdmin={() => handleTabChange('admin')}
-                onNavigateDiagnostics={() => handleTabChange('diagnostics')}
               />
             </div>
           )}
@@ -1669,7 +1648,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           {currentTab === 'inventory' && (
             <section id='tab-view-inventory' className='space-y-5 animate-fade-in'>
               <ToolPageHeader
-                onBack={() => handleTabChange('more')}
+                onBack={() => handleTabChange('dashboard')}
                 title="Inventory"
                 subtitle="Store inventory custody & domains"
               />
@@ -1743,7 +1722,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
               simulationStatus={simulationStatus}
               outliersReport={outliersReport}
               onMoveOutlierToRouteB={(jobId) => handleUpdateJobStatus(jobId, { routeId: 'B' })}
-              onBack={() => handleTabChange('more')}
+              onBack={() => handleTabChange('dashboard')}
             />
           )}
 
@@ -1784,7 +1763,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
                 const next = jobs.moveUnfinishedToTomorrow();
                 saveJobsToStorage(next);
               }}
-              onBack={() => handleTabChange('more')}
+              onBack={() => handleTabChange('dashboard')}
             />
           )}
 
@@ -1846,7 +1825,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
               stopBarcodeScanner={showerGate.stopBarcodeScanner}
               startBarcodeScanner={showerGate.startBarcodeScanner}
               toggleBarcodeTorch={showerGate.toggleBarcodeTorch}
-              onBack={() => handleTabChange('more')}
+              onBack={() => handleTabChange('dashboard')}
             />
           )}
 
@@ -1854,92 +1833,10 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
           {currentTab === 'tools' && (
             <div className="space-y-6 animate-fade-in" id="tab-view-tools">
               <ToolPageHeader
-                onBack={() => handleTabChange('more')}
-                title="Tools"
-                subtitle="Smart Aisle Scan, imports, transit tools"
+                onBack={() => handleTabChange('dashboard')}
+                title="Transit tools"
+                subtitle="Travel mode and transit planning"
               />
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-white/10 dark:bg-[#17181b] space-y-2">
-                <h2 className="text-lg font-black text-slate-900 dark:text-white">Field Tools</h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Camera capture, screenshot import, and transit mode controls.
-                </p>
-              </div>
-
-              {/* Smart Aisle Scan */}
-              <div className="rounded-2xl border border-cyan-200 bg-white p-6 dark:border-cyan-500/20 dark:bg-[#17181b] space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="rounded-xl bg-cyan-500/10 p-3">
-                    <Camera size={22} className="text-cyan-500" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-black text-slate-900 dark:text-white">Smart Aisle Scan</h3>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                      Camera-guided aisle photography with alignment, auto-capture, coverage review, and panorama stitching.
-                    </p>
-                  </div>
-                </div>
-
-                {(() => {
-                  const compatibleJobs = jobs.jobs.filter(j =>
-                    ['retail_audit', 'mystery_shop', 'merchandising'].includes(j.jobType) &&
-                    !isJobCompleted(j) && j.status !== 'finished'
-                  );
-                  if (compatibleJobs.length === 0) {
-                    return (
-                      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-center dark:border-white/10 dark:bg-white/5">
-                        <p className="text-xs font-bold text-slate-400">No compatible jobs available</p>
-                        <p className="text-[10px] text-slate-400 mt-1">Add a retail audit, mystery shop, or merchandising job to use Smart Aisle Scan.</p>
-                      </div>
-                    );
-                  }
-                  return (
-                    <div className="space-y-2">
-                      <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Select a job to scan</p>
-                      <div className="space-y-2">
-                        {compatibleJobs.map(job => (
-                          <button
-                            key={job.id}
-                            onClick={() => { setScanJobId(job.id); setIsScanOpen(true); }}
-                            className="w-full flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition hover:border-cyan-300 hover:bg-cyan-50 dark:border-white/10 dark:bg-white/5 dark:hover:border-cyan-500/30 dark:hover:bg-cyan-500/5"
-                          >
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-500">
-                              <Camera size={16} />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-xs font-black text-slate-900 dark:text-white truncate">{job.storeName}</p>
-                              <p className="text-[10px] text-slate-400 truncate">{job.address}</p>
-                            </div>
-                            <span className="text-[10px] font-bold text-cyan-500">Open →</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-
-              {/* Import Job Screenshots */}
-              <div className="rounded-2xl border border-violet-200 bg-white p-6 dark:border-violet-500/20 dark:bg-[#17181b] space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="rounded-xl bg-violet-500/10 p-3">
-                    <FileImage size={22} className="text-violet-500" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-black text-slate-900 dark:text-white">Import Job Screenshots</h3>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                      Upload screenshots of job assignments to auto-extract store names, addresses, pay, and notes.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setIsScreenshotImportOpen(true)}
-                  className="w-full rounded-xl bg-violet-600 py-3 text-xs font-black text-white hover:bg-violet-500 transition flex items-center justify-center gap-2"
-                >
-                  <FileImage size={14} />
-                  Open Screenshot Import
-                </button>
-              </div>
-
               {/* Bus / Transit Mode */}
               <div className="rounded-2xl border border-amber-200 bg-white p-6 dark:border-amber-500/20 dark:bg-[#17181b] space-y-4">
                 <div className="flex items-start gap-3">
@@ -1972,197 +1869,37 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
 
           {/* Tab: Monthly Check-In */}
           {currentTab === 'checkin' && (
-            <MonthlyCheckInPage state={probationCheckIn} onBack={() => handleTabChange('more')} />
+            <MonthlyCheckInPage state={probationCheckIn} onBack={() => handleTabChange('dashboard')} />
           )}
 
           {/* Tab: Change Password */}
           {currentTab === 'changepassword' && (
-            <ChangePasswordPage onBack={() => handleTabChange('more')} />
+            <ChangePasswordPage onBack={() => handleTabChange('dashboard')} />
           )}
 
           {/* Tab: Admin Portal */}
           {currentTab === 'admin' && (
-            <AdminPage onBack={() => handleTabChange('more')} />
+            <AdminPage onBack={() => handleTabChange('dashboard')} />
           )}
 
           {/* Tab: Diagnostics Console */}
           {currentTab === 'diagnostics' && (
-            <DiagnosticsPage probation={probationCheckIn} onBack={() => handleTabChange('more')} />
+            <DiagnosticsPage probation={probationCheckIn} onBack={() => handleTabChange('dashboard')} />
           )}
 
-          {/* Tab 6: Settings and Instructions */}
-          {currentTab === 'settings' && (
-            <div className="space-y-6 animate-fade-in" id="tab-view-settings">
-              <ToolPageHeader
-                onBack={() => handleTabChange('more')}
-                title="Settings"
-                subtitle="Hub address, theme, database"
-              />
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                <div className="lg:col-span-2 space-y-6">
-                  {/* Start Location Config Card */}
-                  <div className="rounded-2xl border border-slate-200 bg-white p-5  space-y-3">
-                    <label htmlFor="hub-address-input" className="block text-xs font-black uppercase text-slate-400 tracking-wider">
-                      STARTING HUB LOCATION (HOME ADDRESS)
-                    </label>
-                    <div className="flex items-center gap-2 border-b border-slate-200 dark:border-white/10 pb-2">
-                      <MapPin className="text-blue-500 flex-shrink-0" size={16} />
-                      <input
-                        id="hub-address-input"
-                        type="text"
-                        value={startAddress}
-                        onChange={(e) => handleUpdateStart(e.target.value)}
-                        placeholder="Enter starting address in Bakersfield, CA"
-                        className="flex-1 bg-transparent py-0.5 text-sm font-bold text-slate-800 placeholder-slate-400 focus:outline-none dark:text-slate-100"
-                      />
-                    </div>
-                    <p className="text-[10px] text-slate-400 font-mono mt-1">
-                      Precise coordinates: Lat {startCoord.lat.toFixed(4)}, Lng {startCoord.lng.toFixed(4)} (Bakersfield Hub)
-                    </p>
-                  </div>
-
-                  {/* Theme Switcher tile */}
-                  <div className="rounded-2xl border border-slate-200 bg-white p-5  space-y-3">
-                    <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest">Interface Theme Presets</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        onClick={() => {
-                          if (theme !== 'light') handleToggleTheme();
-                        }}
-                        className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all ${
-                          theme === 'light'
-                            ? 'bg-blue-600 border-blue-600 text-white shadow-md'
-                            : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-white/5 dark:border-white/10 dark:text-slate-300'
-                        }`}
-                      >
-                        <Sun size={20} />
-                        <span className="text-xs font-bold">High Contrast Light Theme</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (theme !== 'dark') handleToggleTheme();
-                        }}
-                        className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all ${
-                          theme === 'dark'
-                            ? 'bg-blue-600 border-blue-600 text-white shadow-md'
-                            : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-white/5 dark:border-white/10 dark:text-slate-300'
-                        }`}
-                      >
-                        <Moon size={20} />
-                        <span className="text-xs font-bold">Dark Slate Theme</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* System Tools */}
-                  <div className="rounded-2xl border border-slate-200 bg-white p-5  space-y-3">
-                    <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest">Database Maintenance</h3>
-                    <p className="text-xs text-slate-500">Resets system to seed stops. This clears custom stops from localStorage and sets the default Bakersfield mock landmarks.</p>
-                    <button
-                      onClick={handleResetSeeds}
-                      className="rounded-xl border border-dashed border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 bg-red-500/[0.01] hover:bg-red-500/[0.04] px-4 py-2.5 text-xs font-bold transition-all"
-                    >
-                      Purge Custom stops and Reset Seeds
-                    </button>
-                  </div>
-
-                  <TransitStatusCard />
-
-                  {/* Account */}
-                  <div className="rounded-2xl border border-slate-200 bg-white p-5  space-y-3">
-                    <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest">Account</h3>
-                    <p className="text-xs text-slate-500">Sign out of your account. You will need to enter your credentials again.</p>
-                    <button
-                      onClick={async () => {
-                        if (window.confirm("Sign out of All in One 667?")) {
-                          await signOut();
-                        }
-                      }}
-                      className="rounded-xl border border-dashed border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 bg-slate-500/[0.01] hover:bg-slate-500/[0.04] px-4 py-2.5 text-xs font-bold transition-all"
-                    >
-                      Sign Out
-                    </button>
-                  </div>
-
-                  {/* Developer Tools */}
-                  {isSmartAisleTestLabEnabled && (
-                    <div className="rounded-2xl border border-amber-200 bg-white p-5 space-y-3 dark:border-amber-500/20 dark:bg-[#17181b]">
-                      <h3 className="text-xs font-black uppercase text-amber-500 tracking-widest flex items-center gap-2">
-                        <FlaskConical size={14} /> Developer Tools
-                      </h3>
-                      <button
-                        onClick={() => setIsTestLabOpen(true)}
-                        className="w-full flex items-center gap-3 p-3 rounded-xl border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 transition-colors"
-                      >
-                        <FlaskConical size={16} className="text-amber-500" />
-                        <div>
-                          <p className="text-xs font-black uppercase text-amber-400 tracking-wider">Smart Aisle Scan Test Lab</p>
-                          <p className="text-[10px] text-amber-400/60 mt-0.5">Practice camera, test imports, run controlled scenarios</p>
-                        </div>
-                        <ChevronRight size={14} className="text-amber-400/40 ml-auto" />
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Debug Center */}
-                  {debugCenterOpen && (
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3 dark:bg-slate-900 dark:border-white/10">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest">Debug Center</h3>
-                        <button
-                          onClick={onCloseDebugCenter}
-                          className="text-[10px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                        >
-                          Close
-                        </button>
-                      </div>
-                      <DebugCenter />
-                    </div>
-                  )}
-                  {!debugCenterOpen && (
-                    <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-5 space-y-3">
-                      <button
-                        onClick={() => onOpenDebugCenter?.()}
-                        className="w-full text-left flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
-                      >
-                        <Bug size={16} className="text-slate-400" />
-                        <div>
-                          <p className="text-xs font-black uppercase text-slate-400 tracking-widest">Debug Center</p>
-                          <p className="text-[10px] text-slate-400 mt-0.5">System diagnostics, auth status, and error logs</p>
-                        </div>
-                      </button>
-                    </div>
-                  )}
-
-                </div>
-
-                {/* FAQ Instructions */}
-                <div className="space-y-6">
-                  <div className="road-card p-5 space-y-4">
-                    <h3 className="text-sm font-extrabold text-slate-900 dark:text-white uppercase tracking-wide">Command Manual</h3>
-                    <div className="space-y-3 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
-                      <div className="space-y-1">
-                        <p className="font-bold text-slate-800 dark:text-slate-200">How do Outliers work?</p>
-                        <p>Our algorithm flags stops that significantly increase travel time without contributing enough payout. We classify them under a Red Badge so you can push them to Standby.</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="font-bold text-slate-800 dark:text-slate-200">What are status codes?</p>
-                        <p>Visual indicators help you prioritize: Green is Ready, Yellow needs a Revisit, Red is a travel Outlier, Blue is Completed, and Gray is Route B Standby.</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {(currentTab === 'support' || debugCenterOpen) && <section id="tab-view-support" className="space-y-4">
+            <ToolPageHeader title="Support & diagnostics" onBack={() => { onCloseDebugCenter?.(); handleTabChange('dashboard'); }} />
+            <DebugCenter />
+            <TransitStatusCard />
+          </section>}
 
         </main>
 
-        {/* AIØ Bottom Navigation (Today / Jobs / More) */}
+        {/* AIØ Bottom Navigation (Today / Jobs) */}
         {!tracker.rideModeActive && (
           <BottomTabBar
-            current={currentTab === 'dashboard' ? 'today' : currentTab === 'jobs' ? 'jobs' : 'more'}
-            onChange={(tab) => handleTabChange(tab === 'today' ? 'dashboard' : tab === 'jobs' ? 'jobs' : 'more')}
+            current={currentTab === 'dashboard' ? 'today' : currentTab === 'jobs' ? 'jobs' : undefined}
+            onChange={(tab) => handleTabChange(tab === 'today' ? 'dashboard' : 'jobs')}
             jobsCount={jobs.todayRouteJobs.filter(job => !isJobCompleted(job) && !isJobFinished(job)).length}
           />
         )}

@@ -18,12 +18,10 @@ function formatToday(): string {
 
 export default function AioHeader({
   userName,
-  userEmail,
-  onOpenProfile,
+  renderProfileMenu,
 }: {
   userName?: string;
-  userEmail?: string;
-  onOpenProfile: () => void;
+  renderProfileMenu: (close: () => void) => React.ReactNode;
 }) {
   const menuId = useId();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -72,7 +70,7 @@ export default function AioHeader({
             aria-haspopup="dialog"
             onClick={event => { const rect = event.currentTarget.getBoundingClientRect(); setPosition({ top: rect.bottom + 12, right: Math.max(16, window.innerWidth - rect.right) }); }}
             className={profileClass}
-            aria-label="Open profile and More menu"
+            aria-label="Open profile menu"
             title="Profile"
           >
             <img
@@ -89,9 +87,9 @@ export default function AioHeader({
               <img src={AVATAR_PATH} alt="Profile photo" className="h-12 w-12 shrink-0 rounded-full object-cover" />
               <p className="min-w-0 break-words pt-1 text-sm font-semibold leading-snug">{userName || "Your profile"}</p>
             </div>
-            {userEmail && <p className="mt-3 break-words border-t border-[var(--color-aio-line)] pt-3 text-xs leading-relaxed text-[var(--color-aio-text-2)]">{userEmail}</p>}
-            <button type="button" className="mt-4 w-full rounded-xl border border-[var(--color-aio-line)] px-4 py-3 text-sm font-semibold hover:bg-[var(--color-aio-bg)] focus-visible:outline focus-visible:outline-2"
-              onClick={() => { menuRef.current?.hidePopover?.(); onOpenProfile(); }}>Open More</button>
+            <div className="mt-3 border-t border-[var(--color-aio-line)] pt-2">
+              {renderProfileMenu(() => menuRef.current?.hidePopover?.())}
+            </div>
           </div>
         </div>
       </div>

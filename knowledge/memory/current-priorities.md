@@ -1,3 +1,7 @@
+# Profile navigation consolidation
+
+Implementation/checks pass; verify profile destinations, forms/theme, Jobs actions and legacy bookmarks locally/publicly, then record release. No saved feature data is removed.
+
 # Current Priorities
 
 ## Bathroom schedule (2026-10-21)

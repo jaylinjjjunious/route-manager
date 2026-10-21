@@ -36,6 +36,8 @@ export interface JobsScreenProps {
   onBlockJobAccess?: () => void;
   onOpenJob: (job: Job) => void;
   onAddJob: () => void;
+  onImportScreenshots?: () => void;
+  onAddProcessServe?: () => void;
   onOptimizeRoute: () => void;
   onMoveToDay: (job: Job) => void;
 }
@@ -91,6 +93,10 @@ export default function JobsScreen(props: JobsScreenProps) {
         </div>
       </div>
 
+      <div className="flex flex-wrap gap-2" aria-label="Add work">
+        {props.onImportScreenshots && <button type="button" disabled={jobAccessLocked} onClick={props.onImportScreenshots} className="min-h-11 rounded-xl border border-[var(--color-aio-line)] px-3 text-sm font-semibold disabled:opacity-50">Import Job Screenshots</button>}
+        {props.onAddProcessServe && <button type="button" disabled={jobAccessLocked} onClick={props.onAddProcessServe} className="min-h-11 rounded-xl border border-[var(--color-aio-line)] px-3 text-sm font-semibold disabled:opacity-50">Add Process Serve</button>}
+      </div>
       <section aria-label="BlueAI sync" className="rounded-xl border border-[var(--color-aio-line)] p-4">
         <h2 className="font-bold">BlueAI sync</h2>
         <p role="status" className="mt-1 text-sm">{props.blueAiSyncMessage || 'Loading BlueAI records…'}</p>

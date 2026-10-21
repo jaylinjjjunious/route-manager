@@ -32,7 +32,7 @@ export interface TodayScreenProps {
   theme: "dark" | "light";
   userName?: string;
   onToggleTheme: () => void;
-  onOpenMore: () => void;
+  onOpenMore?: () => void;
 
   jobsTodayCount: number;
 

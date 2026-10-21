@@ -23,7 +23,7 @@ export function ToolPageHeader({
           type="button"
           onClick={onBack}
           className="flex min-h-11 items-center justify-center gap-2 rounded-[14px] border border-[var(--color-aio-line)] bg-[var(--color-aio-surface)] px-3 py-2 text-[14px] font-bold text-[var(--color-aio-text)] transition-colors hover:bg-[var(--color-aio-surface-2)] active:scale-[0.98] touch-manipulation"
-          aria-label="Back to More"
+          aria-label="Back to Today"
         >
           <ChevronLeft size={18} strokeWidth={2.5} aria-hidden="true" />
           <span className="hidden sm:inline">Back</span>

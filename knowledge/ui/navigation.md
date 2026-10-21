@@ -2,7 +2,7 @@
 
 ## Route Manager profile dropdown (2026-10-21)
 
-AioHeader avatar now opens a native auto popover with the compact upper-left photo, smaller top-aligned user name, signed-in email below a thin divider, and Open More action. Avatar clicks do not navigate. Outside click and Escape dismiss through browser behavior; Open More closes the popup and invokes the existing More callback. Popup width accounts for its right offset to keep a 16px left gutter on narrow screens. Header/nav/data otherwise unchanged.
+The profile avatar opens the compact photo/name popover on every Route Manager feature page. Below its divider: starting-address form, light/dark toggle, Monthly Check-In, Proof Vault, Inventory, expandable Ride tools (Battery/Tracker/Transit), Habits, expandable Support & diagnostics, admin-only Admin Portal/Diagnostics Console, Change password and Sign out. No Gmail row or Open More action. More and Settings pages and the More bottom tab are removed; old #more/#settings hashes normalize to Today. Bottom navigation contains Today and Jobs; feature-page Back returns to Today. Jobs owns screenshot import and Add Process Serve. Smart Aisle Scan remains attached to job details. Transit tools no longer duplicates scan/import. Support retains Debug Center and Transit API status; enabled dev test helpers remain under Support. Sample-stop reset and Settings manual are removed from the UI. Saved feature data, auth/permissions and existing gates remain unchanged. The popover scrolls within the available viewport and closes on navigation, outside click or Escape.
 
 Bathroom is now the primary Cleaning Today dashboard. Start cleaning → due/extra review → Get ready → Clock in → Clock out. Preparation Back returns to the selected Bathroom review. Other spaces/tasks are expandable on Today; Spaces/History and parent menu still work.
 
@@ -14,16 +14,16 @@ Hallway now opens Route Manager or Cleaning through separate document URLs. Clea
 
 Compatibility follow-up: legacy hash changes are handled even when hallway is already open. Room startup and App share the retired-route policy: `#jobs` stays a first-class Jobs destination; only `#route` and `#routes` retire to Today. Legacy `/jobs` pathname routing remains compatible. Local production-mode bookmark navigation and focused auth/location tests verify the distinction.
 
-Parent `/` and `/#home` open the independent `apps/hallway` app. It is a public software directory with no account data or room-code imports. Its Route Manager link performs document navigation to `/route-manager/#dashboard`, served by the room's separate process/build. SoftwareShell was removed from Route Manager. The room retains Today / Jobs / More and its login/sign-out controls. Its Main menu link performs document navigation back to the parent; it is hidden during immersive Ride Mode. Existing root feature hashes redirect to the room, and both prefixed and legacy auth paths work. Same-origin browser storage/session keys are preserved. `.app-shell` uses horizontal `clip` rather than `hidden`, allowing the return/header group to remain sticky against the viewport. Future software is not implemented; add a URL entry rather than a room-code import.
+Parent `/` and `/#home` open the independent `apps/hallway` app. It is a public software directory with no account data or room-code imports. Its Route Manager link performs document navigation to `/route-manager/#dashboard`, served by the room's separate process/build. SoftwareShell was removed from Route Manager. The room retains Today / Jobs and its login/sign-out controls. Its Main menu link performs document navigation back to the parent; it is hidden during immersive Ride Mode. Existing root feature hashes redirect to the room, and both prefixed and legacy auth paths work. Same-origin browser storage/session keys are preserved. `.app-shell` uses horizontal `clip` rather than `hidden`, allowing the return/header group to remain sticky against the viewport. Future software is not implemented; add a URL entry rather than a room-code import.
 
 **Last Updated:** 2026-08-02 (aio-three-tab-redesign)
 **Related Source Files:** `src/App.tsx`, `src/components/aio/primitives.tsx`
 
 ---
 
-## AIØ Three-Tab Navigation
+## AIØ Primary Navigation
 
-The All in One 667 uses **three primary tabs** — Today / Jobs / More — rendered as a floating rounded bottom bar pinned to the bottom of the viewport on all screen sizes.
+The All in One 667 uses **two primary tabs** — Today / Jobs / More — rendered as a floating rounded bottom bar pinned to the bottom of the viewport on all screen sizes.
 
 ### Primary Tab List
 
@@ -31,11 +31,10 @@ The All in One 667 uses **three primary tabs** — Today / Jobs / More — rende
 |---|-----|-----------|------|----------------|
 | 1 | Today | `TodayScreen` | CalendarDays | Authoritative route-planning surface: readiness/weather hero, Next Best Job / Current Job, Today's Other Jobs, Travel Plan, This Week strip + expanded day panel |
 | 2 | Jobs | `JobsScreen` | ListChecks | Schedule list: Today, later scheduled days, Route B standby, overdue/unscheduled attention section |
-| 3 | More | `MoreScreen` | Ellipsis | Hub for all legacy feature tabs and actions |
 
 The Jobs tab shows a red count badge for remaining jobs today.
 
-### Legacy Tabs (reachable from More)
+### Feature pages (reachable from the profile panel)
 
 | Tab | Icon | Protected |
 |-----|------|-----------|
@@ -44,7 +43,6 @@ The Jobs tab shows a red count badge for remaining jobs today.
 | Tracker | Timer | **Yes** |
 | Habits | Award | No |
 | Tools | Camera | No |
-| Settings | Settings | No |
 
 Battery and Tracker are **available without verification while the temporary bypass is active**. If SHOWER_GATE_REQUIRED is set to true, they are locked until the shower gate is verified. When locked:
 
@@ -55,8 +53,8 @@ Battery and Tracker are **available without verification while the temporary byp
 ### State Management
 
 - Tab state is managed by `currentTab` in `App.tsx`.
-- The `AppTab` union includes `dashboard | jobs | more` plus the legacy tabs.
-- `BottomTabBar` (in `primitives.tsx`) maps `today`/`jobs`/`more` onto `dashboard`/`jobs`/`more` in `App.tsx`.
+- The `AppTab` union includes `dashboard | jobs` plus the legacy tabs.
+- `BottomTabBar` (in `primitives.tsx`) maps `today`/`jobs` onto `dashboard`/`jobs` in `App.tsx`.
 - The current tab determines which content panel is rendered.
 
 ---

@@ -37,7 +37,7 @@ Native bus/short-haul transit assistance for the All in One 667 field app using 
   - `TransitPlannerSheet` — origin/destination planner that returns one trip with a walk-up boarding stop when available.
   - `FavoritesPanel` / `AlertsPanel` / `TransitToolsPanel` (Tools-tab wrapper with `isTransitApiEnabled()` fallback callout).
   - `TransitDashboardCard` — Dashboard quick-link to Tools when enabled.
-  - `TransitStatusCard` — Settings diagnostic (configured flag, rate limit, monthly budget, cache, last error, clear-cache button).
+  - `TransitStatusCard` — Support diagnostic (configured flag, rate limit, monthly budget, cache, last error, clear-cache button).
   - `JobTransitSection` — inside the job detail modal: plans a trip from the previous stop (or `startCoord`) to the job and renders the `TransitTripCard`.
 
 ## Architecture
@@ -129,7 +129,7 @@ The JWT is validated server-side; the upstream `TRANSIT_API_KEY` never leaves th
 - `src/hooks/useTransit*.ts` — data hooks
 - `src/components/transit/` — UI components
 - `src/features/jobs/JobDetailModal.tsx` — `transitOrigin` prop + `JobTransitSection`
-- `src/App.tsx` — Dashboard card, Tools tab, Settings diagnostic wiring
+- `src/App.tsx` — Dashboard card, Tools tab, Support diagnostic wiring
 
 ## Related Knowledge
 

@@ -48,6 +48,8 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
+**Profile navigation consolidation (2026-10-21):** User approved moving useful More/Settings controls below the profile divider, removing Gmail/Open More, More/Settings pages and More bottom tab. Retain Habits/ride tools pending a separate retirement decision. Job creation actions move to Jobs, scanning stays with jobs; support/admin remain grouped. No data deletion. Implemented on codex/profile-navigation; 16 focused tests and root lint/build pass. Local address submit/reload, theme, Inventory, Support, legacy Settings bookmark and scrollable panel verified; public deployment verification pending. Rollback checkpoint checkpoint-2026-10-21-bathroom-dashboard / 8492b234.
+
 **Profile panel layout (2026-10-21):** Compact 48px photo at the upper left, 14px username beside it at the top, and signed-in email below a thin divider. Layout only; dismissal and Open More remain. Released at a08e850442fb89337b79748ae4e98055bb0f3ce0; GitHub main and public exact SHA verified. Root lint/build and 11 profile tests pass. Public signed-in check verified compact photo/name, email/divider, narrow-screen fit, Open More and return/reopen. Width now accounts for right offset after public check exposed left overflow. No required work remains; preserve dist-native.
 
 **Profile dropdown:** User authorized continuing beyond the 85% usage stop to finish/deploy this scoped change. Header avatar opens a photo/name popover; Open More is explicit. Eleven focused tests pass; Released at 1906b6fcb65875f09bbb106ebeb5cf4d68d70c93: GitHub main/public Render exact SHA verified. Eleven focused tests and root lint/build pass. Signed-in browser verified avatar opens photo/name dropdown while staying on Today; Escape/outside click dismiss, Open More navigates to More, popup fits viewport. Dropdown left open in user tabs 1/7. No data changes or required work remains.
@@ -270,6 +272,8 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 - **Follow-up:** Verify signed-in sync works end-to-end after returning from official CE Check-In site.
 
 ## Resume Point
+
+**Profile navigation consolidation (2026-10-21):** User approved moving useful More/Settings controls below the profile divider, removing Gmail/Open More, More/Settings pages and More bottom tab. Retain Habits/ride tools pending a separate retirement decision. Job creation actions move to Jobs, scanning stays with jobs; support/admin remain grouped. No data deletion. Implemented on codex/profile-navigation; 16 focused tests and root lint/build pass. Local address submit/reload, theme, Inventory, Support, legacy Settings bookmark and scrollable panel verified; public deployment verification pending. Rollback checkpoint checkpoint-2026-10-21-bathroom-dashboard / 8492b234.
 
 **Profile panel layout (2026-10-21):** Compact 48px photo at the upper left, 14px username beside it at the top, and signed-in email below a thin divider. Layout only; dismissal and Open More remain. Released at a08e850442fb89337b79748ae4e98055bb0f3ce0; GitHub main and public exact SHA verified. Root lint/build and 11 profile tests pass. Public signed-in check verified compact photo/name, email/divider, narrow-screen fit, Open More and return/reopen. Width now accounts for right offset after public check exposed left overflow. No required work remains; preserve dist-native.
 

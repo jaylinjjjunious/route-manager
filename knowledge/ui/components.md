@@ -2,7 +2,7 @@
 
 ## Route Manager profile dropdown (2026-10-21)
 
-AioHeader avatar now opens a native auto popover with the compact upper-left photo, smaller top-aligned user name, signed-in email below a thin divider, and Open More action. Avatar clicks do not navigate. Outside click and Escape dismiss through browser behavior; Open More closes the popup and invokes the existing More callback. Popup width accounts for its right offset to keep a 16px left gutter on narrow screens. Header/nav/data otherwise unchanged.
+The profile avatar opens the compact photo/name popover on every Route Manager feature page. Below its divider: starting-address form, light/dark toggle, Monthly Check-In, Proof Vault, Inventory, expandable Ride tools (Battery/Tracker/Transit), Habits, expandable Support & diagnostics, admin-only Admin Portal/Diagnostics Console, Change password and Sign out. No Gmail row or Open More action. More and Settings pages and the More bottom tab are removed; old #more/#settings hashes normalize to Today. Bottom navigation contains Today and Jobs; feature-page Back returns to Today. Jobs owns screenshot import and Add Process Serve. Smart Aisle Scan remains attached to job details. Transit tools no longer duplicates scan/import. Support retains Debug Center and Transit API status; enabled dev test helpers remain under Support. Sample-stop reset and Settings manual are removed from the UI. Saved feature data, auth/permissions and existing gates remain unchanged. The popover scrolls within the available viewport and closes on navigation, outside click or Escape.
 
 Hallway Route Manager card uses the existing black AIØ app artwork, copied from apps/route-manager/public/apple-touch-icon.png into apps/hallway/src/assets/route-manager-icon.png and bundled by Vite. The hallway remains independent of the room runtime.
 
@@ -43,7 +43,7 @@ JobDetailModal uses the shared app's purple palette with a dedicated translucent
 |-------|-------|
 | **File** | `src/components/aio/AioHeader.tsx` |
 | **Props** | `userName?: string`, `onOpenProfile()` |
-| **Responsibility** | Sticky top header for Today/Jobs/More tabs. Shows time-of-day greeting with first name, the AIØ wordmark followed by a same-typeface `17` with a softly blended red-to-white-to-blue vertical treatment, formatted date, and a circular profile-picture button that opens the profile dropdown; Open More is an explicit dropdown action. |
+| **Responsibility** | Sticky top header for all Route Manager feature pages. Shows time-of-day greeting with first name, the AIØ wordmark followed by a same-typeface `17` with a softly blended red-to-white-to-blue vertical treatment, formatted date, and a circular profile-picture button that opens the profile dropdown; retained controls appear directly below the divider. |
 
 ### TodayScreen
 
@@ -68,13 +68,9 @@ JobDetailModal uses the shared app's purple palette with a dedicated translucent
 | **File** | `src/features/probation/ProbationCheckInPanel.tsx` |
 | **Responsibility** | Device-aware monthly CE Check-In coach displayed above Today and Jobs. Shows Early Action, Coach, Urgent, Overdue, or Complete state; opens the official provider; accepts screenshot proof; supports permission-gated desktop capture; records one-tap completion and audit history; explains the day-8 job lock. |
 
-### MoreScreen
+### ProfileMenu
 
-| Field | Value |
-|-------|-------|
-| **File** | `src/components/aio/MoreScreen.tsx` |
-| **Props** | `theme`, `onToggleTheme`, `userEmail`, `onNavigate(tab)`, `onOpenProofHistory`, `onOpenDebugCenter`, `onAddProcessServe`, `onImportScreenshots`, `onSignOut` |
-| **Responsibility** | Hub for everything outside the primary flow: account card (avatar, email, theme toggle), the six legacy feature tabs (Inventory, Battery, Tracker, Habits, Tools, Settings), action links (Proof Vault, Add Process Serve, Import Job Screenshots, Debug Center), and Sign Out. Legacy screens remain reachable. |
+`src/components/aio/ProfileMenu.tsx` renders compact account controls and feature shortcuts inside AioHeader. Ride and support groups expand in place; navigation closes the popover. Starting address submits through the existing persistence callback. Admin/development entries retain their visibility gates. No separate More/Settings page.
 
 ### BatteryTab
 
@@ -105,7 +101,7 @@ JobDetailModal uses the shared app's purple palette with a dedicated translucent
 | `AioButton` | Primary/secondary/ghost button, 48px min height |
 | `CompactJobRow` | Store name + street/type + badge + pay + chevron; tappable to open job |
 | `WeekDayIndicator` | Strip day cell (weekday, date, count) with an automatic today state |
-| `BottomTabBar` | Floating Today/Jobs/More bottom bar with active pill indicator and jobs-count badge |
+| `BottomTabBar` | Floating Today/Jobs bottom bar with active pill indicator and jobs-count badge |
 
 ### AIØ Job Metadata
 
@@ -256,7 +252,7 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 |-------|-------|
 | **File** | `src/components/Header.tsx` |
 | **Props** | `theme: 'light' \| 'dark'`, `onToggleTheme: () => void` |
-| **Responsibility** | App header with official logo image, title, e-bike status, user email, and theme toggle. Used on the legacy tabs (Inventory, Battery, Tracker, Habits, Tools, Settings); the AIØ tabs (Today/Jobs/More) use `AioHeader` instead. |
+| **Responsibility** | App header with official logo image, title, e-bike status, user email, and theme toggle. Retained standalone component; Route Manager now uses AioHeader on all feature pages. |
 
 ---
 
@@ -266,9 +262,9 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 |-------|-------|
 | **File** | `src/components/aio/primitives.tsx` (`BottomTabBar`), wired in `src/App.tsx` |
 | **State** | `currentTab`, `activateTabFromTap`, `showerGateUnlocked` |
-| **Responsibility** | Floating rounded bottom bar with 3 tabs: Today, Jobs, More. Active tab shows a top indicator pill and blue tint; Jobs shows a red badge with remaining count. Legacy tabs are reachable through the More screen. |
+| **Responsibility** | Floating rounded bottom bar with 2 tabs: Today and Jobs. Active tab shows a top indicator pill and blue tint; Jobs shows a red badge with remaining count. Feature pages are reachable through the profile panel. |
 
-**Tabs:** Today (dashboard), Jobs, More → Inventory, Battery, Tracker, Habits, Tools, Settings
+**Tabs:** Today (dashboard), Jobs. Profile panel opens retained feature pages.
 
 ---
 
@@ -423,12 +419,12 @@ The AI Operations Assistant is a floating chat bubble available throughout the a
 | **File** | `src/components/SmartAisleScanTestLab.tsx` |
 | **Props** | `isOpen: boolean`, `onClose: () => void` |
 | **Responsibility** | Development/testing feature for Smart Aisle Scan. Home screen with Live Camera Practice, Imported Test Sequence, Controlled Test Scenarios, Test Markers, Sensor Diagnostics, Test Results/Scorecard, and Test Data Cleanup. Wraps real SmartAisleScan in test_lab mode, and the browser harness validates start capture, hold-for-burst long-press no-selection behavior, pointer cancel/lost-capture interruption paths, release-to-pause Burst Complete feedback plus Reached the End stitching, and stitched-photo acceptance. Feature-gated via `VITE_ENABLE_SMART_AISLE_TEST_LAB` in dev builds only; production builds ignore the flag. |
-| **Entry** | Settings > Developer Tools (only when flag enabled) |
+| **Entry** | Profile > Support & diagnostics (only when flag enabled) |
 
 
 ## 2026-09-26 component update
 
-JobDetailModal now shows only address, logo/name, travel modes/estimates, and gated navigation; its previous workflow tabs were removed by explicit user choice. MonthlyCheckInPage wraps MonthlyCheckInSettings, exposing the shared monthly state from More. CECheckInButton is a reusable provider launcher; it is not currently placed in navigation.
+JobDetailModal now shows only address, logo/name, travel modes/estimates, and gated navigation; its previous workflow tabs were removed by explicit user choice. MonthlyCheckInPage wraps MonthlyCheckInSettings, exposing the shared monthly state from the profile panel. CECheckInButton is a reusable provider launcher; it is not currently placed in navigation.
 
 ## BlueAI export review (2026-09-27)
 

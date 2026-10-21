@@ -1,180 +1,41 @@
 // @vitest-environment jsdom
-
-import React, { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { existsSync } from "node:fs";
-import { resolve } from "node:path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-const authMock = vi.hoisted(() => ({
-  user: { id: "test-user", email: "driver@ai0.app", user_metadata: { name: "Test User" } },
-  session: { user: { id: "test-user", email: "driver@ai0.app" }, access_token: "test-token" },
-  updatePassword: vi.fn(async () => ({ error: null })),
-}));
-
-vi.mock("../src/auth/AuthProvider", () => ({
-  useAuth: () => authMock,
-}));
-
-import AioHeader from "../src/components/aio/AioHeader";
-import MoreScreen from "../src/components/aio/MoreScreen";
-
-const AVATAR_PATH = "/profile/avatar.webp";
-const AVATAR_FILE = resolve(process.cwd(), "public/profile/avatar.webp");
-
+import React, { act } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { existsSync } from 'node:fs';
+import AioHeader from '../src/components/aio/AioHeader';
+import ProfileMenu from '../src/components/aio/ProfileMenu';
+import { BottomTabBar } from '../src/components/aio/primitives';
 let container: HTMLDivElement;
 let root: Root;
-
-function renderHeader(userName?: string, onOpenProfile = () => undefined) {
-  act(() => {
-    root.render(React.createElement(AioHeader, { userName, onOpenProfile }));
-  });
-}
-
-function renderMoreScreen(theme: "dark" | "light" = "dark") {
-  act(() => {
-    root.render(
-      React.createElement(MoreScreen, {
-        theme,
-        onToggleTheme: () => undefined,
-        userEmail: "driver@ai0.app",
-        onNavigate: () => undefined,
-        onOpenProofHistory: () => undefined,
-        onOpenDebugCenter: () => undefined,
-        onAddProcessServe: () => undefined,
-        onImportScreenshots: () => undefined,
-        onSignOut: () => undefined,
-        onNavigateChangePassword: () => undefined,
-      }),
-    );
-  });
-}
-
-function images(): Array<{ src: string; alt: string; className: string }> {
-  return Array.from(container.querySelectorAll("img")).map((img) => ({
-    src: img.getAttribute("src") ?? "",
-    alt: img.getAttribute("alt") ?? "",
-    className: img.className ?? "",
-  }));
-}
-
 beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  container = document.createElement("div");
-  document.body.appendChild(container);
-  root = createRoot(container);
+  container = document.createElement('div'); document.body.appendChild(container); root = createRoot(container);
 });
-
-afterEach(() => {
-  act(() => root.unmount());
-  container.remove();
-  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
+afterEach(() => { act(() => root.unmount()); container.remove(); });
+function renderMenu(overrides: Partial<React.ComponentProps<typeof ProfileMenu>> = {}) {
+  const props = {theme: 'dark' as const, onToggleTheme: vi.fn(), startAddress: 'Test hub', onUpdateStart: vi.fn(), onNavigate: vi.fn(), onOpenProof: vi.fn(), onSignOut: vi.fn(), ...overrides};
+  act(() => root.render(React.createElement(ProfileMenu, props))); return props;
+}
+function click(text: string) { const button=Array.from(container.querySelectorAll('button')).find(b=>b.textContent===text); expect(button).toBeDefined(); act(()=>button?.click()); }
+it('keeps the avatar and renders controls under the profile divider without email or More', () => {
+  act(()=>root.render(React.createElement(AioHeader, {userName:'Test Driver', renderProfileMenu:()=>React.createElement('button',null,'Inventory')})));
+  const button=container.querySelector('button[aria-label="Open profile menu"]');expect(button).not.toBeNull();act(()=> (button as HTMLButtonElement).click());
+  const panel=container.querySelector('[aria-label="Profile menu"]');expect(panel?.textContent).toContain('Test Driver');expect(panel?.textContent).toContain('Inventory');expect(panel?.textContent).not.toContain('Open More');
+  expect(panel?.querySelector('img')?.getAttribute('src')).toBe('/profile/avatar.webp');
+  expect(existsSync('public/profile/avatar.webp')).toBe(true);
 });
-
-describe("AIØ top header profile button", () => {
-  it("shows the profile image in the header", () => {
-    renderHeader("driver@ai0.app");
-
-    expect(images()[0]).toEqual(
-      { src: AVATAR_PATH, alt: "Your profile picture", className: expect.stringContaining("object-cover") as string },
-    );
-  });
-
-  it("keeps the AIØ logo and greeting in the header", () => {
-    renderHeader("driver@ai0.app");
-
-    expect(container.textContent).toContain("AI");
-    expect(container.textContent).toContain("Ø");
-  });
-
-  it("removes the old three-dots button from the header", () => {
-    renderHeader();
-
-    expect(container.querySelector("button[aria-label='Open more menu']")).toBeNull();
-    expect(container.querySelector("button[title='More']")).toBeNull();
-    expect(container.querySelector("svg.lucide-ellipsis")).toBeNull();
-  });
-
-  it("removes the old header dark/light mode button", () => {
-    renderHeader();
-
-    expect(container.querySelector("button[aria-label*='Switch to']")).toBeNull();
-    expect(container.querySelector("svg.lucide-sun")).toBeNull();
-    expect(container.querySelector("svg.lucide-moon")).toBeNull();
-  });
-
-  it("renders the profile picture circular with object-cover cropping", () => {
-    renderHeader();
-
-    const button = container.querySelector("button[aria-label='Open profile and More menu']");
-    expect(button?.className).toContain("rounded-full");
-    expect(button?.className).toContain("h-11");
-    expect(button?.className).toContain("w-11");
-    expect(button?.className).toContain("overflow-hidden");
-    expect(container.querySelector("img")?.className).toContain("object-cover");
-  });
-
-  it("opens More only through the dropdown action, not the avatar", () => {
-    const onOpenProfile = vi.fn();
-    renderHeader("driver@ai0.app", onOpenProfile);
-
-    const button = container.querySelector<HTMLButtonElement>("button[aria-label='Open profile and More menu']");
-    expect(button).not.toBeNull();
-    act(() => button?.click());
-
-    expect(onOpenProfile).not.toHaveBeenCalled();
-    const dropdown = container.querySelector('[aria-label="Profile menu"]');
-    expect(dropdown?.querySelector("img")?.getAttribute("src")).toBe(AVATAR_PATH);
-    const more = dropdown?.querySelector<HTMLButtonElement>("button");
-    act(() => more?.click());
-    expect(onOpenProfile).toHaveBeenCalledTimes(1);
-  });
+it('opens each retained destination from the panel',()=>{
+  const p=renderMenu({isAdmin:true});
+  for(const [label,id] of [['Inventory','inventory'],['Monthly Check-In','checkin'],['Battery','battery'],['Tracker','tracker'],['Transit tools','tools'],['Habits','habits'],['Debug Center','support'],['Diagnostics Console','diagnostics'],['Admin Portal','admin'],['Change password','changepassword']]) {click(label);expect(p.onNavigate).toHaveBeenLastCalledWith(id);}
+  click('Proof Vault');expect(p.onOpenProof).toHaveBeenCalledOnce();click('Sign out');expect(p.onSignOut).toHaveBeenCalledOnce();
 });
-
-describe("More page profile row", () => {
-  it("uses the same profile image beside the user name", () => {
-    renderMoreScreen();
-
-    expect(container.querySelector("img")?.getAttribute("src")).toBe(AVATAR_PATH);
-    expect(container.textContent).toContain("driver@ai0.app");
-    const img = container.querySelector("img");
-    expect(img?.getAttribute("alt")).toContain("profile picture");
-    expect(img?.className).toContain("object-cover");
-    expect(img?.closest("span")?.className).toContain("rounded-full");
-    expect(img?.closest("span")?.className).toContain("h-12");
-    expect(img?.closest("span")?.className).toContain("w-12");
-  });
-
-  it("keeps the theme toggle available on the More page", () => {
-    renderMoreScreen("dark");
-
-    const toggle = container.querySelector<HTMLButtonElement>("button[aria-label='Switch to light mode']");
-    expect(toggle).not.toBeNull();
-    expect(toggle?.querySelector("svg.lucide-sun")).not.toBeNull();
-  });
-
-  it("keeps the user name and authenticated label unchanged", () => {
-    renderMoreScreen();
-
-    expect(container.textContent).toContain("driver@ai0.app");
-    expect(container.textContent).toContain("Authenticated");
-  });
+it('keeps admin and development entries out of ordinary menus',()=>{renderMenu();expect(container.textContent).not.toContain('Admin Portal');expect(container.textContent).not.toContain('Diagnostics Console');expect(container.textContent).not.toContain('Test Job');expect(container.textContent).not.toContain('Purge');});
+it('saves the entered starting address only on submit',()=>{
+  const p=renderMenu();const input=container.querySelector('input')!; input.value='New hub';expect(p.onUpdateStart).not.toHaveBeenCalled();
+  // jsdom FormData differs from the Node implementation.
+  const original=globalThis.FormData; globalThis.FormData=window.FormData;
+  try {act(()=>container.querySelector('form')!.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})));expect(p.onUpdateStart).toHaveBeenCalledWith('New hub');} finally {globalThis.FormData=original;}
 });
-
-describe("avatar asset is local and bundled", () => {
-  it("references the same local public asset path in both locations", () => {
-    renderHeader();
-    const headerSrc = container.querySelector("img")?.getAttribute("src");
-
-    renderMoreScreen();
-    const moreSrc = container.querySelector("img")?.getAttribute("src");
-
-    expect(headerSrc).toBe(AVATAR_PATH);
-    expect(moreSrc).toBe(AVATAR_PATH);
-    expect(headerSrc).toBe(moreSrc);
-  });
-
-  it("ships the bundled asset file in the repository", () => {
-    expect(existsSync(AVATAR_FILE)).toBe(true);
-  });
-});
+it('toggles the theme using the existing callback',()=>{const p=renderMenu();click('Switch to light mode');expect(p.onToggleTheme).toHaveBeenCalledOnce();});
+it('offers only Today and Jobs in bottom navigation',()=>{act(()=>root.render(React.createElement(BottomTabBar,{current:'today',onChange:()=>undefined})));expect(container.querySelector('#nav-tab-today')).not.toBeNull();expect(container.querySelector('#nav-tab-jobs')).not.toBeNull();expect(container.querySelector('#nav-tab-more')).toBeNull();});

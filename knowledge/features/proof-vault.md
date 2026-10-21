@@ -6,7 +6,7 @@ Per-job proof attachment system for completion verification and documentation.
 
 ## Current Implementation
 
-2026-10-10 navigation repair: More and the profile menu open `ProofHistoryModal`, including an explicit empty state. It lists all saved job folders newest first with address, evidence count and updated date. Selecting a folder opens its existing assets/notes; All proof folders or closing the folder returns to the list. Escape closes the active dialog. Storage and existing records are unchanged and remain device-local. `tests/proofHistoryNavigation.test.ts` covers empty entry, older-folder selection, return/close and evidence preservation. This supersedes the previous newest-folder-only behavior.
+2026-10-10 navigation repair: The profile menu open `ProofHistoryModal`, including an explicit empty state. It lists all saved job folders newest first with address, evidence count and updated date. Selecting a folder opens its existing assets/notes; All proof folders or closing the folder returns to the list. Escape closes the active dialog. Storage and existing records are unchanged and remain device-local. `tests/proofHistoryNavigation.test.ts` covers empty entry, older-folder selection, return/close and evidence preservation. This supersedes the previous newest-folder-only behavior.
 
 ### Asset Kinds
 
@@ -89,7 +89,7 @@ Job Completion → Jobs handler → ensureProofForJob(job)
 - **Procedure proof helpers**: `procedureProof.ts` owns exact procedure requirement proof matching and proof-asset stamping for future procedure-driven capture flows.
 - **Procedure workspace capture**: `ProcedureWorkspace.tsx` renders generic proof prompts in Job Detail and routes capture through `useProofVault.captureProofForRequirement(...)`.
 - **ProofVaultModal**: File upload interface per asset kind and notes editor for the selected record.
-- **Completion Flow**: App-level Jobs completion handlers call `ensureProofForJob(job)` when a job becomes completed. The modal opens through explicit Proof Vault navigation from More or the Assistant.
+- **Completion Flow**: App-level Jobs completion handlers call `ensureProofForJob(job)` when a job becomes completed. The modal opens through explicit Proof Vault navigation from the profile panel or the Assistant.
 
 ## Design Rationale
 
@@ -97,7 +97,7 @@ Job Completion → Jobs handler → ensureProofForJob(job)
 - **Three asset types**: Photos, screenshots, receipts cover common proof needs
 - **localStorage**: Simple, no server needed for proof storage
 - **File picker upload**: Supports images and PDFs through the browser file picker
-- **Explicit opening**: The Proof Vault opens from More or the Assistant and selects the newest proof record
+- **Explicit opening**: The Proof Vault opens from the profile panel or the Assistant and selects the newest proof record
 
 ## Dependencies
 
@@ -167,7 +167,7 @@ Job Completion → Jobs handler → ensureProofForJob(job)
 - `src/features/proofVault/ProofHistoryModal.tsx` — all-folder selection and explicit empty state.
 - `tests/proofHistoryNavigation.test.ts` — empty/history/back/close and preservation coverage.
 
-- `src/App.tsx` — cross-feature proof orchestration: Jobs completion triggers, Assistant/More navigation, and modal composition
+- `src/App.tsx` — cross-feature proof orchestration: Jobs completion triggers, Assistant/profile navigation, and modal composition
 - `src/features/proofVault/types.ts` — Proof Vault asset and record types
 - `src/features/proofVault/procedureProof.ts` — proof requirement identity, matching, visit-scope evaluation, and procedure proof asset stamping helpers
 - `src/features/proofVault/ProofVaultModal.tsx` — selected proof folder modal UI
