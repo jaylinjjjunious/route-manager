@@ -49,3 +49,20 @@ export function finishBathroom(plan: Plan, session: CleaningSession): Plan {
     return { ...space, bathroom: { ...space.bathroom, lastDone } };
   }) };
 }
+
+export function completeBathroomItems(plan: Plan, spaceId: string, ids: BathroomId[], now = new Date()): Plan {
+  const room = plan.spaces.find(space => space.id === spaceId && !space.archived && space.bathroom);
+  if (!room?.bathroom) throw new Error('This bathroom schedule is no longer available.');
+  if (plan.sessions?.some(session => !session.endedAt)) throw new Error('Use Clock out to save the work from your current session.');
+  const today = dayKey(now);
+  if (!ids.length || new Set(ids).size !== ids.length || ids.some(id => !bathroomActivities.some(item => item.id === id) || bathroomDue(room.bathroom!, id) > today)) throw new Error('Choose only cleaning that is due today.');
+  const lastDone = { ...room.bathroom.lastDone };
+  for (const id of ids) lastDone[id] = today;
+  return { ...plan, spaces: plan.spaces.map(space => space.id === spaceId ? { ...space, bathroom: { ...room.bathroom!, lastDone } } : space) };
+}
+
+export function undoBathroomFinish(plan: Plan, spaceId: string, prior: BathroomSchedule, saved: BathroomSchedule): Plan {
+  const room = plan.spaces.find(space => space.id === spaceId && !space.archived);
+  if (!room?.bathroom || JSON.stringify(room.bathroom) !== JSON.stringify(saved) || plan.sessions?.some(session => !session.endedAt)) throw new Error('The bathroom schedule changed. This finish can no longer be undone.');
+  return { ...plan, spaces: plan.spaces.map(space => space.id === spaceId ? { ...space, bathroom: prior } : space) };
+}

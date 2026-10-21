@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { addDays, emptyPlan, mergeBackup, parsePlan } from '../src/model';
-import { bathroomActivities, bathroomDue, configureBathroom, nextMonth } from '../src/bathroom';
+import { completeBathroomItems, undoBathroomFinish, bathroomActivities, bathroomDue, configureBathroom, nextMonth } from '../src/bathroom';
 import { clockIn, changeSession } from '../src/sessions';
 
 it('creates the requested schedule with no invented completion or initial deep-clean overdue work', () => {
@@ -50,4 +50,24 @@ it('does not infer scheduled completion from a generic session and validates v4 
   expect(() => parsePlan(JSON.stringify(invalid))).toThrow('invalid bathroom schedule');
   const badLink = structuredClone(plan); badLink.sessions![0].bathroomItems = ['shower'];
   expect(() => parsePlan(JSON.stringify(badLink))).toThrow('invalid cleaning session');
+});
+
+it('clears only selected due cleaning without inventing timed work and safely restores an accidental finish', () => {
+  const before = configureBathroom(emptyPlan(), '2026-10-21', '2026-10-21');
+  const room = before.spaces[0];
+  const after = completeBathroomItems(before, room.id, ['toilet'], new Date('2026-10-21T12:00:00'));
+  expect(after.spaces[0].bathroom!.lastDone).toEqual({toilet:'2026-10-21'});
+  expect(bathroomDue(after.spaces[0].bathroom!, 'toilet')).toBe('2026-10-22');
+  expect(bathroomDue(after.spaces[0].bathroom!, 'sink')).toBe('2026-10-21');
+  expect(after.sessions).toBeUndefined();expect(after.tasks).toEqual([]);
+  expect(parsePlan(JSON.stringify(after))).toEqual(after);
+  expect(undoBathroomFinish(after,room.id,room.bathroom!,after.spaces[0].bathroom!)).toEqual(before);
+  expect(()=>completeBathroomItems(after,room.id,['toilet'],new Date('2026-10-21T12:01:00'))).toThrow('due today');
+  const changed = completeBathroomItems(after,room.id,['sink'],new Date('2026-10-21T12:01:00'));
+  expect(()=>undoBathroomFinish(changed,room.id,room.bathroom!,after.spaces[0].bathroom!)).toThrow('schedule changed');
+});
+it('keeps clocked-in work on the clock-out path',()=>{
+  let plan=configureBathroom(emptyPlan(),'2026-10-21','2026-10-21');
+  plan=clockIn(plan,plan.spaces[0],['Toilet wipe-down'],[],new Date('2026-10-21T12:00:00'),['toilet']);
+  expect(()=>completeBathroomItems(plan,plan.spaces[0].id,['toilet'],new Date('2026-10-21T12:01:00'))).toThrow('Clock out');
 });

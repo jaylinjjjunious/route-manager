@@ -48,6 +48,8 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
+**Cleaning direct finish:** Bathroom Today now has Mark finished → select actually finished due activities → Save. Clears only selected work, retains unfinished due work, schedules next dates, shows finished-today summary and an immediate guarded Undo. Uses existing lastDone; no fake timer/session/history entry. Active sessions finish through Clock out. Thirty-two Cleaning tests/root build/lint pass; local browser partial finish/reload verified. Public deployment verification pending.
+
 **Photo click retained:** Header profile photo again opens the same left sidebar alongside AIØ17/edge swipe. Released at 62e1c2b2cbe5b5015fbd892706c5e5f556cdbb48; GitHub main/public exact SHA verified. Eight focused tests/root lint/build pass. Public signed-in photo click, close and wordmark reopening verified; photo position unchanged. No required work remains.
 
 **Left sidebar (2026-10-21):** User requested moving profile controls into a left sidebar opened from AIØ17 or an edge swipe, keeping the header photo in place. Native modal dialog with close/backdrop/Escape/left-swipe dismissal, viewport scrolling/body lock and focus handling implemented on codex/left-navigation-sidebar. Eight focused tests/root lint/build pass. Local browser verified full-height left position, focus, body lock, Escape, backdrop and feature-selection dismissal. Released at b3e2df6d9bdfa3760f52ac4521f339f0c53d5838; GitHub main/public exact SHA verified. Live signed-in logo opening, full-height left geometry, body lock, Escape/focus restoration, backdrop dismissal and Inventory navigation verified. Header photo remains at right. Touch gestures unit-tested; physical device swipes not exercised. No required work remains. No feature/data changes.
@@ -276,6 +278,8 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 - **Follow-up:** Verify signed-in sync works end-to-end after returning from official CE Check-In site.
 
 ## Resume Point
+
+**Cleaning direct finish:** Bathroom Today now has Mark finished → select actually finished due activities → Save. Clears only selected work, retains unfinished due work, schedules next dates, shows finished-today summary and an immediate guarded Undo. Uses existing lastDone; no fake timer/session/history entry. Active sessions finish through Clock out. Thirty-two Cleaning tests/root build/lint pass; local browser partial finish/reload verified. Public deployment verification pending.
 
 **Photo click retained:** Header profile photo again opens the same left sidebar alongside AIØ17/edge swipe. Released at 62e1c2b2cbe5b5015fbd892706c5e5f556cdbb48; GitHub main/public exact SHA verified. Eight focused tests/root lint/build pass. Public signed-in photo click, close and wordmark reopening verified; photo position unchanged. No required work remains.
 

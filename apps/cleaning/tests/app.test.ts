@@ -2,7 +2,8 @@ import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import App from '../src/App';
-import { parsePlan, dayKey } from '../src/model';
+import { emptyPlan, parsePlan, dayKey } from '../src/model';
+import { configureBathroom } from '../src/bathroom';
 import { STORAGE_KEY } from '../src/storage';
 
 let root: Root;
@@ -140,4 +141,20 @@ it('sets up the Bathroom schedule and advances only finished activities when clo
   expect(plan.spaces[0].bathroom?.lastDone).toEqual({ toilet: dayKey(), sink: dayKey() });
   expect(plan.history).toHaveLength(0); expect(plan.tasks).toHaveLength(0);
   expect(container.textContent).toContain('Nothing due right now');
+});
+
+it('marks only checked bathroom cleaning finished, handles save failure, undoes, and keeps the result after reload',()=>{
+  const initial=configureBathroom(emptyPlan(),dayKey(),dayKey());
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(initial));
+  act(()=>root.render(React.createElement(App)));
+  click('Mark finished');expect(container.querySelector<HTMLButtonElement>('dialog .primary')!.disabled).toBe(true);
+  act(()=>container.querySelector<HTMLInputElement>('dialog input[type="checkbox"]')!.click());
+  const fail=vi.spyOn(Storage.prototype,'setItem').mockImplementation(()=>{throw new Error('full');});
+  click('Save finished cleaning');expect(container.querySelector('dialog')).not.toBeNull();expect(container.querySelector('.bathroom-due-list')!.textContent).toContain('Toilet wipe-down');fail.mockRestore();
+  click('Save finished cleaning');expect(container.querySelector('dialog')).toBeNull();
+  expect(container.querySelector('.bathroom-due-list')!.textContent).not.toContain('Toilet wipe-down');expect(container.querySelector('.bathroom-due-list')!.textContent).toContain('Sink wipe-down');
+  click('Undo last finish');expect(parsePlan(localStorage.getItem(STORAGE_KEY)!).spaces[0].bathroom!.lastDone).toEqual({});
+  click('Mark finished');act(()=>container.querySelector<HTMLInputElement>('dialog input[type="checkbox"]')!.click());click('Save finished cleaning');
+  act(()=>root.unmount());root=createRoot(container);act(()=>root.render(React.createElement(App)));
+  expect(container.querySelector('.bathroom-due-list')!.textContent).not.toContain('Toilet wipe-down');expect(container.querySelector('.finished-today')!.textContent).toContain('Toilet wipe-down');
 });
