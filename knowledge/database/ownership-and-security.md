@@ -1,5 +1,9 @@
 # Data Ownership & Security
 
+## Cleaning account plans (2026-10-21)
+
+Cleaning retains an independent frontend/build and owns a Supabase client. Its full validated plan is persisted in owner-scoped cloud storage with read RLS, a revision-checked authenticated save function, offline account caches and explicit legacy import/conflict recovery. No hallway or Route Manager implementation import. Details: ../features/cleaning-planner.md.
+
 **Last Updated:** 2026-07-20 (c12bd44)
 **Related Source Files:** `worker/index.ts`, `server.ts`, `src/services/apiClient.ts`
 

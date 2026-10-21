@@ -1,5 +1,9 @@
 # UI Components
 
+## Cleaning account sync
+
+CloudWorkspace provides shared-account sign-in, owner-scoped App mounting, visible local/cloud status and retry, explicit browser-plan import, conflict choices and downloadable recovery copies. Existing offline planning/backups remain. See ../features/cleaning-planner.md.
+
 ## Mark finished from Today (2026-10-21)
 
 Bathroom Today offers Mark finished without requiring a timer session. An initially unchecked checklist lists only due activities; Save advances only selected activities from the actual local completion date. Unselected work stays due; finished work appears in Upcoming and an expandable finished-today summary. Latest completion dates persist in existing v4 bathroom.lastDone and backups; no timer/session/history duration is invented. Active sessions use the existing Clock out path instead. Undo last finish is available in the current page lifetime, only while the schedule still matches that save and no session is active; reload/other-tab updates clear the shortcut. Saved-data errors retain the checklist and due list. Existing session clock-out is unchanged.

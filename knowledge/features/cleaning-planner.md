@@ -9,11 +9,21 @@ Bathroom Today offers Mark finished without requiring a timer session. An initia
 
 The user wants a new independent software room for their own cleaning, eventually their own cleaning business. This first version supports personal routines; customer management, quotes, invoices, teams and cloud accounts are deferred.
 
+## Account cloud sync (2026-10-21)
+
+Cleaning now owns its own Supabase client and shares the existing same-origin All in One session without importing Route Manager code. Signed-in plans use account-scoped browser caches; signed-out use preserves the original device-only key. Existing unassigned plans require the visible Add this browser’s plan to my account action. Additive import keeps matching account records and leaves the original raw plan untouched. No automatic ownership attribution.
+
+Every edit saves locally first, then a single-flight coordinator uploads with the expected cloud revision. Cloud refresh runs on startup, focus, reconnect and every 30 seconds. Clean devices load cloud changes; simultaneous local/cloud edits stop for explicit cloud/device choice. Recovery copies of both versions are saved before resolution and can be downloaded. Unsynced edits survive reload/offline; failed writes stay visibly pending. Owner-pinned request tokens, owner-keyed components and disposed-generation guards prevent account-switch leakage and late responses; older cloud reads cannot regress a newer tab’s metadata. Lost save acknowledgements reconcile by canonical plan equality.
+
+Database: public.cleaning_plans has one bounded JSON plan per verified owner, monotonic revision and timestamp. RLS allows authenticated users to read only their own row. Direct writes and anonymous access are revoked; cleaning_save_plan derives auth.uid and atomically inserts/updates only the expected revision. SQL migration and rollback-only isolation/revision/size checks live in apps/cleaning/migrations. Migration applied and database checks passed; verification identities/plans rolled back. Plan v1–v4 validation and 2 MB limits remain; cloud transport stores the complete plan including schedules, routines, sessions/history, archives and tasks.
+
+Sources: CloudWorkspace.tsx, cloudClient.ts, cloudSync.ts, App.tsx, storage.ts. Limitations: one whole-plan snapshot per account, explicit conflict choice rather than automatic merging, 30-second polling plus focus/reconnect (no realtime subscription), public Supabase config required for cloud mode; no customer/team billing features. Backups remain available. Live release verification pending.
+
 ## Ownership and entry
 
 - Source/package/build/tests: `apps/cleaning/`; hallway registry: `apps/hallway/src/rooms.ts`.
 - Public URL `/cleaning/`; internal hashes Today, Spaces, History. Main menu returns to `/#home`.
-- Gateway serves static files independently of Route Manager. No room code, authentication or API imports. Standalone hosting can override base/entry URLs.
+- Gateway serves static files independently of Route Manager. No Route Manager code/API imports; Cleaning owns an independent client for shared account authentication and its own cloud plan. Standalone hosting can override base/entry URLs.
 
 ## Bathroom schedule dashboard (2026-10-21)
 

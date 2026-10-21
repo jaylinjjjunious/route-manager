@@ -13,7 +13,7 @@ export function GetReady({ room, activities, start, close, error }: { room: Spac
     <h3 className="session-subtitle">Tools & supplies</h3><p className="hint">Suggestions to review. Check what you have ready; skip anything you don't need.</p>
     <div className="tools-list">{tools.map(tool => <label className="tool-row" key={tool}><input type="checkbox" checked={ready.includes(tool)} onChange={() => setReady(items => items.includes(tool) ? items.filter(item => item !== tool) : [...items, tool])} />{tool}</label>)}</div>
     {error && <p role="alert" className="error-text">{error}</p>}
-    <p className="hint">Your start time is saved when you clock in. Closing or reloading the app won't stop the timer. Saved in this browser only.</p>
+    <p className="hint">Your start time is saved when you clock in. Closing or reloading the app won't stop the timer. Saved on this device first; check Cloud sync for account status.</p>
     <div className="form-actions"><button className="secondary" onClick={close}>Back to activities</button><button className="primary" onClick={() => start(ready)}><Play size={17} />Clock in</button></div>
   </Modal>;
 }

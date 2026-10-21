@@ -48,6 +48,8 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
+**Cleaning cloud sync:** User requested account sync. Independent Cleaning Supabase client, shared same-origin session, RLS cloud plans with atomic expected revisions, per-owner offline caches, explicit legacy import and conflict/recovery UI implemented. Migration applied; rollback-only isolation/revision/anonymous/size tests pass. Forty-seven Cleaning tests and final root lint/build pass; local unsigned cloud entry and existing offline plan verified. Existing legacy data untouched; user answer on importing into signed-in account pending. Public release verification pending on codex/cleaning-cloud-sync.
+
 **Due-only cleaning start:** User wants Start cleaning to show only due daily work, adding fortnightly/monthly activities when their dates arrive. Review now excludes future work and empty cadence groups; Start disabled when nothing due. Existing configured dates/lastDone remain unchanged. Thirty-three Cleaning tests/root lint/build pass; local browser Start shows only the remaining due daily work. Released at 6b3eceffb8a02788eaf363b2079b0bbd04831318; GitHub main/public exact SHA verified. Live Start and Get ready both show only toilet/sink daily work; future groups hidden. No data changed or timer started; review left open. No required work remains.
 
 **Cleaning direct finish:** Bathroom Today now has Mark finished → select actually finished due activities → Save. Clears only selected work, retains unfinished due work, schedules next dates, shows finished-today summary and an immediate guarded Undo. Uses existing lastDone; no fake timer/session/history entry. Active sessions finish through Clock out. Thirty-two Cleaning tests/root build/lint pass; local browser partial finish/reload verified. Released at 89c763e4cf05670a0f2e55e2ea803df09eb4940b; GitHub main/public exact SHA verified. Public partial finish removed only toilet, retained sink, set next toilet date tomorrow; Undo/reload restored the exact original schedule with no cleaning left marked finished. Completion modal is open in user tab 4 with nothing selected. No required work remains.
@@ -152,7 +154,7 @@ Required installation step for reliable startup discovery: add this reference to
 - User wants a repeatable regimen for each physical room. Implement full ordered checklists per visit (working assumption from “every time”), separate from scheduled tasks. Persist partial progress and keep immutable visit snapshots. Version-2 routine plans reject older app clients to prevent field loss; old plans still import.
 
 
-- Cleaning starts as the user's personal planner. Independent source/build/storage, URL-linked from hallway. Business workflows and cloud sync deferred; future ownership migration requires explicit confirmation.
+- Cleaning starts as the user's personal planner. Independent source/build/storage, URL-linked from hallway. Business workflows remain deferred. Cloud sync authorized 2026-10-21; unassigned browser-plan import still requires explicit ownership confirmation.
 
 
 ### D-003 — Independent software workspaces
@@ -280,6 +282,8 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 - **Follow-up:** Verify signed-in sync works end-to-end after returning from official CE Check-In site.
 
 ## Resume Point
+
+**Cleaning cloud sync:** User requested account sync. Independent Cleaning Supabase client, shared same-origin session, RLS cloud plans with atomic expected revisions, per-owner offline caches, explicit legacy import and conflict/recovery UI implemented. Migration applied; rollback-only isolation/revision/anonymous/size tests pass. Forty-seven Cleaning tests/root lint/build pass (final build pending latest UI adjustments). Existing legacy data untouched; user answer on importing into signed-in account pending. Public release verification pending on codex/cleaning-cloud-sync.
 
 **Due-only cleaning start:** User wants Start cleaning to show only due daily work, adding fortnightly/monthly activities when their dates arrive. Review now excludes future work and empty cadence groups; Start disabled when nothing due. Existing configured dates/lastDone remain unchanged. Thirty-three Cleaning tests/root lint/build pass; local browser Start shows only the remaining due daily work. Released at 6b3eceffb8a02788eaf363b2079b0bbd04831318; GitHub main/public exact SHA verified. Live Start and Get ready both show only toilet/sink daily work; future groups hidden. No data changed or timer started; review left open. No required work remains.
 

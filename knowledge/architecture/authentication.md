@@ -12,7 +12,7 @@ Supabase email/password authentication managed by `AuthProvider.tsx`.
 
 **Context:** `AuthContextValue` exposes `session`, `user`, `loading`, `signIn`, `signOut`, `resetPassword`, `updatePassword`, `isAdmin`.
 
-The `isAdmin` flag is derived from the user's `app_metadata.role` or `user_metadata.role` being set to `"admin"`. This enables conditional UI rendering for the Admin Portal entry point in the More screen.
+The `isAdmin` flag is derived from the user's `app_metadata.role` being set to `"admin"`. This enables conditional UI rendering for the Admin Portal entry point in the More screen.
 
 **Boot sequence (main.tsx):**
 1. Render `StartupScreen` while loading.
@@ -23,7 +23,7 @@ The `isAdmin` flag is derived from the user's `app_metadata.role` or `user_metad
 - `/login` → LoginPage
 - `/forgot-password` → ForgotPasswordPage
 - `/reset-password` → ResetPasswordPage
-- Parent `/` → independent public hallway (no account records); `/route-manager/` → owner-keyed App if authenticated, otherwise existing LoginPage. Prefixed and legacy root login/reset/forgot-password URLs remain supported. SoftwareShell is removed; login/sign-out stays within Route Manager. Same-origin hosting preserves Supabase/browser storage keys, and no session token is passed through links. A shared cross-app identity layer is future work.
+- Parent `/` → independent public hallway (no account records); `/route-manager/` → owner-keyed App if authenticated, otherwise existing LoginPage. Prefixed and legacy root login/reset/forgot-password URLs remain supported. SoftwareShell is removed; login/sign-out stays within Route Manager. Same-origin hosting preserves Supabase/browser storage keys, and no session token is passed through links. Cleaning now uses its own Supabase client with the same default session storage; it offers independent sign-in and never imports room auth code. Hallway still reads no account data.
 
 **Session recovery:**
 - `supabase.auth.getSession()` on mount recovers existing session.
@@ -46,7 +46,7 @@ The `isAdmin` flag is derived from the user's `app_metadata.role` or `user_metad
 
 **Admin Authorization (`server/admin/auth.ts` `requireAdmin()`):**
 - Extends `requireAuth()` by verifying the authenticated user has admin role.
-- Checks `app_metadata.role === "admin"` or `user_metadata.role === "admin"` via Supabase Admin API.
+- Checks `app_metadata.role === "admin"` via Supabase Admin API.
 - Returns 403 `{ error: "Admin access required.", code: "ADMIN_REQUIRED" }` for non-admin users.
 - Used by all `/api/admin/*` endpoints.
 

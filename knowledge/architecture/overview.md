@@ -1,5 +1,9 @@
 # Architecture Overview
 
+## Cleaning account plans (2026-10-21)
+
+Cleaning retains an independent frontend/build and owns a Supabase client. Its full validated plan is persisted in owner-scoped cloud storage with read RLS, a revision-checked authenticated save function, offline account caches and explicit legacy import/conflict recovery. No hallway or Route Manager implementation import. Details: ../features/cleaning-planner.md.
+
 ## Cleaning room (2026-10-20)
 
 Cleaning is the third independent workspace at apps/cleaning, linked by URL from hallway at /cleaning/. It owns its React UI, local plan, tests and static build. Gateway serves its files without Route Manager imports, authentication or API access. See ../features/cleaning-planner.md.

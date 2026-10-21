@@ -6,7 +6,7 @@ One repository containing independent software apps. Start here when working on 
 | --- | --- | --- |
 | `apps/hallway/` | Main menu, room directory, its own UI/styles/tests/build | `/` |
 | `apps/route-manager/` | Route Manager frontend, authentication, Express APIs, data integrations, tests and native wrapper | `/route-manager/` |
-| `apps/cleaning/` | Personal cleaning routines, history and device-local backups | `/cleaning/` |
+| `apps/cleaning/` | Personal cleaning routines, history, offline storage, account cloud sync and backups | `/cleaning/` |
 | `gateway/` | Parent hosting and URL routing; starts the room as a separate process | `npm start` |
 | `knowledge/` | System documentation, decisions and feature knowledge | `knowledge/README.md` |
 | `APP_LIFELINE.md` | Current progress, release evidence and resume notes | Read at session startup |
