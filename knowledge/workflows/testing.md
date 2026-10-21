@@ -2,7 +2,7 @@
 
 ## Room routines (2026-10-20)
 
-Cleaning now has 16 tests: existing tasks/storage plus sequential visits, same-day reset, snapshot edits, routine backup validation, old-plan compatibility, reload/resume and failed finish. Root lint/build pass. Verify actual Today room entry, edit/start, complete/pause/reload/continue, finish/history and repeat on public deployment.
+Cleaning now has 16 tests: existing tasks/storage plus sequential visits, same-day reset, snapshot edits, routine backup validation, old-plan compatibility, reload/resume and failed finish. Root lint/build pass. Today room entry was checked locally; public edit/start, complete/reload/continue, finish/history, repeat/reset, archive and routine backup roundtrip are verified on Render b8b2030.
 
 ## Cleaning room (2026-10-20)
 

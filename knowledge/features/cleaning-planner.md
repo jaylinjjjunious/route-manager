@@ -14,7 +14,7 @@ Each physical cleaning space now has an optional reusable ordered routine, separ
 
 Version-1 plans still import; plans containing routine fields upgrade to version 2 when validated/saved. Older app tabs reject version 2 and block edits instead of silently dropping routine data. Optional space fields `routine` (up to 100 nonempty steps, 200 characters each) and `runs` (up to 500 visits per room). Each run stores ID, name/step snapshots, completed-step count and start/finish timestamps. Validation rejects duplicate run IDs, multiple unfinished visits and inconsistent completion counts/timestamps. Existing JSON backup validation, additive current-wins merge, raw recovery and save-failure guards apply. No automatic trimming of history. Older plans upgrade without copying or losing data; legacy running tabs must reload if they report an unsupported plan.
 
-Related source: `apps/cleaning/src/RoomRoutine.tsx`, `routines.ts`, `model.ts`, `App.tsx`. Sixteen Cleaning tests pass, including order, fresh same-day runs, snapshot editing, old backups, reload/resume and failed-finish persistence. Local production UI verified creation, step progression, pause/reload and history. Public release pending.
+Related source: `apps/cleaning/src/RoomRoutine.tsx`, `routines.ts`, `model.ts`, `App.tsx`. Sixteen Cleaning tests pass, including order, fresh same-day runs, snapshot editing, old backups, reload/resume and failed-finish persistence. Local production UI verified creation, step progression, pause/reload and history. Released at b8b20303fd2d256ac6c0efcc2f32795cebab8100: GitHub main and public Render exact build SHA verified. Public browser verified editor/start, sequential completion, reload/resume, finish/history snapshots, fresh same-day restart, archive retention, backup download/import and hallway return. Labeled test space is archived; one clearly labeled test visit remains in History. Sixteen Cleaning tests and root lint/build pass. No required work remains; browser-only storage is still disclosed.
 
 ## Behavior
 
@@ -22,7 +22,7 @@ Create named spaces and tasks with estimated minutes, due date and one-time or r
 
 ## Storage and backups
 
-Browser-only `all-in-one.cleaning.personal.v1` stores a validated version-1 plan. No sync/login or server database. Writes validate and check the last observed raw value before updating UI; quota/unavailable storage fails visibly. Storage events refresh other open tabs, but localStorage is not a transactional database. Invalid stored content is not overwritten during ordinary edits and can be exported. Recovery imports first preserve original raw data under a timestamped recovery key.
+Browser-only `all-in-one.cleaning.personal.v1` stores a validated plan (version 1 for legacy tasks, version 2 when routines exist). No sync/login or server database. Writes validate and check the last observed raw value before updating UI; quota/unavailable storage fails visibly. Storage events refresh other open tabs, but localStorage is not a transactional database. Invalid stored content is not overwritten during ordinary edits and can be exported. Recovery imports first preserve original raw data under a timestamped recovery key.
 
 Export JSON from Backup. Imports validate version, dates, field types, IDs, references and limits (2 MB), add missing IDs and retain existing versions; importing the same file again adds no duplicates. These backups contain the user's task/history text. Keep them private. Future cloud migration must explicitly confirm ownership of this unowned device plan.
 
