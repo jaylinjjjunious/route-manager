@@ -1,4 +1,4 @@
-import React, { useId, useRef, useState } from "react";
+import React, { useEffect, useId, useRef, useState } from "react";
 
 const AVATAR_PATH = "/profile/avatar.webp";
 
@@ -24,12 +24,53 @@ export default function AioHeader({
   renderProfileMenu: (close: () => void) => React.ReactNode;
 }) {
   const menuId = useId();
-  const menuRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
-  const [position, setPosition] = useState({ top: 120, right: 16 });
+  const openMenu = () => { if (!menuRef.current?.open) { menuRef.current?.showModal(); setOpen(true); } };
+  const closeMenu = () => menuRef.current?.close();
+
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previous; };
+  }, [open]);
+
+  useEffect(() => {
+    let start: { x: number; y: number; time: number; closing: boolean } | null = null;
+    const onStart = (event: TouchEvent) => {
+      start = null;
+      if (event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      const closing = !!menuRef.current?.open;
+      if (closing && (!(event.target instanceof Node) || !menuRef.current?.contains(event.target))) return;
+      if (!closing && (touch.clientX > 24 || document.querySelector('dialog[open], [aria-modal="true"]'))) return;
+      if (event.target instanceof Element && event.target.closest('input, textarea, select')) return;
+      start = { x: touch.clientX, y: touch.clientY, time: Date.now(), closing };
+    };
+    const onEnd = (event: TouchEvent) => {
+      const gesture = start;
+      start = null;
+      if (!gesture || event.changedTouches.length !== 1 || Date.now() - gesture.time > 700) return;
+      const touch = event.changedTouches[0];
+      const dx = touch.clientX - gesture.x;
+      if (Math.abs(touch.clientY - gesture.y) > 48) return;
+      if (gesture.closing && dx < -64) closeMenu();
+      else if (!gesture.closing && dx > 64) openMenu();
+    };
+    const cancel = () => { start = null; };
+    document.addEventListener("touchstart", onStart, { passive: true });
+    document.addEventListener("touchend", onEnd, { passive: true });
+    document.addEventListener("touchcancel", cancel);
+    return () => {
+      document.removeEventListener("touchstart", onStart);
+      document.removeEventListener("touchend", onEnd);
+      document.removeEventListener("touchcancel", cancel);
+    };
+  }, []);
   const hour = new Date().getHours();
   const greetingName = userName ? `, ${userName.trim().split(/\s+/)[0]}` : "";
-  const profileClass = "flex aspect-square h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-[var(--color-aio-line)] bg-[var(--color-aio-surface)] transition-transform hover:scale-[1.03] active:scale-95 touch-manipulation";
+  const profileClass = "flex aspect-square h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[var(--color-aio-line)] bg-[var(--color-aio-surface)]";
 
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--color-aio-line)] bg-[var(--color-aio-bg)]/85 backdrop-blur-xl">
@@ -43,6 +84,7 @@ export default function AioHeader({
             className="mt-0.5 text-[34px] font-black leading-none tracking-[-0.02em] text-[var(--color-aio-text)]"
             aria-label="AIØ 17 10/12"
           >
+            <button type="button" onClick={openMenu} aria-label="Open navigation sidebar" title="Open menu" aria-controls={menuId} aria-expanded={open} aria-haspopup="dialog" className="rounded-md text-left touch-manipulation focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4">
             <span aria-hidden="true">AIØ</span>
             <span
               aria-hidden="true"
@@ -58,41 +100,29 @@ export default function AioHeader({
             <span aria-hidden="true" className="ml-1 inline-block align-middle text-[11px] font-black leading-none tracking-normal text-green-600 dark:text-green-400">
               10/12
             </span>
+            </button>
           </h1>
           <p className="mt-1.5 text-[13px] font-medium text-[var(--color-aio-text-2)]">{formatToday()}</p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            popoverTarget={menuId}
-            aria-controls={menuId}
-            aria-expanded={open}
-            aria-haspopup="dialog"
-            onClick={event => { const rect = event.currentTarget.getBoundingClientRect(); setPosition({ top: rect.bottom + 12, right: Math.max(16, window.innerWidth - rect.right) }); }}
-            className={profileClass}
-            aria-label="Open profile menu"
-            title="Profile"
-          >
-            <img
-              src={AVATAR_PATH}
-              alt="Your profile picture"
-              className="h-full w-full rounded-full object-cover"
-            />
-          </button>
-          <div id={menuId} ref={menuRef} popover="auto" role="dialog" aria-label="Profile menu"
-            onToggle={event => setOpen((event.nativeEvent as ToggleEvent).newState === "open")}
-            className="rounded-2xl border border-[var(--color-aio-line)] bg-[var(--color-aio-surface)] p-4 text-[var(--color-aio-text)] shadow-2xl"
-            style={{ position: "fixed", inset: "auto", margin: 0, top: position.top, right: position.right, width: `min(288px, calc(100vw - ${position.right + 16}px))`, maxHeight: `calc(100dvh - ${position.top + 16}px)`, overflowY: "auto" }}>
-            <div className="flex items-start gap-3">
-              <img src={AVATAR_PATH} alt="Profile photo" className="h-12 w-12 shrink-0 rounded-full object-cover" />
-              <p className="min-w-0 break-words pt-1 text-sm font-semibold leading-snug">{userName || "Your profile"}</p>
-            </div>
-            <div className="mt-3 border-t border-[var(--color-aio-line)] pt-2">
-              {renderProfileMenu(() => menuRef.current?.hidePopover?.())}
-            </div>
-          </div>
-        </div>
+        <span className={profileClass} title="Profile">
+          <img src={AVATAR_PATH} alt="Your profile picture" className="h-full w-full rounded-full object-cover" />
+        </span>
       </div>
+      <dialog id={menuId} ref={menuRef} aria-label="Navigation sidebar" onClose={() => setOpen(false)}
+        onClick={event => { if (event.target === event.currentTarget) {
+          const rect = event.currentTarget.getBoundingClientRect();
+          if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) closeMenu();
+        } }}
+        className="aio-sidebar border-r border-[var(--color-aio-line)] bg-[var(--color-aio-surface)] text-[var(--color-aio-text)] shadow-2xl">
+        <div className="flex items-start gap-3">
+          <img src={AVATAR_PATH} alt="Profile photo" className="h-12 w-12 shrink-0 rounded-full object-cover" />
+          <p className="min-w-0 flex-1 break-words pt-1 text-sm font-semibold leading-snug">{userName || "Your profile"}</p>
+          <button type="button" autoFocus onClick={closeMenu} aria-label="Close navigation sidebar" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[var(--color-aio-line)] text-xl hover:bg-[var(--color-aio-surface-2)]">×</button>
+        </div>
+        <nav aria-label="Sidebar navigation" className="mt-3 border-t border-[var(--color-aio-line)] pt-2">
+          {renderProfileMenu(closeMenu)}
+        </nav>
+      </dialog>
     </header>
   );
 }

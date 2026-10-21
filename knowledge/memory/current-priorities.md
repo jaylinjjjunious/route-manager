@@ -1,3 +1,7 @@
+# Left navigation sidebar
+
+Implemented and locally verified; 8 focused tests and root lint/build pass. Deploy and verify logo opening, sidebar layout/dismissal, feature selection and unchanged right-hand avatar publicly. Swipe behavior covered by gesture tests.
+
 # Profile navigation consolidation
 
 Complete and deployed at 03876f7. Sixteen focused tests/root lint/build and signed-in public navigation, address/theme controls, Jobs forms, old bookmark redirects and visibility checks pass. No saved feature data removed. Habits and ride tools remain until a separate retirement decision.
