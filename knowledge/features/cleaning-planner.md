@@ -8,6 +8,16 @@ The user wants a new independent software room for their own cleaning, eventuall
 - Public URL `/cleaning/`; internal hashes Today, Spaces, History. Main menu returns to `/#home`.
 - Gateway serves static files independently of Route Manager. No room code, authentication or API imports. Standalone hosting can override base/entry URLs.
 
+## Cleaning work sessions (2026-10-21)
+
+Cleaning now supports room/activity selection → Get ready (plan plus optional tools checklist) → Clock in → hands-off work → Clock out. The current session panel is visible on all Cleaning pages with Pause/Resume, See routine & tools and Clock out. Work uses saved timestamps rather than timer ticks; reload/closing does not end a session. Pause time is excluded. Clock-out requires an explicit All finished or Some work remains choice, supports an optional note, and saves completed/remaining activities plus working/break time in History. No per-step interactions are required while cleaning. Existing tasks/routines are preserved; session outcomes do not silently complete scheduled tasks.
+
+TaskCreator Get ready is the primary entry; Add selected tasks remains an optional task-list action. Preparation is a draft until Clock in, which atomically persists the room and session. Back restores the chosen room/activities. Tool checks are suggestions, not mandatory gates. Only one active session per browser plan. Clock-out defaults to no outcome until selected. A partial finish leaves its unfinished list in History, without inventing follow-up tasks.
+
+Optional top-level sessions are saved in plan version 3 under the existing storage key. Old versions 1/2 still import; older app tabs reject v3 rather than drop sessions. Snapshots include room/name, selected activities/tools, start/pause/end timestamps, accumulated paused milliseconds, completion subset and note. Validation checks IDs/references, one active session, subsets, time order, counts (2000 sessions) and existing 2 MB limit. Backups preserve sessions; conflicting active-session imports reject rather than overwrite. Storage failures keep the UI and record unchanged. Device-clock corrections can affect elapsed time; backwards action timestamps fail explicitly. Browser-only storage/sync limits remain.
+
+Sources: sessions.ts, CleaningSession.tsx, TaskCreator.tsx, App.tsx, model.ts. Twenty-three focused tests and root lint/build pass; local browser verified prepare/tools/start, running and paused reload recovery, resume, partial clock-out and History. Public release pending.
+
 ## Reusable room routines (2026-10-20)
 
 Each physical cleaning space now has an optional reusable ordered routine, separate from scheduled tasks. Today shows room entry cards; Spaces offers Build/Edit routine (one step per line) and Start/Continue. A visit snapshots the room name and steps, saves each sequential completion, supports Undo last step and pause/reload, and requires all steps before Finish. Finish records the visit in History; starting again resets the entire checklist, including on the same day. Edits affect future visits, preserving in-progress/history snapshots. Archives retain routines and visits. Browser-only persistence and existing task schedules remain unchanged.
@@ -34,7 +44,7 @@ Create named spaces and tasks with estimated minutes, due date and one-time or r
 
 ## Storage and backups
 
-Browser-only `all-in-one.cleaning.personal.v1` stores a validated plan (version 1 for legacy tasks, version 2 when routines exist). No sync/login or server database. Writes validate and check the last observed raw value before updating UI; quota/unavailable storage fails visibly. Storage events refresh other open tabs, but localStorage is not a transactional database. Invalid stored content is not overwritten during ordinary edits and can be exported. Recovery imports first preserve original raw data under a timestamped recovery key.
+Browser-only `all-in-one.cleaning.personal.v1` stores a validated plan (version 1 for legacy tasks, version 2 when routines exist, version 3 when sessions exist). No sync/login or server database. Writes validate and check the last observed raw value before updating UI; quota/unavailable storage fails visibly. Storage events refresh other open tabs, but localStorage is not a transactional database. Invalid stored content is not overwritten during ordinary edits and can be exported. Recovery imports first preserve original raw data under a timestamped recovery key.
 
 Export JSON from Backup. Imports validate version, dates, field types, IDs, references and limits (2 MB), add missing IDs and retain existing versions; importing the same file again adds no duplicates. These backups contain the user's task/history text. Keep them private. Future cloud migration must explicitly confirm ownership of this unowned device plan.
 

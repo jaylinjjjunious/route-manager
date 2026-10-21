@@ -1,3 +1,5 @@
+import { GetReady, WorkSession, SessionHistory } from './CleaningSession';
+import { currentSession, clockIn, changeSession } from './sessions';
 import { TaskCreator } from './TaskCreator';
 import { RoomRoutine } from './RoomRoutine';
 import { activeRun } from './routines';
@@ -25,6 +27,8 @@ export default function App() {
   const [editor, setEditor] = useState<Editor>(null);
   const [spaceId, setSpaceId] = useState('all');
   const [showArchived, setShowArchived] = useState(false);
+  const [taskDraft, setTaskDraft] = useState<{ room: Space; activities: string[] } | null>(null);
+  const [preparation, setPreparation] = useState<{ room: Space; activities: string[] } | null>(null);
   const [backupOpen, setBackupOpen] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -32,7 +36,7 @@ export default function App() {
     const date = () => setToday(dayKey());
     const storage = (event: StorageEvent) => {
       if (event.key !== STORAGE_KEY && event.key !== null) return;
-      const next = initialPlan(); raw.current = next.raw; setPlan(next.plan); setReadError(next.error); setEditor(null); setNotice('Plan updated from another tab.');
+      const next = initialPlan(); raw.current = next.raw; setPlan(next.plan); setReadError(next.error); setEditor(null); setPreparation(null); setTaskDraft(null); setNotice('Plan updated from another tab.');
     };
     const timer = window.setInterval(date, 60000);
     window.addEventListener('hashchange', hash); window.addEventListener('focus', date); document.addEventListener('visibilitychange', date); window.addEventListener('storage', storage);
@@ -86,6 +90,7 @@ export default function App() {
       commit(mergeBackup(plan, imported), 'Backup imported. Existing items were kept; new items were added.', true);
     } catch (failure) { setError(failure instanceof Error ? failure.message : 'Could not read this backup.'); }
   }
+  const session = currentSession(plan);
   const spaces = plan.spaces.filter(space => !space.archived);
   const tasks = activeTasks(plan);
   const due = dueTasks(plan, today);
@@ -108,6 +113,7 @@ export default function App() {
     <header className="app-header"><div className="header-inner"><a className="back-link" href={import.meta.env.VITE_HALLWAY_URL || '/#home'}><ArrowLeft size={16} />Main menu</a><div className="app-brand"><span><Sparkles size={22} /></span><div><strong>Cleaning</strong><small>My personal workspace</small></div></div><button type="button" className="secondary backup-toggle" onClick={() => setBackupOpen(!backupOpen)} aria-expanded={backupOpen}><Download size={16} />Backup</button></div></header>
     <main className="workspace">
       <nav className="page-nav" aria-label="Cleaning navigation">{([['today', 'Today', Sparkles], ['spaces', 'Spaces', LayoutGrid], ['history', 'History', History]] as const).map(([id, label, Icon]) => <a href={`#${id}`} key={id} aria-current={page === id ? 'page' : undefined}><Icon size={17} />{label}</a>)}</nav>
+      {session && <WorkSession key={session.id} session={session} error={error || readError} act={(change, result) => { try { return commit(changeSession(plan, session.id, change, result), change === 'finish' ? 'Clocked out. Session saved in History.' : 'Session saved.'); } catch (failure) { setError(failure instanceof Error ? failure.message : 'Could not save this session.'); return false; } }} />}
       {backupOpen && <section className="panel backup-panel" aria-label="Backups"><div><h2>Keep a copy of your plan</h2><p>Saved in this browser only. It does not sync to an account or another device. Export a backup before clearing browser data. Imports add missing items and keep your existing versions.</p></div><div className="button-row"><button className="secondary" onClick={downloadBackup}><Download size={16} />Export backup</button><button className="secondary" onClick={() => importRef.current?.click()}><Upload size={16} />Import backup</button></div></section>}
       <input ref={importRef} type="file" accept="application/json,.json" aria-label="Import cleaning backup" className="file-input" onChange={importBackup} />
       {(readError || error) && <div className="error-banner" role="alert">{error || readError}{readError && <div className="button-row"><button className="secondary" onClick={downloadBackup}>Export existing data</button><button className="secondary" onClick={() => importRef.current?.click()}>Recover from backup</button></div>}</div>}
@@ -133,12 +139,13 @@ export default function App() {
 
       {page === 'history' && <>
         <section className="page-heading"><div><p className="eyebrow">The work you've put in</p><h1>Small steps.<br /><span>Real progress.</span></h1><p>Your completed tasks, with the space and time recorded.</p></div></section>
-        <section className="panel history-panel routine-history" aria-label="Room routine history"><div className="section-heading"><h2>Room routines</h2><span className="count-label">{routineHistory.length} visits finished</span></div>{routineHistory.length ? routineHistory.map(run => <div className="history-row" key={run.id}><span className="history-check"><Check size={18} /></span><div><h3>{run.spaceName} routine</h3><p>{run.steps.length} steps · {new Date(run.finishedAt!).toLocaleString()}</p><details><summary>View completed steps</summary><ol className="routine-steps">{run.steps.map((step, index) => <li key={index}>{step}</li>)}</ol></details></div></div>) : <p className="routine-hint">Finish a room routine and the visit will be recorded here.</p>}</section><section className="panel history-panel"><div className="section-heading"><h2>Completion history</h2><span className="count-label">{plan.history.length} completed</span></div>{!plan.history.length ? <div className="empty-state"><History size={34} /><h3>A clean slate.</h3><p>Finish a task and it will appear here. No pressure to do it all at once.</p><a className="secondary" href="#today">Go to today's list</a></div> : plan.history.map(event => <div className="history-row" key={event.id}><span className="history-check"><Check size={18} /></span><div><h3>{event.title}</h3><p>{event.spaceName} · {new Date(event.at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</p></div><button className="secondary small" disabled={!canUndo(plan, event) || !!readError} title={canUndo(plan, event) ? 'Undo this completion and restore its schedule' : 'Task changed or a newer completion exists'} onClick={() => action(current => undoCompletion(current, event.id), 'Completion undone and the previous schedule restored.')}><RotateCcw size={14} />Undo</button></div>)}</section>
+        <SessionHistory sessions={plan.sessions || []} /><section className="panel history-panel routine-history" aria-label="Room routine history"><div className="section-heading"><h2>Room routines</h2><span className="count-label">{routineHistory.length} visits finished</span></div>{routineHistory.length ? routineHistory.map(run => <div className="history-row" key={run.id}><span className="history-check"><Check size={18} /></span><div><h3>{run.spaceName} routine</h3><p>{run.steps.length} steps · {new Date(run.finishedAt!).toLocaleString()}</p><details><summary>View completed steps</summary><ol className="routine-steps">{run.steps.map((step, index) => <li key={index}>{step}</li>)}</ol></details></div></div>) : <p className="routine-hint">Finish a room routine and the visit will be recorded here.</p>}</section><section className="panel history-panel"><div className="section-heading"><h2>Completion history</h2><span className="count-label">{plan.history.length} completed</span></div>{!plan.history.length ? <div className="empty-state"><History size={34} /><h3>A clean slate.</h3><p>Finish a task and it will appear here. No pressure to do it all at once.</p><a className="secondary" href="#today">Go to today's list</a></div> : plan.history.map(event => <div className="history-row" key={event.id}><span className="history-check"><Check size={18} /></span><div><h3>{event.title}</h3><p>{event.spaceName} · {new Date(event.at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</p></div><button className="secondary small" disabled={!canUndo(plan, event) || !!readError} title={canUndo(plan, event) ? 'Undo this completion and restore its schedule' : 'Task changed or a newer completion exists'} onClick={() => action(current => undoCompletion(current, event.id), 'Completion undone and the previous schedule restored.')}><RotateCcw size={14} />Undo</button></div>)}</section>
       </>}
       <footer className="workspace-footer"><span><Leaf size={14} />Personal cleaning, built around you.</span><button className="text-link" onClick={() => setBackupOpen(true)}>Stored in this browser · Backup options</button></footer>
     </main>
+    {preparation && <GetReady room={preparation.room} activities={preparation.activities} error={error || readError} close={() => { setPreparation(null); setEditor({ kind: 'task' }); }} start={tools => { try { if (commit(clockIn(plan, preparation.room, preparation.activities, tools), 'Clocked in. Your start time is saved.')) { setPreparation(null); setTaskDraft(null); } } catch (failure) { setError(failure instanceof Error ? failure.message : 'Could not clock in.'); } }} />}
     {editor?.kind === 'space' && <SpaceForm space={plan.spaces.find(space => space.id === editor.id)} onClose={() => setEditor(null)} onSave={saveSpace} saveError={error || readError} />}
-    {editor?.kind === 'task' && !editor.id && <TaskCreator spaces={spaces} today={today} onSave={addTasks} onClose={() => setEditor(null)} saveError={error || readError} />}
+    {editor?.kind === 'task' && !editor.id && <TaskCreator initial={taskDraft || undefined} onPrepare={(room, activities) => { if (session) { setError('Clock out of your current session before starting another.'); setEditor(null); return; } setTaskDraft({ room, activities }); setEditor(null); setPreparation({ room, activities }); }} spaces={spaces} today={today} onSave={addTasks} onClose={() => { setEditor(null); setTaskDraft(null); }} saveError={error || readError} />}
     {editor?.kind === 'task' && !!editor.id && spaces.length > 0 && <TaskForm task={plan.tasks.find(task => task.id === editor.id)} spaces={spaces} spaceId={selectedSpace?.id || spaces[0].id} today={today} onClose={() => setEditor(null)} onSave={saveTask} saveError={error || readError} />}
   </div>;
 }

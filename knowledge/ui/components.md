@@ -1,5 +1,7 @@
 # UI Components
 
+CleaningSession.tsx exports GetReady, WorkSession and SessionHistory. TaskCreator hands selected room/activities to GetReady. App keeps an active session visible across Today/Spaces/History; tools and plan can be reviewed once before clock-in.
+
 TaskCreator.tsx owns Cleaning Add task: room chooser followed by an activity page with toggle buttons, inline custom input and Add selected tasks. Success stays on that page. App.addTasks atomically saves draft room and tasks; existing TaskForm edits stay direct.
 
 ## Cleaning room routines

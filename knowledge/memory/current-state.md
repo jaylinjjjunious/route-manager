@@ -1,5 +1,9 @@
 # Current Implementation State
 
+## Hands-off cleaning sessions (2026-10-21)
+
+Cleaning now supports room/activity selection → Get ready (plan plus optional tools checklist) → Clock in → hands-off work → Clock out. The current session panel is visible on all Cleaning pages with Pause/Resume, See routine & tools and Clock out. Work uses saved timestamps rather than timer ticks; reload/closing does not end a session. Pause time is excluded. Clock-out requires an explicit All finished or Some work remains choice, supports an optional note, and saves completed/remaining activities plus working/break time in History. No per-step interactions are required while cleaning. Existing tasks/routines are preserved; session outcomes do not silently complete scheduled tasks. Twenty-three tests/lint/build/local browser pass; public release pending.
+
 ## Activity page simplification
 
 User rejected the final task-details form. Add task now stops at room → activity selection. Activity buttons toggle selection in place; Add selected tasks atomically saves them with any draft room and keeps the same room mini page open with a visible success message. Custom task text is entered inline. Back/Close save nothing. New tasks are one-time, due today, with a disclosed 10-minute estimate; existing task schedules and room routines are unchanged. Task editing remains available separately. Eighteen tests pass; Released at 9ed00c37e7dfa757a0f613cbaf4ba2d1ad2ef39a; GitHub main and public Render exact SHA verified. Eighteen tests and root lint/build pass. Local browser checked multi-selection/save/reload; public browser checked Bathroom selection/deselection without navigation, inline custom selection, same-page Add success, reload persistence and archive. Verification task archived without completion. User tab 7 is left on Bathroom activities; no required work remains.

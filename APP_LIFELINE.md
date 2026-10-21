@@ -48,6 +48,9 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
+**2026-10-21 work sessions:** Cleaning now supports room/activity selection → Get ready (plan plus optional tools checklist) → Clock in → hands-off work → Clock out. The current session panel is visible on all Cleaning pages with Pause/Resume, See routine & tools and Clock out. Work uses saved timestamps rather than timer ticks; reload/closing does not end a session. Pause time is excluded. Clock-out requires an explicit All finished or Some work remains choice, supports an optional note, and saves completed/remaining activities plus working/break time in History. No per-step interactions are required while cleaning. Existing tasks/routines are preserved; session outcomes do not silently complete scheduled tasks. Plan v3 saves session snapshots and protects against older clients; old plans still import. Twenty-three tests, root lint/build and local browser pass. Public release pending.
+
+
 **Activity page simplification:** User rejected the final task-details form. Add task now stops at room → activity selection. Activity buttons toggle selection in place; Add selected tasks atomically saves them with any draft room and keeps the same room mini page open with a visible success message. Custom task text is entered inline. Back/Close save nothing. New tasks are one-time, due today, with a disclosed 10-minute estimate; existing task schedules and room routines are unchanged. Task editing remains available separately. Eighteen tests pass; Released at 9ed00c37e7dfa757a0f613cbaf4ba2d1ad2ef39a; GitHub main and public Render exact SHA verified. Eighteen tests and root lint/build pass. Local browser checked multi-selection/save/reload; public browser checked Bathroom selection/deselection without navigation, inline custom selection, same-page Add success, reload persistence and archive. Verification task archived without completion. User tab 7 is left on Bathroom activities; no required work remains.
 
 
@@ -112,6 +115,9 @@ Required installation step for reliable startup discovery: add this reference to
 > In every Route Manager session, read the startup sections of `APP_LIFELINE.md` before substantive work. Reference its relevant sections periodically during ongoing work, at milestones, before important decisions, and after interruptions or context compaction. Keep its snapshot, decisions, history, and resume notes current as meaningful project changes occur; reuse unchanged context instead of rereading the entire history.
 
 ## Active Decisions
+
+- User approved prepare-tools → clock in → work with phone down → clock out. Prefer session-level outcome over mandatory per-step checks. Persist timestamp/break accounting and show unfinished work in History. No cloud or customer/workforce workflow in this slice.
+
 
 - User wants Add task to stop at the room activity page. Select/add there without the final settings form; this supersedes the prior three-step picker.
 
@@ -250,6 +256,9 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 - **Follow-up:** Verify signed-in sync works end-to-end after returning from official CE Check-In site.
 
 ## Resume Point
+
+**2026-10-21 work sessions:** Implemented on codex/cleaning-work-sessions. Twenty-three tests, root lint/build and local browser prepare/start/reload/pause/resume/partial-finish/history pass. Commit/push and public SHA/interaction/backup checks remain. Baseline checkpoint-2026-10-20-room-routines / b8b2030. Preserve dist-native.
+
 
 **Activity picker:** Implemented on codex/simplify-task-picker. Eighteen tests pass; Released at 9ed00c37e7dfa757a0f613cbaf4ba2d1ad2ef39a; GitHub main and public Render exact SHA verified. Eighteen tests and root lint/build pass. Local browser checked multi-selection/save/reload; public browser checked Bathroom selection/deselection without navigation, inline custom selection, same-page Add success, reload persistence and archive. Verification task archived without completion. User tab 7 is left on Bathroom activities; no required work remains. Preserve dist-native and existing records.
 
@@ -394,3 +403,9 @@ Verified all 13 findings against production main and started isolated remediatio
 
 - User rejected the third details page. Replaced navigation with toggle selection, inline custom input and atomic Add selected tasks.
 - Saves one-time tasks for today and stays on the same mini page; editing remains separate. Eighteen tests pass; public Released at 9ed00c37e7dfa757a0f613cbaf4ba2d1ad2ef39a; GitHub main and public Render exact SHA verified. Eighteen tests and root lint/build pass. Local browser checked multi-selection/save/reload; public browser checked Bathroom selection/deselection without navigation, inline custom selection, same-page Add success, reload persistence and archive. Verification task archived without completion. User tab 7 is left on Bathroom activities; no required work remains.
+
+### 2026-10-21 — Hands-off cleaning sessions
+
+- User approved tools preparation, clock-in, hands-off work and clock-out. Added optional tool checklist, persistent timer/breaks, explicit finish outcome and notes/history.
+- Plan v3 session snapshots, one active session, backward-compatible imports and guarded storage; existing tasks/routines retained.
+- Twenty-three tests/lint/build and local production browser pass. Public release pending.

@@ -99,3 +99,28 @@ it('cancels without creating rooms and keeps failed room/task saves atomic', () 
   expect(container.querySelector('dialog [role="alert"]')?.textContent).toContain('not applied');
   expect(container.querySelector('dialog')?.open).toBe(true);
 });
+
+it('prepares tools, clocks in, reloads, pauses and clocks out without checking every step during work', () => {
+  act(() => root.render(React.createElement(App)));
+  click('Add task'); click('Kitchen'); click('Dishes'); click('Get ready');
+  expect(container.querySelector('dialog')?.textContent).toContain('Tools & supplies');
+  click('Back to activities');
+  expect(container.querySelector('dialog h2')?.textContent).toBe('Kitchen');
+  click('Get ready');
+  const failure = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('quota'); });
+  click('Clock in'); expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+  expect(container.querySelector('dialog [role="alert"]')?.textContent).toContain('not applied');
+  failure.mockRestore(); click('Clock in');
+  const id = parsePlan(localStorage.getItem(STORAGE_KEY)!).sessions![0].id;
+  act(() => root.unmount()); root = createRoot(container); act(() => root.render(React.createElement(App)));
+  expect(container.textContent).toContain('You are clocked in');
+  click('Pause'); expect(parsePlan(localStorage.getItem(STORAGE_KEY)!).sessions![0].pausedAt).not.toBeNull();
+  click('Resume cleaning'); click('Clock out'); click('All finished');
+  const finishFailure = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('quota'); });
+  submit(); expect(parsePlan(localStorage.getItem(STORAGE_KEY)!).sessions![0].endedAt).toBeNull();
+  finishFailure.mockRestore(); submit();
+  const saved = parsePlan(localStorage.getItem(STORAGE_KEY)!);
+  expect(saved.sessions![0]).toMatchObject({ id, completed: ['Wash dishes'], pausedAt: null });
+  expect(saved.sessions![0].endedAt).not.toBeNull();
+  go('history'); expect(container.textContent).toContain('1 clocked out');
+});

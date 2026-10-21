@@ -1,5 +1,9 @@
 # Testing Workflow
 
+## Cleaning sessions (2026-10-21)
+
+Cleaning now has 23 tests. Session coverage checks timestamp/break calculations, paused reload, overlap/stale updates, partial completion, v1/v2 imports and v3 backup preservation, conflicting active imports, and storage failures on both clock-in/out. Local browser confirms complete prepare/start/reload/pause/resume/partial-finish/history interaction. Root lint/build pass; public verification pending.
+
 ## Room routines (2026-10-20)
 
 Cleaning now has 16 tests: existing tasks/storage plus sequential visits, same-day reset, snapshot edits, routine backup validation, old-plan compatibility, reload/resume and failed finish. Root lint/build pass. Today room entry was checked locally; public edit/start, complete/reload/continue, finish/history, repeat/reset, archive and routine backup roundtrip are verified on Render b8b2030.

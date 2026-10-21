@@ -1,5 +1,9 @@
 # Known Bugs
 
+## Cleaning sessions (2026-10-21)
+
+No confirmed defect in focused/local session checks. Limits: browser-only plan, device-clock-based elapsed time, 2000 session records / 2 MB plan limit. Older clients cannot read v3; reload before editing. Conflicting active sessions in an import are rejected, and History retains unfinished work without automatically scheduling it. No payroll/audit service is implemented.
+
 ## Room routine limits (2026-10-20)
 
 Routine history is retained up to 500 visits per space and the existing 2 MB plan limit. Hitting limits blocks saves/new visits with an error; nothing is silently purged. Routine plans use version 2 so older open tabs reject rather than overwrite them; reload loads the new support. No confirmed routine workflow defect after focused tests/local verification.

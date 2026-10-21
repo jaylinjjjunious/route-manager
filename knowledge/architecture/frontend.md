@@ -1,5 +1,9 @@
 # Frontend Architecture
 
+## Cleaning work sessions (2026-10-21)
+
+CleaningSession.tsx owns preparation, current-work panel and session history. sessions.ts owns timestamp accounting and validation; model.ts preserves session data with plan-v3 upgrade and backward-compatible imports. App coordinates draft preparation, one active session, and validated saves. No new backend, auth, service or shared room imports.
+
 ## Room-first task entry
 
 Cleaning TaskCreator renders room → activity mini pages in a native dialog. Activity selection, custom input, batch Add and success feedback stay on the room page. App commits all selected tasks and a draft room atomically via addTasks. TaskForm is used separately for editing; creation does not open it. No data schema or routine change.
