@@ -48,7 +48,7 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
-**Photo click retained:** Header profile photo again opens the same left sidebar alongside AIØ17/edge swipe. Implementation/checks/deployment in progress; photo position unchanged.
+**Photo click retained:** Header profile photo again opens the same left sidebar alongside AIØ17/edge swipe. Released at 62e1c2b2cbe5b5015fbd892706c5e5f556cdbb48; GitHub main/public exact SHA verified. Eight focused tests/root lint/build pass. Public signed-in photo click, close and wordmark reopening verified; photo position unchanged. No required work remains.
 
 **Left sidebar (2026-10-21):** User requested moving profile controls into a left sidebar opened from AIØ17 or an edge swipe, keeping the header photo in place. Native modal dialog with close/backdrop/Escape/left-swipe dismissal, viewport scrolling/body lock and focus handling implemented on codex/left-navigation-sidebar. Eight focused tests/root lint/build pass. Local browser verified full-height left position, focus, body lock, Escape, backdrop and feature-selection dismissal. Released at b3e2df6d9bdfa3760f52ac4521f339f0c53d5838; GitHub main/public exact SHA verified. Live signed-in logo opening, full-height left geometry, body lock, Escape/focus restoration, backdrop dismissal and Inventory navigation verified. Header photo remains at right. Touch gestures unit-tested; physical device swipes not exercised. No required work remains. No feature/data changes.
 
@@ -277,7 +277,7 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 
 ## Resume Point
 
-**Photo click retained:** Header profile photo again opens the same left sidebar alongside AIØ17/edge swipe. Implementation/checks/deployment in progress; photo position unchanged.
+**Photo click retained:** Header profile photo again opens the same left sidebar alongside AIØ17/edge swipe. Released at 62e1c2b2cbe5b5015fbd892706c5e5f556cdbb48; GitHub main/public exact SHA verified. Eight focused tests/root lint/build pass. Public signed-in photo click, close and wordmark reopening verified; photo position unchanged. No required work remains.
 
 **Left sidebar (2026-10-21):** User requested moving profile controls into a left sidebar opened from AIØ17 or an edge swipe, keeping the header photo in place. Native modal dialog with close/backdrop/Escape/left-swipe dismissal, viewport scrolling/body lock and focus handling implemented on codex/left-navigation-sidebar. Eight focused tests/root lint/build pass. Local browser verified full-height left position, focus, body lock, Escape, backdrop and feature-selection dismissal. Released at b3e2df6d9bdfa3760f52ac4521f339f0c53d5838; GitHub main/public exact SHA verified. Live signed-in logo opening, full-height left geometry, body lock, Escape/focus restoration, backdrop dismissal and Inventory navigation verified. Header photo remains at right. Touch gestures unit-tested; physical device swipes not exercised. No required work remains. No feature/data changes.
 
@@ -480,3 +480,8 @@ Verified all 13 findings against production main and started isolated remediatio
 - AIØ17 opens a modal left sidebar; the right header photo stays in place. Existing controls retained. Edge swipe opens and left swipe closes; vertical/form/other-modal gestures are excluded.
 - Native dialog supplies focus containment/Escape/inert background, with backdrop/close dismissal, body scroll lock, safe areas and reduced motion.
 - Eight focused tests/root lint/build pass. Public exact SHA b3e2df6 and signed-in drawer layout, logo, dismissal, focus and destination navigation verified; touch gestures covered in unit tests, not on a physical device.
+
+### 2026-10-21 — Retain photo click
+
+- Header photo remains a button opening the shared left sidebar, alongside AIØ17 and edge-swipe entry. User explicitly requested preserving this interaction.
+- Eight focused tests/root lint/build pass; public exact SHA 62e1c2b and both clickable entries verified.
