@@ -1,5 +1,9 @@
 # Database Schema
 
+## Cleaning cloud plans (2026-10-21)
+
+Supabase public.cleaning_plans stores one 2 MB plan per auth.uid, revision and updated_at. Authenticated owner-only SELECT uses RLS; table writes/anonymous access are revoked. POST to the Supabase REST RPC cleaning_save_plan accepts p_plan/p_revision, derives owner from auth.uid, and updates only the expected revision (initial 0). It returns the owned snapshot; concurrent writes fail instead of overwriting. These are direct Supabase endpoints owned by Cleaning, not new Express/gateway routes. Migration: apps/cleaning/migrations/001_account_plans.sql. See ../features/cleaning-planner.md for offline/migration/conflict behavior.
+
 **Last Updated:** 2026-07-20 (c12bd44)
 **Related Source Files:** `worker/index.ts`, `db/schema.ts`, `drizzle/0001*.sql`, `drizzle/0002*.sql`, `drizzle/0003*.sql`
 

@@ -1,5 +1,9 @@
 # API Endpoints Reference
 
+## Cleaning cloud plans (2026-10-21)
+
+Supabase public.cleaning_plans stores one 2 MB plan per auth.uid, revision and updated_at. Authenticated owner-only SELECT uses RLS; table writes/anonymous access are revoked. POST to the Supabase REST RPC cleaning_save_plan accepts p_plan/p_revision, derives owner from auth.uid, and updates only the expected revision (initial 0). It returns the owned snapshot; concurrent writes fail instead of overwriting. These are direct Supabase endpoints owned by Cleaning, not new Express/gateway routes. Migration: apps/cleaning/migrations/001_account_plans.sql. See ../features/cleaning-planner.md for offline/migration/conflict behavior.
+
 ## Inventory account API — 2026-10-10
 
 GET /api/inventory/jobs requires domain and expectedOwnerId; returns jobs metadata only. GET /api/inventory/custody-ledger additionally requires jobId; returns ledger or null. POST /api/inventory/custody-ledger accepts {expectedOwnerId, ledger}; returns the complete acknowledged ledger. All require a verified Bearer session, derive owner server-side and use private/no-store. Errors: 400 invalid history/selection, 401 unauthenticated, 409 account mismatch/history conflict/storage quota, 413 body limit, 429 admission budget, 503 unavailable storage. Device data/queues remain pending on errors.

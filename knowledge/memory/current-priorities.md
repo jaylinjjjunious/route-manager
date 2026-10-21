@@ -1,3 +1,7 @@
+# Cleaning cloud sync
+
+Implementation/deployment complete at caefb0c. Forty-seven tests/root lint/build and live account restore/cloud write/readback pass. Legacy device plan remains untouched. One user decision remains: add that plan to the currently signed-in account using the visible import button. Do not silently assign ownership. No real cleaning completions created; verification space archived.
+
 # Due-only cleaning start
 
 Complete/deployed at 6b3ecef. Start/Get ready show only due work, not future extras. Thirty-three tests/root lint/build pass; public daily-only review/preparation verified. Existing schedule unchanged; no session started.

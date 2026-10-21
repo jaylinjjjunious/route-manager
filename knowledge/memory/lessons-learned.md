@@ -174,3 +174,7 @@ The user meant a parent application owning a hallway, not a menu embedded in Rou
 ## Profile navigation verification (2026-10-21)
 
 Calling scrollIntoView on a page container placed its title/actions underneath the sticky header. Page switches now scroll to the document top; verify actual button position and click response in the public narrow viewport, not only DOM visibility.
+
+## Cleaning cloud sync (2026-10-21)
+
+Use owner-scoped caches and explicit unowned-plan import. Pin each request to the owner’s session token, dispose old coordinators after account changes, and reject older cloud reads after a newer tab has acknowledged. Compare canonical plan equality to recover lost acknowledgements; use expected-revision writes and preserve both snapshots before explicit conflict resolution. Verify a server-side change returns through the actual client, not only local reload.
