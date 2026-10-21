@@ -1,6 +1,6 @@
 # Left navigation sidebar
 
-Implemented and locally verified; 8 focused tests and root lint/build pass. Deploy and verify logo opening, sidebar layout/dismissal, feature selection and unchanged right-hand avatar publicly. Swipe behavior covered by gesture tests.
+Complete/deployed at b3e2df6. Eight focused tests/root lint/build pass; live logo opening, left layout, close/Escape/backdrop, focus, feature navigation and unchanged right-hand avatar verified. Swipe behavior covered by gesture tests; no physical-device swipe claim.
 
 # Profile navigation consolidation
 
