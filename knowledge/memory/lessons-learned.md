@@ -170,3 +170,7 @@ Security admission limits must allow normal UI request pairs: Tools loads transi
 ## 2026-10-19 — Parent ownership needs app boundaries
 
 The user meant a parent application owning a hallway, not a menu embedded in Route Manager. Separate workspace packages, entry points, builds and runtime processes make that ownership concrete while keeping one repository. Connect rooms with URLs and preserve the existing origin/runtime directory to avoid silently abandoning browser sessions or server-local data. Workspace moves must also update test environment lookup, auth prefixes, service-worker scope, build paths and native workflow working directories.
+
+## Profile navigation verification (2026-10-21)
+
+Calling scrollIntoView on a page container placed its title/actions underneath the sticky header. Page switches now scroll to the document top; verify actual button position and click response in the public narrow viewport, not only DOM visibility.

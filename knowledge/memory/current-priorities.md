@@ -1,6 +1,6 @@
 # Profile navigation consolidation
 
-Implementation/checks pass; verify profile destinations, forms/theme, Jobs actions and legacy bookmarks locally/publicly, then record release. No saved feature data is removed.
+Complete and deployed at 03876f7. Sixteen focused tests/root lint/build and signed-in public navigation, address/theme controls, Jobs forms, old bookmark redirects and visibility checks pass. No saved feature data removed. Habits and ride tools remain until a separate retirement decision.
 
 # Current Priorities
 
