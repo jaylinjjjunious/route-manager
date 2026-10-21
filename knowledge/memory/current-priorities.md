@@ -1,5 +1,9 @@
 # Current Priorities
 
+## Room routines (2026-10-20)
+
+Each physical cleaning space now has an optional reusable ordered routine, separate from scheduled tasks. Today shows room entry cards; Spaces offers Build/Edit routine (one step per line) and Start/Continue. A visit snapshots the room name and steps, saves each sequential completion, supports Undo last step and pause/reload, and requires all steps before Finish. Finish records the visit in History; starting again resets the entire checklist, including on the same day. Edits affect future visits, preserving in-progress/history snapshots. Archives retain routines and visits. Browser-only persistence and existing task schedules remain unchanged. Sixteen Cleaning tests and lint/build pass; local browser verified. Finish public deployment verification.
+
 ## Cleaning room (2026-10-20)
 
 Current authorized work: personal Cleaning first, eventually the user's own business. First slice is routines and completion history with backups. Released and personally verified on public Render at 2d80a9c. No required follow-up in this slice. Clients/properties, quotes, invoices and cloud identity are future decisions.

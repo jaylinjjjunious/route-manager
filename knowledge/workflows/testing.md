@@ -1,5 +1,9 @@
 # Testing Workflow
 
+## Room routines (2026-10-20)
+
+Cleaning now has 16 tests: existing tasks/storage plus sequential visits, same-day reset, snapshot edits, routine backup validation, old-plan compatibility, reload/resume and failed finish. Root lint/build pass. Verify actual Today room entry, edit/start, complete/pause/reload/continue, finish/history and repeat on public deployment.
+
 ## Cleaning room (2026-10-20)
 
 Root lint/build cover all three apps. Cleaning workspace: 11 tests; hallway: 2; gateway: 7. Local production UI verified hallway entry/return, space/task creation, completion/history/undo, reload, archive/restore and actual backup export/import. Public workflow and backup roundtrip also verified on Render at 2d80a9c. See features/cleaning-planner.md for test scope.

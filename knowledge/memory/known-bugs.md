@@ -1,5 +1,9 @@
 # Known Bugs
 
+## Room routine limits (2026-10-20)
+
+Routine history is retained up to 500 visits per space and the existing 2 MB plan limit. Hitting limits blocks saves/new visits with an error; nothing is silently purged. Older open tabs must reload to load support for the new optional routine fields. No confirmed routine workflow defect after focused tests/local verification.
+
 ## Cleaning room (2026-10-20)
 
 Cleaning has no confirmed unresolved bug in the tested personal workflow. Limitation: browser-only storage can be lost without backups; no cloud/account sync. Storage failures block changes, corrupt raw data is preserved, observed stale writes are rejected. localStorage does not provide transactional concurrency.

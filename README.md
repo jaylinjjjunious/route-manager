@@ -58,3 +58,5 @@ Rollback baseline: `checkpoint-2026-10-19-before-monorepo` at `50b1f2887a9ea6feb
 ## Personal Cleaning
 
 Cleaning starts with your own spaces and routines: Today, Spaces, History, recurrence, undo and reversible archives. It stores data in this browser only; use Backup to export/import JSON. There is no account sync or business customer workflow yet. Independent hosting overrides: CLEANING_BASE, VITE_HALLWAY_URL; hallway link: VITE_CLEANING_URL. See knowledge/features/cleaning-planner.md.
+
+Each Cleaning space can also have an ordered routine: Build routine, enter one step per line, then Start routine. Steps save as you go; Continue resumes after reload. Finish records a visit in History, and each new visit starts the full checklist again. Today includes room shortcuts.

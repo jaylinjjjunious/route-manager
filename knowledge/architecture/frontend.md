@@ -1,5 +1,9 @@
 # Frontend Architecture
 
+## Room routines (2026-10-20)
+
+Cleaning RoomRoutine owns the routine editor and sequential visit dialog. Pure routines.ts owns snapshots and progress changes; model validation preserves optional space routine/run fields for backward-compatible backups. App provides Today room cards and visit History.
+
 ## Cleaning room (2026-10-20)
 
 apps/cleaning adds a separate React/Vite frontend: Today, Spaces and History hash navigation, native dialog forms and its own CSS. model.ts/storage.ts own validation, scheduling, undo and persistence. Hallway adds only its URL entry/icon. Route Manager implementation is unchanged.

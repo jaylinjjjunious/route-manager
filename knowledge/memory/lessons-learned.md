@@ -1,5 +1,9 @@
 ## 2026-10-18 — Software boundaries
 
+## Repeatable routines (2026-10-20)
+
+A reusable every-visit room checklist is distinct from due-date tasks. Snapshot each visit so editing the next routine cannot change active or historical work. Save progress before advancing UI; refuse Finish until all steps are checked.
+
 ## Cleaning room (2026-10-20)
 
 Keep new room source/build/storage independent and link by URL. Future account migration must confirm ownership of unowned browser data. Undo must preserve subsequent text edits; history uses label snapshots. Starter suggestions merge with archived existing work instead of replacing it.

@@ -45,3 +45,24 @@ it('leaves an unsaved space out of the UI and shows the saving error inside its 
   expect(container.querySelector('dialog [role="alert"]')?.textContent).toContain('not applied');
   expect(container.querySelector('dialog')?.open).toBe(true);
 });
+
+it('builds a room routine, resumes after reload, records a visit and restarts with every step', () => {
+  act(() => root.render(React.createElement(App)));
+  click('Add a space'); fill('name', 'Routine kitchen'); submit(); go('spaces');
+  click('Build routine');
+  container.querySelector<HTMLTextAreaElement>('[name="steps"]')!.value = 'Gather supplies\nWipe counters'; submit();
+  click('Start routine'); click('Complete step');
+  expect(container.querySelector('dialog')?.textContent).toContain('Wipe counters');
+  act(() => root.unmount()); root = createRoot(container); act(() => root.render(React.createElement(App)));
+  click('Continue routine'); expect(container.querySelector('dialog')?.textContent).toContain('1 of 2');
+  click('Undo last step'); click('Complete step'); click('Complete step');
+  const prior = localStorage.getItem(STORAGE_KEY);
+  const failure = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('quota'); });
+  click('Finish routine'); expect(localStorage.getItem(STORAGE_KEY)).toBe(prior);
+  expect(container.querySelector('dialog [role="alert"]')?.textContent).toContain('not applied');
+  failure.mockRestore(); click('Finish routine');
+  expect(container.querySelector('dialog')).toBeNull();
+  go('history'); expect(container.textContent).toContain('1 visits finished');
+  expect(parsePlan(localStorage.getItem(STORAGE_KEY)!).history).toHaveLength(0);
+  go('spaces'); click('Start routine'); expect(container.querySelector('dialog')?.textContent).toContain('0 of 2');
+});

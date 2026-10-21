@@ -8,6 +8,14 @@ The user wants a new independent software room for their own cleaning, eventuall
 - Public URL `/cleaning/`; internal hashes Today, Spaces, History. Main menu returns to `/#home`.
 - Gateway serves static files independently of Route Manager. No room code, authentication or API imports. Standalone hosting can override base/entry URLs.
 
+## Reusable room routines (2026-10-20)
+
+Each physical cleaning space now has an optional reusable ordered routine, separate from scheduled tasks. Today shows room entry cards; Spaces offers Build/Edit routine (one step per line) and Start/Continue. A visit snapshots the room name and steps, saves each sequential completion, supports Undo last step and pause/reload, and requires all steps before Finish. Finish records the visit in History; starting again resets the entire checklist, including on the same day. Edits affect future visits, preserving in-progress/history snapshots. Archives retain routines and visits. Browser-only persistence and existing task schedules remain unchanged.
+
+Version-1 plans remain compatible: optional space fields `routine` (up to 100 nonempty steps, 200 characters each) and `runs` (up to 500 visits per room). Each run stores ID, name/step snapshots, completed-step count and start/finish timestamps. Validation rejects duplicate run IDs, multiple unfinished visits and inconsistent completion counts/timestamps. Existing JSON backup validation, additive current-wins merge, raw recovery and save-failure guards apply. No automatic trimming of history. Older plans need no migration; legacy running tabs should reload after this update.
+
+Related source: `apps/cleaning/src/RoomRoutine.tsx`, `routines.ts`, `model.ts`, `App.tsx`. Sixteen Cleaning tests pass, including order, fresh same-day runs, snapshot editing, old backups, reload/resume and failed-finish persistence. Local production UI verified creation, step progression, pause/reload and history. Public release pending.
+
 ## Behavior
 
 Create named spaces and tasks with estimated minutes, due date and one-time or repeating intervals. Today lists due/overdue active tasks and estimates; a completion schedules a repeating task from the actual local completion day, or finishes a one-time task. Duplicate same-day completions are guarded. History snapshots the title/space/time. Undo restores the prior schedule only when the task still has that completion's state, preserving later text edits. Archive/restore hides work without removing history. Starter suggestions require an explicit click and merge with existing work.

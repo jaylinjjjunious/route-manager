@@ -1,5 +1,9 @@
 # UI Components
 
+## Cleaning room routines
+
+RoomRoutine.tsx edits ordered room steps and guides a saved visit. routines.ts validates and updates the reusable template and visit snapshots; model.ts validates both through existing save/import paths.
+
 ## Cleaning room (2026-10-20)
 
 apps/cleaning/src/App.tsx owns personal pages, forms.tsx owns native dialogs, model.ts owns plan validation/scheduling/undo/merge, storage.ts owns browser persistence and stale-write checks. These are not shared with hallway or Route Manager.

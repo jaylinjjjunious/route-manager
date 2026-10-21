@@ -48,6 +48,9 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
+**Room routines, 2026-10-20:** Each physical cleaning space now has an optional reusable ordered routine, separate from scheduled tasks. Today shows room entry cards; Spaces offers Build/Edit routine (one step per line) and Start/Continue. A visit snapshots the room name and steps, saves each sequential completion, supports Undo last step and pause/reload, and requires all steps before Finish. Finish records the visit in History; starting again resets the entire checklist, including on the same day. Edits affect future visits, preserving in-progress/history snapshots. Archives retain routines and visits. Browser-only persistence and existing task schedules remain unchanged. Sixteen Cleaning tests, lint/build and local production browser pass; public release pending. Baseline checkpoint-2026-10-20-personal-cleaning at 2d80a9c.
+
+
 **2026-10-20 Cleaning:** Third independent workspace for personal routines first, future business later. Today/Spaces/History, recurrence, completion/undo, archives and validated backups implemented. Storage is explicitly browser-only. Eleven Cleaning, two hallway and seven gateway tests plus root lint/build pass; local production browser workflow including export/import verified. Implementation 2d80a9cab5536d83806bfeb4e33e0f5e8b2f9220 is on GitHub main and public Render (exact /api/build-info SHA). Public browser verified hallway entry/return, create space/task, complete, history/undo, reload persistence, archive and actual backup export/import. Narrow 675px view has no horizontal overflow. Verification completion was undone and labeled test space archived; no user cleaning history was invented. Eleven Cleaning, two hallway and seven gateway tests plus lint/build pass. Browser-only storage/no cloud sync remains the disclosed limitation.
 
 
@@ -103,6 +106,9 @@ Required installation step for reliable startup discovery: add this reference to
 > In every Route Manager session, read the startup sections of `APP_LIFELINE.md` before substantive work. Reference its relevant sections periodically during ongoing work, at milestones, before important decisions, and after interruptions or context compaction. Keep its snapshot, decisions, history, and resume notes current as meaningful project changes occur; reuse unchanged context instead of rereading the entire history.
 
 ## Active Decisions
+
+- User wants a repeatable regimen for each physical room. Implement full ordered checklists per visit (working assumption from “every time”), separate from scheduled tasks. Persist partial progress and keep immutable visit snapshots.
+
 
 - Cleaning starts as the user's personal planner. Independent source/build/storage, URL-linked from hallway. Business workflows and cloud sync deferred; future ownership migration requires explicit confirmation.
 
@@ -233,6 +239,9 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 
 ## Resume Point
 
+**Room routines:** Implemented on codex/cleaning-room-routines; local browser creation/steps/reload/history and 16 tests/lint/build pass. Commit/push, Render SHA and public interaction/backup verification remain. Preserve dist-native.
+
+
 **2026-10-20 Cleaning:** Local implementation/checks complete on codex/cleaning-planner. Release complete: Implementation 2d80a9cab5536d83806bfeb4e33e0f5e8b2f9220 is on GitHub main and public Render (exact /api/build-info SHA). Public browser verified hallway entry/return, create space/task, complete, history/undo, reload persistence, archive and actual backup export/import. Narrow 675px view has no horizontal overflow. Verification completion was undone and labeled test space archived; no user cleaning history was invented. Eleven Cleaning, two hallway and seven gateway tests plus lint/build pass. Browser-only storage/no cloud sync remains the disclosed limitation. No required implementation work remains. Baseline checkpoint-2026-10-19-independent-app-workspaces at dc9fd7d13bd6349953a3a2a25e3339c3348ebc66. Preserve dist-native. Details: knowledge/features/cleaning-planner.md.
 
 
@@ -350,3 +359,9 @@ Verified all 13 findings against production main and started isolated remediatio
 - User requested a fresh personal app, eventually their own cleaning business. Added apps/cleaning, gateway static route and hallway URL entry.
 - Personal routines/history/undo, archives, additive backups and guarded local writes; existing Route Manager source unchanged.
 - Focused tests, lint/build and local browser workflow pass; public release verified at 2d80a9c.
+
+### 2026-10-20 — Repeatable room routines
+
+- Added per-space reusable steps and sequential saved visits; repeat starts fresh every time.
+- Today room shortcuts, Spaces editor/runner and visit snapshots in History; existing tasks/data retained.
+- Sixteen tests, lint/build and local browser workflow pass. Public release pending.

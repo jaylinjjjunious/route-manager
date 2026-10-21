@@ -1,4 +1,5 @@
-export type Space = { id: string; name: string; archived: boolean };
+import { parseRoutineFields, type RoutineRun } from './routines';
+export type Space = { id: string; name: string; archived: boolean; routine?: string[]; runs?: RoutineRun[] };
 export type Task = { id: string; spaceId: string; title: string; minutes: number; intervalDays: number; due: string; done: boolean; archived: boolean; lastDay: string | null; lastEvent: string | null };
 export type Completion = { id: string; taskId: string; title: string; spaceName: string; at: string; day: string; intervalDays: number; priorDue: string; nextDue: string; priorDone: boolean; priorDay: string | null; priorEvent: string | null };
 export type Plan = { version: 1; spaces: Space[]; tasks: Task[]; history: Completion[] };
@@ -49,7 +50,7 @@ export function parsePlan(raw: string): Plan {
     if (!text(event.title, 120) || !text(event.spaceName, 80) || !data.tasks.some((task: Task) => task.id === event.taskId) || !isDay(event.day) || !text(event.at, 50) || Number.isNaN(Date.parse(event.at)) || !isDay(event.priorDue) || !isDay(event.nextDue) || !Number.isInteger(event.intervalDays) || event.intervalDays < 0 || event.intervalDays > 365 || typeof event.priorDone !== 'boolean' || !(event.priorDay === null || isDay(event.priorDay)) || !nullableText(event.priorEvent)) invalid();
   }
   for (const task of data.tasks) if (task.lastEvent !== null && !data.history.some((event: Completion) => event.id === task.lastEvent && event.taskId === task.id && event.day === task.lastDay)) invalid();
-  return { version: 1, spaces: data.spaces.map((s: Space) => ({ id: s.id, name: s.name, archived: s.archived })), tasks: data.tasks.map((t: Task) => ({ id: t.id, spaceId: t.spaceId, title: t.title, minutes: t.minutes, intervalDays: t.intervalDays, due: t.due, done: t.done, archived: t.archived, lastDay: t.lastDay, lastEvent: t.lastEvent })), history: data.history.map((e: Completion) => ({ id: e.id, taskId: e.taskId, title: e.title, spaceName: e.spaceName, at: e.at, day: e.day, intervalDays: e.intervalDays, priorDue: e.priorDue, nextDue: e.nextDue, priorDone: e.priorDone, priorDay: e.priorDay, priorEvent: e.priorEvent })) };
+  return { version: 1, spaces: data.spaces.map((s: Space) => ({ id: s.id, name: s.name, archived: s.archived, ...parseRoutineFields(s) })), tasks: data.tasks.map((t: Task) => ({ id: t.id, spaceId: t.spaceId, title: t.title, minutes: t.minutes, intervalDays: t.intervalDays, due: t.due, done: t.done, archived: t.archived, lastDay: t.lastDay, lastEvent: t.lastEvent })), history: data.history.map((e: Completion) => ({ id: e.id, taskId: e.taskId, title: e.title, spaceName: e.spaceName, at: e.at, day: e.day, intervalDays: e.intervalDays, priorDue: e.priorDue, nextDue: e.nextDue, priorDone: e.priorDone, priorDay: e.priorDay, priorEvent: e.priorEvent })) };
 }
 export function mergeBackup(current: Plan, imported: Plan): Plan {
   const merge = <T extends { id: string }>(existing: T[], incoming: T[]) => [...existing, ...incoming.filter(item => !existing.some(original => original.id === item.id))];
