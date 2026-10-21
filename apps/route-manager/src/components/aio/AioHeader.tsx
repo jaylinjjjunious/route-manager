@@ -18,9 +18,11 @@ function formatToday(): string {
 
 export default function AioHeader({
   userName,
+  userEmail,
   onOpenProfile,
 }: {
   userName?: string;
+  userEmail?: string;
   onOpenProfile: () => void;
 }) {
   const menuId = useId();
@@ -81,11 +83,14 @@ export default function AioHeader({
           </button>
           <div id={menuId} ref={menuRef} popover="auto" role="dialog" aria-label="Profile menu"
             onToggle={event => setOpen((event.nativeEvent as ToggleEvent).newState === "open")}
-            className="rounded-2xl border border-[var(--color-aio-line)] bg-[var(--color-aio-surface)] p-5 text-[var(--color-aio-text)] shadow-2xl"
+            className="rounded-2xl border border-[var(--color-aio-line)] bg-[var(--color-aio-surface)] p-4 text-[var(--color-aio-text)] shadow-2xl"
             style={{ position: "fixed", inset: "auto", margin: 0, top: position.top, right: position.right, width: "min(288px, calc(100vw - 32px))", maxHeight: `calc(100dvh - ${position.top + 16}px)`, overflowY: "auto" }}>
-            <img src={AVATAR_PATH} alt="Profile photo" className="mx-auto h-28 w-28 rounded-full object-cover" />
-            <p className="mt-4 break-words text-center text-base font-semibold">{userName || "Your profile"}</p>
-            <button type="button" className="mt-5 w-full rounded-xl border border-[var(--color-aio-line)] px-4 py-3 text-sm font-semibold hover:bg-[var(--color-aio-bg)] focus-visible:outline focus-visible:outline-2"
+            <div className="flex items-start gap-3">
+              <img src={AVATAR_PATH} alt="Profile photo" className="h-12 w-12 shrink-0 rounded-full object-cover" />
+              <p className="min-w-0 break-words pt-1 text-sm font-semibold leading-snug">{userName || "Your profile"}</p>
+            </div>
+            {userEmail && <p className="mt-3 break-words border-t border-[var(--color-aio-line)] pt-3 text-xs leading-relaxed text-[var(--color-aio-text-2)]">{userEmail}</p>}
+            <button type="button" className="mt-4 w-full rounded-xl border border-[var(--color-aio-line)] px-4 py-3 text-sm font-semibold hover:bg-[var(--color-aio-bg)] focus-visible:outline focus-visible:outline-2"
               onClick={() => { menuRef.current?.hidePopover?.(); onOpenProfile(); }}>Open More</button>
           </div>
         </div>

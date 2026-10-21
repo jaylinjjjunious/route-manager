@@ -1033,7 +1033,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
         )}
         {/* Header */}
         {currentTab === 'dashboard' || currentTab === 'jobs' || currentTab === 'more'
-          ? <AioHeader userName={userName} onOpenProfile={() => handleTabChange('more')} />
+          ? <AioHeader userName={userName} userEmail={user?.email} onOpenProfile={() => handleTabChange('more')} />
           : <Header theme={theme} onToggleTheme={handleToggleTheme} accountEmail={user?.email} />}
         </div>
 

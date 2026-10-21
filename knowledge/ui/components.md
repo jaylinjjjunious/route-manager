@@ -2,7 +2,7 @@
 
 ## Route Manager profile dropdown (2026-10-21)
 
-AioHeader avatar now opens a native auto popover with the existing larger photo, user name and Open More action. Avatar clicks do not navigate. Outside click and Escape dismiss through browser behavior; Open More closes the popup and invokes the existing More callback. Header/nav/data otherwise unchanged.
+AioHeader avatar now opens a native auto popover with the compact upper-left photo, smaller top-aligned user name, signed-in email below a thin divider, and Open More action. Avatar clicks do not navigate. Outside click and Escape dismiss through browser behavior; Open More closes the popup and invokes the existing More callback. Header/nav/data otherwise unchanged.
 
 Hallway Route Manager card uses the existing black AIØ app artwork, copied from apps/route-manager/public/apple-touch-icon.png into apps/hallway/src/assets/route-manager-icon.png and bundled by Vite. The hallway remains independent of the room runtime.
 
@@ -43,7 +43,7 @@ JobDetailModal uses the shared app's purple palette with a dedicated translucent
 |-------|-------|
 | **File** | `src/components/aio/AioHeader.tsx` |
 | **Props** | `userName?: string`, `onOpenProfile()` |
-| **Responsibility** | Sticky top header for Today/Jobs/More tabs. Shows time-of-day greeting with first name, the AIØ wordmark followed by a same-typeface `17` with a softly blended red-to-white-to-blue vertical treatment, formatted date, and a circular profile-picture button that opens More. |
+| **Responsibility** | Sticky top header for Today/Jobs/More tabs. Shows time-of-day greeting with first name, the AIØ wordmark followed by a same-typeface `17` with a softly blended red-to-white-to-blue vertical treatment, formatted date, and a circular profile-picture button that opens the profile dropdown; Open More is an explicit dropdown action. |
 
 ### TodayScreen
 
