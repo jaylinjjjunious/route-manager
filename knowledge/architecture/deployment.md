@@ -1,5 +1,9 @@
 # Deployment Architecture
 
+## Cleaning room (2026-10-20)
+
+Root build also produces apps/cleaning/dist, required and served by gateway at /cleaning/. Dev starts Cleaning Vite on CLEANING_PORT (5174), distinct from the other apps. Standalone overrides: CLEANING_BASE and VITE_HALLWAY_URL; hallway link: VITE_CLEANING_URL. Existing combined Render deployment needs no new secrets, service or database.
+
 ## Purpose
 
 Render is the current primary production host; Railway is a rollback host and Cloudflare is an alternate build path.

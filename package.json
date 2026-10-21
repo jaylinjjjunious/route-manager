@@ -5,7 +5,8 @@
   "type": "module",
   "workspaces": [
     "apps/hallway",
-    "apps/route-manager"
+    "apps/route-manager",
+    "apps/cleaning"
   ],
   "engines": {
     "node": ">=22.16.0"
@@ -27,7 +28,10 @@
     "release": "node scripts/release.cjs",
     "cap:add:ios": "npm run cap:add:ios --workspace @all-in-one/route-manager",
     "cap:sync": "npm run cap:sync --workspace @all-in-one/route-manager",
-    "cap:copy": "npm run cap:copy --workspace @all-in-one/route-manager"
+    "cap:copy": "npm run cap:copy --workspace @all-in-one/route-manager",
+    "dev:cleaning": "npm run dev --workspace @all-in-one/cleaning",
+    "build:cleaning": "npm run build --workspace @all-in-one/cleaning",
+    "start:cleaning": "npm run preview --workspace @all-in-one/cleaning"
   },
   "overrides": {
     "fflate": "0.7.5",

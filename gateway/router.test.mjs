@@ -13,6 +13,10 @@ before(async () => {
   await writeFile(path.join(root, 'index.html'), '<h1>Independent hallway</h1>');
   await mkdir(path.join(root, 'hallway-assets'));
   await writeFile(path.join(root, 'hallway-assets/main.js'), '/* hallway only */');
+  await mkdir(path.join(root, 'cleaning'));
+  await writeFile(path.join(root, 'cleaning/index.html'), '<h1>Independent cleaning room</h1>');
+  await mkdir(path.join(root, 'cleaning/cleaning-assets'));
+  await writeFile(path.join(root, 'cleaning/cleaning-assets/main.js'), '/* cleaning only */');
   room = http.createServer(async (request, response) => {
     const chunks = [];
     for await (const chunk of request) chunks.push(chunk);
@@ -21,7 +25,7 @@ before(async () => {
     response.end(JSON.stringify(lastRequest));
   });
   await listen(room);
-  gateway = createGateway({ routeTarget: `http://127.0.0.1:${room.address().port}`, hallwayRoot: root });
+  gateway = createGateway({ routeTarget: `http://127.0.0.1:${room.address().port}`, hallwayRoot: root, cleaningRoot: path.join(root, 'cleaning') });
   await listen(gateway);
   origin = `http://127.0.0.1:${gateway.address().port}`;
 });
@@ -46,6 +50,17 @@ test('proxies room entry, old assets and authenticated writes without changing b
   const response = await fetch(`${origin}/api/inventory/custody-ledger`, { method: 'POST', headers: { Authorization: 'Bearer disposable-test', 'Content-Type': 'application/json' }, body: '{"unchanged":true}' });
   assert.deepEqual(await response.json(), { url: '/api/inventory/custody-ledger', method: 'POST', auth: 'Bearer disposable-test', body: '{"unchanged":true}' });
   assert.match(response.headers.get('set-cookie'), /room-session=preserved/);
+});
+test('serves cleaning and its own assets without sending data or fallback pages to Route Manager', async () => {
+  lastRequest = undefined;
+  assert.match(await (await fetch(`${origin}/cleaning/`)).text(), /Independent cleaning room/);
+  assert.match(await (await fetch(`${origin}/cleaning/cleaning-assets/main.js`)).text(), /cleaning only/);
+  assert.equal((await fetch(`${origin}/cleaning/api/private`)).status, 404);
+  assert.equal((await fetch(`${origin}/cleaning/`, { method: 'POST', body: 'no remote cleaning writes' })).status, 405);
+  assert.equal((await fetch(`${origin}/cleaning/..%2foutside-secret`)).status, 403);
+  const redirect = await fetch(`${origin}/cleaning?from=hallway`, { redirect: 'manual' });
+  assert.equal(redirect.status, 308); assert.equal(redirect.headers.get('location'), '/cleaning/?from=hallway');
+  assert.equal(lastRequest, undefined);
 });
 test('supports room deep links and legacy password reset endpoints', async () => {
   assert.equal((await (await fetch(`${origin}/route-manager/reset-password`)).json()).url, '/reset-password');

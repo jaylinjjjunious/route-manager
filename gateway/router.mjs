@@ -5,8 +5,8 @@ import path from 'node:path';
 const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon' };
 
 // The parent knows URLs and build directories, never room implementation modules.
-export function createGateway({ routeTarget, hallwayTarget, hallwayRoot }) {
-  const targetFor = url => url.startsWith('/hallway/') ? hallwayTarget : routeTarget;
+export function createGateway({ routeTarget, hallwayTarget, hallwayRoot, cleaningRoot, cleaningTarget }) {
+  const targetFor = url => url.startsWith('/hallway/') ? hallwayTarget : url.startsWith('/cleaning/') ? cleaningTarget : routeTarget;
   const server = http.createServer(async (request, response) => {
     let url;
     try { url = new URL(request.url, 'http://gateway.local'); } catch { response.writeHead(400).end(); return; }
@@ -19,12 +19,18 @@ export function createGateway({ routeTarget, hallwayTarget, hallwayRoot }) {
     if (url.pathname === '/route-manager') {
       response.writeHead(308, { Location: `/route-manager/${url.search}` }).end(); return;
     }
+    if (url.pathname === '/cleaning') {
+      response.writeHead(308, { Location: `/cleaning/${url.search}` }).end(); return;
+    }
+    const cleaning = url.pathname.startsWith('/cleaning/');
+    if (cleaning && !cleaningRoot && !cleaningTarget) { response.writeHead(404).end('Not found'); return; }
     const hallway = ['/', '/index.html', '/hallway', '/hallway/'].includes(url.pathname) || url.pathname.startsWith('/hallway/');
-    if (hallway && !hallwayTarget) {
-      const relative = ['/', '/index.html', '/hallway', '/hallway/'].includes(url.pathname) ? 'index.html' : url.pathname.slice('/hallway/'.length);
+    if ((hallway && !hallwayTarget) || (cleaning && !cleaningTarget)) {
+      const assetRoot = cleaning ? cleaningRoot : hallwayRoot;
+      const relative = cleaning ? (url.pathname === '/cleaning/' ? 'index.html' : url.pathname.slice('/cleaning/'.length)) : ['/', '/index.html', '/hallway', '/hallway/'].includes(url.pathname) ? 'index.html' : url.pathname.slice('/hallway/'.length);
       let filename;
-      try { filename = path.resolve(hallwayRoot, decodeURIComponent(relative)); } catch { response.writeHead(400).end(); return; }
-      if (!filename.startsWith(path.resolve(hallwayRoot) + path.sep)) { response.writeHead(403).end(); return; }
+      try { filename = path.resolve(assetRoot, decodeURIComponent(relative)); } catch { response.writeHead(400).end(); return; }
+      if (!filename.startsWith(path.resolve(assetRoot) + path.sep)) { response.writeHead(403).end(); return; }
       if (!['GET', 'HEAD'].includes(request.method)) { response.writeHead(405, { Allow: 'GET, HEAD' }).end(); return; }
       try {
         const content = await readFile(filename);
@@ -33,10 +39,10 @@ export function createGateway({ routeTarget, hallwayTarget, hallwayRoot }) {
       } catch { response.writeHead(404).end('Not found'); }
       return;
     }
-    const target = new URL(hallway ? hallwayTarget : routeTarget);
+    const target = new URL(cleaning ? cleaningTarget : hallway ? hallwayTarget : routeTarget);
     // APIs and old public assets keep their URLs and browser origin.
     const roomPath = request.url.replace(/^\/route-manager(?=\/|\?|$)/, '') || '/';
-    const upstream = http.request({ hostname: target.hostname, port: target.port, method: request.method, path: hallway ? request.url : roomPath, headers: request.headers }, incoming => {
+    const upstream = http.request({ hostname: target.hostname, port: target.port, method: request.method, path: hallway || cleaning ? request.url : roomPath, headers: request.headers }, incoming => {
       response.writeHead(incoming.statusCode || 502, incoming.headers);
       incoming.on('error', () => response.destroy());
       incoming.pipe(response);

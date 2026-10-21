@@ -1,5 +1,9 @@
 # Navigation System
 
+## Cleaning room (2026-10-20)
+
+Hallway now opens Route Manager or Cleaning through separate document URLs. Cleaning owns /cleaning/ with #today, #spaces, #history and a visible Main menu link to /#home. Backup controls are in its header/footer. No Route Manager account data or navigation appears in this room.
+
 ## Independent hallway and room (2026-10-19)
 
 Compatibility follow-up: legacy hash changes are handled even when hallway is already open. Room startup and App share the retired-route policy: `#jobs` stays a first-class Jobs destination; only `#route` and `#routes` retire to Today. Legacy `/jobs` pathname routing remains compatible. Local production-mode bookmark navigation and focused auth/location tests verify the distinction.

@@ -1,5 +1,9 @@
 # Architecture Overview
 
+## Cleaning room (2026-10-20)
+
+Cleaning is the third independent workspace at apps/cleaning, linked by URL from hallway at /cleaning/. It owns its React UI, local plan, tests and static build. Gateway serves its files without Route Manager imports, authentication or API access. See ../features/cleaning-planner.md.
+
 ## Purpose
 
 Describes the complete system architecture of All in One 667, a field-work mission control application for e-bike gig workers. The app provides route optimization, job management, daily shower gate verification, battery tracking, habit tracking, AI-powered dispatch, and safety monitoring.

@@ -1,6 +1,9 @@
 // Entries are URLs, never imports of another application's implementation.
 const routeManagerUrl = import.meta.env.VITE_ROUTE_MANAGER_URL || '/route-manager/#dashboard';
-export const rooms = [{ id: 'route-manager', name: 'Route Manager', description: 'Plan your day, manage jobs, and use your route tools.', href: routeManagerUrl }];
+export const rooms = [
+  { id: 'route-manager', name: 'Route Manager', description: 'Plan your day, manage jobs, and use your route tools.', href: routeManagerUrl },
+  { id: 'cleaning', name: 'Cleaning', description: 'Look after your space, build a routine, and track your progress.', href: import.meta.env.VITE_CLEANING_URL || '/cleaning/' },
+];
 
 export function legacyRoomLink(hash: string): string | null {
   const tab = hash.slice(1);

@@ -10,14 +10,16 @@ const development = process.argv.includes('--dev');
 const port = Number(process.env.PORT || 3000);
 const roomPort = Number(process.env.ROUTE_MANAGER_PORT || (port === 3001 ? 3002 : 3001));
 const hallwayPort = Number(process.env.HALLWAY_PORT || 5173);
-if (new Set([port, roomPort, ...(development ? [hallwayPort] : [])]).size !== (development ? 3 : 2)) throw new Error('App ports must be distinct');
+const cleaningPort = Number(process.env.CLEANING_PORT || 5174);
+if (new Set([port, roomPort, ...(development ? [hallwayPort, cleaningPort] : [])]).size !== (development ? 4 : 2)) throw new Error('App ports must be distinct');
 const children = [];
 if (!development) {
   await access(path.join(root, 'apps/hallway/dist/index.html'));
   await access(path.join(roomRoot, 'dist/server.cjs'));
+  await access(path.join(root, 'apps/cleaning/dist/index.html'));
 }
 let shuttingDown = false;
-const gateway = createGateway({ routeTarget: `http://127.0.0.1:${roomPort}`, hallwayTarget: development ? `http://127.0.0.1:${hallwayPort}` : undefined, hallwayRoot: path.join(root, 'apps/hallway/dist') });
+const gateway = createGateway({ routeTarget: `http://127.0.0.1:${roomPort}`, hallwayTarget: development ? `http://127.0.0.1:${hallwayPort}` : undefined, hallwayRoot: path.join(root, 'apps/hallway/dist'), cleaningRoot: path.join(root, 'apps/cleaning/dist'), cleaningTarget: development ? `http://127.0.0.1:${cleaningPort}` : undefined });
 
 function stop(code = 0) {
   if (shuttingDown) return;
@@ -39,6 +41,7 @@ launch(development ? ['--import', 'tsx', path.join(roomRoot, 'server.ts')] : [pa
   env: { ...process.env, NODE_ENV: development ? 'development' : 'production', HOST: '127.0.0.1', PORT: String(roomPort), ROUTE_MANAGER_APP_ROOT: roomRoot },
 });
 if (development) launch([path.join(root, 'node_modules/vite/bin/vite.js'), '--host', '127.0.0.1', '--port', String(hallwayPort), '--strictPort'], { cwd: path.join(root, 'apps/hallway'), env: process.env });
+if (development) launch([path.join(root, 'node_modules/vite/bin/vite.js'), '--host', '127.0.0.1', '--port', String(cleaningPort), '--strictPort'], { cwd: path.join(root, 'apps/cleaning'), env: process.env });
 
 try {
   const deadline = Date.now() + 45000;

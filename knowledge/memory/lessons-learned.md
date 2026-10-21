@@ -1,5 +1,9 @@
 ## 2026-10-18 — Software boundaries
 
+## Cleaning room (2026-10-20)
+
+Keep new room source/build/storage independent and link by URL. Future account migration must confirm ownership of unowned browser data. Undo must preserve subsequent text edits; history uses label snapshots. Starter suggestions merge with archived existing work instead of replacing it.
+
 A software launcher belongs outside the room it opens. Keep the existing authentication/owner boundary, lazy-load room code, and verify that returning actually removes room UI and effects. Keep old feature bookmarks functional and distinguish frontend separation from independent backend deployments.
 
 ## 2026-10-10 — Verify feature discoverability

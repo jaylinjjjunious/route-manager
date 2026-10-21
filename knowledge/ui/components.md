@@ -1,5 +1,9 @@
 # UI Components
 
+## Cleaning room (2026-10-20)
+
+apps/cleaning/src/App.tsx owns personal pages, forms.tsx owns native dialogs, model.ts owns plan validation/scheduling/undo/merge, storage.ts owns browser persistence and stale-write checks. These are not shared with hallway or Route Manager.
+
 ## Hallway — 2026-10-19
 
 `apps/hallway/src/Hallway.tsx` is a separate frontend with its own CSS, package/build/tests and URL-only software registry. Route Manager lives in `apps/route-manager` and imports no hallway UI. The former SoftwareShell is removed. Route Manager's Main menu link performs document navigation to the parent (hidden during Ride Mode); login/account controls remain inside the room. The future-software panel is informational. Source paths in the sections below are relative to `apps/route-manager/`.

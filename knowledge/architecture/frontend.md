@@ -1,5 +1,9 @@
 # Frontend Architecture
 
+## Cleaning room (2026-10-20)
+
+apps/cleaning adds a separate React/Vite frontend: Today, Spaces and History hash navigation, native dialog forms and its own CSS. model.ts/storage.ts own validation, scheduling, undo and persistence. Hallway adds only its URL entry/icon. Route Manager implementation is unchanged.
+
 ## Purpose
 
 Describes the React application structure, component hierarchy, state management, and rendering patterns.

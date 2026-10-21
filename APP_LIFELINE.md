@@ -48,6 +48,9 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
+**2026-10-20 Cleaning:** Third independent workspace for personal routines first, future business later. Today/Spaces/History, recurrence, completion/undo, archives and validated backups implemented. Storage is explicitly browser-only. Eleven Cleaning, two hallway and seven gateway tests plus root lint/build pass; local production browser workflow including export/import verified. Public release pending.
+
+
 **2026-10-19 independent app workspaces:** Implementation d5e140ecf286390af75cdb377edc94809243aba9 is on GitHub main/public Render and signed-in verified: parent hallway → /route-manager/ with recovered session → Jobs (same seven jobs) → More (same account) → Inventory (account checked) → parent. Return/header remains visible while scrolled; parent contains no room navigation/account data. Both apps have separate package/source/build/tests; root gateway starts a separate loopback room process, preserving origin and runtime directory. Full room 63-suite/546-test run, 5 focused auth/location tests, hallway 2/gateway 6 tests, lint/build and disposable security checks pass. Follow-up handles old hash bookmarks when hallway is already open and records release evidence. Rollback checkpoint checkpoint-2026-10-19-before-monorepo at 50b1f28 is pushed. Root README is the map; old feature source paths resolve under apps/route-manager. Preserve .env/private runtime data/dist-native; shared cross-app identity/native device checks remain future work.
 
 **2026-10-18 software hallway:** Released and signed-in verified at 2bce1caf06733b9b2a8422f620af861611b4eabd. User chose Route Manager as the first room, with others later. Independent authenticated menu at `/` / `/#home`, lazy room entry and Main menu return; existing feature hashes remain. Three focused tests/lint/build pass. Local entry/return/Back/Forward and public hallway → Route Manager → Jobs → Main menu verified, including visible entry/return controls, account identity, removal of room navigation/assistant and return focus. Existing dist-native preserved. Current production is Render; Railway CLI is unavailable locally.
@@ -100,6 +103,9 @@ Required installation step for reliable startup discovery: add this reference to
 > In every Route Manager session, read the startup sections of `APP_LIFELINE.md` before substantive work. Reference its relevant sections periodically during ongoing work, at milestones, before important decisions, and after interruptions or context compaction. Keep its snapshot, decisions, history, and resume notes current as meaningful project changes occur; reuse unchanged context instead of rereading the entire history.
 
 ## Active Decisions
+
+- Cleaning starts as the user's personal planner. Independent source/build/storage, URL-linked from hallway. Business workflows and cloud sync deferred; future ownership migration requires explicit confirmation.
+
 
 ### D-003 — Independent software workspaces
 
@@ -227,6 +233,9 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 
 ## Resume Point
 
+**2026-10-20 Cleaning:** Local implementation/checks complete on codex/cleaning-planner. Commit/push/public Render verification pending. Baseline checkpoint-2026-10-19-independent-app-workspaces at dc9fd7d13bd6349953a3a2a25e3339c3348ebc66. Preserve dist-native. Details: knowledge/features/cleaning-planner.md.
+
+
 **2026-10-19 workspace migration:** Core migration d5e140e is deployed and public signed-in navigation/session/data reads verified. Release follow-up records evidence and covers old hash links while the hallway is already loaded; check latest Git log/public SHA for that small follow-up. Workspace/source map: root README and knowledge/README. No more software rooms or shared identity implementation requested. Do not repeat migrations or completed API/security/full regression checks without relevant changes. Preserve checkpoint-2026-10-19-before-monorepo/50b1f28, root private runtime files and dist-native/iOS draft. Native Mac/device checks remain separate.
 
 **2026-10-18 software hallway:** Finished: implementation 2bce1ca is on github/main and public Render, signed-in menu/room/Jobs/return plus removal of room UI and return focus verified. Three focused tests/lint/build and local browser Back/Forward pass. This follow-up records release evidence only; no further feature work requested. Future software can be added through src/shell/SoftwareShell.tsx. Frontend/lifecycle separation shares existing auth/backend; unsaved room UI closes on exit. Preserve dist-native/iOS and unrelated open work.
@@ -335,3 +344,9 @@ Verified all 13 findings against production main and started isolated remediatio
 - Applied migration 0008 with service-role-only access and atomic history/storage enforcement; rollback fixtures verified isolation, replay, append, conflict, evidence preservation and quotas.
 - All 51 focused tests, lint/build and disposable production-bundle API checks pass. Application commit bc4cc64 pushed to GitHub main and confirmed by public Render build-info.
 - Signed-in interface verification remains blocked by browser Transport closed. Physical photo checks, standalone Proof Vault durability and inventory archival/conflict UI remain open; no production custody evidence was fabricated.
+
+### 2026-10-20 — Personal Cleaning room
+
+- User requested a fresh personal app, eventually their own cleaning business. Added apps/cleaning, gateway static route and hallway URL entry.
+- Personal routines/history/undo, archives, additive backups and guarded local writes; existing Route Manager source unchanged.
+- Focused tests, lint/build and local browser workflow pass; public release pending.

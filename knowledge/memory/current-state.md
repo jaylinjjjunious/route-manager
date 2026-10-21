@@ -1,5 +1,9 @@
 # Current Implementation State
 
+## Cleaning room (2026-10-20)
+
+New personal Cleaning workspace implemented with spaces/tasks, recurrence, completion history/undo, archive/restore and validated JSON backups. Browser-only storage is disclosed. No account sync or business customer workflows. Local checks pass; release verification pending.
+
 ## 2026-10-19 workspace migration
 
 The root repository owns the All in One parent, independent hallway and Route Manager workspaces, and URL composition gateway. See root README/knowledge path map. SoftwareShell is removed; Route Manager retains auth/data/features under apps/route-manager. Implementation d5e140e is on main/public Render and signed-in parent → room → Jobs → More → Inventory read → parent is verified, preserving account/session and existing jobs. Both builds/lint, full room regressions, targeted auth-prefix, hallway/gateway and disposable security checks pass. Production-mode local login/recovery/parent return and public anonymous API denial are verified. Shared cross-app identity/additional rooms and real native/device validation remain separate. This supersedes older repository-structure statements below.

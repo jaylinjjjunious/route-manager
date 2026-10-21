@@ -1,5 +1,9 @@
 # Known Bugs
 
+## Cleaning room (2026-10-20)
+
+Cleaning has no confirmed unresolved bug in the tested personal workflow. Limitation: browser-only storage can be lost without backups; no cloud/account sync. Storage failures block changes, corrupt raw data is preserved, observed stale writes are rejected. localStorage does not provide transactional concurrency.
+
 ## 2026-10-19 — Embedded hallway architecture (replaced)
 
 Final bookmark verification found that startup still classified `#jobs` as retired although App supported it as first-class. Startup now shares App's retired-route predicate (route/routes only), and hallway handles legacy hash changes as well as initial loads. Five focused auth/location tests, hallway tests and local production-mode `/#jobs` → `/route-manager/#jobs` checks pass. This is a navigation compatibility follow-up to the verified workspace migration.
