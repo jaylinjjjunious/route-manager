@@ -20,7 +20,7 @@ Related source: `apps/cleaning/src/RoomRoutine.tsx`, `routines.ts`, `model.ts`, 
 
 User rejected the final task-details form. Add task now stops at room → activity selection. Activity buttons toggle selection in place; Add selected tasks atomically saves them with any draft room and keeps the same room mini page open with a visible success message. Custom task text is entered inline. Back/Close save nothing. New tasks are one-time, due today, with a disclosed 10-minute estimate; existing task schedules and room routines are unchanged. Task editing remains available separately.
 
-Eighteen tests cover selecting multiple activities without navigation, inline custom tasks, atomic room/task save failure, same-page success, cancellation and existing routines. Lint/build and browser release checks pending.
+Eighteen tests cover selecting multiple activities without navigation, inline custom tasks, atomic room/task save failure, same-page success, cancellation and existing routines. Lint/build and browser Released at 9ed00c37e7dfa757a0f613cbaf4ba2d1ad2ef39a; GitHub main and public Render exact SHA verified. Eighteen tests and root lint/build pass. Local browser checked multi-selection/save/reload; public browser checked Bathroom selection/deselection without navigation, inline custom selection, same-page Add success, reload persistence and archive. Verification task archived without completion. User tab 7 is left on Bathroom activities; no required work remains.
 
 ## Previous room-first task creation (superseded final step)
 
