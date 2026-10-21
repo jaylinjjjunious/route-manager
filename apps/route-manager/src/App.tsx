@@ -290,10 +290,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
 
     window.history.replaceState(null, '', `#${tab}`);
     window.setTimeout(() => {
-      document.getElementById(`tab-view-${tab}`)?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 0);
   };
 
@@ -319,10 +316,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
       if (tab) {
         setCurrentTab(tab);
         window.setTimeout(() => {
-          document.getElementById(`tab-view-${tab}`)?.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start'
-          });
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }, 0);
       }
     };
