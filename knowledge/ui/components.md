@@ -2,7 +2,7 @@
 
 ## Route Manager profile dropdown (2026-10-21)
 
-AioHeader avatar now opens a native auto popover with the compact upper-left photo, smaller top-aligned user name, signed-in email below a thin divider, and Open More action. Avatar clicks do not navigate. Outside click and Escape dismiss through browser behavior; Open More closes the popup and invokes the existing More callback. Header/nav/data otherwise unchanged.
+AioHeader avatar now opens a native auto popover with the compact upper-left photo, smaller top-aligned user name, signed-in email below a thin divider, and Open More action. Avatar clicks do not navigate. Outside click and Escape dismiss through browser behavior; Open More closes the popup and invokes the existing More callback. Popup width accounts for its right offset to keep a 16px left gutter on narrow screens. Header/nav/data otherwise unchanged.
 
 Hallway Route Manager card uses the existing black AIØ app artwork, copied from apps/route-manager/public/apple-touch-icon.png into apps/hallway/src/assets/route-manager-icon.png and bundled by Vite. The hallway remains independent of the room runtime.
 

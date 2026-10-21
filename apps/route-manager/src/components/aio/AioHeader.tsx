@@ -84,7 +84,7 @@ export default function AioHeader({
           <div id={menuId} ref={menuRef} popover="auto" role="dialog" aria-label="Profile menu"
             onToggle={event => setOpen((event.nativeEvent as ToggleEvent).newState === "open")}
             className="rounded-2xl border border-[var(--color-aio-line)] bg-[var(--color-aio-surface)] p-4 text-[var(--color-aio-text)] shadow-2xl"
-            style={{ position: "fixed", inset: "auto", margin: 0, top: position.top, right: position.right, width: "min(288px, calc(100vw - 32px))", maxHeight: `calc(100dvh - ${position.top + 16}px)`, overflowY: "auto" }}>
+            style={{ position: "fixed", inset: "auto", margin: 0, top: position.top, right: position.right, width: `min(288px, calc(100vw - ${position.right + 16}px))`, maxHeight: `calc(100dvh - ${position.top + 16}px)`, overflowY: "auto" }}>
             <div className="flex items-start gap-3">
               <img src={AVATAR_PATH} alt="Profile photo" className="h-12 w-12 shrink-0 rounded-full object-cover" />
               <p className="min-w-0 break-words pt-1 text-sm font-semibold leading-snug">{userName || "Your profile"}</p>

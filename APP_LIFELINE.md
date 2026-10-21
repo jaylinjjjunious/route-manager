@@ -48,7 +48,7 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
-**Profile panel layout (2026-10-21):** Compact 48px photo at the upper left, 14px username beside it at the top, and signed-in email below a thin divider. Layout only; dismissal and Open More remain. Root lint/build and 11 existing profile tests pass; live deployment verification pending.
+**Profile panel layout (2026-10-21):** Compact 48px photo at the upper left, 14px username beside it at the top, and signed-in email below a thin divider. Layout only; dismissal and Open More remain. Root lint/build and 11 existing profile tests pass. First public check verified layout/email but exposed a narrow-screen left overflow; width now accounts for right offset. Final live verification pending.
 
 **Profile dropdown:** User authorized continuing beyond the 85% usage stop to finish/deploy this scoped change. Header avatar opens a photo/name popover; Open More is explicit. Eleven focused tests pass; Released at 1906b6fcb65875f09bbb106ebeb5cf4d68d70c93: GitHub main/public Render exact SHA verified. Eleven focused tests and root lint/build pass. Signed-in browser verified avatar opens photo/name dropdown while staying on Today; Escape/outside click dismiss, Open More navigates to More, popup fits viewport. Dropdown left open in user tabs 1/7. No data changes or required work remains.
 
@@ -271,7 +271,7 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 
 ## Resume Point
 
-**Profile panel layout (2026-10-21):** Compact 48px photo at the upper left, 14px username beside it at the top, and signed-in email below a thin divider. Layout only; dismissal and Open More remain. Root lint/build and 11 existing profile tests pass; live deployment verification pending.
+**Profile panel layout (2026-10-21):** Compact 48px photo at the upper left, 14px username beside it at the top, and signed-in email below a thin divider. Layout only; dismissal and Open More remain. Root lint/build and 11 existing profile tests pass. First public check verified layout/email but exposed a narrow-screen left overflow; width now accounts for right offset. Final live verification pending.
 
 **Profile dropdown:** codex/profile-dropdown, AioHeader and focused tests updated. Released at 1906b6fcb65875f09bbb106ebeb5cf4d68d70c93: GitHub main/public Render exact SHA verified. Eleven focused tests and root lint/build pass. Signed-in browser verified avatar opens photo/name dropdown while staying on Today; Escape/outside click dismiss, Open More navigates to More, popup fits viewport. Dropdown left open in user tabs 1/7. No data changes or required work remains. Usage exception authorized for this change only. Preserve dist-native.
 
