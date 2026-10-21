@@ -1,5 +1,7 @@
 # UI Components
 
+Hallway Route Manager card uses the existing black AIØ app artwork, copied from apps/route-manager/public/apple-touch-icon.png into apps/hallway/src/assets/route-manager-icon.png and bundled by Vite. The hallway remains independent of the room runtime.
+
 BathroomDashboard.tsx shows Bathroom Today/Upcoming, start-date setup and optional-extra review. bathroom.ts calculates due dates and applies linked session outcomes. Home groups older planning under Other spaces & tasks. Existing session preparation and work panel remain the main cleaning flow.
 
 CleaningSession.tsx exports GetReady, WorkSession and SessionHistory. TaskCreator hands selected room/activities to GetReady. App keeps an active session visible across Today/Spaces/History; tools and plan can be reviewed once before clock-in.

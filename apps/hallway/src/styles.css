@@ -26,3 +26,5 @@ h1 { font-size: 48px; letter-spacing: -1.4px; line-height: 1.1; font-weight: 600
 .future-room h2 { margin: 0; color: #cbd5e1; font-size: 18px; font-weight: 500; }
 .future-room p { color: #8491a3; }
 @media (max-width: 639px) { main { padding: 44px 20px max(40px, env(safe-area-inset-bottom)); } h1 { font-size: 36px; } .rooms { grid-template-columns: 1fr; margin-top: 30px; } }
+
+.room-icon-branded { padding: 0; background: #000; overflow: hidden; } .room-icon-branded img { display: block; width: 52px; height: 52px; object-fit: contain; }

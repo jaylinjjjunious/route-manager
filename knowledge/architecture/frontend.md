@@ -1,5 +1,7 @@
 # Frontend Architecture
 
+Hallway Route Manager card uses the existing black AIØ app artwork, copied from apps/route-manager/public/apple-touch-icon.png into apps/hallway/src/assets/route-manager-icon.png and bundled by Vite. The hallway remains independent of the room runtime.
+
 ## Bathroom schedule dashboard (2026-10-21)
 
 BathroomDashboard owns start-date setup, Today/Upcoming and due-activity review. bathroom.ts owns the fixed user-approved frequencies and next-date/finished-outcome rules. sessions.ts applies explicit linked outcomes atomically with clock-out. App makes this the primary Today screen; generic planning remains in Other spaces & tasks. Space schedule/session link fields upgrade the plan to v4; old imports remain compatible.

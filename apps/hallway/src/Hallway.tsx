@@ -1,6 +1,7 @@
 import React from 'react';
-import { ArrowUpRight, DoorOpen, Layers3, Route, Sparkles } from 'lucide-react';
+import { ArrowUpRight, DoorOpen, Layers3, Sparkles } from 'lucide-react';
 import { rooms } from './rooms';
+import routeManagerIcon from './assets/route-manager-icon.png';
 
 export default function Hallway() {
   return <div className="hallway">
@@ -11,7 +12,7 @@ export default function Hallway() {
       <p className="intro">Choose a room to get started. Each software has its own workspace. Come back here whenever you want to switch.</p>
       <section className="rooms" aria-label="Software rooms">
         {rooms.map(room => <a className="room" href={room.href} key={room.id} aria-label={`Open ${room.name}`}>
-          <span className="room-top"><span className="room-icon">{room.id === 'cleaning' ? <Sparkles size={28} aria-hidden="true" /> : <Route size={28} aria-hidden="true" />}</span><span className="available"><i />Available</span></span>
+          <span className="room-top"><span className={`room-icon ${room.id === 'route-manager' ? 'room-icon-branded' : ''}`}>{room.id === 'cleaning' ? <Sparkles size={28} aria-hidden="true" /> : <img src={routeManagerIcon} width={52} height={52} alt="" />}</span><span className="available"><i />Available</span></span>
           <h2>{room.name}</h2><p>{room.description}</p>
           <span className="enter">Enter room <ArrowUpRight size={18} aria-hidden="true" /></span>
         </a>)}

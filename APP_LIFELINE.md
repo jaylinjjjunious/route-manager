@@ -48,6 +48,9 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
+**Hallway icon:** Route Manager card now uses its existing black AIØ app artwork, owned as a hallway asset; no routing/data changes. Release checks pending.
+
+
 **2026-10-21 Bathroom dashboard:** Today now centers a large Bathroom card with Today's cleaning, Start cleaning and Upcoming. User-approved schedule: daily toilet/sink wipe-downs; bathroom walls/cabinets/floor every 14 days; shower once per calendar month. Explicit start-date setup reuses the active Bathroom or creates it atomically, with no fake completions. Daily work starts on that date, two-week work starts 14 days later, shower starts one calendar month later. Start date can change before any completed scheduled activity, with no active session. Other spaces/tasks are retained in a collapsed section. Start cleaning selects due activities; a room review allows extras before Get ready → Clock in → Clock out. Linked session metadata identifies exact Bathroom activity IDs. Clock-out updates lastDone only for those explicitly marked finished; unfinished entries remain due. Next due is calculated from actual completion: +1 day, +14 days, or next calendar month with short-month clamping. No session length or generic matching task title implies completion. No duplicate task records are created. Older generic sessions/routines remain separate. V4 plan/link validation preserves old imports. Twenty-nine tests/lint/build/local browser pass; Released at 8492b23438cbcecfb8ca2a11c1dae5cc8a43fa67; GitHub main and public Render exact SHA verified. Twenty-nine tests and root lint/build pass. Public browser verified future/today start-date setup, correct daily/14-day/monthly Upcoming dates, due preselection, tools/clock-in/reload/clock-out and v4 JSON backup roundtrip. Public test clock-out marked zero activities complete and is explicitly annotated as verification; no cleaning was invented. Local partial completion/reload confirmed only finished work advances. User tab 7 is left on the start-date form; Today is open in tab 4. Provisional start date used in verification is today and remains editable. No required work remains; browser-only storage persists.
 
 
@@ -263,6 +266,9 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 
 ## Resume Point
 
+**Hallway icon:** Implemented on codex/hallway-route-manager-icon. Root lint/build, two hallway tests and local image-load/visual checks pass. Commit/push and public visual/link verification remain. Preserve dist-native.
+
+
 **Bathroom dashboard:** Implemented on codex/bathroom-schedule-dashboard. Twenty-nine tests/root lint/build/local browser full partial-finish flow pass. Released at 8492b23438cbcecfb8ca2a11c1dae5cc8a43fa67; GitHub main and public Render exact SHA verified. Twenty-nine tests and root lint/build pass. Public browser verified future/today start-date setup, correct daily/14-day/monthly Upcoming dates, due preselection, tools/clock-in/reload/clock-out and v4 JSON backup roundtrip. Public test clock-out marked zero activities complete and is explicitly annotated as verification; no cleaning was invented. Local partial completion/reload confirmed only finished work advances. User tab 7 is left on the start-date form; Today is open in tab 4. Provisional start date used in verification is today and remains editable. No required work remains; browser-only storage persists. Baseline checkpoint-2026-10-21-cleaning-sessions at f29cc1f. Preserve dist-native.
 
 
@@ -424,3 +430,7 @@ Verified all 13 findings against production main and started isolated remediatio
 - User approved the exact daily/two-week/monthly Bathroom schedule and a simple Today/Upcoming room UI. Added explicit start date and grouped older planning under Other spaces & tasks.
 - Due work is preselected; explicit linked clock-out outcomes advance dates, with unfinished work retained. V4 protects schedule fields and imports older plans.
 - Twenty-nine tests, root lint/build and local partial-finish/reload browser checks pass. Released at 8492b23438cbcecfb8ca2a11c1dae5cc8a43fa67; GitHub main and public Render exact SHA verified. Twenty-nine tests and root lint/build pass. Public browser verified future/today start-date setup, correct daily/14-day/monthly Upcoming dates, due preselection, tools/clock-in/reload/clock-out and v4 JSON backup roundtrip. Public test clock-out marked zero activities complete and is explicitly annotated as verification; no cleaning was invented. Local partial completion/reload confirmed only finished work advances. User tab 7 is left on the start-date form; Today is open in tab 4. Provisional start date used in verification is today and remains editable. No required work remains; browser-only storage persists.
+
+### 2026-10-21 — Route Manager hallway artwork
+
+- User requested the room's own symbol on its hallway button. Reused the existing black AIØ app icon as a bundled hallway asset. Validation/release pending.
