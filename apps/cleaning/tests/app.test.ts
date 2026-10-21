@@ -2,7 +2,7 @@ import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import App from '../src/App';
-import { emptyPlan, parsePlan, dayKey } from '../src/model';
+import { addDays, emptyPlan, parsePlan, dayKey } from '../src/model';
 import { configureBathroom } from '../src/bathroom';
 import { STORAGE_KEY } from '../src/storage';
 
@@ -157,4 +157,19 @@ it('marks only checked bathroom cleaning finished, handles save failure, undoes,
   click('Mark finished');act(()=>container.querySelector<HTMLInputElement>('dialog input[type="checkbox"]')!.click());click('Save finished cleaning');
   act(()=>root.unmount());root=createRoot(container);act(()=>root.render(React.createElement(App)));
   expect(container.querySelector('.bathroom-due-list')!.textContent).not.toContain('Toilet wipe-down');expect(container.querySelector('.finished-today')!.textContent).toContain('Toilet wipe-down');
+});
+
+it('shows only due daily, fortnightly and monthly work when starting cleaning',()=>{
+  const today=dayKey();
+  for (const [start, count] of [[today,2],[addDays(today,-14),5],[addDays(today,-40),6]] as const) {
+    const plan=configureBathroom(emptyPlan(),start,start);
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(plan));act(()=>root.render(React.createElement(App,{key:start})));
+    click('Start cleaning');const dialog=container.querySelector('dialog')!;
+    expect(dialog.querySelectorAll('.picker-choice')).toHaveLength(count);
+    expect(dialog.textContent).toContain('Toilet wipe-down');expect(dialog.textContent).toContain('Sink wipe-down');
+    expect(dialog.textContent?.includes('Clean bathroom floor')).toBe(count>=5);
+    expect(dialog.textContent?.includes('Clean the shower')).toBe(count===6);
+    click('Get ready');expect(container.querySelector('dialog')!.querySelectorAll('.routine-steps li')).toHaveLength(count);
+    click('Back to activities');click('Back');
+  }
 });
