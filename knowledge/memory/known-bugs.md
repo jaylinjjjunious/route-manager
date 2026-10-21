@@ -2,7 +2,7 @@
 
 ## Room routine limits (2026-10-20)
 
-Routine history is retained up to 500 visits per space and the existing 2 MB plan limit. Hitting limits blocks saves/new visits with an error; nothing is silently purged. Older open tabs must reload to load support for the new optional routine fields. No confirmed routine workflow defect after focused tests/local verification.
+Routine history is retained up to 500 visits per space and the existing 2 MB plan limit. Hitting limits blocks saves/new visits with an error; nothing is silently purged. Routine plans use version 2 so older open tabs reject rather than overwrite them; reload loads the new support. No confirmed routine workflow defect after focused tests/local verification.
 
 ## Cleaning room (2026-10-20)
 

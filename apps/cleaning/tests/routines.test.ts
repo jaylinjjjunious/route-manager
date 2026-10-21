@@ -30,9 +30,10 @@ it('supports old plans and preserves routine templates, progress and history thr
   const old = { ...emptyPlan(), spaces: [{ id: 'old', name: 'Old room', archived: false }] };
   expect(parsePlan(JSON.stringify(old))).toEqual(old);
   const plan = { ...emptyPlan(), spaces: [startRoutine(room())] };
-  expect(parsePlan(JSON.stringify(plan))).toEqual(plan);
-  expect(mergeBackup(plan, plan)).toEqual(plan);
-  expect(mergeBackup(emptyPlan(), plan)).toEqual(plan);
+  const upgraded = parsePlan(JSON.stringify(plan));
+  expect(upgraded).toEqual({ ...plan, version: 2 });
+  expect(mergeBackup(plan, plan)).toEqual(upgraded);
+  expect(mergeBackup(emptyPlan(), plan)).toEqual(upgraded);
 });
 it('rejects malformed steps and inconsistent visit progress without trusting backup objects', () => {
   const space = startRoutine(room()); const plan = () => ({ ...emptyPlan(), spaces: [space] });

@@ -2,7 +2,7 @@
 
 ## Room routines (2026-10-20)
 
-Cleaning RoomRoutine owns the routine editor and sequential visit dialog. Pure routines.ts owns snapshots and progress changes; model validation preserves optional space routine/run fields for backward-compatible backups. App provides Today room cards and visit History.
+Cleaning RoomRoutine owns the routine editor and sequential visit dialog. Pure routines.ts owns snapshots and progress changes; model validation preserves optional space routine/run fields for backward-compatible backup imports; routine plans save as version 2 so older app tabs cannot drop their fields. App provides Today room cards and visit History.
 
 ## Cleaning room (2026-10-20)
 

@@ -65,7 +65,7 @@ describe('backup and device storage preservation', () => {
   });
   it('rejects malformed versions, impossible dates, orphan tasks and broken completion links', () => {
     expect(() => parsePlan('{')).toThrow();
-    expect(() => parsePlan(JSON.stringify({ ...home(), version: 2 }))).toThrow();
+    expect(() => parsePlan(JSON.stringify({ ...home(), version: 99 }))).toThrow();
     const plan = home(); plan.tasks[0].spaceId = 'missing'; expect(() => parsePlan(JSON.stringify(plan))).toThrow();
     plan.tasks[0].spaceId = 'kitchen'; plan.tasks[0].due = '2026-02-30'; expect(() => parsePlan(JSON.stringify(plan))).toThrow();
     const completed = completeTask(home(), 'counters', now); completed.history = []; expect(() => parsePlan(JSON.stringify(completed))).toThrow();
