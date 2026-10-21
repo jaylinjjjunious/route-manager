@@ -2,6 +2,8 @@
 
 ## Mark finished from Today (2026-10-21)
 
+Released/verified 89c763e. Thirty-two tests/root lint/build pass; local partial finish/reload and public save/undo/reload verified. Public original due schedule restored after verification.
+
 Bathroom Today offers Mark finished without requiring a timer session. An initially unchecked checklist lists only due activities; Save advances only selected activities from the actual local completion date. Unselected work stays due; finished work appears in Upcoming and an expandable finished-today summary. Latest completion dates persist in existing v4 bathroom.lastDone and backups; no timer/session/history duration is invented. Active sessions use the existing Clock out path instead. Undo last finish is available in the current page lifetime, only while the schedule still matches that save and no session is active; reload/other-tab updates clear the shortcut. Saved-data errors retain the checklist and due list. Existing session clock-out is unchanged.
 
 

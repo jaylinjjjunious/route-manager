@@ -1,3 +1,7 @@
+# Cleaning direct finish
+
+Complete/deployed at 89c763e. Today offers Mark finished without clock-in; selected work clears and next dates advance. Immediate guarded Undo, finished-today summary, existing active-session Clock out and failure protection verified. Thirty-two tests/root lint/build pass; live test undone and original state reload-confirmed. No required work remains.
+
 # Left navigation sidebar
 
 Complete/deployed at b3e2df6. Eight focused tests/root lint/build pass; live logo opening, left layout, close/Escape/backdrop, focus, feature navigation and unchanged right-hand avatar verified. Swipe behavior covered by gesture tests; no physical-device swipe claim.

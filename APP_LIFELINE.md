@@ -48,7 +48,7 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
-**Cleaning direct finish:** Bathroom Today now has Mark finished → select actually finished due activities → Save. Clears only selected work, retains unfinished due work, schedules next dates, shows finished-today summary and an immediate guarded Undo. Uses existing lastDone; no fake timer/session/history entry. Active sessions finish through Clock out. Thirty-two Cleaning tests/root build/lint pass; local browser partial finish/reload verified. Public deployment verification pending.
+**Cleaning direct finish:** Bathroom Today now has Mark finished → select actually finished due activities → Save. Clears only selected work, retains unfinished due work, schedules next dates, shows finished-today summary and an immediate guarded Undo. Uses existing lastDone; no fake timer/session/history entry. Active sessions finish through Clock out. Thirty-two Cleaning tests/root build/lint pass; local browser partial finish/reload verified. Released at 89c763e4cf05670a0f2e55e2ea803df09eb4940b; GitHub main/public exact SHA verified. Public partial finish removed only toilet, retained sink, set next toilet date tomorrow; Undo/reload restored the exact original schedule with no cleaning left marked finished. Completion modal is open in user tab 4 with nothing selected. No required work remains.
 
 **Photo click retained:** Header profile photo again opens the same left sidebar alongside AIØ17/edge swipe. Released at 62e1c2b2cbe5b5015fbd892706c5e5f556cdbb48; GitHub main/public exact SHA verified. Eight focused tests/root lint/build pass. Public signed-in photo click, close and wordmark reopening verified; photo position unchanged. No required work remains.
 
@@ -279,7 +279,7 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 
 ## Resume Point
 
-**Cleaning direct finish:** Bathroom Today now has Mark finished → select actually finished due activities → Save. Clears only selected work, retains unfinished due work, schedules next dates, shows finished-today summary and an immediate guarded Undo. Uses existing lastDone; no fake timer/session/history entry. Active sessions finish through Clock out. Thirty-two Cleaning tests/root build/lint pass; local browser partial finish/reload verified. Public deployment verification pending.
+**Cleaning direct finish:** Bathroom Today now has Mark finished → select actually finished due activities → Save. Clears only selected work, retains unfinished due work, schedules next dates, shows finished-today summary and an immediate guarded Undo. Uses existing lastDone; no fake timer/session/history entry. Active sessions finish through Clock out. Thirty-two Cleaning tests/root build/lint pass; local browser partial finish/reload verified. Released at 89c763e4cf05670a0f2e55e2ea803df09eb4940b; GitHub main/public exact SHA verified. Public partial finish removed only toilet, retained sink, set next toilet date tomorrow; Undo/reload restored the exact original schedule with no cleaning left marked finished. Completion modal is open in user tab 4 with nothing selected. No required work remains.
 
 **Photo click retained:** Header profile photo again opens the same left sidebar alongside AIØ17/edge swipe. Released at 62e1c2b2cbe5b5015fbd892706c5e5f556cdbb48; GitHub main/public exact SHA verified. Eight focused tests/root lint/build pass. Public signed-in photo click, close and wordmark reopening verified; photo position unchanged. No required work remains.
 
@@ -489,3 +489,9 @@ Verified all 13 findings against production main and started isolated remediatio
 
 - Header photo remains a button opening the shared left sidebar, alongside AIØ17 and edge-swipe entry. User explicitly requested preserving this interaction.
 - Eight focused tests/root lint/build pass; public exact SHA 62e1c2b and both clickable entries verified.
+
+### 2026-10-21 — Complete Bathroom work from Today
+
+- Mark finished opens an unchecked due-only checklist. Save advances selected lastDone dates, clears those items from Today and shows finished-today/Upcoming; no session or working time invented.
+- Active timers use Clock out; immediate guarded Undo is available until reload/other-tab update. Existing v4 schema/backups remain.
+- Thirty-two Cleaning tests/root lint/build pass, including failed persistence, partial finish/reload, undo and active-session protection. Local/public full interaction verified at 89c763e. Public test was immediately undone and reload-confirmed; no real cleaning was fabricated.
