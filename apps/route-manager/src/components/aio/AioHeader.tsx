@@ -104,9 +104,9 @@ export default function AioHeader({
           </h1>
           <p className="mt-1.5 text-[13px] font-medium text-[var(--color-aio-text-2)]">{formatToday()}</p>
         </div>
-        <span className={profileClass} title="Profile">
+        <button type="button" className={profileClass} title="Profile" aria-label="Open profile menu" aria-controls={menuId} aria-expanded={open} aria-haspopup="dialog" onClick={openMenu}>
           <img src={AVATAR_PATH} alt="Your profile picture" className="h-full w-full rounded-full object-cover" />
-        </span>
+        </button>
       </div>
       <dialog id={menuId} ref={menuRef} aria-label="Navigation sidebar" onClose={() => setOpen(false)}
         onClick={event => { if (event.target === event.currentTarget) {

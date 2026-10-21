@@ -29,6 +29,7 @@ it('opens the left sidebar from the wordmark while leaving the avatar in place',
   expect(container.querySelector('img[alt="Your profile picture"]')?.closest('dialog')).toBeNull();
   expect(document.body.style.overflow).toBe('hidden');
   click('×'); expect((panel as HTMLDialogElement).open).toBe(false);expect(document.body.style.overflow).not.toBe('hidden');
+  act(()=>container.querySelector<HTMLButtonElement>('button[aria-label="Open profile menu"]')!.click());expect((panel as HTMLDialogElement).open).toBe(true);
   expect(existsSync('public/profile/avatar.webp')).toBe(true);
 });
 it('opens each retained destination from the panel',()=>{
