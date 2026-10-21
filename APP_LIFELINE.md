@@ -48,7 +48,7 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
-**Profile dropdown:** User authorized continuing beyond the 85% usage stop to finish/deploy this scoped change. Header avatar opens a photo/name popover; Open More is explicit. Eleven focused tests pass; build/browser/release checks pending.
+**Profile dropdown:** User authorized continuing beyond the 85% usage stop to finish/deploy this scoped change. Header avatar opens a photo/name popover; Open More is explicit. Eleven focused tests pass; Released at 1906b6fcb65875f09bbb106ebeb5cf4d68d70c93: GitHub main/public Render exact SHA verified. Eleven focused tests and root lint/build pass. Signed-in browser verified avatar opens photo/name dropdown while staying on Today; Escape/outside click dismiss, Open More navigates to More, popup fits viewport. Dropdown left open in user tabs 1/7. No data changes or required work remains.
 
 
 **Hallway icon:** Route Manager card now uses its existing black AIØ app artwork, owned as a hallway asset; no routing/data changes. Released at 4bbce3d69fc964ca1f2e86c4290c663e73e6bec3: GitHub main and public Render exact SHA verified. Two hallway tests and root lint/build pass. Local/public icon load verified; clicking the icon opens signed-in Route Manager, and Main menu returns to hallway. No data changes. User tab 1 is left on the hallway. No required work remains.
@@ -269,7 +269,7 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 
 ## Resume Point
 
-**Profile dropdown:** codex/profile-dropdown, AioHeader and focused tests updated. Finish lint/build, browser outside/Escape/More checks, commit/push/public deployment. Usage exception authorized for this change only. Preserve dist-native.
+**Profile dropdown:** codex/profile-dropdown, AioHeader and focused tests updated. Released at 1906b6fcb65875f09bbb106ebeb5cf4d68d70c93: GitHub main/public Render exact SHA verified. Eleven focused tests and root lint/build pass. Signed-in browser verified avatar opens photo/name dropdown while staying on Today; Escape/outside click dismiss, Open More navigates to More, popup fits viewport. Dropdown left open in user tabs 1/7. No data changes or required work remains. Usage exception authorized for this change only. Preserve dist-native.
 
 
 **Hallway icon:** Implemented on codex/hallway-route-manager-icon. Root lint/build, two hallway tests and local image-load/visual checks pass. Released at 4bbce3d69fc964ca1f2e86c4290c663e73e6bec3: GitHub main and public Render exact SHA verified. Two hallway tests and root lint/build pass. Local/public icon load verified; clicking the icon opens signed-in Route Manager, and Main menu returns to hallway. No data changes. User tab 1 is left on the hallway. No required work remains. Preserve dist-native.
@@ -444,4 +444,4 @@ Verified all 13 findings against production main and started isolated remediatio
 ### 2026-10-21 — Profile dropdown
 
 - Replaced immediate avatar → More with a native photo/name popup and explicit Open More. No unrequested menu items. User authorized completion/deployment past the usage threshold.
-- Eleven focused tests pass; final validation/release pending.
+- Eleven focused tests pass; Released at 1906b6fcb65875f09bbb106ebeb5cf4d68d70c93: GitHub main/public Render exact SHA verified. Eleven focused tests and root lint/build pass. Signed-in browser verified avatar opens photo/name dropdown while staying on Today; Escape/outside click dismiss, Open More navigates to More, popup fits viewport. Dropdown left open in user tabs 1/7. No data changes or required work remains.
