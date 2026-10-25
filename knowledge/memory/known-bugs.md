@@ -2,7 +2,7 @@
 
 ## Navigation/Habits/API audit defects (2026-10-25)
 
-Reproduced Back leaving the room after Today → Jobs; absent /api/habits returning HTML and JSON parse warnings; unnamed scan exit controls. Repairs implemented, 25 focused tests and root lint/build pass. Public retest pending. Habits cloud sync is unavailable, explicitly disclosed; existing browser records retained. Unknown APIs return JSON 404. See completed/2026-10-25-navigation-audit.md for tested limits.
+Reproduced Back leaving the room after Today → Jobs; absent /api/habits returning HTML and JSON parse warnings; unnamed scan exit controls. Repairs implemented, 25 focused tests and root lint/build pass. Released 10c6e97; exact public SHA and live history/reload/Habits/scan-exit/guest regression checks pass. Habits cloud sync is unavailable, explicitly disclosed; existing browser records retained. After authentication, unknown APIs return JSON 404; anonymous requests remain JSON 401. One browser receiving-end connection error appeared during reload without an app UI failure; no matching messaging API exists in app source, attribution unconfirmed. See completed/2026-10-25-navigation-audit.md for tested limits.
 
 ## Guest bypass loop (2026-10-25)
 

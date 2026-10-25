@@ -1,5 +1,9 @@
 # Release History
 
+## 2026-10-25 — Full signed-in navigation audit repairs
+
+Released at 10c6e9715ed2e4a6a427e0db3b2be248582a4f38; GitHub main/exact public Render SHA verified. Live signed-in Inventory → Back Jobs → Back Today → Forward Jobs, Jobs reload, explicit Habits browser-only notice and named scan exit pass. Guest bypass/reload still works independently; anonymous admin and unknown API requests remain JSON/auth-gated 401. No production records changed. Navigation audit complete within the non-destructive scope; camera/uploads/real completions/password changes were not exercised. Twenty-five focused tests/root lint/build pass. See 2026-10-25-navigation-audit.md for all destinations and limits. No Cleaning changes.
+
 ## 2026-10-25 — Usable isolated Route Manager guest workspace
 
 Released at 54b519a00312ceafc6815370bf564835727d4d5a; GitHub main/exact public Render SHA verified. Public browser passed bypass entry, guest starting-address save, job create/edit, Today/Jobs, complete/reload/reopen, Maps opening, Main menu → Route Manager with no login bounce, and Sign in → bypass plan resume. Anonymous admin remains 401. Only labeled guest verification data was created; reopened, no real work/account data changed. No required work remains. Root lint/build and 16 focused tests pass. Dedicated GuestApp/guest storage replaces the rejected menu-only bypass. Cloud/account/proof/inventory/admin restrictions remain explicit; no Cleaning changes.
