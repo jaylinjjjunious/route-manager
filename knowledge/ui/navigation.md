@@ -1,5 +1,9 @@
 # Navigation System
 
+## Guest entry (2026-10-25)
+
+Route Manager's All in One sign-in page includes a visible **Bypass sign-in** link styled as a button below Sign In. It opens the existing public main menu through `hallwayUrl()`; the accompanying copy explains that private Route Manager features still require sign-in. No guest identity, private workspace, cache import or server authorization bypass is created. Re-entering Route Manager without a session shows login again.
+
 ## Cleaning account sync
 
 CloudWorkspace provides shared-account sign-in, owner-scoped App mounting, visible local/cloud status and retry, explicit browser-plan import, conflict choices and downloadable recovery copies. Existing offline planning/backups remain. See ../features/cleaning-planner.md.

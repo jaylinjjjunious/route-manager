@@ -1,3 +1,7 @@
+# Guest sign-in entry
+
+Implementation complete: Bypass sign-in opens the public main menu; private Route Manager tools retain login. Root lint/build and 11 focused tests pass; local production button/disclosure/menu URL visually verified. Commit/push and public interaction verification pending. No Cleaning changes.
+
 # Cleaning cloud sync
 
 Implementation/deployment complete at caefb0c. Forty-seven tests/root lint/build and live account restore/cloud write/readback pass. Legacy device plan remains untouched. One user decision remains: add that plan to the currently signed-in account using the visible import button. Do not silently assign ownership. No real cleaning completions created; verification space archived.

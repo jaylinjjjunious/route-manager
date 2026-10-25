@@ -61,9 +61,13 @@ local technician identity, not a Supabase session, and contains no records.
 This mode is not compiled into production behavior, does not mint tokens, and
 does not relax `requireAuth()` for protected APIs.
 
+### Guest main-menu entry (2026-10-25)
+
+The production sign-in page always offers **Bypass sign-in** below Sign In. It performs document navigation to `hallwayUrl()` (normally `/#home`), the existing public All in One software directory. The adjacent description explains that private Route Manager features require sign-in. Selecting Route Manager again returns an unauthenticated visitor to login. This entry creates no identity/session, mounts no Route Manager App, reads no private cached records and changes no server/admin authorization. Full guest Route Manager tools remain deferred because legacy feature storage is not comprehensively owner-scoped. Cleaning behavior is unchanged.
+
 ### Local-Only Workspace Entry
 
-The login page offers Continue in Dev Mode when the development/loopback guard passes, or when the existing `VITE_PUBLIC_WORKSPACE_BYPASS=true` build flag is enabled (as in render.yaml). Entry sets verificationMode and provides an in-memory synthetic dev-user-local identity for local UI consumers. It creates no Supabase session or access token. Protected cloud APIs still require real authentication. Signing out clears the synthetic identity. A real session user takes precedence.
+The login page offers Continue in Dev Mode only when the development/loopback guard and `VITE_LOCAL_AUTH_BYPASS=true` pass. The public-workspace flag does not enable this guard; render.yaml sets it false. Entry sets verificationMode and provides an in-memory synthetic dev-user-local identity for local UI consumers. It creates no Supabase session or access token. Protected cloud APIs still require real authentication. Signing out clears the synthetic identity. A real session user takes precedence. This development control is separate from the public guest main-menu link above.
 
 **Worker (`worker/index.ts`):**
 - The Worker does not currently validate Supabase bearer tokens.

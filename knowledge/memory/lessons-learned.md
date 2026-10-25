@@ -178,3 +178,7 @@ Calling scrollIntoView on a page container placed its title/actions underneath t
 ## Cleaning cloud sync (2026-10-21)
 
 Use owner-scoped caches and explicit unowned-plan import. Pin each request to the owner’s session token, dispose old coordinators after account changes, and reject older cloud reads after a newer tab has acknowledged. Compare canonical plan equality to recover lost acknowledgements; use expected-revision writes and preserve both snapshots before explicit conflict resolution. Verify a server-side change returns through the actual client, not only local reload.
+
+## 2026-10-25 — Guest entry boundaries
+
+Use the independent public hallway for guest entry while legacy Route Manager storage remains incompletely owner-scoped. Do not enable synthetic production users to bypass login; protected APIs alone do not protect cached browser records.
