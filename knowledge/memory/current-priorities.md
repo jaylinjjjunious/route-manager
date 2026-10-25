@@ -1,6 +1,6 @@
 # Guest sign-in entry
 
-Implementation complete: Bypass sign-in opens the public main menu; private Route Manager tools retain login. Root lint/build and 11 focused tests pass; local production button/disclosure/menu URL visually verified. Commit/push and public interaction verification pending. No Cleaning changes.
+Implementation complete: Bypass sign-in opens the public main menu; private Route Manager tools retain login. Root lint/build and 11 focused tests pass; local production button/disclosure/menu URL visually verified. Released at 630b2b6; GitHub main/public exact SHA verified. Live bypass → menu → Route Manager login loop verified; anonymous admin 401. No required work remains. No Cleaning changes.
 
 # Cleaning cloud sync
 
