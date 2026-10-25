@@ -181,4 +181,4 @@ Use owner-scoped caches and explicit unowned-plan import. Pin each request to th
 
 ## 2026-10-25 — Guest entry boundaries
 
-Use the independent public hallway for guest entry while legacy Route Manager storage remains incompletely owner-scoped. Do not enable synthetic production users to bypass login; protected APIs alone do not protect cached browser records.
+A menu-only redirect does not satisfy entry into Route Manager: test the complete destination and its reload behavior. Use a separate functional GuestApp and dedicated guest storage while legacy account caches remain incompletely owner-scoped. Never fabricate production users; protected APIs alone do not protect cached browser records.

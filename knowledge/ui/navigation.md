@@ -2,7 +2,7 @@
 
 ## Guest entry (2026-10-25)
 
-Route Manager's All in One sign-in page includes a visible **Bypass sign-in** link styled as a button below Sign In. It opens the existing public main menu through `hallwayUrl()`; the accompanying copy explains that private Route Manager features still require sign-in. No guest identity, private workspace, cache import or server authorization bypass is created. Re-entering Route Manager without a session shows login again.
+Route Manager's All in One sign-in page includes **Bypass sign-in** below Sign In. It enters a usable isolated Guest workspace, with Today/Jobs navigation, Add/Edit job, completion/reopen, starting address and Maps directions. The guest-entry marker survives reload and same-tab Main menu → Route Manager round trips; Sign in exits guest mode explicitly. Guest jobs use a separate browser-only key, never account caches. Account/cloud/proof/inventory/admin restrictions are visible. This replaces the rejected menu-only redirect.
 
 ## Cleaning account sync
 

@@ -1,6 +1,6 @@
-# Guest sign-in entry
+# Usable Route Manager guest entry
 
-Implementation complete: Bypass sign-in opens the public main menu; private Route Manager tools retain login. Root lint/build and 11 focused tests pass; local production button/disclosure/menu URL visually verified. Released at 630b2b6; GitHub main/public exact SHA verified. Live bypass → menu → Route Manager login loop verified; anonymous admin 401. No required work remains. No Cleaning changes.
+User rejected menu-only bypass. Isolated GuestApp now provides Today/Jobs planning, create/edit/complete/reopen, starting address and directions, with its own guest key and reload-persistent entry marker. No account records or auth weakening. Sixteen focused tests/root lint/build and local creation/navigation/completion/reload pass. Production push and public full workflow pending.
 
 # Cleaning cloud sync
 

@@ -48,6 +48,8 @@ Place this file in the Route Manager project beside `AGENTS.md` and the existing
 
 ## Current Snapshot
 
+**Usable guest workspace correction (2026-10-25):** User rejected the menu-only bypass/sign-in loop. Bypass now mounts isolated GuestApp with Today/Jobs, browser-local create/edit/complete/reopen, starting address and Maps directions. Dedicated guest storage only; no synthetic identity, private account imports or protected API access. Entry survives tab reload/hallway roundtrips; Sign in exits and real sessions take precedence. Root lint/build and 16 focused tests pass; local entry/create/Jobs/complete/reload verified. Production release and full public workflow pending on codex/isolated-route-manager-guest. Supersedes the earlier menu-only release below.
+
 **Guest sign-in entry (2026-10-25):** Added Bypass sign-in below Sign In, opening the public All in One main menu with an explicit private-feature sign-in restriction. No synthetic identity, account App mount, private cache access or auth/admin change. Corrected stale public-bypass documentation. Root lint/build and 11 focused auth/navigation tests pass after npm ci. Local production preview confirms visible button, disclosure and correct menu URL. Released at 630b2b615232682a19d4556d0f0ee8fd25833a10; GitHub main and exact public Render SHA verified. Public browser confirms visible bypass → main menu → Route Manager returns to login; anonymous admin remains 401. No required implementation work remains.
 
 **Cleaning cloud sync:** User requested account sync. Independent Cleaning Supabase client, shared same-origin session, RLS cloud plans with atomic expected revisions, per-owner offline caches, explicit legacy import and conflict/recovery UI implemented. Migration applied; rollback-only isolation/revision/anonymous/size tests pass. Forty-seven Cleaning tests and final root lint/build pass; local unsigned cloud entry and existing offline plan verified. Existing legacy data untouched; user answer on importing into signed-in account pending. Released at caefb0c3993d279d6cc9fc7318e35295ea35ce60; GitHub main/public exact SHA verified. Live existing-account recovery, cloud write acknowledgement/reload and cloud-side change download verified. Labeled verification space archived and synced; no cleaning completion or timer invented. Database isolation/revision/size/anonymous checks rolled back; zero verification identities remain. Original browser plan preserved; its account import still awaits the user’s answer.
@@ -140,6 +142,8 @@ Required installation step for reliable startup discovery: add this reference to
 > In every Route Manager session, read the startup sections of `APP_LIFELINE.md` before substantive work. Reference its relevant sections periodically during ongoing work, at milestones, before important decisions, and after interruptions or context compaction. Keep its snapshot, decisions, history, and resume notes current as meaningful project changes occur; reuse unchanged context instead of rereading the entire history.
 
 ## Active Decisions
+
+- Guest bypass must enter usable Route Manager, not redirect to a menu that loops to login. Keep guest shell/storage separate from account App; see knowledge/decisions/2026-10-25-isolated-guest-workspace.md.
 
 - User chose a Bathroom-focused Today dashboard. Daily toilet/sink wipe-downs, 14-day walls/cabinets/floor, calendar-month shower. Select a start date; clock-out advances only explicit finished linked work. Larger jobs start after the first interval; no manufactured cleaning history.
 
@@ -284,6 +288,8 @@ For each item, use a stable ID such as Q-001 and record: the question or idea, i
 - **Follow-up:** Verify signed-in sync works end-to-end after returning from official CE Check-In site.
 
 ## Resume Point
+
+**Usable guest workspace correction (2026-10-25):** User rejected the menu-only bypass/sign-in loop. Bypass now mounts isolated GuestApp with Today/Jobs, browser-local create/edit/complete/reopen, starting address and Maps directions. Dedicated guest storage only; no synthetic identity, private account imports or protected API access. Entry survives tab reload/hallway roundtrips; Sign in exits and real sessions take precedence. Root lint/build and 16 focused tests pass; local entry/create/Jobs/complete/reload verified. Production release and full public workflow pending on codex/isolated-route-manager-guest. Supersedes the earlier menu-only release below.
 
 **Guest sign-in entry (2026-10-25):** Added Bypass sign-in below Sign In, opening the public All in One main menu with an explicit private-feature sign-in restriction. No synthetic identity, account App mount, private cache access or auth/admin change. Corrected stale public-bypass documentation. Root lint/build and 11 focused auth/navigation tests pass after npm ci. Local production preview confirms visible button, disclosure and correct menu URL. Released at 630b2b615232682a19d4556d0f0ee8fd25833a10; GitHub main and exact public Render SHA verified. Public browser confirms visible bypass → main menu → Route Manager returns to login; anonymous admin remains 401. No required implementation work remains.
 
@@ -523,3 +529,7 @@ Verified all 13 findings against production main and started isolated remediatio
 ### 2026-10-25 — Guest main-menu entry
 
 **Guest sign-in entry (2026-10-25):** Added Bypass sign-in below Sign In, opening the public All in One main menu with an explicit private-feature sign-in restriction. No synthetic identity, account App mount, private cache access or auth/admin change. Corrected stale public-bypass documentation. Root lint/build and 11 focused auth/navigation tests pass after npm ci. Local production preview confirms visible button, disclosure and correct menu URL. Released at 630b2b615232682a19d4556d0f0ee8fd25833a10; GitHub main and exact public Render SHA verified. Public browser confirms visible bypass → main menu → Route Manager returns to login; anonymous admin remains 401. No required implementation work remains.
+
+### 2026-10-25 — Correct bypass to enter usable Route Manager
+
+**Usable guest workspace correction (2026-10-25):** User rejected the menu-only bypass/sign-in loop. Bypass now mounts isolated GuestApp with Today/Jobs, browser-local create/edit/complete/reopen, starting address and Maps directions. Dedicated guest storage only; no synthetic identity, private account imports or protected API access. Entry survives tab reload/hallway roundtrips; Sign in exits and real sessions take precedence. Root lint/build and 16 focused tests pass; local entry/create/Jobs/complete/reload verified. Production release and full public workflow pending on codex/isolated-route-manager-guest. Supersedes the earlier menu-only release below.

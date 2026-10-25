@@ -1,5 +1,9 @@
 # Frontend Architecture
 
+## Isolated Route Manager guest (2026-10-25)
+
+ProtectedApp lazily mounts guest/GuestApp.tsx after explicit bypass, separately from authenticated App. guestStorage.ts owns the guest model, strict read validation, dedicated localStorage key and tab-scoped sessionStorage entry marker. GuestApp has Today/Jobs, local forms, completion/reopen and Maps links; no account feature/auth-service imports. Real sessions supersede guest mode; Sign in leaves it. The account component tree below remains unchanged.
+
 Hallway Route Manager card uses the existing black AIØ app artwork, copied from apps/route-manager/public/apple-touch-icon.png into apps/hallway/src/assets/route-manager-icon.png and bundled by Vite. The hallway remains independent of the room runtime.
 
 ## Bathroom schedule dashboard (2026-10-21)

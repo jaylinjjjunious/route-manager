@@ -1,5 +1,9 @@
 # Known Bugs
 
+## Guest bypass loop (2026-10-25)
+
+The menu-only bypass returned to login on entering Route Manager and did not satisfy the user. Replaced by isolated GuestApp with explicit guest entry, independent local jobs and retained mode across reload/hallway return. Sixteen focused tests and local browser pass; production release verification pending.
+
 ## Bathroom scheduling limits (2026-10-21)
 
 No confirmed workflow defect after focused/local checks. Dashboard manages the first active scheduled Bathroom; additional scheduled rooms are future scope. Start date is editable only before any recorded scheduled completion and while clocked out. Generic activity sessions do not advance the Bathroom schedule unless explicitly linked. Browser-only storage and device-clock limits persist.

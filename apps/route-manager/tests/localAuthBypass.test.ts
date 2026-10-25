@@ -52,7 +52,7 @@ describe("LoginPage dev mode bypass control", () => {
   });
 
   it("shows Continue in Dev Mode button when bypass is available", () => {
-    act(() => root.render(React.createElement(LoginPage, { onForgotPassword: vi.fn() })));
+    act(() => root.render(React.createElement(LoginPage, { onForgotPassword: vi.fn(), onBypass: vi.fn() })));
 
     const button = container.querySelector<HTMLButtonElement>(
       'button[aria-label="Continue in development mode without signing in"]',
@@ -69,7 +69,7 @@ describe("LoginPage dev mode bypass control", () => {
 
   it("renders no bypass control when the guard is unavailable", () => {
     authMock.workspaceBypassAvailable = false;
-    act(() => root.render(React.createElement(LoginPage, { onForgotPassword: vi.fn() })));
+    act(() => root.render(React.createElement(LoginPage, { onForgotPassword: vi.fn(), onBypass: vi.fn() })));
 
     expect(container.querySelector('[aria-label="Continue in development mode without signing in"]')).toBeNull();
 
