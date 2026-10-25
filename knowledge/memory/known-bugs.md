@@ -2,7 +2,7 @@
 
 ## Guest bypass loop (2026-10-25)
 
-The menu-only bypass returned to login on entering Route Manager and did not satisfy the user. Replaced by isolated GuestApp with explicit guest entry, independent local jobs and retained mode across reload/hallway return. Sixteen focused tests and local browser pass; production release verification pending.
+The menu-only bypass returned to login on entering Route Manager and did not satisfy the user. Replaced by isolated GuestApp with explicit guest entry, independent local jobs and retained mode across reload/hallway return. Resolved at 54b519a; sixteen focused tests/root lint/build pass. Exact public SHA and live entry/create/edit/completion/reload/reopen, hallway roundtrip without bounce and explicit Sign in/re-entry verified. Account authorization unchanged; anonymous admin 401.
 
 ## Bathroom scheduling limits (2026-10-21)
 

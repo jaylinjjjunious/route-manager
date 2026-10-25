@@ -1,6 +1,6 @@
 # Usable Route Manager guest entry
 
-User rejected menu-only bypass. Isolated GuestApp now provides Today/Jobs planning, create/edit/complete/reopen, starting address and directions, with its own guest key and reload-persistent entry marker. No account records or auth weakening. Sixteen focused tests/root lint/build and local creation/navigation/completion/reload pass. Production push and public full workflow pending.
+User rejected menu-only bypass. Isolated GuestApp now provides Today/Jobs planning, create/edit/complete/reopen, starting address and directions, with its own guest key and reload-persistent entry marker. No account records or auth weakening. Sixteen focused tests/root lint/build and local creation/navigation/completion/reload pass. Released at 54b519a00312ceafc6815370bf564835727d4d5a; GitHub main/exact public Render SHA verified. Public browser passed bypass entry, guest starting-address save, job create/edit, Today/Jobs, complete/reload/reopen, Maps opening, Main menu → Route Manager with no login bounce, and Sign in → bypass plan resume. Anonymous admin remains 401. Only labeled guest verification data was created; reopened, no real work/account data changed. No required work remains.
 
 # Cleaning cloud sync
 

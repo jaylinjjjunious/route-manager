@@ -1,5 +1,9 @@
 # Release History
 
+## 2026-10-25 — Usable isolated Route Manager guest workspace
+
+Released at 54b519a00312ceafc6815370bf564835727d4d5a; GitHub main/exact public Render SHA verified. Public browser passed bypass entry, guest starting-address save, job create/edit, Today/Jobs, complete/reload/reopen, Maps opening, Main menu → Route Manager with no login bounce, and Sign in → bypass plan resume. Anonymous admin remains 401. Only labeled guest verification data was created; reopened, no real work/account data changed. No required work remains. Root lint/build and 16 focused tests pass. Dedicated GuestApp/guest storage replaces the rejected menu-only bypass. Cloud/account/proof/inventory/admin restrictions remain explicit; no Cleaning changes.
+
 ## 2026-10-25 — Guest sign-in main-menu entry
 
 Implementation 630b2b615232682a19d4556d0f0ee8fd25833a10 pushed to GitHub main. Bypass sign-in opens the existing public All in One menu; disclosure retains sign-in for private Route Manager features. No guest identity, account mount, cache import or server/admin auth relaxation. Corrected stale production bypass documentation. Root lint/build and 11 focused auth/navigation tests pass; local production preview visually confirms button/disclosure/menu URL. Exact public Render implementation SHA verified. Live browser verified visible bypass → main menu → Route Manager login; anonymous admin endpoint remains 401. No account records accessed or changed.
