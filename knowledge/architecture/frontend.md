@@ -1,5 +1,9 @@
 # Frontend Architecture
 
+## Navigation history repair (2026-10-25)
+
+useAppNavigation owns signed-in tab routing, deliberate pushState entries, duplicate-tap suppression and hashchange/popstate restoration. Empty/unknown hashes show Today; retired route/More/Settings bookmarks normalize using replaceState. App actions now use this same navigation path instead of changing only component state. Browser Back/Forward remain within page history before reaching the hallway.
+
 ## Isolated Route Manager guest (2026-10-25)
 
 ProtectedApp lazily mounts guest/GuestApp.tsx after explicit bypass, separately from authenticated App. guestStorage.ts owns the guest model, strict read validation, dedicated localStorage key and tab-scoped sessionStorage entry marker. GuestApp has Today/Jobs, local forms, completion/reopen and Maps links; no account feature/auth-service imports. Real sessions supersede guest mode; Sign in leaves it. The account component tree below remains unchanged.
@@ -103,7 +107,7 @@ Key state groups:
 - **Ride Mode**: `rideModeActive`, `currentStopIndex`, `rideSession`
 - **Shower Gate**: `useShowerGate(now)` hook in `src/features/showerGate/useShowerGate.ts` encapsulates all shower gate state, barcode scanner lifecycle, proof upload/sync, and cycle management. `src/App.tsx` consumes the hook and passes read-only state + action callbacks to `HabitsTab` and protected tab overlays.
 - **Monthly Probation Check-In**: `useProbationCheckIn(now)` owns the current `YYYY-MM` record, coaching phase, device class, proof capture, completion audit, and day-8 lock. `App.tsx` composes that lock with Shower Gate through `jobAccessReady`; `ProbationCheckInPanel` is mounted above Today and Jobs.
-- **Habits**: `useHabits(todayKey)` hook in `src/features/habits/useHabits.ts` manages `habitTasks`, `habitLogs`, active task, derived stats, localStorage persistence, and backend sync. `src/App.tsx` consumes the hook and passes values to `HabitsTab`.
+- **Habits**: `useHabits(todayKey)` hook in `src/features/habits/useHabits.ts` manages `habitTasks`, `habitLogs`, active task, derived stats, localStorage persistence with explicit browser-only status; the nonexistent backend sync calls were removed in the 2026-10-25 audit. `src/App.tsx` consumes the hook and passes values to `HabitsTab`.
 - **Proof Vault**: `useProofVault` in `src/features/proofVault/useProofVault.ts` owns per-job proof records, selected proof record state, `proof_vault_records` persistence, proof folder creation, file asset insertion, notes updates, sorted/selected derivations, and read-only completed-job backfill. `App.tsx` keeps cross-feature orchestration such as Jobs completion triggers, Assistant/More navigation, and modal composition.
 - **Settings**: `startAddress`, `theme`, `debugCenterOpen`
 

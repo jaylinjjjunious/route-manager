@@ -183,29 +183,9 @@ Processes a screenshot image and extracts job/import data using Gemini's vision 
 
 ---
 
-## Domain: Habits (Worker Only)
+## Domain: Habits (retired)
 
-### GET `/api/habits`
-
-| Field | Value |
-|-------|-------|
-| **Auth** | None |
-| **Response** | `{ ...habitState }` |
-
-Returns the current habit state from the `habit_state` D1 table.
-
----
-
-### PUT `/api/habits`
-
-| Field | Value |
-|-------|-------|
-| **Auth** | None |
-| **Content-Type** | `application/json` |
-| **Body** | Habit state object |
-| **Response** | Updated habit state |
-
-Updates the habit state in D1.
+The current Habits UI is browser-only and makes no backend calls. Legacy Worker /api/habits routes are retired (410); Express provides no habit sync endpoint and returns JSON 404 for unknown API routes. Existing local records remain intact.
 
 ---
 

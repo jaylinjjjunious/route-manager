@@ -42,24 +42,21 @@ Daily habit tracking with mandatory shower enforcement (via shower gate) and cus
 - `habitTasks`: Array of HabitTask definitions
 - `habitLogs`: Array of HabitLog entries
 
-### Backend Sync
+### Browser-only persistence (2026-10-25)
 
-| Endpoint | Method | Storage |
-|----------|--------|---------|
-| `/api/habits` | GET | D1 habit_state table (Worker) or local JSON (Express) |
-| `/api/habits` | PUT | D1 habit_state table (Worker) or local JSON (Express) |
+Habits retain the existing browser task/log keys and no longer call the nonexistent Express /api/habits endpoint. The Worker legacy endpoint remains retired. The UI explicitly says This browser only and that account sync is unavailable. Existing records are preserved; no ownership migration or backend import occurs. GuestApp never mounts this hook. Browser clearing removes these records; storage quota failures remain a limitation.
 
 ### Same-Day Entry Rules
 
 - Can log multiple entries per day for same task
-- Existing entry for same date+taskId is replaced (upsert behavior)
+- Each explicit Log Time appends a session; same-day sessions accumulate
 
 ## Architecture
 
 ### Data Flow
 
 ```
-User Input → Habit Log → localStorage + Backend Sync
+User Input → Habit Log → localStorage
                 ↓
           Habit Dashboard → Progress Tracking
 ```
@@ -76,19 +73,19 @@ All habit UI elements are rendered by `src/features/habits/HabitsTab.tsx`, a pre
 - **7-Day Consistency Chart**: Daily bar chart against target minutes
 - **Log History**: All logged sessions with delete actions
 
-Habit state, effects, handlers, derived stats, and backend synchronization were extracted into `src/features/habits/useHabits.ts`. `src/App.tsx` calls `useHabits(todayKey)` and passes the returned values to `HabitsTab`. Shower-gate code in `App.tsx` mutates habit state only through typed integration methods (`addHabitTask`, `addHabitLog`, `ensureHabitTask`, `setActiveHabitTaskId`) exposed by the hook. This was a UI-only extraction followed by a full state/effect extraction with no intended behavior change.
+Habit state, effects, handlers, derived stats, and browser persistence live into `src/features/habits/useHabits.ts`. `src/App.tsx` calls `useHabits(todayKey)` and passes the returned values to `HabitsTab`. Shower-gate code in `App.tsx` mutates habit state only through typed integration methods (`addHabitTask`, `addHabitLog`, `ensureHabitTask`, `setActiveHabitTaskId`) exposed by the hook. This was a UI-only extraction followed by a full state/effect extraction with no intended behavior change.
 
 ## Design Rationale
 
-- **Dual storage**: localStorage for instant UI, backend for persistence
-- **Same-day replace**: Prevents duplicate entries for same task/day
+- **Local storage**: browser-only task/log persistence; no cloud sync
+- **Same-day sessions**: Explicit sessions accumulate minutes
 - **Mandatory shower**: Enforced by shower gate system, not optional
 - **Minutes-based tracking**: Simple quantitative habit measurement
 
 ## Dependencies
 
 - localStorage for client-side state
-- Backend API for persistence (Worker D1 or Express local JSON)
+- Existing localStorage task/log keys, preserved without migration
 - Shower gate system for mandatory shower enforcement
 - Barcode scanner for shower verification
 
@@ -97,28 +94,28 @@ Habit state, effects, handlers, derived stats, and backend synchronization were 
 1. Shower habit is mandatory — must be completed to unlock protected tabs
 2. Custom habits are optional but encouraged
 3. Multiple log entries allowed per day per task
-4. Same date+taskId replaces existing entry (upsert)
+4. Explicit same-day sessions add to daily totals
 5. Target minutes set per task, actual minutes logged daily
 6. Notes are optional per entry
-7. Habit state synced to backend on changes
+7. Habit state persists only in this browser
 
 ## Security
 
 - Habit data is user-specific (single-user app)
 - No sensitive data in habit logs
-- Backend sync uses authenticated endpoints
+- No backend requests or automatic account migration
 
 ## Edge Cases
 
 - **No tasks defined**: Empty state, prompt to create
 - **Future date logging**: Allowed for pre-logging
 - **Past date editing**: Can edit historical entries
-- **Backend unavailable**: Falls back to localStorage only
-- **Schema migration**: habit_state table handles version changes
+- **Cloud sync**: Unavailable; UI explicitly identifies browser-only storage
+- **Legacy data**: Existing local task/log records remain unchanged
 
 ## Failure Modes
 
-- Backend sync fails → data retained in localStorage
+- No server/cloud recovery: browser clearing removes local records
 - localStorage quota exceeded → state not persisted
 - Barcode scan fails → shower completion blocked
 - Clock skew → date-based logic may be incorrect
@@ -148,7 +145,7 @@ Habit state, effects, handlers, derived stats, and backend synchronization were 
 
 ## Related Source Files
 
-- `src/App.tsx` — habit state, effects, handlers, and backend synchronization
+- `src/App.tsx` — habit state, effects, handlers, and browser persistence
 - `src/features/habits/HabitsTab.tsx` — presentational Habits tab UI (extracted from App.tsx)
 - `worker/index.ts` — backend API for habit sync
 - `server.ts` — Express backend for habit sync

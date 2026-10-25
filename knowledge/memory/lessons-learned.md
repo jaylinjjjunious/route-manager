@@ -182,3 +182,7 @@ Use owner-scoped caches and explicit unowned-plan import. Pin each request to th
 ## 2026-10-25 — Guest entry boundaries
 
 A menu-only redirect does not satisfy entry into Route Manager: test the complete destination and its reload behavior. Use a separate functional GuestApp and dedicated guest storage while legacy account caches remain incompletely owner-scoped. Never fabricate production users; protected APIs alone do not protect cached browser records.
+
+## 2026-10-25 — Test actual navigation and persistence promises
+
+Exercise Browser Back/Forward after real page transitions; replacing every hash removes the user's in-app history. Keep deliberate page navigation separate from retired-bookmark normalization. Never let unmatched API requests become successful HTML. A local fallback is not account sync: disclose browser-only storage and remove calls to retired backends without migrating existing data.

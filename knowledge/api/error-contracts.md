@@ -5,6 +5,10 @@
 
 ---
 
+## Unknown API routes (2026-10-25)
+
+After all registered API handlers, Express returns 404 application/json with { error: 'API endpoint not found.' } for unmatched /api requests. These never reach the successful HTML app-shell fallback, in development or production. Existing route-specific auth/error contracts are unchanged.
+
 ## Standard Error Shape
 
 All API endpoints return errors in a consistent JSON format:

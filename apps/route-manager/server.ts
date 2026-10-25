@@ -945,6 +945,11 @@ function getLanIp(): string | null {
   return null;
 }
 
+// Unknown API routes must not fall through to the successful HTML app shell.
+app.use('/api', (_req, res) => {
+  res.status(404).json({ error: 'API endpoint not found.' });
+});
+
 // Setup Vite Dev server or static asset serving
 async function bootstrap() {
   const isProduction = process.env.NODE_ENV === "production";

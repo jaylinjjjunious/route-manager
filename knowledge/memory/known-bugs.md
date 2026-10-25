@@ -1,5 +1,9 @@
 # Known Bugs
 
+## Navigation/Habits/API audit defects (2026-10-25)
+
+Reproduced Back leaving the room after Today → Jobs; absent /api/habits returning HTML and JSON parse warnings; unnamed scan exit controls. Repairs implemented, 25 focused tests and root lint/build pass. Public retest pending. Habits cloud sync is unavailable, explicitly disclosed; existing browser records retained. Unknown APIs return JSON 404. See completed/2026-10-25-navigation-audit.md for tested limits.
+
 ## Guest bypass loop (2026-10-25)
 
 The menu-only bypass returned to login on entering Route Manager and did not satisfy the user. Replaced by isolated GuestApp with explicit guest entry, independent local jobs and retained mode across reload/hallway return. Resolved at 54b519a; sixteen focused tests/root lint/build pass. Exact public SHA and live entry/create/edit/completion/reload/reopen, hallway roundtrip without bounce and explicit Sign in/re-entry verified. Account authorization unchanged; anonymous admin 401.

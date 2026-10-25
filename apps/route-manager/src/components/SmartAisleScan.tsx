@@ -1055,7 +1055,7 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
             <h2 className="text-sm font-black text-white">Smart Aisle Scan</h2>
             <p className="text-[10px] text-white/40">{jobName}</p>
           </div>
-          <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-slate-400 hover:text-white transition">
+          <button type="button" aria-label="Close Smart Aisle Scan" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-slate-400 hover:text-white transition">
             <X size={16} />
           </button>
         </div>
@@ -1179,7 +1179,7 @@ export default function SmartAisleScan({ jobId, jobName, isOpen, onClose, onComp
 
                   {/* Top-left: Close + ordered capture tray */}
                   <div className="absolute top-3 left-3 right-3 z-10 flex items-start gap-3 select-none" style={{ userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}>
-                    <button onClick={onClose} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-black/50 text-white/80 hover:text-white transition">
+                    <button type="button" aria-label="Close Smart Aisle Scan" onClick={onClose} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-black/50 text-white/80 hover:text-white transition">
                       <X size={18} />
                     </button>
                     <div className="min-w-0 flex-1 rounded-xl bg-black/50 px-2.5 py-2 shadow-lg backdrop-blur-sm">

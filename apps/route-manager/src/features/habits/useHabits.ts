@@ -1,5 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
-import { authFetch } from '../../services/apiClient';
+import { useState, useEffect } from 'react';
 import { getLocalDateKey } from '../../utils/showerCycle';
 import safeStorage from '../../utils/safeStorage';
 import type { HabitTask, HabitLog } from './types';
@@ -24,7 +23,7 @@ export interface UseHabitsReturn {
   todayHabitTaskName: string;
   todayHabitTaskMinutes: number;
   todayHabitTaskNote: string;
-  habitSyncStatus: 'loading' | 'synced' | 'offline' | 'saving';
+  habitSyncStatus: 'local';
   todayKey: string;
 
   /* ── Setters ── */
@@ -99,8 +98,7 @@ export function useHabits(todayKey: string): UseHabitsReturn {
     }
   });
 
-  const [habitSyncStatus, setHabitSyncStatus] = useState<'loading' | 'synced' | 'offline' | 'saving'>('loading');
-  const habitBackendLoadedRef = useRef(false);
+  const habitSyncStatus = 'local' as const;
 
   /* ── Derived values ── */
   const activeHabitTask = habitTasks.find(task => task.id === activeHabitTaskId) || habitTasks[0] || createDefaultHabitTask();
@@ -175,102 +173,6 @@ export function useHabits(todayKey: string): UseHabitsReturn {
     safeStorage.setItem('habit_tracker_last_minutes', habitLogMinutes.toString());
     safeStorage.setItem('habit_tracker_logs', JSON.stringify(habitLogs));
   }, [habitTasks, activeHabitTask.id, habitTaskName, habitTargetMinutes, habitLogMinutes, habitLogs]);
-
-  // Load habits from backend on mount
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadBackendHabits = async () => {
-      try {
-        const response = await authFetch('/api/habits');
-        if (!response.ok) throw new Error('Habit backend unavailable');
-        const backend = await response.json();
-        if (!isMounted) return;
-
-        const legacyBackendTask: HabitTask = {
-          id: 'habit-task-default',
-          name: backend.taskName || 'Daily Focus Task',
-          targetMinutes: Number(backend.targetMinutes || 30),
-          lastMinutes: Number(backend.lastMinutes || backend.targetMinutes || 30),
-          createdAt: backend.updatedAt || new Date().toISOString()
-        };
-        const backendTasks = Array.isArray(backend.tasks) && backend.tasks.length > 0
-          ? backend.tasks as HabitTask[]
-          : [legacyBackendTask];
-        const normalizedBackendTasks = backendTasks.reduce<HabitTask[]>((acc, task) => {
-          if (!task?.id || acc.some(item => item.id === task.id)) return acc;
-          acc.push({
-            id: task.id,
-            name: (task.name || 'Daily Focus Task').toString().trim().slice(0, 120) || 'Daily Focus Task',
-            targetMinutes: Math.max(1, Math.round(Number(task.targetMinutes) || 30)),
-            lastMinutes: Math.max(1, Math.round(Number(task.lastMinutes) || Number(task.targetMinutes) || 30)),
-            createdAt: task.createdAt || new Date().toISOString()
-          });
-          return acc;
-        }, []);
-        const activeId = backend.activeTaskId || normalizedBackendTasks[0]?.id || 'habit-task-default';
-        const backendLogs = Array.isArray(backend.logs) ? backend.logs as HabitLog[] : [];
-        const normalizedBackendLogs = backendLogs.reduce<HabitLog[]>((acc, log) => {
-          if (!log?.id || acc.some(item => item.id === log.id)) return acc;
-          const matchingTask = normalizedBackendTasks.find(task => task.id === log.taskId) || normalizedBackendTasks.find(task => task.name === log.taskName);
-          acc.push({
-            ...log,
-            taskId: log.taskId || matchingTask?.id || activeId,
-            taskName: log.taskName || matchingTask?.name || 'Daily Focus Task'
-          });
-          return acc;
-        }, []);
-        const nextTasks = normalizedBackendTasks.length > 0 ? normalizedBackendTasks : [legacyBackendTask];
-
-        setHabitTasks(nextTasks);
-        setActiveHabitTaskId(nextTasks.some(task => task.id === activeId) ? activeId : nextTasks[0]?.id || 'habit-task-default');
-        setHabitLogs(normalizedBackendLogs);
-        habitBackendLoadedRef.current = true;
-        setHabitSyncStatus('synced');
-      } catch (error) {
-        console.warn('Habit backend sync unavailable. Using local fallback.', error);
-        if (!isMounted) return;
-        habitBackendLoadedRef.current = true;
-        setHabitSyncStatus('offline');
-      }
-    };
-
-    loadBackendHabits();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  // Debounced save to backend
-  useEffect(() => {
-    if (!habitBackendLoadedRef.current) return;
-
-    const saveTimer = window.setTimeout(async () => {
-      try {
-        setHabitSyncStatus('saving');
-        const response = await authFetch('/api/habits', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            taskName: habitTaskName,
-            targetMinutes: habitTargetMinutes,
-            lastMinutes: habitLogMinutes,
-            activeTaskId: activeHabitTask.id,
-            tasks: habitTasks,
-            logs: habitLogs
-          })
-        });
-        if (!response.ok) throw new Error('Habit backend save failed');
-        setHabitSyncStatus('synced');
-      } catch (error) {
-        console.warn('Habit backend save failed. Local copy is still saved.', error);
-        setHabitSyncStatus('offline');
-      }
-    }, 450);
-
-    return () => window.clearTimeout(saveTimer);
-  }, [habitTaskName, habitTargetMinutes, habitLogMinutes, activeHabitTask.id, habitTasks, habitLogs]);
 
   /* ── Handlers ── */
 

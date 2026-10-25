@@ -65,7 +65,8 @@ import { useTransitTrip } from './hooks/useTransitTrip';
 import { TransitDashboardCard } from './components/transit/TransitDashboardCard';
 import { MoveToDaySheet } from './features/jobs/MoveToDaySheet';
 import AioHeader from './components/aio/AioHeader';
-import { hallwayUrl, isRetiredRouteDestination, roomBase, roomPathname } from './utils/roomLocation';
+import { hallwayUrl } from './utils/roomLocation';
+import { useAppNavigation, type AppTab } from './hooks/useAppNavigation';
 import TodayScreen from './components/aio/TodayScreen';
 import JobsScreen from './features/jobs/JobsScreen';
 import ProfileMenu from './components/aio/ProfileMenu';
@@ -112,32 +113,7 @@ const SHOWER_HABIT_NAME = 'Mandatory Shower';
 // Temporary operational bypass. Set true to restore the scan/access gate without removing its implementation.
 const SHOWER_GATE_REQUIRED = false;
 
-type AppTab = 'dashboard' | 'jobs' | 'inventory' | 'battery' | 'tracker' | 'habits' | 'tools' | 'checkin' | 'changepassword' | 'admin' | 'diagnostics' | 'support';
-
-const APP_TABS: AppTab[] = ['dashboard', 'jobs', 'inventory', 'battery', 'tracker', 'habits', 'tools', 'checkin', 'changepassword', 'admin', 'diagnostics', 'support'];
 const SHOWER_PROTECTED_TABS: AppTab[] = ['battery', 'tracker'];
-
-const redirectRetiredRouteDestination = (): boolean => {
-  if (typeof window === 'undefined') return false;
-
-  if (isRetiredRouteDestination(roomPathname(window.location.pathname)) || isRetiredRouteDestination(window.location.hash)) {
-    window.history.replaceState(null, '', `${roomBase()}#dashboard`);
-    return true;
-  }
-
-  return false;
-};
-
-const getTabFromHash = (): AppTab | null => {
-  if (typeof window === 'undefined') return null;
-  if (redirectRetiredRouteDestination()) return 'dashboard';
-  if (['#more', '#settings'].includes(window.location.hash.toLowerCase())) {
-    window.history.replaceState(null, '', '#dashboard');
-    return 'dashboard';
-  }
-  const tab = window.location.hash.replace('#', '') as AppTab;
-  return APP_TABS.includes(tab) ? tab : null;
-};
 
 interface BarcodeDetectorResult {
   rawValue?: string;
@@ -178,7 +154,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   });
 
   const [activeTab, setActiveTab] = useState<'A' | 'B' | 'all'>('A');
-  const [currentTab, setCurrentTab] = useState<AppTab>(() => getTabFromHash() || 'dashboard');
+  const { currentTab, handleTabChange } = useAppNavigation();
 
   const [today, setToday] = useState<string>(() => todayString());
   const jobs = useJobs(today, {
@@ -283,17 +259,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [addMenuOpen]);
 
-  const handleTabChange = (tab: AppTab) => {
-    if (!APP_TABS.includes(tab)) tab = 'dashboard';
-    setCurrentTab(tab);
-    if (typeof window === 'undefined') return;
-
-    window.history.replaceState(null, '', `#${tab}`);
-    window.setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 0);
-  };
-
   const activateTabFromTap = (tab: AppTab, event?: React.SyntheticEvent<HTMLElement>) => {
     event?.preventDefault();
     event?.stopPropagation();
@@ -307,24 +272,6 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     mobileActivationRef.current = { key, time: nowMs };
     handleTabChange(tab);
   };
-
-  useEffect(() => {
-    redirectRetiredRouteDestination();
-
-    const handleHashChange = () => {
-      const tab = getTabFromHash();
-      if (tab) {
-        setCurrentTab(tab);
-        window.setTimeout(() => {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }, 0);
-      }
-    };
-
-    handleHashChange();
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
 
   // Synchronize Operations dashboard message with the latest assistant message
   useEffect(() => {
@@ -619,7 +566,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
 
   const blockJobAccess = (action: string) => {
     if (jobAccessReady) return false;
-    setCurrentTab('dashboard');
+    handleTabChange('dashboard');
     if (typeof window !== 'undefined') {
       window.history.replaceState(null, '', '#dashboard');
     }
@@ -765,7 +712,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
     tracker.addSession(sessionLog);
     tracker.exitRideMode();
     setDispatcherMessage("Ride ended. Summary generated. Planning Mode restored.");
-    setCurrentTab('dashboard');
+    handleTabChange('dashboard');
   };
 
   const handleStartTrackerRide = () => {
@@ -815,7 +762,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
   const [historyStack, setHistoryStack] = useState<{ jobs: Job[]; battery: number }[]>([]);
 
   const handleEndDayFromDispatcher = () => {
-    setCurrentTab('tracker');
+    handleTabChange('tracker');
     tracker.setCompleted();
   };
 
@@ -1294,7 +1241,7 @@ export default function App({ debugCenterOpen, onCloseDebugCenter, onOpenDebugCe
 
                 {isTransitApiEnabled() && (
                   <div className="col-span-2 lg:col-span-2">
-                    <TransitDashboardCard onOpenTools={() => setCurrentTab('tools')} />
+                    <TransitDashboardCard onOpenTools={() => handleTabChange('tools')} />
                   </div>
                 )}
 

@@ -5,7 +5,7 @@
  * HabitsTab
  *
  * Presentational Habits tab UI.
- * All state, effects, handlers, and backend sync live in `useHabits.ts`.
+ * All state, effects, handlers, and browser persistence live in `useHabits.ts`.
  * Receives data and callbacks via props from `App.tsx`.
  */
 
@@ -16,7 +16,7 @@ import type { ShowerProof, BarcodePermissionStatus, ShowerProofSyncStatus } from
 import ShowerGateSection from '../showerGate/ShowerGateSection';
 import { ToolPageHeader } from '../../components/aio/ToolPageHeader';
 
-type HabitSyncStatus = 'loading' | 'synced' | 'offline' | 'saving';
+type HabitSyncStatus = 'local';
 
 export interface HabitsTabProps {
   /* ── Core habit data ── */
@@ -167,17 +167,14 @@ export default function HabitsTab({
               Task time goals
             </h2>
             <p className="mt-2 max-w-2xl text-sm font-bold text-slate-500 dark:text-slate-300">
-              Add multiple repeat tasks, log street work or focus time, and track each task separately.
+              Add multiple repeat tasks, log street work or focus time, and track each task separately. Habits stay in this browser; account sync is not available.
             </p>
           </div>
           <div className={`rounded-[8px] px-4 py-3 text-right ${habitGoalComplete ? 'bg-emerald-600 text-white' : 'bg-amber-400 text-slate-950'}`}>
             <p className="text-xs font-black uppercase">Today</p>
             <p className="text-3xl font-black">{todayHabitMinutes} / {habitTargetMinutes} min</p>
             <p className="mt-1 text-xs font-black uppercase">
-              {habitSyncStatus === 'synced' && 'Backend saved'}
-              {habitSyncStatus === 'saving' && 'Saving'}
-              {habitSyncStatus === 'loading' && 'Loading'}
-              {habitSyncStatus === 'offline' && 'Local fallback'}
+              {habitSyncStatus === 'local' && 'This browser only'}
             </p>
           </div>
         </div>

@@ -1,5 +1,9 @@
 # Navigation System
 
+## Full app audit repairs (2026-10-25)
+
+Signed-in page changes now push browser history entries (repeat taps do not). Back/Forward restore prior pages; empty/unknown hashes restore Today. Retired bookmarks still normalize without adding history. Action-driven navigation uses the same hook. Habits explicitly identifies browser-only persistence and makes no nonexistent backend calls. Both Smart Aisle Scan close buttons have the accessible name Close Smart Aisle Scan. Detailed tested destinations/limitations: ../completed/2026-10-25-navigation-audit.md.
+
 ## Guest entry (2026-10-25)
 
 Route Manager's All in One sign-in page includes **Bypass sign-in** below Sign In. It enters a usable isolated Guest workspace, with Today/Jobs navigation, Add/Edit job, completion/reopen, starting address and Maps directions. The guest-entry marker survives reload and same-tab Main menu → Route Manager round trips; Sign in exits guest mode explicitly. Guest jobs use a separate browser-only key, never account caches. Account/cloud/proof/inventory/admin restrictions are visible. This replaces the rejected menu-only redirect.
@@ -36,7 +40,7 @@ Parent `/` and `/#home` open the independent `apps/hallway` app. It is a public 
 
 ## AIØ Primary Navigation
 
-The All in One 667 uses **two primary tabs** — Today / Jobs / More — rendered as a floating rounded bottom bar pinned to the bottom of the viewport on all screen sizes.
+The All in One 667 uses **two primary tabs** — Today / Jobs — rendered as a floating rounded bottom bar pinned to the bottom of the viewport on all screen sizes.
 
 ### Primary Tab List
 
