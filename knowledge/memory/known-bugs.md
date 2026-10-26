@@ -157,4 +157,4 @@ Stale pending acknowledgment fixed and deployed at d8d8ede; regression/lint/buil
 
 ## Guest design rejected (2026-10-25)
 
-The user wanted their established full app, not a reduced replacement. Original c09f5c7 login/gating restored; guest records retained. Release verification pending. Earlier guest-loop completion notes are historical.
+The user wanted their established full app, not a reduced replacement. Original c09f5c7 login/gating restored; guest records retained. Released d4a753d; exact public SHA, original signed-in Jobs/seven jobs/sidebar and original anonymous login verified. Earlier guest-loop completion notes are historical and superseded.

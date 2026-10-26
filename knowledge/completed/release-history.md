@@ -1,5 +1,9 @@
 # Release History
 
+## 2026-10-25 — Restore original established app
+
+Released at d4a753d604af93f359c2aec11b924b589510b552; GitHub main/exact public Render SHA verified. Existing real Edge session opens the original Jobs page with seven jobs and the full original sidebar. Anonymous login shows original Sign In/Forgot password controls, no guest replacement or production bypass. Data unchanged; restoration complete. LoginPage/ProtectedApp exactly match c09f5c7. Rejected guest UI/source/routing removed; dormant guest records retained. Sidebar/hallway and separate valid audit fixes remain. Cleaning untouched. Root lint/build and 29 focused tests pass. Interrupted harness work preserved separately in git stash; do not resume without user request.
+
 ## 2026-10-25 — Full signed-in navigation audit repairs
 
 Released at 10c6e9715ed2e4a6a427e0db3b2be248582a4f38; GitHub main/exact public Render SHA verified. Live signed-in Inventory → Back Jobs → Back Today → Forward Jobs, Jobs reload, explicit Habits browser-only notice and named scan exit pass. Guest bypass/reload still works independently; anonymous admin and unknown API requests remain JSON/auth-gated 401. No production records changed. Navigation audit complete within the non-destructive scope; camera/uploads/real completions/password changes were not exercised. Twenty-five focused tests/root lint/build pass. See 2026-10-25-navigation-audit.md for all destinations and limits. No Cleaning changes.
