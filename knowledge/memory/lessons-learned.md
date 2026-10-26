@@ -186,3 +186,7 @@ A menu-only redirect does not satisfy entry into Route Manager: test the complet
 ## 2026-10-25 — Test actual navigation and persistence promises
 
 Exercise Browser Back/Forward after real page transitions; replacing every hash removes the user's in-app history. Keep deliberate page navigation separate from retired-bookmark normalization. Never let unmatched API requests become successful HTML. A local fallback is not account sync: disclose browser-only storage and remove calls to retired backends without migrating existing data.
+
+## 2026-10-25 — Preserve established app experience
+
+Do not substitute a reduced new interface for the user's established application. User explicitly rejected the guest replacement and requested restoration. Preserve their original UI and records; isolate paused verification edits from restoration.

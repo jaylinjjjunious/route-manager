@@ -9,10 +9,8 @@ import { authDebugProtectedAppRendered, authDebugLoginPageRendered } from "./aut
 
 import { setStorageOwner } from "../utils/ownerStorage";
 import { hallwayUrl, roomBase, roomPathname } from '../utils/roomLocation';
-import { isGuestMode, setGuestMode } from '../guest/guestStorage';
 
 const App = lazy(() => import("../App"));
-const GuestApp = lazy(() => import('../guest/GuestApp'));
 
 type AuthView = "login" | "forgot-password" | "reset-password" | "app";
 
@@ -53,12 +51,6 @@ export default function ProtectedApp() {
   setStorageOwner(owner);
   const [view, setView] = useState<AuthView>(() => getInitialView(window.location.pathname));
   const [debugCenterOpen, setDebugCenterOpen] = useState(false);
-  const [guestMode, updateGuestMode] = useState(isGuestMode);
-
-  useEffect(() => {
-    // A real session always wins and cannot leave a guest entry armed on sign-out.
-    if (session) { setGuestMode(false); updateGuestMode(false); }
-  }, [session]);
 
   const openDebugCenter = useCallback(() => {
     setDebugCenterOpen(true);
@@ -94,11 +86,6 @@ export default function ProtectedApp() {
 
   // Not authenticated — only show login / forgot-password / reset-password
   if (!session && !verificationMode) {
-    if (guestMode && view !== 'reset-password' && view !== 'forgot-password') {
-      return <Suspense fallback={<AuthLoadingScreen />}><GuestApp onSignIn={() => {
-        setGuestMode(false); updateGuestMode(false); navigate('login');
-      }} /></Suspense>;
-    }
     authDebugLoginPageRendered();
     if (view === "forgot-password") {
       return <AuthRoom><ForgotPasswordPage onBack={() => navigate("login")} /></AuthRoom>;
@@ -106,9 +93,7 @@ export default function ProtectedApp() {
     if (view === "reset-password") {
       return <AuthRoom><ResetPasswordPage onDone={() => navigate("login")} /></AuthRoom>;
     }
-    return <AuthRoom><LoginPage onForgotPassword={() => navigate("forgot-password")} onBypass={() => {
-      setGuestMode(true); updateGuestMode(true); navigate('app');
-    }} /></AuthRoom>;
+    return <AuthRoom><LoginPage onForgotPassword={() => navigate("forgot-password")} /></AuthRoom>;
   }
 
   authDebugProtectedAppRendered();

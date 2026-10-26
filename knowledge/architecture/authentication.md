@@ -61,17 +61,13 @@ local technician identity, not a Supabase session, and contains no records.
 This mode is not compiled into production behavior, does not mint tokens, and
 does not relax `requireAuth()` for protected APIs.
 
-### Isolated guest workspace (2026-10-25)
+### Original app restoration (2026-10-25)
 
-**Bypass sign-in** enters a dedicated `GuestApp` inside Route Manager. `ProtectedApp` records explicit guest entry in sessionStorage (`aio-route-manager-guest-mode:v1`), retaining it through reload and hallway round trips in that tab. It never creates a user, token, admin role or verificationMode. A real session always takes precedence and clears the guest entry marker. Guest Sign in clears the marker and opens login without moving or importing guest jobs.
-
-GuestApp uses only `aio-route-manager-guest-plan:v1` in localStorage. It mounts no account App, imports no account feature stores and makes no protected API calls. Today/Jobs, local job creation/editing/completion/reopening, starting address and external Google Maps directions are usable without credentials. No demo/private data is seeded. Cloud sync, account jobs, proofs, inventory and admin tools remain sign-in-only, explicitly disclosed. Guest data is browser-local, accessible to anyone using that browser, and lost if browser data is cleared. Storage read failures preserve the original guest record and block writes; write failures retain the last saved state with a visible error. Cleaning is unchanged.
-
-This supersedes the earlier main-menu-only link, which the user rejected because opening Route Manager returned to login. See decisions/2026-10-25-isolated-guest-workspace.md.
+At the user's request, LoginPage and ProtectedApp are restored exactly to c09f5c7, before our bypass/guest changes. The replacement GuestApp, production bypass control and guest routing are removed. The original authenticated App, navigation/sidebar, account data and backend auth remain. Existing guest localStorage/sessionStorage records are left dormant and untouched; no data is deleted or imported. Same-origin real sessions recover the established app normally. The development-only guard below remains original behavior.
 
 ### Local-Only Workspace Entry
 
-The login page offers Continue in Dev Mode only when the development/loopback guard and `VITE_LOCAL_AUTH_BYPASS=true` pass. The public-workspace flag does not enable this guard; render.yaml sets it false. Entry sets verificationMode and provides an in-memory synthetic dev-user-local identity for local UI consumers. It creates no Supabase session or access token. Protected cloud APIs still require real authentication. Signing out clears the synthetic identity. A real session user takes precedence. This development control is separate from the isolated guest workspace above.
+The login page offers Continue in Dev Mode only when the development/loopback guard and `VITE_LOCAL_AUTH_BYPASS=true` pass. The public-workspace flag does not enable this guard; render.yaml sets it false. Entry sets verificationMode and provides an in-memory synthetic dev-user-local identity for local UI consumers. It creates no Supabase session or access token. Protected cloud APIs still require real authentication. Signing out clears the synthetic identity. A real session user takes precedence. The removed production guest workspace does not affect this development-only guard.
 
 **Worker (`worker/index.ts`):**
 - The Worker does not currently validate Supabase bearer tokens.

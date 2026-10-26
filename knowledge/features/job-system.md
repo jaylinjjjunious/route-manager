@@ -1,6 +1,6 @@
-## Guest jobs (2026-10-25)
+## Original interface restored (2026-10-25)
 
-The isolated Guest workspace provides its own minimal GuestJob model (id, title, address, date, completed), browser-only persistence, Today/all Jobs views, create/edit/complete/reopen, guest starting address and Google Maps directions. It never reads account Job records or uses cloud/proof/inventory workflows. No automatic migration/import into an account. Account job behavior below is unchanged.
+The rejected guest job workspace is removed. Original account job UI/data remain unchanged; dormant guest records are retained without import or deletion.
 
 # Job System
 

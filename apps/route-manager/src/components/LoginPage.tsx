@@ -4,10 +4,9 @@ import { Eye, EyeOff, Lock, Mail, ShieldCheck } from "lucide-react";
 
 interface LoginPageProps {
   onForgotPassword: () => void;
-  onBypass: () => void;
 }
 
-export default function LoginPage({ onForgotPassword, onBypass }: LoginPageProps) {
+export default function LoginPage({ onForgotPassword }: LoginPageProps) {
   const { signIn, workspaceBypassAvailable, enableWorkspaceBypass } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -130,19 +129,6 @@ export default function LoginPage({ onForgotPassword, onBypass }: LoginPageProps
                 "Sign In"
               )}
             </button>
-
-            <button
-              type="button"
-              onClick={onBypass}
-              disabled={submitting}
-              aria-describedby="guest-entry-description"
-              className="flex min-h-12 w-full items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 py-3.5 text-sm font-bold text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-blue-400"
-            >
-              Bypass sign-in
-            </button>
-            <p id="guest-entry-description" className="text-center text-xs font-semibold leading-5 text-slate-400">
-              Use Route Manager with a separate guest plan saved in this browser. Account features require sign-in.
-            </p>
 
             {workspaceBypassAvailable && (
               <button

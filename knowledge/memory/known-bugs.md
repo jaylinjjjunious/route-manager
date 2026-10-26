@@ -154,3 +154,7 @@ Stale pending acknowledgment fixed and deployed at d8d8ede; regression/lint/buil
 ## 2026-10-10 — Security scan remediation
 
 13 findings verified against main; remediation committed and deployed to Render (cc3504e, followed by transit concurrency correction d223cbe). See [remediation and remaining verification](../../docs/SECURITY_SCAN_2026_10_10.md). Preserve the separate iOS draft. Production quotas must use durable Supabase accounting because Render local files are ephemeral. Legacy unowned records are quarantined rather than silently assigned or deleted. Multi-replica atomic quotas, ownership-confirmed legacy import, retention/archival and remaining dependency advisories require explicit follow-up.
+
+## Guest design rejected (2026-10-25)
+
+The user wanted their established full app, not a reduced replacement. Original c09f5c7 login/gating restored; guest records retained. Release verification pending. Earlier guest-loop completion notes are historical.

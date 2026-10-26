@@ -2,7 +2,7 @@
 
 ## Index
 
-- [Isolated Route Manager guest workspace](2026-10-25-isolated-guest-workspace.md) — accepted 2026-10-25; usable local guest planning with independent storage, no fabricated identity and unchanged server authorization.
+- [Isolated Route Manager guest workspace](2026-10-25-isolated-guest-workspace.md) — superseded 2026-10-25 by user-requested original UI restoration; historical only.
 
 - [Independent app workspaces](2026-10-19-independent-app-workspaces.md) — accepted 2026-10-19; parent-owned hallway and independently built Route Manager in one npm workspace repository, composed on the existing origin.
 

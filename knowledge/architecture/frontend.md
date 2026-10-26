@@ -4,9 +4,9 @@
 
 useAppNavigation owns signed-in tab routing, deliberate pushState entries, duplicate-tap suppression and hashchange/popstate restoration. Empty/unknown hashes show Today; retired route/More/Settings bookmarks normalize using replaceState. App actions now use this same navigation path instead of changing only component state. Browser Back/Forward remain within page history before reaching the hallway.
 
-## Isolated Route Manager guest (2026-10-25)
+## Original app restored (2026-10-25)
 
-ProtectedApp lazily mounts guest/GuestApp.tsx after explicit bypass, separately from authenticated App. guestStorage.ts owns the guest model, strict read validation, dedicated localStorage key and tab-scoped sessionStorage entry marker. GuestApp has Today/Jobs, local forms, completion/reopen and Maps links; no account feature/auth-service imports. Real sessions supersede guest mode; Sign in leaves it. The account component tree below remains unchanged.
+Original LoginPage/ProtectedApp from c09f5c7 replace our rejected guest UI/gating. GuestApp code and routing removed; original authenticated App remains, including its sidebar and retained navigation fixes. Dormant guest browser records are preserved. No account/feature data or Cleaning implementation changes.
 
 Hallway Route Manager card uses the existing black AIØ app artwork, copied from apps/route-manager/public/apple-touch-icon.png into apps/hallway/src/assets/route-manager-icon.png and bundled by Vite. The hallway remains independent of the room runtime.
 

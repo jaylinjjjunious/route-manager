@@ -1,8 +1,8 @@
 # Data Ownership & Security
 
-## Isolated guest browser plan (2026-10-25)
+## Guest replacement removed (2026-10-25)
 
-GuestApp only reads/writes aio-route-manager-guest-plan:v1. It never mounts the account App, reads legacy/account keys, imports guest jobs into an account or calls private APIs. Explicit tab-scoped guest entry persists in aio-route-manager-guest-mode:v1; it is not an authenticated identity. Server/admin authorization is unchanged. Anyone using the browser can access guest data; browser clearing removes it. Read errors preserve stored data and disable overwrites; write errors leave the last saved state in place. See the isolated guest ADR.
+Original authentication gating is restored. The removed GuestApp no longer reads/writes its isolated keys; existing guest plan and marker records remain dormant, untouched and unimported. Real account data, server authorization and existing browser records are preserved.
 
 ## Cleaning account plans (2026-10-21)
 

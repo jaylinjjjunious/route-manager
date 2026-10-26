@@ -1,3 +1,5 @@
+**Superseded 2026-10-25:** User rejected the replacement guest experience and requested their original app back. Guest UI/routing removed; original c09f5c7 login/gating restored. Stored guest data remains untouched. The decision below is historical, not current behavior.
+
 # Isolated Route Manager guest workspace
 
 Accepted 2026-10-25. The user rejected a bypass that only opened the public menu and returned to login on entering Route Manager.

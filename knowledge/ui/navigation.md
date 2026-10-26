@@ -4,9 +4,9 @@
 
 Signed-in page changes now push browser history entries (repeat taps do not). Back/Forward restore prior pages; empty/unknown hashes restore Today. Retired bookmarks still normalize without adding history. Action-driven navigation uses the same hook. Habits explicitly identifies browser-only persistence and makes no nonexistent backend calls. Both Smart Aisle Scan close buttons have the accessible name Close Smart Aisle Scan. Detailed tested destinations/limitations: ../completed/2026-10-25-navigation-audit.md.
 
-## Guest entry (2026-10-25)
+## Original interface restored (2026-10-25)
 
-Route Manager's All in One sign-in page includes **Bypass sign-in** below Sign In. It enters a usable isolated Guest workspace, with Today/Jobs navigation, Add/Edit job, completion/reopen, starting address and Maps directions. The guest-entry marker survives reload and same-tab Main menu → Route Manager round trips; Sign in exits guest mode explicitly. Guest jobs use a separate browser-only key, never account caches. Account/cloud/proof/inventory/admin restrictions are visible. This replaces the rejected menu-only redirect.
+The user rejected the reduced guest replacement. Original login/account gating from c09f5c7 is restored; there is no production Bypass sign-in or GuestApp route. Authenticated users retain the full original Today/Jobs/sidebar app. Existing guest records remain dormant without reads, deletion or account import. Valid browser-history/API/Habits/scan-close fixes remain. Cleaning is untouched.
 
 ## Cleaning account sync
 
